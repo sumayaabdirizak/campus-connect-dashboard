@@ -1,0 +1,632 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ProgramLevel {
+  UNDERGRADUATE
+  POSTGRADUATE
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  users User[]
+}
+
+model User {
+  id                   Int           @id @default(autoincrement())
+  full_name            String
+  email                String        @unique
+  number               String        @unique
+  phone                String?
+  password_hash        String
+  status               AccountStatus @default(ACTIVE)
+  must_change_password Boolean       @default(true)
+  last_login_at        DateTime?
+  created_at           DateTime      @default(now())
+  updated_at           DateTime      @updatedAt
+
+  roleId Int
+  role   Role @relation(fields: [roleId], references: [id])
+
+  studentProfile       StudentProfile?
+  lecturerProfile      LecturerProfile?
+  deanProfile          DeanProfile?
+  facultyAdminProfile FacultyAdminProfile?
+
+  batchesCreated  Batch[]   @relation("BatchCreator")
+  batchesModified Batch[]   @relation("BatchModifier")
+  facultiesAsDean Faculty[] @relation("FacultyDean")
+
+  studentRegistrations StudentRegistration[]
+  teacherAssignings    TeacherAssigning[]
+  resourcesUploads     Resource[]
+  announcementsWritten Announcement[]
+  messagesSent         ChatMessage[]
+  submissions          Submission[]
+  quizAttempts         QuizAttempt[]
+  attendanceRecords    Attendance[]
+  teacherOfferings     CourseOffering[]      @relation("TeacherOfferings")
+  announcementReads    AnnouncementRead[]
+  createdCourseGroups  CourseGroup[]
+  groupMemberships     GroupMember[]
+}
+
+model StudentProfile {
+  id             Int    @id @default(autoincrement())
+  userId         Int    @unique
+  student_number String @unique
+  admission_year Int
+  facultyId      Int
+  departmentId   Int
+  programId      Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LecturerProfile {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  specialty    String?
+  hire_date    DateTime @default(now())
+  departmentId Int
+
+  user      User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faculties LecturerFaculty[]
+}
+
+model DeanProfile {
+  id        Int @id @default(autoincrement())
+  userId    Int @unique
+  facultyId Int @unique
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faculty Faculty @relation(fields: [facultyId], references: [id])
+}
+
+/// Many-to-many: a lecturer can be in many faculties
+model LecturerFaculty {
+  lecturerProfileId Int
+  facultyId         Int
+
+  lecturerProfile LecturerProfile @relation(fields: [lecturerProfileId], references: [id])
+  faculty         Faculty         @relation(fields: [facultyId], references: [id])
+
+  @@id([lecturerProfileId, facultyId])
+  @@index([lecturerProfileId])
+  @@index([facultyId])
+}
+
+model Department {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique
+  facultyId  Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  faculty        Faculty         @relation(fields: [facultyId], references: [id])
+  programs       Program[]
+  courses        Course[]
+  announcements  Announcement[]
+}
+
+model Faculty {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique
+  deanId     Int?
+  dean       User?    @relation("FacultyDean", fields: [deanId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  departments           Department[]
+  lecturerAffiliates     LecturerFaculty[]
+  deanProfile             DeanProfile?
+  facultyAdminProfiles    FacultyAdminProfile[]
+  announcements         Announcement[]
+}
+
+/// Faculty-scoped administrator (manages student/lecturer profiles within one faculty).
+model FacultyAdminProfile {
+  faculty_admin_id Int @id @default(autoincrement())
+  user_id          Int @unique
+  faculty_id       Int
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  faculty Faculty @relation(fields: [faculty_id], references: [id])
+
+  @@index([faculty_id])
+}
+
+model Program {
+  id           Int          @id @default(autoincrement())
+  name         String
+  code         String       @unique
+  level        ProgramLevel
+  departmentId Int
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id])
+  batches    Batch[]
+}
+
+model AcademicYear {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  start_date DateTime
+  end_date   DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  semesters                       Semester[]
+  batches                         Batch[]
+  registrationsAsRegistrationYear StudentRegistration[] @relation("RegistrationYear")
+  registrationsAsCurrentYear      StudentRegistration[] @relation("CurrentYear")
+  courseOfferings                 CourseOffering[]
+}
+
+model Semester {
+  id             Int          @id @default(autoincrement())
+  name           String
+  sequence       Int
+  start_date     DateTime
+  end_date       DateTime
+  academicYearId Int
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  registrations   StudentRegistration[]
+  courseOfferings CourseOffering[]
+}
+
+model Batch {
+  id              Int      @id @default(autoincrement())
+  name            String
+  academic_year   Int
+  programId       Int
+  academicYearId  Int
+  semester_number Int      @default(1)
+  created_by_id   Int?
+  modified_by_id  Int?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  program       Program       @relation(fields: [programId], references: [id])
+  academicYear  AcademicYear  @relation(fields: [academicYearId], references: [id])
+  createdBy     User?         @relation("BatchCreator", fields: [created_by_id], references: [id])
+  modifiedBy    User?        @relation("BatchModifier", fields: [modified_by_id], references: [id])
+
+  sections       BatchSection[] @relation("BatchToBatchSection")
+  announcements  Announcement[]
+}
+
+model BatchSection {
+  id         Int      @id @default(autoincrement())
+  name       String
+  batchId    Int
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  batch                Batch                 @relation(fields: [batchId], references: [id], name: "BatchToBatchSection")
+  studentRegistrations StudentRegistration[]
+  courseOfferings      CourseOffering[]
+  announcements        Announcement[]
+
+  @@unique([batchId, name])
+  @@index([batchId])
+}
+
+model StudentRegistration {
+  id                         Int @id @default(autoincrement())
+  studentId                  Int
+  batchSectionId             Int
+  registrationAcademicYearId Int
+  currentAcademicYearId      Int
+  currentSemesterId          Int
+
+  student                  User         @relation(fields: [studentId], references: [id])
+  batchSection             BatchSection @relation(fields: [batchSectionId], references: [id])
+  registrationAcademicYear AcademicYear @relation("RegistrationYear", fields: [registrationAcademicYearId], references: [id])
+  currentAcademicYear      AcademicYear @relation("CurrentYear", fields: [currentAcademicYearId], references: [id])
+  currentSemester          Semester     @relation(fields: [currentSemesterId], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+// ─── COURSE SYSTEM ────────────────────────────────────────────────────────────
+
+/// A course belongs to a department (e.g. "Algorithms", "Math 101")
+model Course {
+  id           Int      @id @default(autoincrement())
+  name         String
+  code         String   @unique
+  description  String?
+  credits      Int      @default(3)
+  departmentId Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  thumbnail    String?
+
+  department        Department         @relation(fields: [departmentId], references: [id])
+  teacherAssignings TeacherAssigning[]
+  offerings         CourseOffering[]
+  resources         Resource[]
+}
+
+/// Assigns a teacher to a course (Teacher ↔ Course, not Section)
+model TeacherAssigning {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int
+  courseId    Int
+  assigned_at DateTime @default(now())
+
+  teacher User   @relation(fields: [teacherId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id])
+
+  @@unique([teacherId, courseId])
+  @@index([teacherId])
+  @@index([courseId])
+}
+
+/// A course is "offered" to a specific section + semester + academic year
+model CourseOffering {
+  id             Int      @id @default(autoincrement())
+  courseId       Int
+  sectionId      Int
+  semesterId     Int
+  academicYearId Int
+  teacherId      Int?
+  created_at     DateTime @default(now())
+
+  course       Course       @relation(fields: [courseId], references: [id])
+  section      BatchSection @relation(fields: [sectionId], references: [id])
+  semester     Semester     @relation(fields: [semesterId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  teacher      User?        @relation("TeacherOfferings", fields: [teacherId], references: [id])
+
+  assignments Assignment[]
+  quizzes     Quiz[]
+  schedules      ClassSchedule[]
+  chatRooms      ChatRoom[]
+  courseGroups   CourseGroup[]
+
+  @@unique([courseId, sectionId, semesterId, academicYearId])
+  @@index([courseId])
+  @@index([sectionId])
+  @@index([semesterId])
+}
+
+model Assignment {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String?
+  due_date         DateTime
+  courseOfferingId Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  is_draft         Boolean  @default(false)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  submissions    Submission[]
+}
+
+model Submission {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  studentId    Int
+  content_url  String
+  submitted_at DateTime @default(now())
+  grade        Float?
+  feedback     String?
+  is_reviewed  Boolean  @default(false)
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+}
+
+model Quiz {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description     String?
+  duration_minutes Int
+  courseOfferingId Int
+  open_at          DateTime?
+  close_at         DateTime?
+  is_draft         Boolean  @default(false)
+  shuffle_questions Boolean  @default(false)
+  shuffle_answers  Boolean  @default(false)
+  max_attempts     Int       @default(1)
+  passing_score    Float     @default(50)
+  created_at       DateTime  @default(now())
+  
+  // Timing modes: flexible (default) or fixed
+  timing_mode        String   @default("flexible") // "flexible" | "fixed"
+  scheduled_duration Int?                     // Duration for planning (fixed mode)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  questions      QuizQuestion[]
+  attempts       QuizAttempt[]
+}
+
+model QuizOption {
+  id           Int     @id @default(autoincrement())
+  questionId   Int
+  option_text String
+  is_correct  Boolean @default(false)
+  order_index Int    @default(0)
+
+  question QuizQuestion @relation(fields: [questionId], references: [id])
+}
+
+model QuizQuestion {
+  id              Int      @id @default(autoincrement())
+  quizId          Int
+  question_text  String
+  question_type  QuestionType @default(MCQ)
+  points          Float    @default(1)
+  correct_answer String?
+  order_index    Int      @default(0)
+
+  quiz    Quiz @relation(fields: [quizId], references: [id])
+  options QuizOption[]
+  answers QuizAnswer[]
+}
+
+// ─── QUESTION BANK (Reusable Questions) ──────────────────────────────────────────
+
+model Question {
+  id             Int          @id @default(autoincrement())
+  question_text  String
+  question_type QuestionType @default(MCQ)
+  points         Float        @default(1)
+  course_code    String?      // Optional: scope to course
+  topic         String?      // e.g., "Sorting", "Big-O"
+  difficulty    String?      // "easy", "medium", "hard"
+  is_active     Boolean     @default(true)
+  created_at    DateTime    @default(now())
+  created_by    Int?        // Teacher ID
+
+  bankOptions QuestionOptionBank[]
+}
+
+model QuestionOptionBank {
+  id           Int     @id @default(autoincrement())
+  questionId   Int
+  option_text String
+  is_correct  Boolean @default(false)
+  order_index Int    @default(0)
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model QuestionTag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  color String? // Badge color
+
+  @@index([name])
+}
+
+model QuizAttempt {
+  id           Int       @id @default(autoincrement())
+  quizId       Int
+  studentId   Int
+  started_at  DateTime  @default(now())
+  submitted_at DateTime?
+  score       Float?
+  grade       Float?
+  is_graded   Boolean   @default(false)
+  
+  // Anti-cheating fields
+  closure_reason    String?   // null | "violations" | "time_expired" | "student_exit"
+  violations_count Int   @default(0)
+  warnings_shown   Int   @default(0)
+
+  quiz    Quiz @relation(fields: [quizId], references: [id])
+  student User @relation(fields: [studentId], references: [id])
+  answers QuizAnswer[]
+}
+
+model QuizAnswer {
+  id             Int     @id @default(autoincrement())
+  attemptId      Int
+  questionId    Int
+  question_type String
+  selected_option_id Int?
+  text_answer   String?
+  is_correct   Boolean?
+  points_earned Float?
+
+  attempt       QuizAttempt @relation(fields: [attemptId], references: [id])
+  question     QuizQuestion @relation(fields: [questionId], references: [id])
+}
+
+enum QuestionType {
+  MCQ
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+model ClassSchedule {
+  id               Int     @id @default(autoincrement())
+  day_of_week      Int // 0-6
+  start_time       String // e.g. "10:00 AM"
+  end_time         String // e.g. "11:30 AM"
+  location         String // e.g. "Lab 4"
+  topic            String?
+  courseOfferingId Int
+  is_lab           Boolean @default(false)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  attendance     Attendance[]
+}
+
+model Attendance {
+  id         Int              @id @default(autoincrement())
+  scheduleId Int
+  studentId  Int
+  status     AttendanceStatus @default(PRESENT)
+  date       DateTime         @default(now())
+
+  schedule ClassSchedule @relation(fields: [scheduleId], references: [id])
+  student  User          @relation(fields: [studentId], references: [id])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ResourceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ResourceType {
+  SYLLABUS
+  ASSIGNMENT
+  LECTURE_NOTE
+  OTHER
+}
+
+model Resource {
+  id          Int            @id @default(autoincrement())
+  title       String
+  description String?
+  type        ResourceType
+  url         String
+  status      ResourceStatus @default(PENDING)
+  courseId    Int
+  teacherId   Int
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+  is_draft    Boolean        @default(false)
+
+  course  Course @relation(fields: [courseId], references: [id])
+  teacher User   @relation(fields: [teacherId], references: [id])
+}
+
+/// priority: "normal" | "important" | "urgent"
+/// targetType: "ALL" | "FACULTY" | "DEPARTMENT" | "BATCH" | "SECTION"
+/// Hierarchy FKs are Int to match Faculty/Department/Batch/BatchSection ids.
+model Announcement {
+  id         Int    @id @default(autoincrement())
+  title      String
+  content    String @db.Text
+
+  priority   String @default("normal")
+  targetType String @default("ALL")
+
+  facultyId    Int?
+  departmentId Int?
+  batchId      Int?
+  sectionId    Int?
+
+  imageUrls   String[]
+  targetRoles String[] @default([])
+  isPinned    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  publishedAt DateTime?
+
+  faculty    Faculty?       @relation(fields: [facultyId], references: [id])
+  department Department?    @relation(fields: [departmentId], references: [id])
+  batch      Batch?         @relation(fields: [batchId], references: [id])
+  section    BatchSection?  @relation(fields: [sectionId], references: [id])
+
+  createdById   Int
+  createdByRole String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reads AnnouncementRead[]
+
+  @@index([facultyId])
+  @@index([departmentId])
+  @@index([batchId])
+  @@index([sectionId])
+  @@index([targetType])
+  @@index([isActive])
+  @@index([publishedAt])
+}
+
+/// `announcementId` / `userId` are Int to match `Announcement.id` and `User.id` (FK types must match PKs).
+model AnnouncementRead {
+  id               String   @id @default(cuid())
+  announcementId Int
+  userId           Int
+  readAt          DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+  @@index([announcementId])
+}
+
+model ChatRoom {
+  id                Int      @id @default(autoincrement())
+  name              String
+  facultyId         Int?
+  batchId           Int?
+  sectionId         Int?
+  courseOfferingId  Int?
+  isGroupChat       Boolean  @default(false)
+  created_at        DateTime @default(now())
+
+  messages          ChatMessage[]
+  courseOffering    CourseOffering? @relation(fields: [courseOfferingId], references: [id])
+}
+
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  roomId     Int
+  senderId   Int
+  content    String   @db.Text
+  created_at DateTime @default(now())
+
+  room   ChatRoom @relation(fields: [roomId], references: [id])
+  sender User     @relation(fields: [senderId], references: [id])
+}
+
+model CourseGroup {
+  id               Int      @id @default(autoincrement())
+  name             String
+  courseOfferingId Int
+  created_by_id    Int
+  created_at       DateTime @default(now())
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  creator        User           @relation(fields: [created_by_id], references: [id])
+  members        GroupMember[]
+}
+
+model GroupMember {
+  id        Int         @id @default(autoincrement())
+  groupId   Int
+  memberId  Int
+  joined_at DateTime   @default(now())
+
+  group  CourseGroup @relation(fields: [groupId], references: [id])
+  member User       @relation(fields: [memberId], references: [id])
+
+  @@unique([groupId, memberId])
+}
