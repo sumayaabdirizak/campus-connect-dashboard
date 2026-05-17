@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "studentId": "4",
+    "courseId": "CS101",
+    "date": "2026-04-05",
+    "status": "Present"
+  },
+  {
+    "id": "2",
+    "studentId": "4",
+    "courseId": "CS101",
+    "date": "2026-04-07",
+    "status": "Absent"
+  }
+]

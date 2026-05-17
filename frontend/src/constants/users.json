@@ -1,0 +1,30 @@
+[
+  {
+    "id": "1",
+    "name": "Super Admin",
+    "email": "superadmin@campus.com",
+    "password": "password",
+    "role": "superadmin"
+  },
+  {
+    "id": "2",
+    "name": "Faculty Admin",
+    "email": "admin@campus.com",
+    "password": "password",
+    "role": "faculty_admin"
+  },
+  {
+    "id": "3",
+    "name": "Lecturer John",
+    "email": "lecturer@campus.com",
+    "password": "password",
+    "role": "lecturer"
+  },
+  {
+    "id": "4",
+    "name": "Student Alice",
+    "email": "student@campus.com",
+    "password": "password",
+    "role": "student"
+  }
+]

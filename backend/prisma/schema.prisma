@@ -1,0 +1,1667 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum ProgramLevel {
+  UNDERGRADUATE
+  POSTGRADUATE
+}
+
+enum DiscussionScopeType {
+  FACULTY
+  DEPARTMENT
+  BATCH
+  SECTION
+  /// Used by USER_SERVER (clubs). `scopeId` references Club.id so each club
+  /// gets its own (scopeType, scopeId) row without colliding with the
+  /// faculty/department/batch/section hierarchy.
+  CLUB
+}
+
+enum DiscussionMembershipRole {
+  STUDENT
+  LECTURER
+  HEAD
+  DEAN
+  ADMIN
+  ADVISOR
+}
+
+enum DiscussionMessageType {
+  TEXT
+  MEDIA
+  SYSTEM
+  QUESTION
+}
+
+enum DiscussionAttachmentType {
+  IMAGE
+  VIDEO
+  FILE
+}
+
+enum DiscussionNotificationType {
+  MESSAGE
+  MENTION
+  ADMIN_ANNOUNCEMENT
+  THREAD
+  REACTION
+  PIN
+  CLUB_APPROVED
+  CLUB_REJECTED
+  CLUB_JOIN_REQUEST
+  CLUB_JOIN_DECIDED
+  CLUB_INVITE
+  CLUB_PROMOTED
+  CLUB_REMOVED
+}
+
+/// Lifecycle for a Club row. PENDING clubs have no DiscussionGroup yet (Path A).
+/// APPROVED clubs are live. SUSPENDED freezes chat; ARCHIVED hides from sidebar.
+enum ClubStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  SUSPENDED
+  ARCHIVED
+}
+
+/// How a non-member can join a club.
+enum ClubJoinPolicy {
+  OPEN
+  BY_REQUEST
+  INVITE_ONLY
+}
+
+/// Scope of who can see a club in discovery.
+enum ClubScopeKind {
+  FACULTY
+  UNIVERSITY
+  CROSS
+}
+
+/// State of a ClubJoinRequest row.
+enum ClubJoinRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+/// State of a ClubInvite token / direct invite.
+enum ClubInviteStatus {
+  PENDING
+  ACCEPTED
+  REVOKED
+  EXPIRED
+}
+
+/// Audit actions tracked on a club for the manage > Audit tab.
+enum ClubModerationAction {
+  CREATE
+  APPROVE
+  REJECT
+  SUSPEND
+  ARCHIVE
+  EDIT
+  TRANSFER
+  PROMOTE
+  DEMOTE
+  REMOVE_MEMBER
+  REVOKE_INVITE
+}
+
+enum DiscussionGroupStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+/// Hybrid Discord layout: faculty row becomes FACULTY_SERVER; dept/batch/section rows become *_LEGACY and map to channels on that server.
+enum DiscussionServerKind {
+  SCOPE_GROUP
+  FACULTY_SERVER
+  USER_SERVER
+  DEPARTMENT_LEGACY
+  BATCH_LEGACY
+  SECTION_LEGACY
+}
+
+enum DiscussionChannelKind {
+  TEXT
+  ANNOUNCEMENT
+  FORUM
+}
+
+enum DiscussionOverwriteTarget {
+  ROLE
+  MEMBER
+}
+
+enum GroupDmMemberRole {
+  OWNER
+  MEMBER
+}
+
+enum AnnouncementPriority {
+  NORMAL
+  IMPORTANT
+  URGENT
+}
+
+enum AnnouncementStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+  EXPIRED
+  ARCHIVED
+}
+
+/// Primary broadcast scope (single hierarchy row on Announcement).
+enum AnnouncementBroadcastScope {
+  ALL
+  FACULTY
+  DEPARTMENT
+  BATCH
+  SECTION
+}
+
+/// Multi-target rows (AnnouncementTarget); mirrors faculty/dept/batch/section.
+enum AnnouncementTargetScopeType {
+  FACULTY
+  DEPARTMENT
+  BATCH
+  SECTION
+}
+
+enum AnnouncementAttachmentKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+  LINK
+}
+
+/// Outcome of an announcement SMS attempt (audit trail). Retention: purge per institutional policy (ops), not in-app TTL.
+enum SmsAuditLogStatus {
+  SKIPPED
+  SENT
+  FAILED
+}
+
+model Role {
+  id   Int    @id @default(autoincrement())
+  name String @unique
+
+  users User[]
+}
+
+model User {
+  id                   Int           @id @default(autoincrement())
+  full_name            String
+  email                String        @unique
+  number               String        @unique
+  phone                String?
+  password_hash        String
+  status               AccountStatus @default(ACTIVE)
+  must_change_password Boolean       @default(true)
+  last_login_at        DateTime?
+  created_at           DateTime      @default(now())
+  updated_at           DateTime      @updatedAt
+
+  roleId Int
+  role   Role @relation(fields: [roleId], references: [id])
+
+  studentProfile       StudentProfile?
+  lecturerProfile      LecturerProfile?
+  deanProfile          DeanProfile?
+  facultyAdminProfile FacultyAdminProfile?
+
+  batchesCreated  Batch[]   @relation("BatchCreator")
+  batchesModified Batch[]   @relation("BatchModifier")
+  facultiesAsDean Faculty[] @relation("FacultyDean")
+  departmentsAsHead Department[] @relation("DepartmentHead")
+  batchesAsAdvisor Batch[] @relation("BatchAdvisor")
+  sectionsAsModerator BatchSection[] @relation("SectionModerator")
+
+  studentRegistrations StudentRegistration[]
+  teacherAssignings    TeacherAssigning[]
+  resourcesUploads     Resource[]
+  announcementsWritten Announcement[]
+  messagesSent         ChatMessage[]
+  submissions          Submission[]
+  quizAttempts         QuizAttempt[]
+  attendanceRecords    Attendance[]
+  teacherOfferings     CourseOffering[]      @relation("TeacherOfferings")
+  announcementReads    AnnouncementRead[]
+  announcementAudits   AnnouncementAudit[] @relation("AnnouncementAuditActor")
+  createdCourseGroups  CourseGroup[]
+  groupMemberships     GroupMember[]
+  discussionMemberships DiscussionGroupMembership[]
+  discussionMessagesSent DiscussionMessage[]         @relation("DiscussionMessageSender")
+  discussionReadReceipts DiscussionReadReceipt[]
+  discussionNotifications DiscussionNotification[]
+  discussionSessions DiscussionSession[]
+  discussionMuteSettings DiscussionMuteSetting[]
+  discussionMessageReactions DiscussionMessageReaction[]
+  discussionPinnedMessages DiscussionPinnedMessage[] @relation("DiscussionPinnedBy")
+  discussionAuditLogs     DiscussionAuditLog[]      @relation("DiscussionAuditLogActor")
+  discussionAttachmentsUploaded DiscussionAttachment[]
+  discussionDeviceKeys DiscussionDeviceKey[]
+  discussionKeyEnvelopes DiscussionGroupKeyEnvelope[]
+  discussionGroupsOwned DiscussionGroup[] @relation("DiscussionGroupOwner")
+  groupDmsCreated       GroupDm[]         @relation("GroupDmCreator")
+  groupDmMemberships    GroupDmMember[]
+
+  clubsOwned            Club[]                 @relation("ClubOwner")
+  clubJoinRequests      ClubJoinRequest[]      @relation("ClubJoinRequester")
+  clubJoinDecisions     ClubJoinRequest[]      @relation("ClubJoinDecider")
+  clubInvitesSent       ClubInvite[]           @relation("ClubInviteInviter")
+  clubInvitesReceived   ClubInvite[]           @relation("ClubInviteInvitee")
+  clubAuditActions      ClubModerationAudit[]  @relation("ClubAuditActor")
+  clubDecisions         Club[]                 @relation("ClubDecidedBy")
+  userInterests         UserInterest[]
+
+  webPushSubscriptions WebPushSubscription[]
+  announcementComments AnnouncementComment[]
+  announcementReactions AnnouncementReaction[]
+  announcementAcknowledgements AnnouncementAcknowledgement[]
+  announcementTemplates AnnouncementTemplate[]
+
+  /// Custom line shown in discussions (e.g. "In class", "Do Not Disturb"). Distinct from account `status`.
+  discussionCustomStatus String? @db.VarChar(80)
+
+  /// Opt-in for SMS alerts on campus announcements (TCPA-style; default false for existing users).
+  smsOptIn Boolean @default(false)
+
+  smsAuditLogs SmsAuditLog[]
+
+  /// Outbound link click events (CTR proxy). `userId` null for unsigned/anonymous opens — align retention with GDPR/FERPA policy.
+  announcementLinkClicks AnnouncementLinkClick[]
+}
+
+/// Nightly (or on-demand) rollup of hot announcement metrics for dashboards. One row per announcement per UTC calendar day (`snapshotAt` at midnight UTC).
+model AnnouncementAnalyticsSnapshot {
+  id                Int      @id @default(autoincrement())
+  announcementId  Int
+  snapshotAt        DateTime
+  impressions       Int      @default(0)
+  uniqueReaders     Int      @default(0)
+  readRate          Float?
+  likes             Int      @default(0)
+  acknowledgedCount Int      @default(0)
+  linkClicks        Int      @default(0)
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, snapshotAt])
+  @@index([snapshotAt])
+}
+
+/// CTR proxy: one row per tracked redirect through `/api/r/...`. Retention: purge per institutional policy (GDPR).
+model AnnouncementLinkClick {
+  id             Int      @id @default(autoincrement())
+  announcementId Int
+  userId         Int?
+  url            String   @db.Text
+  clickedAt      DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([announcementId, clickedAt])
+  @@index([announcementId, userId])
+}
+
+enum CalendarReminderPhase {
+  T24H
+  T1H
+}
+
+/// One row per announcement per phase after a T-24h / T-1h reminder has been sent (dedupe). Reset when `deadlineAt` is edited.
+model CalendarReminderJob {
+  id             String               @id @default(cuid())
+  announcementId Int
+  phase          CalendarReminderPhase
+  sentAt         DateTime?
+  createdAt      DateTime             @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, phase])
+  @@index([announcementId])
+}
+
+model StudentProfile {
+  id             Int    @id @default(autoincrement())
+  userId         Int    @unique
+  student_number String @unique
+  admission_year Int
+  facultyId      Int
+  departmentId   Int
+  programId      Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model LecturerProfile {
+  id           Int      @id @default(autoincrement())
+  userId       Int      @unique
+  specialty    String?
+  hire_date    DateTime @default(now())
+  departmentId Int
+
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  department  Department        @relation(fields: [departmentId], references: [id])
+  faculties   LecturerFaculty[]
+}
+
+model DeanProfile {
+  id        Int @id @default(autoincrement())
+  userId    Int @unique
+  facultyId Int @unique
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  faculty Faculty @relation(fields: [facultyId], references: [id])
+}
+
+/// Many-to-many: a lecturer can be in many faculties
+model LecturerFaculty {
+  lecturerProfileId Int
+  facultyId         Int
+
+  lecturerProfile LecturerProfile @relation(fields: [lecturerProfileId], references: [id])
+  faculty         Faculty         @relation(fields: [facultyId], references: [id])
+
+  @@id([lecturerProfileId, facultyId])
+  @@index([lecturerProfileId])
+  @@index([facultyId])
+}
+
+model Department {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique
+  facultyId  Int
+  /// Optional department head (moderator in department discussion group).
+  headUserId Int?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  faculty        Faculty           @relation(fields: [facultyId], references: [id])
+  head           User?             @relation("DepartmentHead", fields: [headUserId], references: [id])
+  programs       Program[]
+  courses        Course[]
+  announcements  Announcement[]
+  lecturers      LecturerProfile[]
+
+  @@index([headUserId])
+}
+
+model Faculty {
+  id         Int      @id @default(autoincrement())
+  name       String
+  code       String   @unique
+  deanId     Int?
+  dean       User?    @relation("FacultyDean", fields: [deanId], references: [id])
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  departments           Department[]
+  lecturerAffiliates     LecturerFaculty[]
+  deanProfile             DeanProfile?
+  facultyAdminProfiles    FacultyAdminProfile[]
+  announcements         Announcement[]
+  clubs                 Club[]
+}
+
+/// Faculty-scoped administrator (manages student/lecturer profiles within one faculty).
+model FacultyAdminProfile {
+  faculty_admin_id Int @id @default(autoincrement())
+  user_id          Int @unique
+  faculty_id       Int
+
+  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  faculty Faculty @relation(fields: [faculty_id], references: [id])
+
+  @@index([faculty_id])
+}
+
+model Program {
+  id           Int          @id @default(autoincrement())
+  name         String
+  code         String       @unique
+  level        ProgramLevel
+  departmentId Int
+  created_at   DateTime     @default(now())
+  updated_at   DateTime     @updatedAt
+
+  department Department @relation(fields: [departmentId], references: [id])
+  batches    Batch[]
+}
+
+model AcademicYear {
+  id         Int      @id @default(autoincrement())
+  name       String   @unique
+  start_date DateTime
+  end_date   DateTime
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  semesters                       Semester[]
+  batches                         Batch[]
+  registrationsAsRegistrationYear StudentRegistration[] @relation("RegistrationYear")
+  registrationsAsCurrentYear      StudentRegistration[] @relation("CurrentYear")
+  courseOfferings                 CourseOffering[]
+}
+
+model Semester {
+  id             Int          @id @default(autoincrement())
+  name           String
+  sequence       Int
+  start_date     DateTime
+  end_date       DateTime
+  academicYearId Int
+  academicYear   AcademicYear @relation(fields: [academicYearId], references: [id])
+
+  registrations   StudentRegistration[]
+  courseOfferings CourseOffering[]
+}
+
+model Batch {
+  id              Int      @id @default(autoincrement())
+  name            String
+  academic_year   Int
+  programId       Int
+  academicYearId  Int
+  semester_number Int      @default(1)
+  /// Optional batch advisor (moderator alongside dean in batch discussion).
+  advisorUserId   Int?
+  created_by_id   Int?
+  modified_by_id  Int?
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  program       Program       @relation(fields: [programId], references: [id])
+  academicYear  AcademicYear  @relation(fields: [academicYearId], references: [id])
+  createdBy     User?         @relation("BatchCreator", fields: [created_by_id], references: [id])
+  modifiedBy    User?        @relation("BatchModifier", fields: [modified_by_id], references: [id])
+  advisor       User?         @relation("BatchAdvisor", fields: [advisorUserId], references: [id])
+
+  sections       BatchSection[] @relation("BatchToBatchSection")
+  announcements  Announcement[]
+
+  @@index([advisorUserId])
+}
+
+model BatchSection {
+  id         Int      @id @default(autoincrement())
+  name       String
+  batchId    Int
+  /// Primary section lecturer/moderator (moderator in section discussion when set).
+  moderatorUserId Int?
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  batch                Batch                 @relation(fields: [batchId], references: [id], name: "BatchToBatchSection")
+  moderator            User?                 @relation("SectionModerator", fields: [moderatorUserId], references: [id])
+  studentRegistrations StudentRegistration[]
+  courseOfferings      CourseOffering[]
+  announcements        Announcement[]
+
+  @@unique([batchId, name])
+  @@index([batchId])
+  @@index([moderatorUserId])
+}
+
+model StudentRegistration {
+  id                         Int @id @default(autoincrement())
+  studentId                  Int
+  batchSectionId             Int
+  registrationAcademicYearId Int
+  currentAcademicYearId      Int
+  currentSemesterId          Int
+
+  student                  User         @relation(fields: [studentId], references: [id])
+  batchSection             BatchSection @relation(fields: [batchSectionId], references: [id])
+  registrationAcademicYear AcademicYear @relation("RegistrationYear", fields: [registrationAcademicYearId], references: [id])
+  currentAcademicYear      AcademicYear @relation("CurrentYear", fields: [currentAcademicYearId], references: [id])
+  currentSemester          Semester     @relation(fields: [currentSemesterId], references: [id])
+
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+}
+
+// ─── COURSE SYSTEM ────────────────────────────────────────────────────────────
+
+/// A course belongs to a department (e.g. "Algorithms", "Math 101")
+model Course {
+  id           Int      @id @default(autoincrement())
+  name         String
+  code         String   @unique
+  description  String?
+  credits      Int      @default(3)
+  departmentId Int
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  thumbnail    String?
+
+  department        Department         @relation(fields: [departmentId], references: [id])
+  teacherAssignings TeacherAssigning[]
+  offerings         CourseOffering[]
+  resources         Resource[]
+}
+
+/// Assigns a teacher to a course (Teacher ↔ Course, not Section)
+model TeacherAssigning {
+  id          Int      @id @default(autoincrement())
+  teacherId   Int
+  courseId    Int
+  assigned_at DateTime @default(now())
+
+  teacher User   @relation(fields: [teacherId], references: [id])
+  course  Course @relation(fields: [courseId], references: [id])
+
+  @@unique([teacherId, courseId])
+  @@index([teacherId])
+  @@index([courseId])
+}
+
+/// A course is "offered" to a specific section + semester + academic year
+model CourseOffering {
+  id             Int      @id @default(autoincrement())
+  courseId       Int
+  sectionId      Int
+  semesterId     Int
+  academicYearId Int
+  teacherId      Int?
+  created_at     DateTime @default(now())
+
+  course       Course       @relation(fields: [courseId], references: [id])
+  section      BatchSection @relation(fields: [sectionId], references: [id])
+  semester     Semester     @relation(fields: [semesterId], references: [id])
+  academicYear AcademicYear @relation(fields: [academicYearId], references: [id])
+  teacher      User?        @relation("TeacherOfferings", fields: [teacherId], references: [id])
+
+  assignments Assignment[]
+  quizzes     Quiz[]
+  schedules      ClassSchedule[]
+  chatRooms      ChatRoom[]
+  courseGroups   CourseGroup[]
+
+  @@unique([courseId, sectionId, semesterId, academicYearId])
+  @@index([courseId])
+  @@index([sectionId])
+  @@index([semesterId])
+}
+
+model Assignment {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description      String?
+  due_date         DateTime
+  courseOfferingId Int
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  is_draft         Boolean  @default(false)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  submissions    Submission[]
+}
+
+model Submission {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  studentId    Int
+  content_url  String
+  submitted_at DateTime @default(now())
+  grade        Float?
+  feedback     String?
+  is_reviewed  Boolean  @default(false)
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id])
+  student    User       @relation(fields: [studentId], references: [id])
+}
+
+model Quiz {
+  id               Int      @id @default(autoincrement())
+  title            String
+  description     String?
+  duration_minutes Int
+  courseOfferingId Int
+  open_at          DateTime?
+  close_at         DateTime?
+  is_draft         Boolean  @default(false)
+  shuffle_questions Boolean  @default(false)
+  shuffle_answers  Boolean  @default(false)
+  max_attempts     Int       @default(1)
+  passing_score    Float     @default(50)
+  created_at       DateTime  @default(now())
+  
+  // Timing modes: flexible (default) or fixed
+  timing_mode        String   @default("flexible") // "flexible" | "fixed"
+  scheduled_duration Int?                     // Duration for planning (fixed mode)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  questions      QuizQuestion[]
+  attempts       QuizAttempt[]
+}
+
+model QuizOption {
+  id           Int     @id @default(autoincrement())
+  questionId   Int
+  option_text String
+  is_correct  Boolean @default(false)
+  order_index Int    @default(0)
+
+  question QuizQuestion @relation(fields: [questionId], references: [id])
+}
+
+model QuizQuestion {
+  id              Int      @id @default(autoincrement())
+  quizId          Int
+  question_text  String
+  question_type  QuestionType @default(MCQ)
+  points          Float    @default(1)
+  correct_answer String?
+  order_index    Int      @default(0)
+
+  quiz    Quiz @relation(fields: [quizId], references: [id])
+  options QuizOption[]
+  answers QuizAnswer[]
+}
+
+// ─── QUESTION BANK (Reusable Questions) ──────────────────────────────────────────
+
+model Question {
+  id             Int          @id @default(autoincrement())
+  question_text  String
+  question_type QuestionType @default(MCQ)
+  points         Float        @default(1)
+  course_code    String?      // Optional: scope to course
+  topic         String?      // e.g., "Sorting", "Big-O"
+  difficulty    String?      // "easy", "medium", "hard"
+  is_active     Boolean     @default(true)
+  created_at    DateTime    @default(now())
+  created_by    Int?        // Teacher ID
+
+  bankOptions QuestionOptionBank[]
+}
+
+model QuestionOptionBank {
+  id           Int     @id @default(autoincrement())
+  questionId   Int
+  option_text String
+  is_correct  Boolean @default(false)
+  order_index Int    @default(0)
+
+  question Question @relation(fields: [questionId], references: [id])
+}
+
+model QuestionTag {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  color String? // Badge color
+
+  @@index([name])
+}
+
+model QuizAttempt {
+  id           Int       @id @default(autoincrement())
+  quizId       Int
+  studentId   Int
+  started_at  DateTime  @default(now())
+  submitted_at DateTime?
+  score       Float?
+  grade       Float?
+  is_graded   Boolean   @default(false)
+  
+  // Anti-cheating fields
+  closure_reason    String?   // null | "violations" | "time_expired" | "student_exit"
+  violations_count Int   @default(0)
+  warnings_shown   Int   @default(0)
+
+  quiz    Quiz @relation(fields: [quizId], references: [id])
+  student User @relation(fields: [studentId], references: [id])
+  answers QuizAnswer[]
+}
+
+model QuizAnswer {
+  id             Int     @id @default(autoincrement())
+  attemptId      Int
+  questionId    Int
+  question_type String
+  selected_option_id Int?
+  text_answer   String?
+  is_correct   Boolean?
+  points_earned Float?
+
+  attempt       QuizAttempt @relation(fields: [attemptId], references: [id])
+  question     QuizQuestion @relation(fields: [questionId], references: [id])
+}
+
+enum QuestionType {
+  MCQ
+  TRUE_FALSE
+  SHORT_ANSWER
+}
+
+model ClassSchedule {
+  id               Int     @id @default(autoincrement())
+  day_of_week      Int // 0-6
+  start_time       String // e.g. "10:00 AM"
+  end_time         String // e.g. "11:30 AM"
+  location         String // e.g. "Lab 4"
+  topic            String?
+  courseOfferingId Int
+  is_lab           Boolean @default(false)
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  attendance     Attendance[]
+}
+
+model Attendance {
+  id         Int              @id @default(autoincrement())
+  scheduleId Int
+  studentId  Int
+  status     AttendanceStatus @default(PRESENT)
+  date       DateTime         @default(now())
+
+  schedule ClassSchedule @relation(fields: [scheduleId], references: [id])
+  student  User          @relation(fields: [studentId], references: [id])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  LATE
+  EXCUSED
+}
+
+enum ResourceStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ResourceType {
+  SYLLABUS
+  ASSIGNMENT
+  LECTURE_NOTE
+  OTHER
+}
+
+model Resource {
+  id          Int            @id @default(autoincrement())
+  title       String
+  description String?
+  type        ResourceType
+  url         String
+  status      ResourceStatus @default(PENDING)
+  courseId    Int
+  teacherId   Int
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+  is_draft    Boolean        @default(false)
+
+  course  Course @relation(fields: [courseId], references: [id])
+  teacher User   @relation(fields: [teacherId], references: [id])
+}
+
+/// priority: "normal" | "important" | "urgent"
+/// targetType: "ALL" | "FACULTY" | "DEPARTMENT" | "BATCH" | "SECTION"
+/// Hierarchy FKs are Int to match Faculty/Department/Batch/BatchSection ids.
+model Announcement {
+  id         Int    @id @default(autoincrement())
+  title      String
+  content    String @db.Text
+
+  priority   AnnouncementPriority       @default(NORMAL)
+  targetType AnnouncementBroadcastScope @default(ALL)
+  status     AnnouncementStatus         @default(PUBLISHED)
+
+  facultyId    Int?
+  departmentId Int?
+  batchId      Int?
+  sectionId    Int?
+
+  bodyMarkdown String? @db.Text
+  bodyHtml     String? @db.Text
+  expiresAt    DateTime?
+  /// Optional calendar deadline (e.g. exam submission) shown on dashboard calendar.
+  deadlineAt   DateTime?
+  version      Int      @default(1)
+  slug         String?  @unique
+  acknowledgementRequired Boolean @default(false)
+  commentsEnabled        Boolean @default(false)
+
+  imageUrls   String[]
+  targetRoles String[] @default([])
+  isPinned    Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  publishedAt DateTime?
+
+  faculty    Faculty?       @relation(fields: [facultyId], references: [id])
+  department Department?    @relation(fields: [departmentId], references: [id])
+  batch      Batch?         @relation(fields: [batchId], references: [id])
+  section    BatchSection?  @relation(fields: [sectionId], references: [id])
+
+  createdById   Int
+  createdByRole String
+  createdBy     User     @relation(fields: [createdById], references: [id])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  reads       AnnouncementRead[]
+  targets     AnnouncementTarget[]
+  attachments AnnouncementAttachment[]
+  audits      AnnouncementAudit[]
+  comments    AnnouncementComment[]
+  reactions   AnnouncementReaction[]
+  acknowledgements AnnouncementAcknowledgement[]
+  smsAuditLogs       SmsAuditLog[]
+  analyticsSnapshots AnnouncementAnalyticsSnapshot[]
+  linkClicks         AnnouncementLinkClick[]
+  calendarReminderJobs CalendarReminderJob[]
+
+  /// Full-text search (maintained by SQL trigger; optional until migration applied).
+  searchVector Unsupported("tsvector")?
+
+  @@index([facultyId])
+  @@index([departmentId])
+  @@index([batchId])
+  @@index([sectionId])
+  @@index([targetType])
+  @@index([isActive])
+  @@index([publishedAt])
+  @@index([status])
+}
+
+model AnnouncementTarget {
+  id             Int                        @id @default(autoincrement())
+  announcementId Int
+  scopeType      AnnouncementTargetScopeType
+  scopeId        Int
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, scopeType, scopeId])
+  @@index([scopeType, scopeId])
+  @@index([announcementId])
+}
+
+model AnnouncementAttachment {
+  id             Int                      @id @default(autoincrement())
+  announcementId Int
+  kind           AnnouncementAttachmentKind
+  url            String
+  mimeType       String?
+  size           BigInt?
+  thumbnailUrl   String?
+  storageKey     String?
+  virusScanStatus String? @default("PENDING")
+  // WCAG 1.1.1 Non-text Content: short description for screen readers.
+  altText        String?
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@index([announcementId])
+}
+
+model AnnouncementAudit {
+  id             String   @id @default(cuid())
+  announcementId Int
+  // Nullable so user erasure (GDPR Art. 17) can null this without dropping the row.
+  actorId        Int?
+  // Hashed actor identifier preserved for integrity even after erasure.
+  actorIdHash    String?
+  action         String
+  before         Json?
+  after          Json?
+  createdAt      DateTime @default(now())
+  // Retention horizon (FERPA student-record default 7 years). Nightly purge job removes expired rows.
+  expiresAt      DateTime?
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  actor        User?        @relation("AnnouncementAuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([announcementId])
+  @@index([actorId])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+/// `announcementId` / `userId` are Int to match `Announcement.id` and `User.id` (FK types must match PKs).
+model AnnouncementRead {
+  id               String   @id @default(cuid())
+  announcementId Int
+  userId           Int
+  readAt          DateTime @default(now())
+  // GDPR minimisation: read receipts purge after one academic cycle (~13 months) by default.
+  expiresAt       DateTime?
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId])
+  @@index([userId])
+  @@index([announcementId])
+  @@index([expiresAt])
+}
+
+model WebPushSubscription {
+  id        String   @id @default(cuid())
+  userId    Int
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model AnnouncementComment {
+  id             Int       @id @default(autoincrement())
+  announcementId Int
+  authorId       Int
+  bodyMarkdown   String    @db.Text
+  parentId       Int?
+  deletedAt      DateTime?
+  createdAt      DateTime  @default(now())
+
+  announcement Announcement         @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  author       User                 @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent       AnnouncementComment? @relation("AnnouncementCommentThread", fields: [parentId], references: [id], onDelete: SetNull)
+  replies      AnnouncementComment[] @relation("AnnouncementCommentThread")
+
+  @@index([announcementId])
+  @@index([authorId])
+}
+
+model AnnouncementReaction {
+  id             Int    @id @default(autoincrement())
+  announcementId Int
+  userId         Int
+  emoji          String
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([announcementId, userId, emoji])
+  @@index([announcementId])
+}
+
+model AnnouncementAcknowledgement {
+  announcementId Int
+  userId         Int
+  acknowledgedAt DateTime @default(now())
+
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([announcementId, userId])
+  @@index([userId])
+}
+
+model AnnouncementTemplate {
+  id             Int      @id @default(autoincrement())
+  userId         Int
+  name           String
+  bodyMarkdown   String   @db.Text
+  defaultTargets Json?
+  defaultRoles   Json?
+  createdAt      DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+/// TCPA / compliance audit for announcement SMS. `phoneNumber` stores masked digits only.
+model SmsAuditLog {
+  id             Int               @id @default(autoincrement())
+  userId         Int
+  announcementId Int
+  phoneNumber    String
+  status         SmsAuditLogStatus
+  reason         String?           @db.VarChar(500)
+  sentAt         DateTime          @default(now())
+
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  announcement Announcement @relation(fields: [announcementId], references: [id], onDelete: Cascade)
+
+  @@index([userId, sentAt])
+  @@index([announcementId, sentAt])
+  @@index([sentAt])
+}
+
+model DiscussionGroup {
+  id         Int                 @id @default(autoincrement())
+  scopeType  DiscussionScopeType
+  scopeId    Int
+  groupKey   String              @unique
+  name       String
+  status     DiscussionGroupStatus @default(ACTIVE)
+  kind       DiscussionServerKind @default(SCOPE_GROUP)
+  parentServerId Int?
+  ownerId    Int?
+  iconUrl    String?
+  description String?            @db.Text
+  defaultChannelId Int?         @unique
+  e2eeEnabled Boolean              @default(true)
+  e2eeCurrentKeyVersion Int        @default(1)
+  e2eeRotationRequired Boolean     @default(false)
+  createdAt  DateTime            @default(now())
+  archivedAt DateTime?
+
+  owner          User?                    @relation("DiscussionGroupOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  parentServer   DiscussionGroup?       @relation("ServerTree", fields: [parentServerId], references: [id], onDelete: SetNull)
+  childServers   DiscussionGroup[]      @relation("ServerTree")
+  defaultChannel DiscussionChannel?     @relation("DefaultChannel", fields: [defaultChannelId], references: [id], onDelete: SetNull)
+
+  channelCategories DiscussionChannelCategory[]
+  channels          DiscussionChannel[]       @relation("ChannelServer")
+  roles             DiscussionRole[]
+
+  memberships   DiscussionGroupMembership[]
+  messages      DiscussionMessage[]
+  notifications DiscussionNotification[]
+  mutedUsers    DiscussionMuteSetting[]
+  pinnedMessages DiscussionPinnedMessage[]
+  attachments   DiscussionAttachment[]
+  keyEnvelopes  DiscussionGroupKeyEnvelope[]
+  auditLogs       DiscussionAuditLog[]
+  /// Inverse of Club.serverId. Non-null only for USER_SERVER kinds backing a Club.
+  club           Club?
+
+  @@unique([scopeType, scopeId])
+  @@index([status])
+  @@index([scopeType, scopeId])
+  @@index([kind])
+  @@index([parentServerId])
+}
+
+model DiscussionChannelCategory {
+  id        Int      @id @default(autoincrement())
+  serverId  Int
+  systemKey String
+  name      String
+  position  Int      @default(0)
+  isSystem  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  server   DiscussionGroup @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channels DiscussionChannel[]
+
+  @@unique([serverId, systemKey])
+  @@index([serverId, position])
+}
+
+model DiscussionChannel {
+  id             Int                   @id @default(autoincrement())
+  serverId       Int
+  categoryId     Int?
+  name           String
+  slug           String
+  kind           DiscussionChannelKind @default(TEXT)
+  position       Int                   @default(0)
+  isDefault      Boolean               @default(false)
+  isPrivate      Boolean               @default(false)
+  topic          String?
+  scopeType      DiscussionScopeType?
+  scopeId        Int?
+  legacyGroupId  Int?                  @unique
+  archivedAt     DateTime?
+  /// Minimum seconds between messages from the same user (0 = off). Moderators with MANAGE_MESSAGES bypass.
+  slowModeSeconds Int                  @default(0)
+
+  server           DiscussionGroup @relation("ChannelServer", fields: [serverId], references: [id], onDelete: Cascade)
+  category         DiscussionChannelCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  messages         DiscussionMessage[]
+  overwrites       DiscussionPermissionOverwrite[]
+  defaultForServer DiscussionGroup? @relation("DefaultChannel")
+  auditLogs        DiscussionAuditLog[]
+
+  @@unique([serverId, slug])
+  @@index([serverId, position])
+  @@index([serverId, archivedAt])
+}
+
+model DiscussionRole {
+  id          Int      @id @default(autoincrement())
+  serverId    Int
+  systemKey   String
+  name        String
+  permissions BigInt   @default(0)
+  position    Int      @default(0)
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  server DiscussionGroup @relation(fields: [serverId], references: [id], onDelete: Cascade)
+
+  @@unique([serverId, systemKey])
+  @@index([serverId, position])
+}
+
+model DiscussionPermissionOverwrite {
+  id         Int                     @id @default(autoincrement())
+  channelId  Int
+  targetType DiscussionOverwriteTarget
+  targetId   Int
+  allow      BigInt                  @default(0)
+  deny       BigInt                  @default(0)
+
+  channel DiscussionChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, targetType, targetId])
+  @@index([channelId])
+}
+
+/// Append-only moderation / settings history (A11).
+model DiscussionAuditLog {
+  id          Int      @id @default(autoincrement())
+  serverId    Int
+  channelId   Int?
+  actorUserId Int
+  action      String   @db.VarChar(64)
+  targetType  String   @db.VarChar(32)
+  targetId    Int
+  before      Json?
+  after       Json?
+  createdAt   DateTime @default(now())
+
+  server  DiscussionGroup  @relation(fields: [serverId], references: [id], onDelete: Cascade)
+  channel DiscussionChannel? @relation(fields: [channelId], references: [id], onDelete: SetNull)
+  actor   User             @relation("DiscussionAuditLogActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  @@index([serverId, createdAt, id])
+  @@index([channelId, createdAt, id])
+}
+
+/// User-created group chat (min 3 members). Messages use `DiscussionMessage.groupDmId` with `groupId` null.
+model GroupDm {
+  id          Int       @id @default(autoincrement())
+  name        String?
+  iconUrl     String?
+  createdById Int
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  archivedAt  DateTime?
+
+  createdBy User            @relation("GroupDmCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  members   GroupDmMember[]
+  messages  DiscussionMessage[]
+
+  @@index([createdById])
+  @@index([archivedAt])
+}
+
+model GroupDmMember {
+  id        Int               @id @default(autoincrement())
+  groupDmId Int
+  userId    Int
+  role      GroupDmMemberRole @default(MEMBER)
+  canPost   Boolean           @default(true)
+  joinedAt  DateTime          @default(now())
+  leftAt    DateTime?
+
+  groupDm GroupDm @relation(fields: [groupDmId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupDmId, userId])
+  @@index([userId, leftAt])
+}
+
+model DiscussionGroupMembership {
+  id          Int                    @id @default(autoincrement())
+  groupId     Int
+  userId      Int
+  role        DiscussionMembershipRole
+  canPost     Boolean                @default(false)
+  canModerate Boolean                @default(false)
+  isActive    Boolean                @default(true)
+  joinedAt    DateTime               @default(now())
+  leftAt      DateTime?
+  /// Moderator-applied mute. When set and in the future, the member can't
+  /// post / react / attach / start threads in any channel of this server.
+  /// Null = not muted. Set by deans/admins via the moderation UI.
+  mutedUntil  DateTime?
+
+  group DiscussionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, userId])
+  @@index([groupId, userId])
+  @@index([groupId, isActive])
+  @@index([userId, leftAt])
+}
+
+model DiscussionMessage {
+  id            Int                   @id @default(autoincrement())
+  groupId       Int?
+  channelId     Int?
+  groupDmId     Int?
+  senderId      Int?
+  content       String?               @db.Text
+  messageType   DiscussionMessageType @default(TEXT)
+  createdAt     DateTime              @default(now())
+  editedAt      DateTime?
+  deletedAt     DateTime?
+  parentMessageId Int?
+  isAcceptedAnswer Boolean              @default(false)
+  isAnonymous     Boolean              @default(false)
+  keyVersion    Int?
+  nonce         String?
+  ciphertext    String?               @db.Text
+  senderDeviceId String?
+
+  group        DiscussionGroup?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  channel      DiscussionChannel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  groupDm      GroupDm?                @relation(fields: [groupDmId], references: [id], onDelete: Cascade)
+  sender       User?                     @relation("DiscussionMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
+  parentMessage DiscussionMessage?       @relation("DiscussionMessageThread", fields: [parentMessageId], references: [id], onDelete: SetNull)
+  replies      DiscussionMessage[]       @relation("DiscussionMessageThread")
+  attachments  DiscussionAttachment[]
+  readReceipts DiscussionReadReceipt[]
+  reactions    DiscussionMessageReaction[]
+  pinnedIn     DiscussionPinnedMessage[]
+  notifications DiscussionNotification[]
+
+  @@index([groupId, createdAt])
+  @@index([groupId, keyVersion, createdAt])
+  @@index([senderId])
+  @@index([groupId, parentMessageId, createdAt])
+  @@index([channelId, createdAt])
+  @@index([groupDmId, createdAt])
+  // Hot path: GET /channels/:id/messages filters by `parentMessageId IS NULL`
+  // (main thread) or `parentMessageId = ROOT_ID` (thread expansion). The
+  // existing [channelId, createdAt] index forced row-level filtering on
+  // every chat open. This index covers both predicates directly.
+  @@index([channelId, parentMessageId, createdAt])
+}
+
+model DiscussionAttachment {
+  id         Int                      @id @default(autoincrement())
+  messageId  Int?
+  uploadedById Int
+  groupId    Int?
+  url        String
+  fileType   DiscussionAttachmentType
+  mimeType   String
+  size       BigInt
+  status     String                   @default("PENDING")
+  createdAt  DateTime                 @default(now())
+  storageKey String?
+  keyVersion Int?
+  nonce      String?
+  ciphertextHash String?
+
+  message    DiscussionMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  uploadedBy User              @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  group      DiscussionGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+
+  @@index([messageId])
+  @@index([uploadedById, status])
+  @@index([groupId, createdAt])
+}
+
+model DiscussionReadReceipt {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  readAt    DateTime @default(now())
+
+  message DiscussionMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([messageId, userId])
+  @@index([userId, readAt])
+}
+
+model DiscussionNotification {
+  id          Int                      @id @default(autoincrement())
+  userId      Int
+  groupId     Int?
+  messageId   Int?
+  type        DiscussionNotificationType @default(MESSAGE)
+  payload     Json
+  createdAt   DateTime                 @default(now())
+  readAt      DateTime?
+  deliveredAt DateTime?
+
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group   DiscussionGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  message DiscussionMessage? @relation(fields: [messageId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([groupId, createdAt])
+}
+
+model DiscussionSession {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  socketId    String   @unique
+  serverId    String
+  connectedAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+  disconnectedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, lastSeenAt])
+  @@index([serverId, connectedAt])
+}
+
+model DiscussionMuteSetting {
+  id      Int      @id @default(autoincrement())
+  userId  Int
+  groupId Int
+  until   DateTime?
+  createdAt DateTime @default(now())
+
+  user  User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  group DiscussionGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, groupId])
+  @@index([groupId])
+}
+
+model DiscussionPinnedMessage {
+  id          Int      @id @default(autoincrement())
+  groupId     Int
+  messageId   Int
+  pinnedById  Int
+  pinnedAt    DateTime @default(now())
+  unpinnedAt  DateTime?
+
+  group    DiscussionGroup   @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  message  DiscussionMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  pinnedBy User              @relation("DiscussionPinnedBy", fields: [pinnedById], references: [id], onDelete: Cascade)
+
+  @@index([groupId, pinnedAt])
+  @@index([messageId])
+}
+
+model DiscussionMessageReaction {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message DiscussionMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model DiscussionDeviceKey {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  deviceId    String
+  publicKey   String   @db.Text
+  algorithm   String   @default("X25519")
+  fingerprint String
+  createdAt   DateTime @default(now())
+  revokedAt   DateTime?
+  lastSeenAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  keyEnvelopes DiscussionGroupKeyEnvelope[]
+
+  @@unique([userId, deviceId])
+  @@index([userId, revokedAt])
+}
+
+model DiscussionGroupKeyEnvelope {
+  id          Int      @id @default(autoincrement())
+  groupId     Int
+  keyVersion  Int
+  userId      Int
+  deviceId    String
+  encryptedKey String  @db.Text
+  algorithm   String   @default("X25519_AES_GCM")
+  nonce       String?
+  createdAt   DateTime @default(now())
+
+  group  DiscussionGroup     @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  user   User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device DiscussionDeviceKey @relation(fields: [userId, deviceId], references: [userId, deviceId], onDelete: Cascade)
+
+  @@unique([groupId, keyVersion, userId, deviceId])
+  @@index([groupId, keyVersion])
+  @@index([userId, deviceId])
+}
+
+model ChatRoom {
+  id                Int      @id @default(autoincrement())
+  name              String
+  facultyId         Int?
+  batchId           Int?
+  sectionId         Int?
+  courseOfferingId  Int?
+  isGroupChat       Boolean  @default(false)
+  created_at        DateTime @default(now())
+
+  messages          ChatMessage[]
+  courseOffering    CourseOffering? @relation(fields: [courseOfferingId], references: [id])
+}
+
+model ChatMessage {
+  id         Int      @id @default(autoincrement())
+  roomId     Int
+  senderId   Int
+  content    String   @db.Text
+  created_at DateTime @default(now())
+
+  room   ChatRoom @relation(fields: [roomId], references: [id])
+  sender User     @relation(fields: [senderId], references: [id])
+}
+
+model CourseGroup {
+  id               Int      @id @default(autoincrement())
+  name             String
+  courseOfferingId Int
+  created_by_id    Int
+  created_at       DateTime @default(now())
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  creator        User           @relation(fields: [created_by_id], references: [id])
+  members        GroupMember[]
+}
+
+model GroupMember {
+  id        Int         @id @default(autoincrement())
+  groupId   Int
+  memberId  Int
+  joined_at DateTime   @default(now())
+
+  group  CourseGroup @relation(fields: [groupId], references: [id])
+  member User       @relation(fields: [memberId], references: [id])
+
+  @@unique([groupId, memberId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Clubs — user-created communities layered on top of DiscussionGroup
+// (kind=USER_SERVER). A Club row tracks lifecycle (PENDING → APPROVED) and
+// presentation (banner, theme, rules). When APPROVED, Club.serverId points
+// to the DiscussionGroup that backs it; PENDING clubs have no server yet.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Club {
+  id              Int             @id @default(autoincrement())
+  /// Slug used in URLs and to derive `DiscussionGroup.groupKey = "club:" + slug`.
+  slug            String          @unique
+  name            String
+  tagline         String?         @db.VarChar(160)
+  description     String?         @db.Text
+  rules           String?         @db.Text
+  /// Optional banner (1600x900) and icon (256x256). Both stored under uploads/.
+  bannerUrl       String?
+  iconUrl         String?
+  /// One of a curated OKLCH palette (validated client-side AND server-side).
+  themeColor      String?         @db.VarChar(16)
+
+  status          ClubStatus      @default(PENDING)
+  joinPolicy      ClubJoinPolicy  @default(BY_REQUEST)
+  scopeKind       ClubScopeKind   @default(FACULTY)
+  /// Set only when scopeKind=FACULTY. Drives which dean approves it.
+  facultyId       Int?
+
+  /// Null for system-seeded default clubs ("Sports", "Music"…). Non-null for
+  /// user- or dean-created clubs.
+  ownerId         Int?
+  /// Set to true for seed clubs, shows a verified badge in the UI.
+  isOfficial      Boolean         @default(false)
+
+  /// Denormalised count, refreshed in transactions on join/leave for sort.
+  memberCountCache Int            @default(0)
+  /// Drives "active in last 7 days" badges and the auto-archive cron.
+  lastActivityAt  DateTime?
+
+  /// Once APPROVED, Club.serverId points at the DiscussionGroup that backs it.
+  /// Nullable for PENDING clubs which have no server yet.
+  serverId        Int?            @unique
+
+  createdAt       DateTime        @default(now())
+  decidedAt       DateTime?
+  decidedByUserId Int?
+
+  owner       User?              @relation("ClubOwner", fields: [ownerId], references: [id], onDelete: SetNull)
+  faculty     Faculty?           @relation(fields: [facultyId], references: [id])
+  decidedBy   User?              @relation("ClubDecidedBy", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+  server      DiscussionGroup?   @relation(fields: [serverId], references: [id], onDelete: SetNull)
+
+  interests   ClubInterest[]
+  requests    ClubJoinRequest[]
+  invites     ClubInvite[]
+  audits      ClubModerationAudit[]
+
+  @@index([status])
+  @@index([scopeKind, status])
+  @@index([facultyId, status])
+  @@index([ownerId, status])
+  @@index([lastActivityAt])
+}
+
+/// Vocabulary of interest tags. Seeded with ~30 starter rows in prisma/seed.js.
+model InterestTag {
+  id         Int      @id @default(autoincrement())
+  slug       String   @unique
+  label      String
+  /// Free-form category for grouping in the UI (e.g. "Academic", "Hobby").
+  category   String?
+  createdAt  DateTime @default(now())
+
+  clubs      ClubInterest[]
+  users      UserInterest[]
+}
+
+model ClubInterest {
+  clubId  Int
+  tagId   Int
+
+  club    Club        @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  tag     InterestTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([clubId, tagId])
+  @@index([tagId])
+}
+
+model UserInterest {
+  userId  Int
+  tagId   Int
+  pickedAt DateTime @default(now())
+
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tag     InterestTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([userId, tagId])
+  @@index([tagId])
+}
+
+model ClubJoinRequest {
+  id              Int                    @id @default(autoincrement())
+  clubId          Int
+  userId          Int
+  status          ClubJoinRequestStatus  @default(PENDING)
+  reason          String?                @db.VarChar(500)
+  requestedAt     DateTime               @default(now())
+  decidedAt       DateTime?
+  decidedByUserId Int?
+  decideReason    String?                @db.VarChar(500)
+
+  club        Club  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  user        User  @relation("ClubJoinRequester", fields: [userId], references: [id], onDelete: Cascade)
+  decidedBy   User? @relation("ClubJoinDecider", fields: [decidedByUserId], references: [id], onDelete: SetNull)
+
+  @@index([clubId, status])
+  @@index([userId, status])
+}
+
+model ClubInvite {
+  id              Int               @id @default(autoincrement())
+  clubId          Int
+  inviterUserId   Int
+  /// Null for generic link invites; set for targeted direct invites.
+  inviteeUserId   Int?
+  /// Cross-server channel invite: when set, accepting creates a per-user
+  /// DiscussionPermissionOverwrite on this channelId rather than a full
+  /// DiscussionGroupMembership.
+  channelId       Int?
+  token           String            @unique
+  status          ClubInviteStatus  @default(PENDING)
+  createdAt       DateTime          @default(now())
+  expiresAt       DateTime?
+  usedAt          DateTime?
+  revokedAt       DateTime?
+
+  club        Club  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  inviter     User  @relation("ClubInviteInviter", fields: [inviterUserId], references: [id], onDelete: Cascade)
+  invitee     User? @relation("ClubInviteInvitee", fields: [inviteeUserId], references: [id], onDelete: SetNull)
+
+  @@index([clubId, status])
+  @@index([inviterUserId])
+  @@index([inviteeUserId, status])
+}
+
+model ClubModerationAudit {
+  id            Int                   @id @default(autoincrement())
+  clubId        Int
+  actorUserId   Int?
+  action        ClubModerationAction
+  reason        String?               @db.VarChar(500)
+  payload       Json?
+  createdAt     DateTime              @default(now())
+
+  club        Club  @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  actor       User? @relation("ClubAuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+
+  @@index([clubId, createdAt])
+  @@index([actorUserId])
+}
+
+/// Singleton policy row holding the quota knobs (row id=1).
+/// Lets ops bump caps without a redeploy if a campaign needs more clubs.
+model ClubQuotaPolicy {
+  id                Int    @id @default(autoincrement())
+  perUserActiveCap  Int    @default(2)
+  perUserPendingCap Int    @default(1)
+  updatedAt         DateTime @updatedAt
+}

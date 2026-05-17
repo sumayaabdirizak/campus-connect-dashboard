@@ -1,0 +1,16 @@
+[
+  {
+    "id": "1",
+    "title": "Welcome to Semester 2",
+    "content": "A warm welcome to all students returning for the new semester.",
+    "date": "2026-04-01",
+    "author": "Super Admin"
+  },
+  {
+    "id": "2",
+    "title": "Exam Schedule Updated",
+    "content": "Please check the calendar for the latest mid-term exam schedule.",
+    "date": "2026-04-05",
+    "author": "Faculty Admin"
+  }
+]
