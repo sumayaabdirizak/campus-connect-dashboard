@@ -11,7 +11,7 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   const groups = await prisma.courseGroup.findMany({
     where: { courseOfferingId: parseInt(courseOfferingId) },
     include: {
-      members: { select: { id: true, full_name: true, number: true } },
+      members: { include: { member: { select: { id: true, full_name: true, number: true } } } },
       _count: { select: { members: true } }
     },
     orderBy: { name: 'asc' },
@@ -22,16 +22,16 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
 
 router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
-  const { name, description } = req.body;
+  const { name } = req.body;
 
   const group = await prisma.courseGroup.create({
     data: {
       name,
-      description,
       courseOfferingId: parseInt(courseOfferingId),
+      created_by_id: req.user.id ?? req.user.sub,
     },
     include: {
-      members: true,
+      members: { include: { member: { select: { id: true, full_name: true, number: true } } } },
       _count: { select: { members: true } }
     },
   });
@@ -55,10 +55,10 @@ router.post('/:groupId/members', auth, asyncHandler(async (req, res) => {
   const member = await prisma.groupMember.create({
     data: {
       groupId: parseInt(groupId),
-      studentId,
+      memberId: parseInt(studentId),
     },
     include: {
-      student: { select: { id: true, full_name: true, number: true } }
+      member: { select: { id: true, full_name: true, number: true } }
     },
   });
 

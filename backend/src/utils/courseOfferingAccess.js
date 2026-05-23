@@ -34,6 +34,52 @@ export async function fetchOfferingWithScope(courseOfferingId) {
   });
 }
 
+/// Shared offering-include shape so quiz/attempt/question lookups all return
+/// the same faculty-scoped data the canAccess* helpers expect.
+const OFFERING_INCLUDE = {
+  section: {
+    include: {
+      batch: {
+        include: {
+          program: { include: { department: true } },
+        },
+      },
+    },
+  },
+  course: { include: { department: true } },
+};
+
+export async function fetchQuizWithOffering(quizId) {
+  const id = Number(quizId);
+  if (!Number.isFinite(id)) return null;
+  return prisma.quiz.findUnique({
+    where: { id },
+    include: { courseOffering: { include: OFFERING_INCLUDE } },
+  });
+}
+
+export async function fetchQuizQuestionWithOffering(questionId) {
+  const id = Number(questionId);
+  if (!Number.isFinite(id)) return null;
+  return prisma.quizQuestion.findUnique({
+    where: { id },
+    include: {
+      quiz: { include: { courseOffering: { include: OFFERING_INCLUDE } } },
+    },
+  });
+}
+
+export async function fetchQuizAttemptWithOffering(attemptId) {
+  const id = Number(attemptId);
+  if (!Number.isFinite(id)) return null;
+  return prisma.quizAttempt.findUnique({
+    where: { id },
+    include: {
+      quiz: { include: { courseOffering: { include: OFFERING_INCLUDE } } },
+    },
+  });
+}
+
 export async function fetchAssignmentWithOffering(assignmentId) {
   const id = Number(assignmentId);
   if (!Number.isFinite(id)) return null;
@@ -96,5 +142,12 @@ export async function canManageOfferingContent(user, offering) {
 
 export async function canStudentSubmitToAssignment(user, offering) {
   if (user.role !== "STUDENT") return false;
+  return studentInSection(user.sub, offering.sectionId);
+}
+
+/// Same shape as canStudentSubmitToAssignment but for quizzes — student must
+/// be enrolled in the offering's section to start / submit an attempt.
+export async function canStudentTakeQuiz(user, offering) {
+  if (user?.role !== "STUDENT") return false;
   return studentInSection(user.sub, offering.sectionId);
 }

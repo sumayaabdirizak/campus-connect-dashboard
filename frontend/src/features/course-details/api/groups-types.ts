@@ -4,7 +4,8 @@ export interface CourseGroup {
   courseOfferingId: number;
   created_by_id: number;
   created_at: string;
-  creator: {
+  /// Optional — backend GET doesn't include the creator relation today.
+  creator?: {
     id: number;
     full_name: string;
   };

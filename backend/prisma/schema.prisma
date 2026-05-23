@@ -238,14 +238,23 @@ model User {
   resourcesUploads     Resource[]
   announcementsWritten Announcement[]
   messagesSent         ChatMessage[]
+  chatMentions         ChatMessageMention[]
   submissions          Submission[]
   quizAttempts         QuizAttempt[]
   attendanceRecords    Attendance[]
+  attendanceSessionsStarted AttendanceSession[]
   teacherOfferings     CourseOffering[]      @relation("TeacherOfferings")
   announcementReads    AnnouncementRead[]
   announcementAudits   AnnouncementAudit[] @relation("AnnouncementAuditActor")
   createdCourseGroups  CourseGroup[]
   groupMemberships     GroupMember[]
+  coursePostsAuthored  CoursePost[]
+  coursePostReactions  CoursePostReaction[]
+  coursePostRepliesAuthored CoursePostReply[]
+  courseOfferingAccess CourseOfferingAccess[]
+  submissionExtensionsReceived SubmissionExtension[] @relation("SubmissionExtensionStudent")
+  submissionExtensionsGranted  SubmissionExtension[] @relation("SubmissionExtensionGranter")
+  assignmentAttachmentsUploaded AssignmentAttachment[]
   discussionMemberships DiscussionGroupMembership[]
   discussionMessagesSent DiscussionMessage[]         @relation("DiscussionMessageSender")
   discussionReadReceipts DiscussionReadReceipt[]
@@ -597,6 +606,11 @@ model CourseOffering {
   schedules      ClassSchedule[]
   chatRooms      ChatRoom[]
   courseGroups   CourseGroup[]
+  coursePosts    CoursePost[]
+  accesses       CourseOfferingAccess[]
+  resources      Resource[]
+  modules        CourseModule[]
+  bankQuestions  Question[]
 
   @@unique([courseId, sectionId, semesterId, academicYearId])
   @@index([courseId])
@@ -604,32 +618,105 @@ model CourseOffering {
   @@index([semesterId])
 }
 
+/// How the work is produced for this assignment.
+enum AssignmentWorkMode {
+  INDIVIDUAL
+  GROUP
+}
+
+/// Where the grade lives. INDIVIDUAL means each student is graded separately
+/// (even on a GROUP submission — e.g. participation marks). GROUP means a
+/// single grade is shared across every member via fan-out.
+enum AssignmentGradingScope {
+  INDIVIDUAL
+  GROUP
+}
+
 model Assignment {
-  id               Int      @id @default(autoincrement())
+  id               Int       @id @default(autoincrement())
   title            String
   description      String?
+  /// When students may start submitting. Null = open immediately.
+  open_at          DateTime?
   due_date         DateTime
   courseOfferingId Int
-  created_at       DateTime @default(now())
-  updated_at       DateTime @updatedAt
-  is_draft         Boolean  @default(false)
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+  is_draft         Boolean   @default(false)
 
-  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  workMode           AssignmentWorkMode     @default(INDIVIDUAL)
+  gradingScope       AssignmentGradingScope @default(INDIVIDUAL)
+  /// Grace window after `due_date` during which submissions are still accepted
+  /// (recorded with is_late=true). Zero disables the grace window.
+  lateWindowMinutes  Int                    @default(0)
+
+  courseOffering CourseOffering        @relation(fields: [courseOfferingId], references: [id])
   submissions    Submission[]
+  extensions     SubmissionExtension[]
+  attachments    AssignmentAttachment[]
+}
+
+/// Files a teacher attaches when creating/editing an assignment (spec PDF,
+/// rubric, dataset, etc.). Stored locally under /uploads/assignments and
+/// served via the express.static mount at `/uploads`.
+model AssignmentAttachment {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  name         String
+  url          String
+  size         Int?
+  mimeType     String?
+  uploadedById Int
+  created_at   DateTime @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  uploadedBy User       @relation(fields: [uploadedById], references: [id])
+
+  @@index([assignmentId])
 }
 
 model Submission {
   id           Int      @id @default(autoincrement())
   assignmentId Int
   studentId    Int
+  /// Set when this submission was made as part of a group (gradingMode=GROUP).
+  /// All members of `groupId` share the same grade/feedback via fan-out.
+  groupId      Int?
   content_url  String
   submitted_at DateTime @default(now())
   grade        Float?
   feedback     String?
   is_reviewed  Boolean  @default(false)
+  is_late      Boolean  @default(false)
 
-  assignment Assignment @relation(fields: [assignmentId], references: [id])
-  student    User       @relation(fields: [studentId], references: [id])
+  assignment Assignment   @relation(fields: [assignmentId], references: [id])
+  student    User         @relation(fields: [studentId], references: [id])
+  group      CourseGroup? @relation(fields: [groupId], references: [id])
+
+  @@index([groupId])
+}
+
+/// Per-assignment deadline extension. Either `studentId` OR `groupId` is set,
+/// depending on the assignment's gradingMode. `newDueAt` overrides
+/// Assignment.due_date for that target.
+model SubmissionExtension {
+  id           Int      @id @default(autoincrement())
+  assignmentId Int
+  studentId    Int?
+  groupId      Int?
+  newDueAt     DateTime
+  reason       String?
+  grantedById  Int
+  created_at   DateTime @default(now())
+
+  assignment Assignment   @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    User?        @relation("SubmissionExtensionStudent", fields: [studentId], references: [id])
+  group      CourseGroup? @relation(fields: [groupId], references: [id])
+  grantedBy  User         @relation("SubmissionExtensionGranter", fields: [grantedById], references: [id])
+
+  @@unique([assignmentId, studentId])
+  @@unique([assignmentId, groupId])
+  @@index([assignmentId])
 }
 
 model Quiz {
@@ -646,14 +733,22 @@ model Quiz {
   max_attempts     Int       @default(1)
   passing_score    Float     @default(50)
   created_at       DateTime  @default(now())
-  
+
   // Timing modes: flexible (default) or fixed
   timing_mode        String   @default("flexible") // "flexible" | "fixed"
   scheduled_duration Int?                     // Duration for planning (fixed mode)
 
+  /// Optional chapter / unit bucket. Re-uses the same CourseModule rows
+  /// resources are grouped under so a "Week 1" module shows its quiz and
+  /// its readings in the same place. `null` = Ungrouped.
+  moduleId         Int?
+
   courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  module         CourseModule?  @relation(fields: [moduleId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questions      QuizQuestion[]
   attempts       QuizAttempt[]
+
+  @@index([moduleId])
 }
 
 model QuizOption {
@@ -663,7 +758,9 @@ model QuizOption {
   is_correct  Boolean @default(false)
   order_index Int    @default(0)
 
-  question QuizQuestion @relation(fields: [questionId], references: [id])
+  // Cascade deletes so removing a question wipes its options atomically
+  // (was a manual loop in the controller — see Step 1 of the quiz audit).
+  question QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model QuizQuestion {
@@ -674,27 +771,54 @@ model QuizQuestion {
   points          Float    @default(1)
   correct_answer String?
   order_index    Int      @default(0)
+  /// Optional teacher-authored explanation shown to the student on the
+  /// review screen after submitting. Lets the question teach even when the
+  /// student got it wrong ("Big-O of quicksort is O(n²) in the worst case
+  /// when the pivot is always the smallest / largest element …").
+  explanation    String?
 
-  quiz    Quiz @relation(fields: [quizId], references: [id])
+  // Cascade: deleting a quiz drops all its questions (and via QuizOption's
+  // own cascade, all option rows too).
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   options QuizOption[]
   answers QuizAnswer[]
 }
 
 // ─── QUESTION BANK (Reusable Questions) ──────────────────────────────────────────
 
+/// Bank question — a reusable question definition the teacher can drop into
+/// any quiz on the same offering. Distinct from `QuizQuestion` (which is the
+/// instance baked into a single quiz). Importing into a quiz copies the
+/// text + options into a fresh `QuizQuestion` row so later edits to the
+/// bank don't silently mutate already-published quizzes.
 model Question {
   id             Int          @id @default(autoincrement())
   question_text  String
   question_type QuestionType @default(MCQ)
   points         Float        @default(1)
-  course_code    String?      // Optional: scope to course
+  /// Legacy free-text course label. New rows MUST set `courseOfferingId`
+  /// instead — `course_code` is kept only so we can finish migrating any
+  /// pre-Step-12 bank rows without dropping them on the floor.
+  course_code    String?
   topic         String?      // e.g., "Sorting", "Big-O"
   difficulty    String?      // "easy", "medium", "hard"
   is_active     Boolean     @default(true)
   created_at    DateTime    @default(now())
   created_by    Int?        // Teacher ID
 
-  bankOptions QuestionOptionBank[]
+  /// Scope. Nullable for migration safety; the controller refuses to serve
+  /// or write rows with `courseOfferingId IS NULL`. Cascade-deletes wipe
+  /// bank rows when an offering is deleted.
+  courseOfferingId Int?
+  /// Optional chapter / module link (re-uses the CourseModule rows that
+  /// group resources + quizzes). `null` = bank-wide, not pinned to a unit.
+  moduleId         Int?
+
+  courseOffering CourseOffering? @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  module         CourseModule?   @relation(fields: [moduleId], references: [id], onDelete: SetNull, onUpdate: Cascade)
+  bankOptions    QuestionOptionBank[]
+
+  @@index([courseOfferingId, moduleId, is_active])
 }
 
 model QuestionOptionBank {
@@ -704,7 +828,7 @@ model QuestionOptionBank {
   is_correct  Boolean @default(false)
   order_index Int    @default(0)
 
-  question Question @relation(fields: [questionId], references: [id])
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 model QuestionTag {
@@ -720,17 +844,27 @@ model QuizAttempt {
   quizId       Int
   studentId   Int
   started_at  DateTime  @default(now())
+  // Server-authoritative auto-submit time. Stamped at start = started_at +
+  // duration. The background job scans for `submitted_at IS NULL AND
+  // expires_at <= now()` so a tab-close, network drop, or browser crash can't
+  // lose the student's progress. Nullable for backwards compatibility with
+  // legacy attempts created before this column existed.
+  expires_at  DateTime?
   submitted_at DateTime?
   score       Float?
   grade       Float?
   is_graded   Boolean   @default(false)
-  
+
   // Anti-cheating fields
   closure_reason    String?   // null | "violations" | "time_expired" | "student_exit"
   violations_count Int   @default(0)
   warnings_shown   Int   @default(0)
 
-  quiz    Quiz @relation(fields: [quizId], references: [id])
+  @@index([expires_at])
+
+  // Cascade: deleting a quiz drops attempts (and via QuizAnswer cascade,
+  // every answer row attached to those attempts).
+  quiz    Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   student User @relation(fields: [studentId], references: [id])
   answers QuizAnswer[]
 }
@@ -745,8 +879,10 @@ model QuizAnswer {
   is_correct   Boolean?
   points_earned Float?
 
-  attempt       QuizAttempt @relation(fields: [attemptId], references: [id])
-  question     QuizQuestion @relation(fields: [questionId], references: [id])
+  attempt   QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+  // If a teacher deletes a question after attempts exist, the answer rows go
+  // too — we lose audit fidelity but avoid orphan answers that crash the UI.
+  question  QuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade, onUpdate: Cascade)
 }
 
 enum QuestionType {
@@ -765,8 +901,33 @@ model ClassSchedule {
   courseOfferingId Int
   is_lab           Boolean @default(false)
 
-  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
+  courseOffering CourseOffering      @relation(fields: [courseOfferingId], references: [id])
   attendance     Attendance[]
+  qrSessions     AttendanceSession[]
+}
+
+/// A live QR-attendance window opened by a teacher. Tokens generated by the
+/// server are JWT-signed and rotate every 30 s; they reference this session's
+/// id and `tokenSeed`, so a leaked screenshot is only useful for <30 s.
+/// Geofence fields, when set, force scans to come from within `geofenceRadius`
+/// metres of the teacher's reported location at session start.
+model AttendanceSession {
+  id              Int       @id @default(autoincrement())
+  scheduleId      Int
+  startedById     Int
+  startedAt       DateTime  @default(now())
+  endsAt          DateTime
+  closedAt        DateTime?
+  tokenSeed       String    @db.VarChar(64)
+  geofenceLat     Float?
+  geofenceLon     Float?
+  geofenceRadius  Int?
+
+  schedule  ClassSchedule @relation(fields: [scheduleId], references: [id])
+  startedBy User          @relation(fields: [startedById], references: [id])
+
+  @@index([scheduleId])
+  @@index([startedById])
 }
 
 model Attendance {
@@ -797,24 +958,71 @@ enum ResourceType {
   SYLLABUS
   ASSIGNMENT
   LECTURE_NOTE
+  VIDEO
+  /// Browser-recorded or uploaded audio clip (voice notes, lecture recordings).
+  AUDIO
+  EXTERNAL_LINK
   OTHER
 }
 
 model Resource {
-  id          Int            @id @default(autoincrement())
-  title       String
-  description String?
-  type        ResourceType
-  url         String
-  status      ResourceStatus @default(PENDING)
-  courseId    Int
-  teacherId   Int
-  created_at  DateTime       @default(now())
-  updated_at  DateTime       @updatedAt
-  is_draft    Boolean        @default(false)
+  id           Int            @id @default(autoincrement())
+  title        String
+  description  String?
+  type         ResourceType
+  url          String
+  /// Original filename the teacher uploaded (for force-download Content-Disposition).
+  /// Null for URL-only resources (videos, external links).
+  originalName String?
+  /// Mime-type recorded at upload time; lets the UI pick the right renderer
+  /// (PDF preview vs. generic download) without sniffing the URL.
+  mimeType     String?
+  status       ResourceStatus @default(PENDING)
+  /// Legacy scope at the Course level — kept for backward compat. New code
+  /// should rely on `courseOfferingId` which scopes per-section / per-semester.
+  courseId     Int
+  /// Per-offering scope. Filled on create going forward; existing rows are
+  /// backfilled by the migration where possible.
+  courseOfferingId Int?
+  /// Optional grouping within a course module (Week 1, Module 2, etc.).
+  /// Null = "Ungrouped" bucket at the bottom of the page.
+  moduleId     Int?
+  /// Drag-reorder index. Lower values render first within their module.
+  position     Int            @default(0)
+  teacherId    Int
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+  is_draft     Boolean        @default(false)
 
-  course  Course @relation(fields: [courseId], references: [id])
-  teacher User   @relation(fields: [teacherId], references: [id])
+  course         Course          @relation(fields: [courseId], references: [id])
+  teacher        User            @relation(fields: [teacherId], references: [id])
+  courseOffering CourseOffering? @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  module         CourseModule?   @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+
+  @@index([courseOfferingId])
+  @@index([moduleId, position])
+}
+
+/// Teacher-curated grouping for course resources (Week 1, Module 2, etc.).
+/// Resources can be attached to a module via `Resource.moduleId`. Modules
+/// themselves are ordered by `position`.
+model CourseModule {
+  id               Int       @id @default(autoincrement())
+  courseOfferingId Int
+  title            String
+  description      String?
+  position         Int       @default(0)
+  /// Null = draft (only the teacher sees it). Set to a timestamp to publish.
+  publishedAt      DateTime?
+  created_at       DateTime  @default(now())
+  updated_at       DateTime  @updatedAt
+
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  resources      Resource[]
+  quizzes        Quiz[]
+  bankQuestions  Question[]
+
+  @@index([courseOfferingId, position])
 }
 
 /// priority: "normal" | "important" | "urgent"
@@ -1463,14 +1671,57 @@ model ChatRoom {
 }
 
 model ChatMessage {
-  id         Int      @id @default(autoincrement())
+  id         Int       @id @default(autoincrement())
   roomId     Int
   senderId   Int
-  content    String   @db.Text
+  content    String    @db.Text
+  /// Lightweight "reply-to" pointer. NOT a true thread root — clients render
+  /// the original message as quoted context above the reply. Null = top-level.
+  replyToId  Int?
+  /// Set when the sender edits the message. Null = unmodified since creation.
+  editedAt   DateTime?
+  created_at DateTime  @default(now())
+
+  room        ChatRoom             @relation(fields: [roomId], references: [id])
+  sender      User                 @relation(fields: [senderId], references: [id])
+  replyTo     ChatMessage?         @relation("ChatMessageReply", fields: [replyToId], references: [id])
+  replies     ChatMessage[]        @relation("ChatMessageReply")
+  attachments ChatAttachment[]
+  mentions    ChatMessageMention[]
+
+  @@index([roomId, created_at])
+  @@index([replyToId])
+}
+
+/// File attached to a ChatMessage. Stored locally under /uploads/chat and
+/// served via the existing express.static mount.
+model ChatAttachment {
+  id         Int     @id @default(autoincrement())
+  messageId  Int
+  name       String
+  url        String
+  size       Int?
+  mimeType   String?
   created_at DateTime @default(now())
 
-  room   ChatRoom @relation(fields: [roomId], references: [id])
-  sender User     @relation(fields: [senderId], references: [id])
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([messageId])
+}
+
+/// One row per (message, mentioned user). Used to render highlights and to
+/// drive future notification rows.
+model ChatMessageMention {
+  id        Int      @id @default(autoincrement())
+  messageId Int
+  userId    Int
+  created_at DateTime @default(now())
+
+  message ChatMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  user    User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId])
+  @@index([userId])
 }
 
 model CourseGroup {
@@ -1480,9 +1731,11 @@ model CourseGroup {
   created_by_id    Int
   created_at       DateTime @default(now())
 
-  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id])
-  creator        User           @relation(fields: [created_by_id], references: [id])
+  courseOffering CourseOffering        @relation(fields: [courseOfferingId], references: [id])
+  creator        User                  @relation(fields: [created_by_id], references: [id])
   members        GroupMember[]
+  submissions    Submission[]
+  extensions     SubmissionExtension[]
 }
 
 model GroupMember {
@@ -1495,6 +1748,109 @@ model GroupMember {
   member User       @relation(fields: [memberId], references: [id])
 
   @@unique([groupId, memberId])
+}
+
+/// Where a CoursePost came from. MANUAL is a human post; the others are
+/// auto-generated by the dispatcher service from system events. Renders as a
+/// badge in the Feed so students can tell a "class starting" post from a
+/// teacher announcement at a glance.
+enum CoursePostSource {
+  MANUAL
+  SESSION
+  ATTENDANCE
+  DEAN
+  REGISTRATION
+}
+
+/// Per-course "Feed" post. Scoped to a single CourseOffering — visible to its
+/// teacher and the students enrolled in the offering's section. Lightweight by
+/// design (no SMS / search index / multi-target fan-out): the global Announcement
+/// system stays untouched.
+model CoursePost {
+  id               Int              @id @default(autoincrement())
+  courseOfferingId Int
+  authorId         Int
+  source           CoursePostSource @default(MANUAL)
+  /// Stable key for auto-posts so dispatcher hooks stay idempotent (e.g.
+  /// "session:123:start" prevents duplicate cron posts). Null for MANUAL.
+  sourceKey        String?
+  title            String
+  content          String           @db.Text
+  isImportant      Boolean          @default(false)
+  isPinned         Boolean          @default(false)
+  created_at       DateTime         @default(now())
+  updated_at       DateTime         @updatedAt
+
+  courseOffering CourseOffering         @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+  author         User                   @relation(fields: [authorId], references: [id])
+  attachments    CoursePostAttachment[]
+  reactions      CoursePostReaction[]
+  replies        CoursePostReply[]
+
+  @@unique([courseOfferingId, source, sourceKey])
+  @@index([courseOfferingId, created_at])
+  @@index([authorId])
+}
+
+/// One reaction per (post, user, emoji). Toggling re-adds or deletes a row;
+/// the unique constraint keeps counts honest.
+model CoursePostReaction {
+  id         Int      @id @default(autoincrement())
+  postId     Int
+  userId     Int
+  emoji      String   @db.VarChar(16)
+  created_at DateTime @default(now())
+
+  post CoursePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  user User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId, emoji])
+  @@index([postId])
+}
+
+/// One-level-deep thread replies to a CoursePost. No nested replies — anyone
+/// trying to "reply to a reply" just adds another reply to the parent post.
+model CoursePostReply {
+  id         Int      @id @default(autoincrement())
+  postId     Int
+  authorId   Int
+  content    String   @db.Text
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+
+  post   CoursePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author User       @relation(fields: [authorId], references: [id])
+
+  @@index([postId, created_at])
+  @@index([authorId])
+}
+
+model CoursePostAttachment {
+  id        Int     @id @default(autoincrement())
+  postId    Int
+  name      String
+  url       String
+  size      Int?
+  mimeType  String?
+
+  post CoursePost @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+}
+
+/// Tracks the last time a user opened a given course offering (for the
+/// "last seen" column on the roster). One row per (user, offering).
+model CourseOfferingAccess {
+  id               Int      @id @default(autoincrement())
+  userId           Int
+  courseOfferingId Int
+  lastSeenAt       DateTime @default(now()) @updatedAt
+
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseOffering CourseOffering @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, courseOfferingId])
+  @@index([courseOfferingId, lastSeenAt])
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

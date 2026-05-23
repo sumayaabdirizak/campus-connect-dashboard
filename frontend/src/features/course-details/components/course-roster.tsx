@@ -1,100 +1,160 @@
 'use client';
 
-import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
-import { Search, Download, Users } from 'lucide-react';
-import { toast } from 'sonner';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow
-} from '@/components/ui/table';
+import { AlertTriangle, Users } from 'lucide-react';
+import { EmptyState } from './_shared/empty-state';
+import { ListSkeleton } from './_shared/list-skeleton';
+import { SimpleDataTable } from './_shared/simple-data-table';
+import { StudentProfileDrawer } from './student-profile-drawer';
+import { formatDistanceToNow } from 'date-fns';
+import type { ColumnDef } from '@tanstack/react-table';
+import { useRoster } from '../api/roster-queries';
+import { useCourseAccessList } from '../api/access-queries';
+import { useAttendanceSummary } from '../api/attendance-queries';
+import type { RosterStudent } from '../api/roster-types';
 
 interface CourseRosterProps {
   courseId: string;
 }
 
-const students = [
-  { id: 1, name: 'Ahmed Ali', email: 'ahmed@campus.edu', number: '20210001', status: 'ACTIVE' },
-  { id: 2, name: 'Sara Smith', email: 'sara@campus.edu', number: '20210005', status: 'ACTIVE' },
-  { id: 3, name: 'John Doe', email: 'john@campus.edu', number: '20210010', status: 'ACTIVE' },
-  { id: 4, name: 'Ali Khan', email: 'ali@campus.edu', number: '20210015', status: 'ACTIVE' },
-  { id: 5, name: 'Fatima', email: 'fatima@campus.edu', number: '20210020', status: 'INACTIVE' }
-];
+interface RosterRow extends RosterStudent {
+  /// Joined onto each student so the table can sort/filter on them as if
+  /// they were native columns.
+  lastSeenAt: string | null;
+  attendanceRate: number | null;
+}
 
 export function CourseRoster({ courseId }: CourseRosterProps) {
-  const [search, setSearch] = useState('');
+  const [selected, setSelected] = useState<RosterStudent | null>(null);
+  const { data: roster = [], isLoading, isError } = useRoster(courseId);
+  const { data: accessRows = [] } = useCourseAccessList(courseId);
+  const { data: summary } = useAttendanceSummary(courseId);
 
-  const filtered = students.filter(
-    (s) =>
-      s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.email.toLowerCase().includes(search.toLowerCase()) ||
-      s.number.toLowerCase().includes(search.toLowerCase())
+  const rows: RosterRow[] = useMemo(() => {
+    const lastSeen = new Map(accessRows.map((r) => [r.userId, r.lastSeenAt]));
+    const rate = new Map(summary?.students.map((s) => [s.studentId, s.ratePct]) ?? []);
+    return roster.map((s) => ({
+      ...s,
+      lastSeenAt: lastSeen.get(s.id) ?? null,
+      attendanceRate: rate.get(s.id) ?? null
+    }));
+  }, [roster, accessRows, summary]);
+
+  const columns = useMemo<ColumnDef<RosterRow, unknown>[]>(
+    () => [
+      {
+        id: 'full_name',
+        accessorKey: 'full_name',
+        header: 'Name',
+        cell: ({ row }) => {
+          const r = row.original;
+          const atRisk = typeof r.attendanceRate === 'number' && r.attendanceRate < 60;
+          return (
+            <span className='flex items-center gap-2 font-medium'>
+              {atRisk && (
+                <AlertTriangle
+                  className='w-3.5 h-3.5 text-destructive'
+                  aria-label='At risk'
+                />
+              )}
+              {r.full_name}
+            </span>
+          );
+        }
+      },
+      {
+        id: 'email',
+        accessorKey: 'email',
+        header: 'Email',
+        cell: ({ row }) => (
+          <a
+            href={`mailto:${row.original.email}`}
+            onClick={(e) => e.stopPropagation()}
+            className='text-muted-foreground hover:underline'
+          >
+            {row.original.email}
+          </a>
+        )
+      },
+      {
+        id: 'number',
+        accessorKey: 'number',
+        header: 'Student ID',
+        cell: ({ row }) => (
+          <span className='text-muted-foreground'>{row.original.number}</span>
+        )
+      },
+      {
+        id: 'lastSeenAt',
+        accessorKey: 'lastSeenAt',
+        header: 'Last seen',
+        // Sort by raw timestamp; display as relative time with absolute tooltip.
+        sortingFn: (a, b) => {
+          const av = a.original.lastSeenAt ? new Date(a.original.lastSeenAt).getTime() : 0;
+          const bv = b.original.lastSeenAt ? new Date(b.original.lastSeenAt).getTime() : 0;
+          return av - bv;
+        },
+        cell: ({ row }) => {
+          const ts = row.original.lastSeenAt;
+          if (!ts) return <Badge variant='secondary'>Never</Badge>;
+          return (
+            <span title={new Date(ts).toLocaleString()}>
+              {formatDistanceToNow(new Date(ts), { addSuffix: true })}
+            </span>
+          );
+        }
+      },
+      {
+        id: 'attendanceRate',
+        accessorKey: 'attendanceRate',
+        header: 'Attendance',
+        cell: ({ row }) => {
+          const rate = row.original.attendanceRate;
+          if (typeof rate !== 'number')
+            return <span className='text-muted-foreground text-xs'>—</span>;
+          return (
+            <Badge
+              variant={rate >= 80 ? 'default' : rate >= 60 ? 'outline' : 'destructive'}
+            >
+              {rate}%
+            </Badge>
+          );
+        }
+      }
+    ],
+    []
   );
-
-  const handleExport = () => {
-    const csv = [
-      ['ID', 'Name', 'Email', 'Number', 'Status'],
-      ...students.map((s) => [s.id, s.name, s.email, s.number, s.status])
-    ]
-      .map((row) => row.join(','))
-      .join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `roster-${courseId}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success('Roster exported');
-  };
 
   return (
     <div className='space-y-4'>
-      <div className='flex gap-2'>
-        <Input
-          placeholder='Search students...'
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className='max-w-xs'
+      {isLoading && <ListSkeleton variant='row' count={5} />}
+      {isError && <p className='text-sm text-destructive'>Failed to load the roster.</p>}
+      {!isLoading && !isError && rows.length === 0 && (
+        <EmptyState
+          icon={Users}
+          title='No students yet'
+          description='Students assigned to this section will appear here once they enrol.'
         />
-        <Button onClick={handleExport} variant='outline' className='gap-1'>
-          <Download className='w-4 h-4' /> Export CSV
-        </Button>
-      </div>
+      )}
 
-      <div className='border rounded-lg overflow-hidden'>
-        <Table>
-          <TableHeader className='bg-muted/30'>
-            <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Student ID</TableHead>
-              <TableHead>Status</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {filtered.map((s) => (
-              <TableRow key={s.id}>
-                <TableCell className='font-medium'>{s.name}</TableCell>
-                <TableCell className='text-muted-foreground'>{s.email}</TableCell>
-                <TableCell className='text-muted-foreground'>{s.number}</TableCell>
-                <TableCell>
-                  <Badge variant={s.status === 'ACTIVE' ? 'default' : 'secondary'}>
-                    {s.status}
-                  </Badge>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </div>
+      {rows.length > 0 && (
+        <SimpleDataTable
+          data={rows}
+          columns={columns}
+          searchPlaceholder='Search students…'
+          csvFileName={`roster-${courseId}`}
+          initialSorting={[{ id: 'full_name', desc: false }]}
+          pageSize={50}
+          onRowClick={(r) => setSelected(r)}
+        />
+      )}
+
+      <StudentProfileDrawer
+        courseId={courseId}
+        student={selected}
+        onClose={() => setSelected(null)}
+      />
     </div>
   );
 }

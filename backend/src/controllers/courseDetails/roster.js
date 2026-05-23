@@ -11,24 +11,37 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   const offering = await prisma.courseOffering.findUnique({
     where: { id: parseInt(courseOfferingId) },
     include: {
-      registrations: {
+      section: {
         include: {
-          student: { select: { id: true, full_name: true, email: true, number: true } }
-        },
-        orderBy: { student: { full_name: 'asc' } }
+          studentRegistrations: {
+            include: {
+              student: { select: { id: true, full_name: true, email: true, number: true } }
+            },
+            orderBy: { student: { full_name: 'asc' } }
+          }
+        }
       }
     }
   });
 
-  res.json(offering?.registrations || []);
+  res.json(offering?.section?.studentRegistrations || []);
 }));
 
 router.delete('/:courseOfferingId/students/:studentId', auth, asyncHandler(async (req, res) => {
   const { courseOfferingId, studentId } = req.params;
 
+  // StudentRegistration belongs to a BatchSection (not directly to a
+  // CourseOffering). Resolve the offering's sectionId first so the delete
+  // targets the correct enrollment row.
+  const offering = await prisma.courseOffering.findUnique({
+    where: { id: parseInt(courseOfferingId) },
+    select: { sectionId: true },
+  });
+  if (!offering) return res.status(404).json({ message: 'Course offering not found' });
+
   await prisma.studentRegistration.deleteMany({
     where: {
-      courseOfferingId: parseInt(courseOfferingId),
+      batchSectionId: offering.sectionId,
       studentId: parseInt(studentId)
     }
   });

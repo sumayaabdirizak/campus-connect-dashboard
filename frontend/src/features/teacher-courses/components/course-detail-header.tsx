@@ -2,6 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Scan, Settings } from 'lucide-react';
+import { NotificationToggle } from '@/features/notifications/notification-toggle';
 
 interface CourseDetailHeaderProps {
   course: { code: string; name: string; department: { name: string } };
@@ -25,6 +26,7 @@ export function CourseDetailHeader({
     { id: 'feed', name: 'Feed' },
     { id: 'chat', name: 'Chat' },
     { id: 'assignments', name: 'Assignments' },
+    { id: 'quizzes', name: 'Quizzes' },
 
     { id: 'attendance', name: 'Attendance' },
     { id: 'resources', name: 'Resources' },
@@ -33,23 +35,24 @@ export function CourseDetailHeader({
   ];
 
   return (
-    <div className='space-y-4'>
+    <div className='space-y-3 sm:space-y-4'>
       <div className='flex flex-col md:flex-row md:items-center justify-between gap-3'>
-        <div>
-          <h1 className='text-2xl font-bold'>
+        <div className='min-w-0'>
+          <h1 className='text-xl sm:text-2xl font-bold truncate'>
             {course.code} — {course.name}
           </h1>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-xs sm:text-sm text-muted-foreground truncate'>
             {course.department.name} • Batch {batch.name} • {section.name}
           </p>
         </div>
-        {!isStudent && (
-          <div className='flex gap-2'>
+        <div className='flex gap-2'>
+          <NotificationToggle />
+          {!isStudent && (
             <Button variant='outline' size='sm' className='gap-1'>
               <Scan className='w-4 h-4' /> Attendance
             </Button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className='border-b'>

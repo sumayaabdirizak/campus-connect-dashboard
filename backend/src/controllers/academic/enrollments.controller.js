@@ -1,4 +1,33 @@
 import * as enrollmentsService from "../../services/enrollments.service.js";
+import { prisma } from "../../db/prisma.js";
+import { dispatchCoursePost } from "../../services/courseAnnouncementDispatcher.service.js";
+
+async function announceRegistration(studentId, sectionId) {
+  if (!studentId || !sectionId) return;
+  try {
+    const [student, offerings] = await Promise.all([
+      prisma.user.findUnique({ where: { id: Number(studentId) }, select: { full_name: true } }),
+      prisma.courseOffering.findMany({
+        where: { sectionId: Number(sectionId) },
+        select: { id: true },
+      }),
+    ]);
+    const name = student?.full_name ?? "A new student";
+    await Promise.all(
+      offerings.map((o) =>
+        dispatchCoursePost({
+          courseOfferingId: o.id,
+          source: "REGISTRATION",
+          sourceKey: `student:${studentId}`,
+          title: "Welcome",
+          content: `${name} joined this course.`,
+        })
+      )
+    );
+  } catch {
+    /* swallow — registration must still succeed */
+  }
+}
 
 // Soo saar dhammaan diwaangelinta (List Enrollments)
 export async function getEnrollments(req, res, next) {
@@ -33,6 +62,8 @@ export async function postEnrollment(req, res, next) {
             semester,
             enrolled_by,
         });
+
+        announceRegistration(student_id, section_id);
 
         res.status(201).json(created);
     } catch (e) {

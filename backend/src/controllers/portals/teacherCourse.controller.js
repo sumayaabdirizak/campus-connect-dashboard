@@ -86,7 +86,8 @@ export const getCourseDetail = async (req, res) => {
         },
         section: {
           include: {
-            batch: true
+            batch: true,
+            _count: { select: { studentRegistrations: true } }
           }
         },
         schedules: true,

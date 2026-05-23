@@ -2,10 +2,16 @@ import {
   ClassSchedule,
   AttendanceRecord,
   AttendanceStats,
+  AttendanceSummary,
   CreateSessionData,
   CreateRecordData,
   UpdateRecordData,
-  AttendanceFilters
+  AttendanceFilters,
+  QrSession,
+  QrTokenRefresh,
+  ScanQrInput,
+  ScanQrResult,
+  StartQrSessionInput
 } from './attendance-types';
 import { apiClient } from '@/lib/api-client';
 
@@ -78,5 +84,38 @@ export async function updateRecord(
 export async function getAttendanceStats(courseOfferingId: string): Promise<AttendanceStats> {
   return fetchWithAuth<AttendanceStats>(`/attendance/${courseOfferingId}/stats`, {
     cache: 'no-store'
+  });
+}
+
+export async function getAttendanceSummary(courseOfferingId: string): Promise<AttendanceSummary> {
+  return fetchWithAuth<AttendanceSummary>(`/attendance/${courseOfferingId}/summary`, {
+    cache: 'no-store'
+  });
+}
+
+export async function startQrSession(input: StartQrSessionInput): Promise<QrSession> {
+  return fetchWithAuth<QrSession>('/attendance/sessions/start', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export async function refreshQrToken(sessionId: number): Promise<QrTokenRefresh> {
+  return fetchWithAuth<QrTokenRefresh>(`/attendance/sessions/${sessionId}/token`, {
+    cache: 'no-store'
+  });
+}
+
+export async function scanQr(input: ScanQrInput): Promise<ScanQrResult> {
+  return fetchWithAuth<ScanQrResult>('/attendance/sessions/scan', {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+export async function stopQrSession(sessionId: number): Promise<{ success: boolean }> {
+  return fetchWithAuth<{ success: boolean }>(`/attendance/sessions/${sessionId}/stop`, {
+    method: 'POST',
+    body: JSON.stringify({})
   });
 }

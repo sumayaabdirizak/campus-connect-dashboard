@@ -2,13 +2,42 @@ import { Router } from 'express';
 import { prisma } from '../../db/prisma.js';
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { auth } from "../../middleware/auth.js";
+import { validateBody } from "../../middleware/validateRequest.js";
+import { finalizeAttempt } from "../../services/quizAttempt.service.js";
+import {
+  requireCourseOfferingRead,
+  requireCourseOfferingManage,
+  requireQuizManage,
+  requireQuizQuestionManage,
+  requireStudentQuizAccess,
+} from "../../middleware/courseOfferingRbac.js";
+import {
+  createQuizBodySchema,
+  patchQuizBodySchema,
+  createQuestionBodySchema,
+  patchQuestionBodySchema,
+  submitAttemptBodySchema,
+  reorderQuestionsBodySchema,
+  importQuizCsvBodySchema,
+} from "../../validation/quizSchemas.js";
 
 const router = Router();
 
-router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
-  const { courseOfferingId } = req.params;
-  const cid = parseInt(courseOfferingId);
-  
+// ─────────────────────────────────────────────────────────────────────────────
+// Quizzes — teacher CRUD + student submit.
+//
+// Route order note: Express matches in declaration order. Literal-segment
+// routes (`/reorder`, `/questions/:id`, `/:id/attempts`, `/:id/submit`,
+// `/:id/questions`) live BELOW `/:courseOfferingId` and `/:quizId` only when
+// they have two path segments, so they don't collide. There is intentionally
+// NO standalone `GET /:quizId` route — the path shape would conflict with
+// `GET /:courseOfferingId` above. The single-quiz payload is already returned
+// by the offering list, so a dedicated lookup is unnecessary.
+// ─────────────────────────────────────────────────────────────────────────────
+
+router.get('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
+  const cid = parseInt(req.params.courseOfferingId, 10);
+
   const quizzes = await prisma.quiz.findMany({
     where: { courseOfferingId: cid },
     include: {
@@ -16,6 +45,9 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
         include: { options: { orderBy: { order_index: 'asc' } } },
         orderBy: { order_index: 'asc' }
       },
+      // Lightweight module summary for the grouped list view — title + the
+      // publish flag are all the UI needs to render the chapter accordion.
+      module: { select: { id: true, title: true, position: true, publishedAt: true } },
       _count: { select: { attempts: true } }
     },
     orderBy: { created_at: 'desc' },
@@ -24,14 +56,40 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   res.json(quizzes);
 }));
 
-router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
-  const { courseOfferingId } = req.params;
-  const { 
-    title, description, duration_minutes, is_draft, open_at, close_at, 
+/// Verify the moduleId in the body (if any) belongs to `courseOfferingId`.
+/// Returns the numeric module id, `null` (Ungrouped), or throws a 400-shaped
+/// error the route handler converts to a response. Centralising this keeps
+/// create / patch consistent and dodges cross-offering link attacks.
+async function resolveModuleIdForOffering(rawModuleId, courseOfferingId) {
+  if (rawModuleId === undefined) return undefined; // not touching the field
+  if (rawModuleId === null) return null;
+  const mod = await prisma.courseModule.findUnique({
+    where: { id: Number(rawModuleId) },
+    select: { id: true, courseOfferingId: true },
+  });
+  if (!mod || mod.courseOfferingId !== courseOfferingId) {
+    const err = new Error('Module does not belong to this course');
+    err.status = 400;
+    throw err;
+  }
+  return mod.id;
+}
+
+router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), validateBody(createQuizBodySchema), asyncHandler(async (req, res) => {
+  const cid = parseInt(req.params.courseOfferingId, 10);
+  const {
+    title, description, duration_minutes, is_draft, open_at, close_at,
     shuffle_questions, shuffle_answers, max_attempts, passing_score,
-    timing_mode, scheduled_duration
+    timing_mode, scheduled_duration, moduleId
   } = req.body;
-  const cid = parseInt(courseOfferingId);
+
+  // Resolve once, surfacing cross-offering attempts as a clean 400.
+  let resolvedModuleId;
+  try {
+    resolvedModuleId = await resolveModuleIdForOffering(moduleId, cid);
+  } catch (e) {
+    return res.status(e.status || 400).json({ message: e.message });
+  }
 
   const quiz = await prisma.quiz.create({
     data: {
@@ -48,9 +106,11 @@ router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
       passing_score: passing_score || 50,
       timing_mode: timing_mode || 'flexible',
       scheduled_duration: scheduled_duration || null,
+      ...(resolvedModuleId !== undefined && { moduleId: resolvedModuleId }),
     },
     include: {
       questions: { include: { options: true } },
+      module: { select: { id: true, title: true, position: true, publishedAt: true } },
       _count: { select: { attempts: true } }
     },
   });
@@ -58,28 +118,30 @@ router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   res.json(quiz);
 }));
 
-router.get('/:quizId', auth, asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
-  const qid = parseInt(quizId);
-  
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: qid },
-    include: {
-      questions: {
-        include: { options: { orderBy: { order_index: 'asc' } } },
-        orderBy: { order_index: 'asc' }
-      },
-      _count: { select: { attempts: true } }
-    },
-  });
+router.patch('/:quizId', auth, requireQuizManage(), validateBody(patchQuizBodySchema), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
+  const {
+    title, description, duration_minutes, is_draft, open_at, close_at,
+    shuffle_questions, shuffle_answers, max_attempts, passing_score,
+    timing_mode, scheduled_duration, moduleId
+  } = req.body;
 
-  res.json(quiz);
-}));
-
-router.patch('/:quizId', auth, asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
-  const { title, description, duration_minutes, is_draft, open_at, close_at, shuffle_questions, shuffle_answers, max_attempts, passing_score, timing_mode, scheduled_duration } = req.body;
-  const qid = parseInt(quizId);
+  // For module changes, validate the new module sits inside the same offering
+  // before we issue the update. We look the offering up from the quiz itself —
+  // the RBAC middleware already confirmed the caller can manage this quiz.
+  let resolvedModuleId; // undefined = leave alone
+  if (moduleId !== undefined) {
+    const existing = await prisma.quiz.findUnique({
+      where: { id: qid },
+      select: { courseOfferingId: true },
+    });
+    if (!existing) return res.status(404).json({ message: 'Quiz not found' });
+    try {
+      resolvedModuleId = await resolveModuleIdForOffering(moduleId, existing.courseOfferingId);
+    } catch (e) {
+      return res.status(e.status || 400).json({ message: e.message });
+    }
+  }
 
   const quiz = await prisma.quiz.update({
     where: { id: qid },
@@ -93,12 +155,14 @@ router.patch('/:quizId', auth, asyncHandler(async (req, res) => {
       ...(shuffle_questions !== undefined && { shuffle_questions }),
       ...(shuffle_answers !== undefined && { shuffle_answers }),
       ...(max_attempts && { max_attempts }),
-      ...(passing_score && { passing_score }),
+      ...(passing_score !== undefined && { passing_score }),
       ...(timing_mode && { timing_mode }),
       ...(scheduled_duration !== undefined && { scheduled_duration }),
+      ...(resolvedModuleId !== undefined && { moduleId: resolvedModuleId }),
     },
     include: {
       questions: { include: { options: true } },
+      module: { select: { id: true, title: true, position: true, publishedAt: true } },
       _count: { select: { attempts: true } }
     },
   });
@@ -106,38 +170,241 @@ router.patch('/:quizId', auth, asyncHandler(async (req, res) => {
   res.json(quiz);
 }));
 
-router.delete('/:quizId', auth, asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
-  const qid = parseInt(quizId);
-
-  const attempts = await prisma.quizAttempt.findMany({ where: { quizId: qid } });
-  for (const attempt of attempts) {
-    await prisma.quizAnswer.deleteMany({ where: { attemptId: attempt.id } });
-  }
-  await prisma.quizAttempt.deleteMany({ where: { quizId: qid } });
-  
-  const questions = await prisma.quizQuestion.findMany({ where: { quizId: qid } });
-  for (const q of questions) {
-    await prisma.quizOption.deleteMany({ where: { questionId: q.id } });
-  }
-  await prisma.quizQuestion.deleteMany({ where: { quizId: qid } });
+/// Delete is now a single statement — the DB's cascade rules wipe attempts,
+/// answers, questions, and options atomically (see the cascade migration).
+router.delete('/:quizId', auth, requireQuizManage(), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
   await prisma.quiz.delete({ where: { id: qid } });
-
   res.json({ success: true });
 }));
 
-// Questions CRUD
-router.post('/:quizId/questions', auth, asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
-  const { question_text, question_type, points, correct_answer, options } = req.body;
-  const qid = parseInt(quizId);
+// ─── CSV import / export ────────────────────────────────────────────────────
+//
+// Round-trip surface for a single quiz's questions:
+//   - GET /:quizId/export — returns { filename, csv } as JSON. Doing the
+//     serialization server-side means the export is identical regardless of
+//     the client (browser, curl, future mobile app) and skips a round-trip
+//     to fetch all options.
+//   - POST /:quizId/import — accepts a CSV body, parses + validates rows,
+//     appends them to the quiz as fresh QuizQuestion rows. We DON'T replace
+//     the existing questions — that would silently drop work; instead we
+//     append at the end so teachers can mix imported + hand-authored
+//     questions in one pass.
+//
+// Both endpoints are declared after the bare PATCH/DELETE so Express's
+// in-order matcher doesn't swallow the `/export` / `/import` literal
+// segments. Two segments after `:quizId` is unambiguous.
 
+/// Format: matches the shared parser in
+/// `frontend/src/features/course-details/components/_shared/question-csv.ts`.
+/// Keep the column order + names in sync — the bank manager and this quiz
+/// round-trip share the same input shape, the only difference being that
+/// quiz exports also include the `explanation` column.
+function csvEscape(value) {
+  const s = value == null ? "" : String(value);
+  if (s === "") return "";
+  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+function buildQuizCsv(questions) {
+  // Find the max option count any question uses so the header carries
+  // enough columns. Capped at 6 to match the parser's walk. Floor at 2 so
+  // even an all-short-answer quiz still gets the canonical option columns
+  // (makes the file template-shaped for the teacher to edit in Excel).
+  const maxOptions = Math.min(
+    6,
+    Math.max(2, ...questions.map((q) => q.options?.length ?? 0))
+  );
+  const headerCells = [
+    "question_text",
+    "type",
+    "points",
+    "topic",
+    "difficulty",
+    "explanation",
+  ];
+  for (let n = 1; n <= maxOptions; n++) {
+    headerCells.push(`option_${n}`);
+    headerCells.push(`option_${n}_correct`);
+  }
+
+  const lines = [headerCells.join(",")];
+  for (const q of questions) {
+    const cells = [
+      q.question_text,
+      q.question_type,
+      String(q.points),
+      // Quiz questions don't carry topic/difficulty (those live on the bank
+      // model). We emit blank cells so the column layout stays canonical;
+      // teachers who want to add tags can fill them in and re-import as
+      // bank questions later.
+      "",
+      "",
+      q.explanation ?? "",
+    ];
+    const opts = (q.options ?? []).slice(0, maxOptions);
+    for (let n = 0; n < maxOptions; n++) {
+      const o = opts[n];
+      cells.push(o ? o.option_text : "");
+      cells.push(o ? (o.is_correct ? "true" : "false") : "");
+    }
+    lines.push(cells.map(csvEscape).join(","));
+  }
+  return lines.join("\n") + "\n";
+}
+
+router.get(
+  "/:quizId/export",
+  auth,
+  requireQuizManage(),
+  asyncHandler(async (req, res) => {
+    const qid = parseInt(req.params.quizId, 10);
+    const quiz = await prisma.quiz.findUnique({
+      where: { id: qid },
+      include: {
+        questions: {
+          include: { options: { orderBy: { order_index: "asc" } } },
+          orderBy: { order_index: "asc" },
+        },
+      },
+    });
+    if (!quiz) return res.status(404).json({ message: "Quiz not found" });
+
+    const csv = buildQuizCsv(quiz.questions);
+    // Slug the title so the download filename is shell-safe across OSes —
+    // Windows in particular gets cranky about ?, /, :, etc. We also drop
+    // accents because non-ASCII filenames trigger Content-Disposition
+    // encoding negotiation we don't need.
+    const slug = (quiz.title || `quiz-${quiz.id}`)
+      .normalize("NFKD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[^a-z0-9]+/gi, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase()
+      .slice(0, 60) || `quiz-${quiz.id}`;
+
+    res.json({
+      filename: `${slug}.csv`,
+      csv,
+      questionCount: quiz.questions.length,
+    });
+  })
+);
+
+router.post(
+  "/:quizId/import",
+  auth,
+  requireQuizManage(),
+  validateBody(importQuizCsvBodySchema),
+  asyncHandler(async (req, res) => {
+    const qid = parseInt(req.params.quizId, 10);
+    const { questions } = req.body;
+
+    if (questions.length === 0) {
+      return res.json({ success: true, imported: 0 });
+    }
+
+    // Find the current max order_index so we APPEND rather than overwrite.
+    // Replacing the existing list would silently destroy teacher work — the
+    // import is purely additive. If the teacher wants to start over, they
+    // can delete questions first via the builder.
+    const last = await prisma.quizQuestion.findFirst({
+      where: { quizId: qid },
+      orderBy: { order_index: "desc" },
+      select: { order_index: true },
+    });
+    let nextOrder = (last?.order_index ?? -1) + 1;
+
+    // One transaction so a mid-import error rolls back cleanly. Nested
+    // option create keeps each question + its options atomically attached
+    // (no half-populated row visible to concurrent readers).
+    const created = await prisma.$transaction(
+      questions.map((q) => {
+        const order_index = nextOrder++;
+        return prisma.quizQuestion.create({
+          data: {
+            quizId: qid,
+            question_text: q.question_text,
+            question_type: q.question_type,
+            points: q.points ?? 1,
+            // Quiz questions DO carry explanation (unlike bank questions),
+            // so the round-trip is information-preserving for this field.
+            explanation: q.explanation || null,
+            order_index,
+            options:
+              q.question_type === "SHORT_ANSWER" || !q.options?.length
+                ? undefined
+                : {
+                    create: q.options.map((opt, idx) => ({
+                      option_text: opt.option_text,
+                      is_correct: !!opt.is_correct,
+                      order_index: opt.order_index ?? idx,
+                    })),
+                  },
+          },
+          select: { id: true },
+        });
+      })
+    );
+
+    res.json({ success: true, imported: created.length });
+  })
+);
+
+// ─── Questions ───────────────────────────────────────────────────────────────
+
+/// Bulk reorder questions. Body: `{ items: [{id, order_index}] }`. All
+/// updates run in a single transaction so the list never appears
+/// half-shuffled to a concurrent reader. Same pattern as the resources
+/// reorder endpoint. Declared BEFORE `POST /:quizId/questions` so the path
+/// shape `:quizId/questions/reorder` matches this route exclusively.
+router.post(
+  '/:quizId/questions/reorder',
+  auth,
+  requireQuizManage(),
+  validateBody(reorderQuestionsBodySchema),
+  asyncHandler(async (req, res) => {
+    const qid = parseInt(req.params.quizId, 10);
+    const items = req.body.items;
+    // Guard: only allow reordering questions belonging to THIS quiz. A
+    // malicious teacher could otherwise reach in via a hand-crafted body and
+    // shuffle questions on a different quiz.
+    const ownIds = new Set(
+      (await prisma.quizQuestion.findMany({
+        where: { quizId: qid },
+        select: { id: true },
+      })).map((q) => q.id)
+    );
+    const safeItems = items.filter((it) => ownIds.has(it.id));
+
+    await prisma.$transaction(
+      safeItems.map((it) =>
+        prisma.quizQuestion.update({
+          where: { id: it.id },
+          data: { order_index: it.order_index },
+        })
+      )
+    );
+    res.json({ updated: safeItems.length });
+  })
+);
+
+router.post('/:quizId/questions', auth, requireQuizManage(), validateBody(createQuestionBodySchema), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
+  const { question_text, question_type, points, correct_answer, explanation, options } = req.body;
+
+  // `?? -1` not `|| 0`: the existing `|| 0` collapses a legitimate
+  // `order_index === 0` to 0, so the second question would also get 1 and
+  // collide. Treating "no previous question" as -1 gives a clean 0, 1, 2…
   const lastQuestion = await prisma.quizQuestion.findFirst({
     where: { quizId: qid },
     orderBy: { order_index: 'desc' }
   });
-  const order_index = (lastQuestion?.order_index || 0) + 1;
+  const order_index = (lastQuestion?.order_index ?? -1) + 1;
 
+  // Create question + its options in one nested create so the row is never
+  // left partially populated if the request fails mid-way.
   const question = await prisma.quizQuestion.create({
     data: {
       quizId: qid,
@@ -145,83 +412,78 @@ router.post('/:quizId/questions', auth, asyncHandler(async (req, res) => {
       question_type: question_type || 'MCQ',
       points: points || 1,
       correct_answer,
+      explanation: explanation ?? null,
       order_index,
+      options: options && options.length > 0
+        ? {
+            create: options.map((opt, idx) => ({
+              option_text: opt.option_text,
+              is_correct: opt.is_correct || false,
+              order_index: opt.order_index ?? idx,
+            }))
+          }
+        : undefined,
     },
-    include: { options: true }
-  });
-
-  if (options && options.length > 0) {
-    for (const opt of options) {
-      await prisma.quizOption.create({
-        data: {
-          questionId: question.id,
-          option_text: opt.option_text,
-          is_correct: opt.is_correct || false,
-          order_index: opt.order_index || 0,
-        }
-      });
-    }
-  }
-
-  const updatedQuestion = await prisma.quizQuestion.findUnique({
-    where: { id: question.id },
     include: { options: { orderBy: { order_index: 'asc' } } }
   });
 
-  res.json(updatedQuestion);
+  res.json(question);
 }));
 
-router.patch('/questions/:questionId', auth, asyncHandler(async (req, res) => {
-  const { questionId } = req.params;
-  const { question_text, question_type, points, correct_answer, options } = req.body;
-  const qid = parseInt(questionId);
+router.patch('/questions/:questionId', auth, requireQuizQuestionManage(), validateBody(patchQuestionBodySchema), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.questionId, 10);
+  const { question_text, question_type, points, correct_answer, explanation, options } = req.body;
 
-  const question = await prisma.quizQuestion.update({
-    where: { id: qid },
-    data: {
-      ...(question_text && { question_text }),
-      ...(question_type && { question_type }),
-      ...(points && { points }),
-      ...(correct_answer !== undefined && { correct_answer }),
-    },
-  });
+  // Wrap the question update + option swap in a transaction so a concurrent
+  // reader never sees "options deleted, new ones not yet created".
+  const updated = await prisma.$transaction(async (tx) => {
+    await tx.quizQuestion.update({
+      where: { id: qid },
+      data: {
+        ...(question_text && { question_text }),
+        ...(question_type && { question_type }),
+        ...(points && { points }),
+        ...(correct_answer !== undefined && { correct_answer }),
+        ...(explanation !== undefined && { explanation }),
+      },
+    });
 
-  if (options) {
-    await prisma.quizOption.deleteMany({ where: { questionId: qid } });
-    for (const opt of options) {
-      await prisma.quizOption.create({
-        data: {
-          questionId: qid,
-          option_text: opt.option_text,
-          is_correct: opt.is_correct || false,
-          order_index: opt.order_index || 0,
-        }
-      });
+    if (options) {
+      await tx.quizOption.deleteMany({ where: { questionId: qid } });
+      if (options.length > 0) {
+        await tx.quizOption.createMany({
+          data: options.map((opt, idx) => ({
+            questionId: qid,
+            option_text: opt.option_text,
+            is_correct: opt.is_correct || false,
+            order_index: opt.order_index ?? idx,
+          }))
+        });
+      }
     }
-  }
 
-  const updatedQuestion = await prisma.quizQuestion.findUnique({
-    where: { id: qid },
-    include: { options: { orderBy: { order_index: 'asc' } } }
+    return tx.quizQuestion.findUnique({
+      where: { id: qid },
+      include: { options: { orderBy: { order_index: 'asc' } } }
+    });
   });
 
-  res.json(updatedQuestion);
+  res.json(updated);
 }));
 
-router.delete('/questions/:questionId', auth, asyncHandler(async (req, res) => {
-  const { questionId } = req.params;
-  const qid = parseInt(questionId);
-
-  await prisma.quizOption.deleteMany({ where: { questionId: qid } });
+/// Cascade rule drops the options + any answers attached to this question
+/// when the question is deleted, so a single delete is all we need.
+router.delete('/questions/:questionId', auth, requireQuizQuestionManage(), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.questionId, 10);
   await prisma.quizQuestion.delete({ where: { id: qid } });
-
   res.json({ success: true });
 }));
 
-router.get('/:quizId/attempts', auth, asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
-  const qid = parseInt(quizId);
-  
+// ─── Attempts (teacher view) ─────────────────────────────────────────────────
+
+router.get('/:quizId/attempts', auth, requireQuizManage(), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
+
   const attempts = await prisma.quizAttempt.findMany({
     where: { quizId: qid },
     include: {
@@ -234,82 +496,31 @@ router.get('/:quizId/attempts', auth, asyncHandler(async (req, res) => {
   res.json(attempts);
 }));
 
-router.post('/:quizId/submit', auth, asyncHandler(async (req, res) => {
-  const { quizId } = req.params;
-  const { attemptId, answers, violations_count = 0 } = req.body;
-  const studentId = req.user.id;
-  const qid = parseInt(quizId);
+// ─── Submit attempt (student) ────────────────────────────────────────────────
 
-  const quiz = await prisma.quiz.findUnique({
-    where: { id: qid },
-    include: { questions: { include: { options: true } } }
-  });
+router.post('/:quizId/submit', auth, requireStudentQuizAccess(), validateBody(submitAttemptBodySchema), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
+  const { attemptId, answers, violations_count } = req.body;
+  const studentId = req.user.id ?? req.user.sub;
 
-  let totalPoints = 0;
-  let earnedPoints = 0;
-
-  for (const answer of answers) {
-    const question = quiz.questions.find(q => q.id === answer.questionId);
-    if (!question) continue;
-
-    let is_correct = false;
-    let points_earned = 0;
-
-    if (question.question_type === 'MCQ' || question.question_type === 'TRUE_FALSE') {
-      const selectedOption = question.options.find(o => o.id === answer.selected_option_id);
-      is_correct = selectedOption?.is_correct || false;
-      points_earned = is_correct ? question.points : 0;
-    }
-
-    totalPoints += question.points;
-    earnedPoints += points_earned;
-
-    await prisma.quizAnswer.upsert({
-      where: { id: answer.id || 0 },
-      create: {
-        attemptId,
-        questionId: question.id,
-        question_type: question.question_type,
-        selected_option_id: answer.selected_option_id,
-        text_answer: answer.text_answer,
-        is_correct,
-        points_earned,
-      },
-      update: {
-        selected_option_id: answer.selected_option_id,
-        text_answer: answer.text_answer,
-        is_correct,
-        points_earned,
-      }
-    });
+  // Verify ownership before delegating to the shared finalizer. Without this
+  // check a student could submit anyone else's attempt by guessing the id.
+  const attemptRow = await prisma.quizAttempt.findUnique({ where: { id: attemptId } });
+  if (!attemptRow) return res.status(404).json({ message: 'Attempt not found' });
+  if (attemptRow.studentId !== studentId || attemptRow.quizId !== qid) {
+    return res.status(403).json({ message: 'Attempt does not belong to caller' });
   }
 
-  const score = totalPoints > 0 ? (earnedPoints / totalPoints) * 100 : 0;
-  const grade = quiz.passing_score ? (score >= quiz.passing_score ? score : null) : score;
-
-  // Handle auto-close due to violations
-  let closure_reason = null;
-  if (violations_count >= 3) {
-    closure_reason = 'violations';
-  }
-
-  const attempt = await prisma.quizAttempt.update({
-    where: { id: attemptId },
-    data: {
-      submitted_at: new Date(),
-      score,
-      grade,
-      closure_reason,
-      violations_count,
-      warnings_shown: violations_count >= 3 ? 3 : violations_count
-    },
-    include: {
-      student: { select: { id: true, full_name: true } },
-      answers: true
-    }
+  // If the deadline already passed, the auto-submit cron may have finalized
+  // this attempt seconds ago. `finalizeAttempt` is idempotent — it returns
+  // the existing finalized row instead of double-scoring.
+  const updatedAttempt = await finalizeAttempt({
+    attemptId,
+    answers,
+    violationsCount: violations_count,
   });
 
-  res.json(attempt);
+  res.json(updatedAttempt);
 }));
 
 export default router;

@@ -1,0 +1,3 @@
+-- AlterEnum
+ALTER TYPE "ResourceType" ADD VALUE 'VIDEO';
+ALTER TYPE "ResourceType" ADD VALUE 'EXTERNAL_LINK';

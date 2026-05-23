@@ -37,6 +37,8 @@ import attendanceRouter from "./controllers/courseDetails/attendance.js";
 import courseOfferingsRouter from "./controllers/courseDetails/course-offerings.js";
 import quizTakingRouter from "./controllers/courseDetails/quiz-taking.js";
 import questionBankRouter from "./controllers/courseDetails/question-bank.js";
+import courseFeedRouter from "./controllers/courseDetails/course-feed.js";
+import courseAccessRouter from "./controllers/courseDetails/course-access.js";
 
 import announcementsRouter from "./controllers/announcements/announcements.js";
 import pushRouter from "./features/announcements/routes.push.js";
@@ -124,6 +126,8 @@ app.use("/api/question-bank", questionBankRouter);
 app.use("/api/resources", resourcesRouter);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/course-offerings", courseOfferingsRouter);
+app.use("/api/course-feed", courseFeedRouter);
+app.use("/api/course-access", courseAccessRouter);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 6: General Commms
