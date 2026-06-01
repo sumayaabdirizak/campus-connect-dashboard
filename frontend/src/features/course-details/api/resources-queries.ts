@@ -11,7 +11,8 @@ import {
   updateModule,
   deleteModule,
   reorderResources,
-  reorderModules
+  reorderModules,
+  getResourceAnalytics
 } from './resources-service';
 import {
   CreateResourceData,
@@ -28,7 +29,9 @@ export const resourceKeys = {
     [...resourceKeys.all, 'list', courseId, filters] as const,
   detail: (resourceId: string) => [...resourceKeys.all, 'detail', resourceId] as const,
   modules: (courseOfferingId: string) =>
-    [...resourceKeys.all, 'modules', courseOfferingId] as const
+    [...resourceKeys.all, 'modules', courseOfferingId] as const,
+  analytics: (resourceId: number) =>
+    [...resourceKeys.all, 'analytics', resourceId] as const
 };
 
 export const resourcesQueryOptions = (courseId: string, filters?: ResourceFilters) =>
@@ -55,6 +58,16 @@ export function useResources(courseId: string, filters?: ResourceFilters) {
 
 export function useModules(courseOfferingId: string) {
   return useQuery(modulesQueryOptions(courseOfferingId));
+}
+
+/// Teacher watch-analytics for a single resource. `enabled` lets the caller
+/// defer the fetch until the analytics panel actually opens.
+export function useResourceAnalytics(resourceId: number, enabled = true) {
+  return useQuery({
+    queryKey: resourceKeys.analytics(resourceId),
+    queryFn: () => getResourceAnalytics(resourceId),
+    enabled: enabled && Number.isFinite(resourceId) && resourceId > 0
+  });
 }
 
 export function useCreateResource(courseId: string) {

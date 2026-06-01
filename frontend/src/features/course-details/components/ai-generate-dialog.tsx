@@ -36,28 +36,39 @@ import {
   useImportBankQuestions,
   useImportToQuiz
 } from '../api/question-bank-queries';
+import { useCreateQuiz } from '../api/quizzes-queries';
 import type {
   GeneratedQuestion,
   GenerateQuestionsInput
 } from '../api/question-bank-types';
-import type { QuizQuestionType } from '../api/quizzes-types';
+import type { CreateQuizInput, Quiz, QuizQuestionType } from '../api/quizzes-types';
 
-/// Two destinations the teacher can target with the generated questions:
-///   - 'bank' → save into the offering's Question Bank (no quizId needed)
-///   - 'quiz' → also persist into the bank, then forward to the quiz builder
-///              (we route via the bank so the rows exist for re-use later)
+/// Three destinations the teacher can target with the generated questions:
+///   - 'bank'     → save into the offering's Question Bank (no quizId needed)
+///   - 'quiz'     → also persist into the bank, then forward to the quiz
+///                  builder (we route via the bank so the rows exist for
+///                  re-use later)
+///   - 'new-quiz' → create a brand-new DRAFT quiz seeded with the kept
+///                  questions in a single request, then drop the teacher into
+///                  the builder. Explanations are preserved (quiz questions
+///                  carry them, unlike bank rows).
 type Destination =
   | { kind: 'bank' }
-  | { kind: 'quiz'; quizId: number };
+  | { kind: 'quiz'; quizId: number }
+  | { kind: 'new-quiz' };
 
 interface AiGenerateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   courseOfferingId: string;
-  /// Where the accepted questions should land. The two surfaces share the
-  /// same dialog because the config + preview UX is identical — only the
-  /// final save action differs.
+  /// Where the accepted questions should land. The surfaces share the same
+  /// dialog because the config + preview UX is identical — only the final
+  /// save action differs.
   destination: Destination;
+  /// Called after a `new-quiz` destination successfully creates the quiz.
+  /// The teacher list wires this to open the freshly-created draft in the
+  /// QuizBuilder. Ignored for the other destinations.
+  onQuizCreated?: (quiz: Quiz) => void;
 }
 
 /**
@@ -81,10 +92,13 @@ export function AiGenerateDialog({
   open,
   onOpenChange,
   courseOfferingId,
-  destination
+  destination,
+  onQuizCreated
 }: AiGenerateDialogProps) {
+  const isNewQuiz = destination.kind === 'new-quiz';
   const generateMutation = useGenerateQuestions(courseOfferingId);
   const importMutation = useImportBankQuestions(courseOfferingId);
+  const createQuizMutation = useCreateQuiz(courseOfferingId);
   // Import-to-quiz is only used when destination.kind === 'quiz'. We always
   // construct the hook (rules-of-hooks), but only invoke it conditionally.
   // `quizId: 0` is a safe placeholder — we never call the mutate function
@@ -99,6 +113,9 @@ export function AiGenerateDialog({
   const [phase, setPhase] = useState<'config' | 'preview'>('config');
 
   // Config form state
+  // Title for the new quiz — only used (and required) when destination is
+  // 'new-quiz'. Ignored for the bank / existing-quiz destinations.
+  const [quizTitle, setQuizTitle] = useState('');
   const [prompt, setPrompt] = useState('');
   const [sourceMaterial, setSourceMaterial] = useState('');
   const [count, setCount] = useState(10);
@@ -120,6 +137,7 @@ export function AiGenerateDialog({
   const closeHandler = (next: boolean) => {
     if (!next) {
       setPhase('config');
+      setQuizTitle('');
       setPrompt('');
       setSourceMaterial('');
       setCount(10);
@@ -138,6 +156,10 @@ export function AiGenerateDialog({
   };
 
   const handleGenerate = () => {
+    if (isNewQuiz && !quizTitle.trim()) {
+      toast.error('Give the quiz a title first');
+      return;
+    }
     if (!prompt.trim()) {
       toast.error('Describe what you want — even a sentence helps');
       return;
@@ -189,6 +211,47 @@ export function AiGenerateDialog({
       return;
     }
 
+    // ── new-quiz: create a draft quiz seeded with the kept questions ───────
+    // Unlike the bank path, quiz questions DO carry explanations, so we keep
+    // them. The backend stamps order_index from array position. We create the
+    // quiz as a draft so the teacher reviews + publishes from the builder.
+    if (destination.kind === 'new-quiz') {
+      const title = quizTitle.trim();
+      if (!title) {
+        toast.error('Give the quiz a title before saving');
+        return;
+      }
+      const input: CreateQuizInput = {
+        title,
+        is_draft: true,
+        questions: chosen.map((q) => ({
+          question_text: q.question_text,
+          question_type: q.question_type,
+          points: q.points,
+          explanation: q.explanation || null,
+          options:
+            q.question_type === 'SHORT_ANSWER'
+              ? undefined
+              : q.options.map((o, idx) => ({
+                  option_text: o.option_text,
+                  is_correct: o.is_correct,
+                  order_index: idx
+                }))
+        }))
+      };
+      createQuizMutation.mutate(input, {
+        onSuccess: (quiz) => {
+          toast.success(
+            `Created "${quiz.title}" with ${chosen.length} question${chosen.length === 1 ? '' : 's'} — review & publish when ready`
+          );
+          onQuizCreated?.(quiz);
+          closeHandler(false);
+        },
+        onError: (e: Error) => toast.error(e.message)
+      });
+      return;
+    }
+
     // Strip `explanation` here — the bank's `CreateBankQuestionInput` doesn't
     // accept it (explanations live on QuizQuestion, not on the bank row).
     // The bulk-import endpoint silently ignores extra fields, but cleaning
@@ -233,7 +296,10 @@ export function AiGenerateDialog({
   };
 
   const isGenerating = generateMutation.isPending;
-  const isSaving = importMutation.isPending || importToQuizMutation.isPending;
+  const isSaving =
+    importMutation.isPending ||
+    importToQuizMutation.isPending ||
+    createQuizMutation.isPending;
 
   return (
     <Dialog open={open} onOpenChange={closeHandler}>
@@ -251,13 +317,28 @@ export function AiGenerateDialog({
           <DialogDescription>
             {phase === 'config'
               ? 'Describe what you want and the AI will draft questions for you to review.'
-              : 'Review and uncheck anything you don\'t want before saving to the bank.'}
+              : isNewQuiz
+                ? 'Review and uncheck anything you don\'t want — the rest become a new draft quiz.'
+                : 'Review and uncheck anything you don\'t want before saving to the bank.'}
           </DialogDescription>
         </DialogHeader>
 
         {/* ── Phase 1: Config form ─────────────────────────────────────── */}
         {phase === 'config' && (
           <div className='flex-1 overflow-y-auto pr-1 -mr-1 space-y-4'>
+            {isNewQuiz && (
+              <div className='space-y-1.5'>
+                <Label htmlFor='ai-quiz-title'>Quiz title *</Label>
+                <Input
+                  id='ai-quiz-title'
+                  placeholder='e.g. "Chapter 3 — Photosynthesis"'
+                  value={quizTitle}
+                  onChange={(e) => setQuizTitle(e.target.value)}
+                  disabled={isGenerating}
+                />
+              </div>
+            )}
+
             <div className='space-y-1.5'>
               <Label htmlFor='ai-prompt'>What should the questions cover? *</Label>
               <Textarea
@@ -350,12 +431,21 @@ export function AiGenerateDialog({
 
             <div className='rounded-lg border border-dashed bg-muted/30 p-3 text-[11px] text-muted-foreground space-y-1'>
               <p className='font-medium text-foreground'>How this works</p>
-              <p>
-                Nothing is saved yet. After generating, you'll see every question
-                and choose which to keep. Selected questions land in your{' '}
-                <strong>Question Bank</strong> for this course — you can then
-                drop them into any quiz via "Add from Bank".
-              </p>
+              {isNewQuiz ? (
+                <p>
+                  Nothing is saved yet. After generating, you'll see every
+                  question and choose which to keep. Selected questions become a
+                  new <strong>draft quiz</strong> — you'll land in the builder to
+                  fine-tune and publish it when ready.
+                </p>
+              ) : (
+                <p>
+                  Nothing is saved yet. After generating, you'll see every
+                  question and choose which to keep. Selected questions land in
+                  your <strong>Question Bank</strong> for this course — you can
+                  then drop them into any quiz via "Add from Bank".
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -406,7 +496,11 @@ export function AiGenerateDialog({
           {phase === 'config' ? (
             <Button
               onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
+              disabled={
+                isGenerating ||
+                !prompt.trim() ||
+                (isNewQuiz && !quizTitle.trim())
+              }
               className='gap-1'
             >
               {isGenerating ? (
@@ -427,7 +521,13 @@ export function AiGenerateDialog({
               disabled={isSaving || keepSet.size === 0}
               className='gap-1'
             >
-              {isSaving ? 'Saving…' : `Save ${keepSet.size} to bank`}
+              {isSaving
+                ? isNewQuiz
+                  ? 'Creating quiz…'
+                  : 'Saving…'
+                : isNewQuiz
+                  ? `Create quiz with ${keepSet.size}`
+                  : `Save ${keepSet.size} to bank`}
             </Button>
           )}
         </DialogFooter>

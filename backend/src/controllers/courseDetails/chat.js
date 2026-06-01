@@ -1,10 +1,19 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { prisma } from '../../db/prisma.js';
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { auth } from "../../middleware/auth.js";
+import {
+  requireCourseOfferingRead,
+  requireChatMessageRead,
+} from "../../middleware/courseOfferingRbac.js";
+import {
+  uploadExtensionFilter,
+  enforceUploadContentSafety,
+} from "./resources.js";
 import { getIo } from "../../socket/hub.js";
 
 const router = Router();
@@ -19,11 +28,16 @@ const storage = multer.diskStorage({
     cb(null, CHAT_UPLOAD_DIR);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+    // CSPRNG-generated stored filename — see resources.js for rationale.
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${crypto.randomBytes(16).toString('hex')}${ext}`);
   },
 });
-const upload = multer({ storage, limits: { fileSize: CHAT_FILE_LIMIT } });
+const upload = multer({
+  storage,
+  limits: { fileSize: CHAT_FILE_LIMIT },
+  fileFilter: uploadExtensionFilter,
+});
 
 const senderSelect = { select: { id: true, full_name: true } };
 const replySelect = {
@@ -84,7 +98,7 @@ async function resolveMentions(content, courseOfferingId, senderId) {
   return Array.from(found);
 }
 
-router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const courseOfferingId = parseInt(req.params.courseOfferingId, 10);
   const room = await ensureRoom(courseOfferingId);
 
@@ -113,7 +127,7 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   });
 }));
 
-router.post('/:courseOfferingId/messages', auth, asyncHandler(async (req, res) => {
+router.post('/:courseOfferingId/messages', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const courseOfferingId = parseInt(req.params.courseOfferingId, 10);
   const { content, replyToId } = req.body ?? {};
   if (!content || typeof content !== 'string' || !content.trim()) {
@@ -154,7 +168,7 @@ router.post('/:courseOfferingId/messages', auth, asyncHandler(async (req, res) =
   res.json(message);
 }));
 
-router.patch('/messages/:messageId', auth, asyncHandler(async (req, res) => {
+router.patch('/messages/:messageId', auth, requireChatMessageRead(), asyncHandler(async (req, res) => {
   const messageId = parseInt(req.params.messageId, 10);
   const { content } = req.body ?? {};
   if (!content || typeof content !== 'string' || !content.trim()) {
@@ -197,7 +211,7 @@ router.patch('/messages/:messageId', auth, asyncHandler(async (req, res) => {
   res.json(updated);
 }));
 
-router.delete('/messages/:messageId', auth, asyncHandler(async (req, res) => {
+router.delete('/messages/:messageId', auth, requireChatMessageRead(), asyncHandler(async (req, res) => {
   const messageId = parseInt(req.params.messageId, 10);
   const existing = await prisma.chatMessage.findUnique({
     where: { id: messageId },
@@ -221,6 +235,7 @@ router.delete('/messages/:messageId', auth, asyncHandler(async (req, res) => {
 router.post(
   '/messages/:messageId/attachments',
   auth,
+  requireChatMessageRead(),
   upload.array('files', 5),
   asyncHandler(async (req, res) => {
     const messageId = parseInt(req.params.messageId, 10);
@@ -240,6 +255,15 @@ router.post(
       for (const f of files) try { fs.unlinkSync(f.path); } catch {}
       return res.status(403).json({ message: 'Only the sender can attach files' });
     }
+
+    // Content-family verification — see resources.js for the threat model.
+    const verdict = await enforceUploadContentSafety(files);
+    if (!verdict.ok) {
+      return res.status(400).json({
+        message: 'File contents do not match the declared type. Upload rejected.',
+      });
+    }
+
     const hostBase = `${req.protocol}://${req.get('host')}`;
     const created = await prisma.$transaction(
       files.map((f) =>

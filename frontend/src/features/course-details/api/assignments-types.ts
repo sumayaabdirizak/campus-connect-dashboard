@@ -1,3 +1,5 @@
+import type { GroupInfo } from './groups-types';
+
 export type AssignmentWorkMode = 'INDIVIDUAL' | 'GROUP';
 export type AssignmentGradingScope = 'INDIVIDUAL' | 'GROUP';
 
@@ -26,6 +28,7 @@ export interface Assignment {
   workMode: AssignmentWorkMode;
   gradingScope: AssignmentGradingScope;
   lateWindowMinutes: number;
+  maxMarks: number;
   attachments?: AssignmentAttachment[];
   _count?: { submissions: number };
   submissions?: Array<{
@@ -34,6 +37,10 @@ export interface Assignment {
     grade: number | null;
     is_reviewed: boolean;
   }>;
+  /// Teacher list only — count of submissions with `is_reviewed === false`.
+  /// Drives the "X to grade" badge on the assignment card so the teacher
+  /// spots pending work without opening each row. Server-computed.
+  pendingGradingCount?: number;
 }
 
 export interface Submission {
@@ -53,6 +60,19 @@ export interface Submission {
     email: string;
     number: string;
   };
+  /// Populated on the `my-submission` endpoint only — the student's effective
+  /// extension deadline (from student-level or group-level extension, whichever
+  /// is later). Null if no extension has been granted.
+  _extension?: {
+    newDueAt: string;
+    reason: string | null;
+  } | null;
+  /// Sentinel flag: when true the response represents "no submission yet"
+  /// (but may carry `_extension`). The component should treat this as null.
+  _noSubmission?: true;
+  /// Group info for GROUP-mode assignments — group name, members, and
+  /// whether the current student is the leader.
+  _groupInfo?: GroupInfo | null;
 }
 
 export interface SubmissionExtension {
@@ -77,6 +97,7 @@ export interface CreateAssignmentInput {
   workMode?: AssignmentWorkMode;
   gradingScope?: AssignmentGradingScope;
   lateWindowMinutes?: number;
+  maxMarks?: number;
 }
 
 export type UpdateAssignmentInput = Partial<CreateAssignmentInput>;
@@ -105,6 +126,18 @@ export interface GrantExtensionBatchInput {
 export interface SubmitWorkInput {
   link?: string;
   content?: string;
+}
+
+/// Student-side rollup for the summary card at the top of the assignments
+/// tab. Server-aggregated so the wire stays small even in courses with
+/// hundreds of assignments.
+export interface StudentAssignmentSummary {
+  totalPublished: number;
+  submittedCount: number;
+  gradedCount: number;
+  lateCount: number;
+  missingCount: number;
+  avgGrade: number | null;
 }
 
 export interface AiGradeSuggestion {

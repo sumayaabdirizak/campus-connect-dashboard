@@ -3,7 +3,10 @@ import {
   createAssignment,
   deleteAssignment,
   deleteAssignmentAttachment,
+  duplicateAssignment,
   getAssignments,
+  getMyAssignmentSummary,
+  getMySubmission,
   getSubmissions,
   gradeSubmission,
   grantExtension,
@@ -12,7 +15,8 @@ import {
   submitWork,
   suggestGradeWithAi,
   updateAssignment,
-  uploadAssignmentAttachments
+  uploadAssignmentAttachments,
+  uploadSubmissionFile
 } from './assignments-service';
 import type {
   CreateAssignmentInput,
@@ -28,6 +32,10 @@ export const assignmentKeys = {
   list: (courseOfferingId: string) => [...assignmentKeys.all, 'list', courseOfferingId] as const,
   submissions: (assignmentId: number) =>
     [...assignmentKeys.all, 'submissions', assignmentId] as const,
+  mySubmission: (assignmentId: number) =>
+    [...assignmentKeys.all, 'my-submission', assignmentId] as const,
+  mySummary: (courseOfferingId: string) =>
+    [...assignmentKeys.all, 'my-summary', courseOfferingId] as const,
   extensions: (assignmentId: number) =>
     [...assignmentKeys.all, 'extensions', assignmentId] as const
 };
@@ -90,44 +98,128 @@ export function useDeleteAssignment(courseOfferingId: string) {
   });
 }
 
-export function useGradeSubmission(assignmentId: number) {
+/// Deep-clone an assignment. Invalidates the list so the new "Copy of …"
+/// draft slides into the table immediately.
+export function useDuplicateAssignment(courseOfferingId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: GradeInput) => gradeSubmission(assignmentId, input),
+    mutationFn: (id: number) => duplicateAssignment(id),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
+    }
+  });
+}
+
+/// Bug fix: previously these hooks bound `assignmentId` at instantiation
+/// time, so a component holding a single mutation instance for "the
+/// currently selected assignment" would silently send writes to whichever
+/// assignment was selected at last render. When a click flipped the
+/// selection AND triggered a mutate in the same tick, the request went to
+/// the old id (or 0 when nothing was selected before).
+///
+/// Fix: take the assignmentId in the mutation's input object. The component
+/// passes it per-call so the request always targets the intended row.
+export function useGradeSubmission() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      assignmentId,
+      input
+    }: {
+      assignmentId: number;
+      input: GradeInput;
+    }) => gradeSubmission(assignmentId, input),
+    onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.submissions(assignmentId) });
       queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
     }
   });
 }
 
-export function useGrantExtension(assignmentId: number) {
+export function useGrantExtension() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: GrantExtensionInput) => grantExtension(assignmentId, input),
-    onSuccess: () => {
+    mutationFn: ({
+      assignmentId,
+      input
+    }: {
+      assignmentId: number;
+      input: GrantExtensionInput;
+    }) => grantExtension(assignmentId, input),
+    onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.extensions(assignmentId) });
     }
   });
 }
 
-export function useGrantExtensionBatch(assignmentId: number) {
+export function useGrantExtensionBatch() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: GrantExtensionBatchInput) => grantExtensionBatch(assignmentId, input),
-    onSuccess: () => {
+    mutationFn: ({
+      assignmentId,
+      input
+    }: {
+      assignmentId: number;
+      input: GrantExtensionBatchInput;
+    }) => grantExtensionBatch(assignmentId, input),
+    onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.extensions(assignmentId) });
     }
   });
 }
 
-export function useSubmitWork(assignmentId: number) {
+export function useSubmitWork() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (input: SubmitWorkInput) => submitWork(assignmentId, input),
-    onSuccess: () => {
+    mutationFn: ({
+      assignmentId,
+      input
+    }: {
+      assignmentId: number;
+      input: SubmitWorkInput;
+    }) => submitWork(assignmentId, input),
+    onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.submissions(assignmentId) });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.mySubmission(assignmentId) });
+      // List query carries `_count.submissions` — refresh so the teacher's
+      // assignment list reflects the new submission count instantly.
+      // Broad `all` invalidation also catches the student's `mySummary`
+      // which depends on aggregate submission state.
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
     }
+  });
+}
+
+/// Student-side course-wide summary — drives the rollup card at the top
+/// of the student assignments view. Cheap server aggregate.
+export function useMyAssignmentSummary(courseOfferingId: string) {
+  return useQuery({
+    queryKey: assignmentKeys.mySummary(courseOfferingId),
+    queryFn: () => getMyAssignmentSummary(courseOfferingId),
+  });
+}
+
+/// Student-side query for their own submission row. Returns null when the
+/// student hasn't submitted yet. Used by the student card to render
+/// "Submitted X · Score Y%" without ever touching the teacher-only
+/// submissions list.
+export function useMySubmission(assignmentId: number | null) {
+  return useQuery({
+    queryKey: assignmentId
+      ? assignmentKeys.mySubmission(assignmentId)
+      : ['assignments', 'my-submission', 'none'],
+    queryFn: () => (assignmentId ? getMySubmission(assignmentId) : Promise.resolve(null)),
+    enabled: !!assignmentId
+  });
+}
+
+/// File upload for student submissions. Returns the URL the regular
+/// `useSubmitWork` mutation should be called with. Two-step on purpose —
+/// the JSON submit endpoint stays the same for link / text / file paths.
+export function useUploadSubmissionFile() {
+  return useMutation({
+    mutationFn: ({ assignmentId, file }: { assignmentId: number; file: File }) =>
+      uploadSubmissionFile(assignmentId, file)
   });
 }
 

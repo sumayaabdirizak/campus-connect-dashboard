@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "../../db/prisma.js";
 import { auth } from "../../middleware/auth.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
+import { pushSubscribeRateLimit } from "../../middleware/perUserRateLimit.js";
 
 const router = express.Router();
 
@@ -24,7 +25,7 @@ function configureWebPush() {
   return true;
 }
 
-router.post("/subscribe", auth, async (req, res) => {
+router.post("/subscribe", auth, pushSubscribeRateLimit, async (req, res) => {
   try {
     if (!configureWebPush()) {
       return res.status(503).json({ message: "Web Push not configured (VAPID keys missing)" });

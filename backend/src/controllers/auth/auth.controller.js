@@ -1,16 +1,12 @@
 import { prisma } from "../../db/prisma.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { env } from "../../config/env.js";
 import { issueCsrfCookie } from "../../middleware/csrf.js";
 import { getFacultyIdForFacultyAdminUser } from "../../utils/facultyAccess.js";
 import { HttpError } from "../../utils/httpError.js";
 import { syncDiscussionMembershipsForUser } from "../../features/discussions/membershipSync.service.js";
-
-const __agentLogPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../../../debug-b7cda9.log");
+import { newJti, revokeJti } from "../../utils/tokenRevocation.js";
 
 const ACCESS_COOKIE = "auth_token";
 const REFRESH_COOKIE = "refresh_token";
@@ -23,35 +19,6 @@ function getIsProduction() {
 
 async function buildPayload(user) {
   const roleName = user.role?.name;
-  // #region agent log
-  fetch("http://127.0.0.1:7768/ingest/31870779-47f0-4312-b278-1c6da891de23", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b7cda9" },
-    body: JSON.stringify({
-      sessionId: "b7cda9",
-      hypothesisId: "H_buildPayload_entry",
-      location: "auth.controller.js:buildPayload:entry",
-      message: "buildPayload role",
-      data: { roleName: roleName ?? null, userId: user.id },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  try {
-    fs.appendFileSync(
-      __agentLogPath,
-      `${JSON.stringify({
-        sessionId: "b7cda9",
-        hypothesisId: "H_buildPayload_entry",
-        location: "auth.controller.js:buildPayload:entry:file",
-        message: "buildPayload role",
-        data: { roleName: roleName ?? null, userId: user.id },
-        timestamp: Date.now(),
-      })}\n`,
-    );
-  } catch {
-    /* ignore */
-  }
-  // #endregion
   /** @type {{ id: number; sub: number; role: string; email: string; full_name: string; facultyId: number | null; departmentId: number | null; programId: number | null; facultyIds: number[] }} */
   const payload = {
     id: user.id,
@@ -98,15 +65,22 @@ async function buildPayload(user) {
   return payload;
 }
 
+/**
+ * Issue an access token with a fresh `jti` so it can be revoked
+ * independently on logout. The `jti` rides in the JWT payload (jwt.sign
+ * uses `jwtid` for the standard `jti` claim).
+ */
 function issueAccessToken(payload) {
   return jwt.sign({ ...payload, tokenType: "access" }, env.JWT_SECRET, {
     expiresIn: ACCESS_TTL_SECONDS,
+    jwtid: newJti(),
   });
 }
 
 function issueRefreshToken(payload) {
   return jwt.sign({ sub: payload.sub, tokenType: "refresh" }, env.JWT_SECRET, {
     expiresIn: REFRESH_TTL_SECONDS,
+    jwtid: newJti(),
   });
 }
 
@@ -169,35 +143,6 @@ export async function postLogin(req, res) {
   }
 
   loginPhase = "build_payload";
-  // #region agent log
-  fetch("http://127.0.0.1:7768/ingest/31870779-47f0-4312-b278-1c6da891de23", {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b7cda9" },
-    body: JSON.stringify({
-      sessionId: "b7cda9",
-      hypothesisId: "H_login_phase",
-      location: "auth.controller.js:postLogin:before_buildPayload",
-      message: "postLogin phase marker",
-      data: { loginPhase, role: user.role?.name ?? null, userId: user.id },
-      timestamp: Date.now(),
-    }),
-  }).catch(() => {});
-  try {
-    fs.appendFileSync(
-      __agentLogPath,
-      `${JSON.stringify({
-        sessionId: "b7cda9",
-        hypothesisId: "H_login_phase",
-        location: "auth.controller.js:postLogin:before_buildPayload:file",
-        message: "postLogin phase marker",
-        data: { loginPhase, role: user.role?.name ?? null, userId: user.id },
-        timestamp: Date.now(),
-      })}\n`,
-    );
-  } catch {
-    /* ignore */
-  }
-  // #endregion
 
   const jwtPayload = await buildPayload(user);
   const accessToken = issueAccessToken(jwtPayload);
@@ -258,6 +203,17 @@ export async function postRefresh(req, res) {
     setAuthCookies(res, newAccessToken, newRefreshToken);
     const csrfToken = issueCsrfCookie(req, res);
 
+    // Refresh-token rotation: revoke the OLD refresh token now that a
+    // fresh one has been issued. Without this step, an attacker who
+    // captured the refresh token (via XSS / malware) could keep
+    // refreshing forever even after the legitimate user has rotated.
+    if (payload?.jti && payload?.exp) {
+      await revokeJti(payload.jti, new Date(payload.exp * 1000), {
+        userId: typeof payload.sub === "number" ? payload.sub : null,
+        reason: "refresh_rotation",
+      });
+    }
+
     return res.json({ success: true, csrfToken });
   } catch {
     return res.status(401).json({ message: "Invalid refresh token" });
@@ -271,6 +227,44 @@ export async function getCsrf(req, res) {
 
 export async function postLogout(req, res) {
   const isProduction = getIsProduction();
+
+  // Server-side revocation: decode the access + refresh tokens (without
+  // verifying — we don't care if they're expired, only that we have the
+  // jti to add to the deny-list) and stamp them as revoked. Without this
+  // step, a token copied via XSS / malware / network capture before logout
+  // would remain valid until its natural expiry (up to 1 hour for access,
+  // 14 days for refresh). The deny-list closes that window.
+  const accessToken = readCookie(req, ACCESS_COOKIE);
+  const refreshToken = readCookie(req, REFRESH_COOKIE);
+  const userId = req.user?.id ?? req.user?.sub ?? null;
+
+  if (accessToken) {
+    try {
+      const decoded = jwt.decode(accessToken);
+      if (decoded?.jti && decoded?.exp) {
+        await revokeJti(decoded.jti, new Date(decoded.exp * 1000), {
+          userId: typeof userId === "number" ? userId : null,
+          reason: "logout",
+        });
+      }
+    } catch (e) {
+      console.error("[auth] failed to revoke access token on logout", { message: e?.message });
+    }
+  }
+  if (refreshToken) {
+    try {
+      const decoded = jwt.decode(refreshToken);
+      if (decoded?.jti && decoded?.exp) {
+        await revokeJti(decoded.jti, new Date(decoded.exp * 1000), {
+          userId: typeof userId === "number" ? userId : null,
+          reason: "logout",
+        });
+      }
+    } catch (e) {
+      console.error("[auth] failed to revoke refresh token on logout", { message: e?.message });
+    }
+  }
+
   res.clearCookie(ACCESS_COOKIE, {
     httpOnly: true,
     secure: isProduction,

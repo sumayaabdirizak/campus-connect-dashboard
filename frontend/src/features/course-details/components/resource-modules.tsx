@@ -28,9 +28,19 @@ import {
   AccordionItem,
   AccordionTrigger
 } from '@/components/ui/accordion';
-import { Edit, GripVertical, Plus, Trash2 } from 'lucide-react';
+import { BarChart3, Edit, GripVertical, Plus, Trash2 } from 'lucide-react';
 import type { CourseModule, Resource } from '../api/resources-types';
-import { ResourceCard, VideoRenderer, LinkRenderer, AudioRenderer, isAudio } from './resource-renderers';
+import {
+  ResourceCard,
+  VideoRenderer,
+  LinkRenderer,
+  AudioRenderer,
+  isAudio,
+  isUploadedVideo,
+  isUploadedAudio
+} from './resource-renderers';
+import { TrackedMediaPlayer } from './tracked-media-player';
+import { resourceDownloadUrl } from '../api/resources-service';
 
 // ─── DragHandle context ────────────────────────────────────────────────────
 //
@@ -80,6 +90,9 @@ interface ResourceModulesProps {
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
   onPreviewResource: (resource: Resource) => void;
+  /// Teacher-only: open the watch-analytics panel for an uploaded video/audio
+  /// resource. Undefined for students (they never see the Analytics button).
+  onAnalytics?: (resource: Resource) => void;
   /// Drag-end handlers. The component owns no mutation logic — it computes
   /// the new order, hands it back, and lets the parent fire the mutation.
   onReorderModules?: (orderedIds: number[]) => void;
@@ -111,6 +124,7 @@ export function ResourceModules({
   onEditResource,
   onDeleteResource,
   onPreviewResource,
+  onAnalytics,
   onReorderModules,
   onReorderResources
 }: ResourceModulesProps) {
@@ -152,6 +166,7 @@ export function ResourceModules({
             onEditResource={onEditResource}
             onDeleteResource={onDeleteResource}
             onPreviewResource={onPreviewResource}
+            onAnalytics={onAnalytics}
             onReorderResources={onReorderResources}
           />
         )}
@@ -165,6 +180,7 @@ export function ResourceModules({
           onEditResource={onEditResource}
           onDeleteResource={onDeleteResource}
           onPreviewResource={onPreviewResource}
+          onAnalytics={onAnalytics}
           onReorderResources={onReorderResources}
         />
       )}
@@ -265,6 +281,7 @@ function ModuleBucket({
   onEditResource,
   onDeleteResource,
   onPreviewResource,
+  onAnalytics,
   onReorderResources
 }: {
   module: CourseModule;
@@ -276,6 +293,7 @@ function ModuleBucket({
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
   onPreviewResource: (resource: Resource) => void;
+  onAnalytics?: (resource: Resource) => void;
   onReorderResources?: (
     items: { id: number; moduleId: number | null; position: number }[]
   ) => void;
@@ -357,6 +375,7 @@ function ModuleBucket({
             onEditResource={onEditResource}
             onDeleteResource={onDeleteResource}
             onPreviewResource={onPreviewResource}
+            onAnalytics={onAnalytics}
             onReorderResources={onReorderResources}
           />
         </AccordionContent>
@@ -372,6 +391,7 @@ function UngroupedBucket({
   onEditResource,
   onDeleteResource,
   onPreviewResource,
+  onAnalytics,
   onReorderResources
 }: {
   resources: Resource[];
@@ -380,6 +400,7 @@ function UngroupedBucket({
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
   onPreviewResource: (resource: Resource) => void;
+  onAnalytics?: (resource: Resource) => void;
   onReorderResources?: (
     items: { id: number; moduleId: number | null; position: number }[]
   ) => void;
@@ -428,6 +449,7 @@ function UngroupedBucket({
               onEditResource={onEditResource}
               onDeleteResource={onDeleteResource}
               onPreviewResource={onPreviewResource}
+              onAnalytics={onAnalytics}
               onReorderResources={onReorderResources}
             />
           )}
@@ -446,6 +468,7 @@ function ResourceList({
   onEditResource,
   onDeleteResource,
   onPreviewResource,
+  onAnalytics,
   onReorderResources
 }: {
   resources: Resource[];
@@ -454,6 +477,7 @@ function ResourceList({
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
   onPreviewResource: (resource: Resource) => void;
+  onAnalytics?: (resource: Resource) => void;
   onReorderResources?: (
     items: { id: number; moduleId: number | null; position: number }[]
   ) => void;
@@ -468,36 +492,69 @@ function ResourceList({
   const renderItem = (r: Resource) => {
     const dragHandle = !isStudent && onReorderResources ? <DragHandle /> : null;
 
+    // Teacher-only action cluster shared by the rich media headers (video /
+    // audio). Analytics shows only for uploaded media we can actually track.
+    const trackable = isUploadedVideo(r) || isUploadedAudio(r);
+    const mediaActions = !isStudent ? (
+      <>
+        {onAnalytics && trackable && (
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7'
+            onClick={() => onAnalytics(r)}
+            aria-label={`Watch analytics for ${r.title}`}
+          >
+            <BarChart3 className='w-3.5 h-3.5' />
+          </Button>
+        )}
+        {onEditResource && (
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7'
+            onClick={() => onEditResource(r)}
+            aria-label={`Edit ${r.title}`}
+          >
+            <Edit className='w-3.5 h-3.5' />
+          </Button>
+        )}
+        {onDeleteResource && (
+          <Button
+            variant='ghost'
+            size='icon'
+            className='h-7 w-7 text-destructive'
+            onClick={() => onDeleteResource(r.id)}
+            aria-label={`Delete ${r.title}`}
+          >
+            <Trash2 className='w-3.5 h-3.5' />
+          </Button>
+        )}
+      </>
+    ) : null;
+
     if (r.type === 'VIDEO') {
       return (
         <div className='space-y-2 border rounded-lg p-3'>
           <div className='flex items-center gap-2'>
             {dragHandle}
             <p className='font-medium text-sm flex-1 truncate'>{r.title}</p>
-            {!isStudent && onEditResource && (
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-7 w-7'
-                onClick={() => onEditResource(r)}
-                aria-label={`Edit ${r.title}`}
-              >
-                <Edit className='w-3.5 h-3.5' />
-              </Button>
-            )}
-            {!isStudent && onDeleteResource && (
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-7 w-7 text-destructive'
-                onClick={() => onDeleteResource(r.id)}
-                aria-label={`Delete ${r.title}`}
-              >
-                <Trash2 className='w-3.5 h-3.5' />
-              </Button>
-            )}
+            {mediaActions}
           </div>
-          <VideoRenderer url={r.url} title={r.title} />
+          {/* Uploaded video files get the tracked player (reports watch
+              progress to analytics); YouTube / external links keep the plain
+              renderer since we can't measure watch time through an iframe. */}
+          {isUploadedVideo(r) ? (
+            <TrackedMediaPlayer
+              resourceId={r.id}
+              url={resourceDownloadUrl(r.id)}
+              title={r.title}
+              kind='video'
+              track={!!isStudent}
+            />
+          ) : (
+            <VideoRenderer url={r.url} title={r.title} />
+          )}
         </div>
       );
     }
@@ -517,30 +574,20 @@ function ResourceList({
           <div className='flex items-center gap-2'>
             {dragHandle}
             <p className='font-medium text-sm flex-1 truncate'>{r.title}</p>
-            {!isStudent && onEditResource && (
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-7 w-7'
-                onClick={() => onEditResource(r)}
-                aria-label={`Edit ${r.title}`}
-              >
-                <Edit className='w-3.5 h-3.5' />
-              </Button>
-            )}
-            {!isStudent && onDeleteResource && (
-              <Button
-                variant='ghost'
-                size='icon'
-                className='h-7 w-7 text-destructive'
-                onClick={() => onDeleteResource(r.id)}
-                aria-label={`Delete ${r.title}`}
-              >
-                <Trash2 className='w-3.5 h-3.5' />
-              </Button>
-            )}
+            {mediaActions}
           </div>
-          <AudioRenderer url={r.url} title={r.title} />
+          {isUploadedAudio(r) ? (
+            <TrackedMediaPlayer
+              resourceId={r.id}
+              url={resourceDownloadUrl(r.id)}
+              title={r.title}
+              kind='audio'
+              track={!!isStudent}
+              showTitle={false}
+            />
+          ) : (
+            <AudioRenderer url={r.url} title={r.title} />
+          )}
         </div>
       );
     }

@@ -33,14 +33,23 @@ export function NotificationToggle({ compact }: NotificationToggleProps) {
       toast.error('Notifications are blocked — change browser permission to enable.');
       return;
     }
-    if (subscribed) {
-      await disable();
-      toast.success('Notifications turned off');
-    } else {
-      await enable();
-      if (Notification.permission === 'granted') {
-        toast.success('Notifications enabled');
+    try {
+      if (subscribed) {
+        await disable();
+        toast.success('Notifications turned off');
+      } else {
+        const ok = await enable();
+        if (Notification.permission === 'granted') {
+          // `enable` returns false when push is not available on the server.
+          if (ok === false) {
+            toast.error('Push notifications are not available on this server.');
+          } else {
+            toast.success('Notifications enabled');
+          }
+        }
       }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not change notification setting');
     }
   };
 

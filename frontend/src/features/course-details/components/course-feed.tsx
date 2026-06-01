@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,6 @@ import {
   Search,
   Pin,
   Bot,
-  Paperclip,
   X as XIcon,
   Download,
   MessageSquare,
@@ -23,6 +22,8 @@ import {
 } from 'lucide-react';
 import { EmptyState } from './_shared/empty-state';
 import { ListSkeleton } from './_shared/list-skeleton';
+import { CoursePostForm } from './course-post-form';
+import type { CoursePostFormValues } from '../schemas/course-post';
 import { useDeleteWithUndo } from './_shared/use-delete-with-undo';
 import { useQueryClient } from '@/lib/async-query';
 import { deleteCoursePost } from '../api/feed-service';
@@ -302,11 +303,8 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
   const [filter, setFilter] = useState<'all' | 'important' | 'attachments' | 'auto'>('all');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newContent, setNewContent] = useState('');
-  const [newImportant, setNewImportant] = useState(false);
-  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  // All create-form field state (title/content/important/files) now lives
+  // inside `CoursePostForm`. The dialog only tracks open/closed here.
   const [editing, setEditing] = useState<CoursePost | null>(null);
 
   const filtered = posts.filter((p) => {
@@ -317,47 +315,23 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
     return true;
   });
 
-  const resetCreateForm = () => {
-    setNewTitle('');
-    setNewContent('');
-    setNewImportant(false);
-    setPendingFiles([]);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const pickFiles = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const list = Array.from(e.target.files ?? []);
-    const oversized = list.find((f) => f.size > 25 * 1024 * 1024);
-    if (oversized) {
-      alert(`"${oversized.name}" exceeds 25 MB`);
-      e.target.value = '';
-      return;
-    }
-    setPendingFiles((prev) => [...prev, ...list]);
-    e.target.value = '';
-  };
-
-  const removePending = (i: number) =>
-    setPendingFiles((prev) => prev.filter((_, idx) => idx !== i));
-
-  const handleCreate = () => {
-    if (!newTitle.trim() || !newContent.trim()) return;
+  // Called by CoursePostForm once Zod has accepted the text fields. The
+  // form gives us its own `pendingFiles` array via the second argument so
+  // we can chain the two mutations: create post → upload attachments.
+  // If there are no files, we skip the second call entirely.
+  const handleCreate = (values: CoursePostFormValues, pendingFiles: File[]) => {
     createMutation.mutate(
-      { title: newTitle.trim(), content: newContent.trim(), isImportant: newImportant },
+      { title: values.title, content: values.content, isImportant: values.isImportant },
       {
         onSuccess: (post) => {
           if (pendingFiles.length === 0) {
             setCreateOpen(false);
-            resetCreateForm();
             return;
           }
           uploadAttachmentsMutation.mutate(
             { postId: post.id, files: pendingFiles },
             {
-              onSettled: () => {
-                setCreateOpen(false);
-                resetCreateForm();
-              }
+              onSettled: () => setCreateOpen(false)
             }
           );
         }
@@ -575,89 +549,12 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
           <DialogHeader>
             <DialogTitle>Create New Post</DialogTitle>
           </DialogHeader>
-          <div className='space-y-4 py-4'>
-            <Input
-              value={newTitle}
-              onChange={(e) => setNewTitle(e.target.value)}
-              placeholder='Title'
-            />
-            <Textarea
-              value={newContent}
-              onChange={(e) => setNewContent(e.target.value)}
-              placeholder='Content'
-              rows={4}
-            />
-            <div className='space-y-2'>
-              <input
-                ref={fileInputRef}
-                type='file'
-                multiple
-                onChange={pickFiles}
-                className='hidden'
-              />
-              <Button
-                type='button'
-                variant='outline'
-                size='sm'
-                className='gap-1 w-full'
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <Paperclip className='w-4 h-4' /> Attach files
-              </Button>
-              {pendingFiles.length > 0 && (
-                <ul className='space-y-1'>
-                  {pendingFiles.map((f, i) => (
-                    <li
-                      key={`${f.name}-${i}`}
-                      className='flex items-center justify-between text-xs bg-muted/40 rounded px-2 py-1'
-                    >
-                      <span className='truncate'>
-                        {f.name}{' '}
-                        <span className='text-muted-foreground'>
-                          ({(f.size / 1024).toFixed(1)} KB)
-                        </span>
-                      </span>
-                      <button
-                        type='button'
-                        onClick={() => removePending(i)}
-                        className='text-muted-foreground hover:text-destructive'
-                      >
-                        <XIcon className='w-3.5 h-3.5' />
-                      </button>
-                    </li>
-                  ))}
-                </ul>
-              )}
-              <p className='text-[10px] text-muted-foreground'>Up to 10 files, 25 MB each.</p>
-            </div>
-            <label className='flex items-center gap-2 text-sm'>
-              <Checkbox
-                checked={newImportant}
-                onCheckedChange={(v) => setNewImportant(Boolean(v))}
-              />
-              Mark as important
-            </label>
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreate}
-              disabled={
-                createMutation.isPending ||
-                uploadAttachmentsMutation.isPending ||
-                !newTitle.trim() ||
-                !newContent.trim()
-              }
-            >
-              {createMutation.isPending
-                ? 'Posting…'
-                : uploadAttachmentsMutation.isPending
-                  ? 'Uploading…'
-                  : 'Post'}
-            </Button>
-          </DialogFooter>
+          <CoursePostForm
+            onSubmit={handleCreate}
+            onCancel={() => setCreateOpen(false)}
+            submitting={createMutation.isPending}
+            uploading={uploadAttachmentsMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
 

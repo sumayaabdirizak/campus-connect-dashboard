@@ -16,7 +16,8 @@ export const assignmentSchema = z
     workMode: z.enum(['INDIVIDUAL', 'GROUP']),
     gradingScope: z.enum(['INDIVIDUAL', 'GROUP']),
     allowLate: z.boolean(),
-    lateWindow: z.string().regex(/^\d+$/, 'Must be a number').or(z.literal(''))
+    lateWindow: z.string().regex(/^\d+$/, 'Must be a number').or(z.literal('')),
+    maxMarks: z.number().int().min(1, 'Must be at least 1').max(1000, 'Max 1000')
   })
   .superRefine((v, ctx) => {
     // Solo work can't share a group grade.
@@ -79,6 +80,7 @@ export function CreateAssignmentForm({
       gradingScope: 'INDIVIDUAL' as AssignmentGradingScope,
       allowLate: false,
       lateWindow: '0',
+      maxMarks: 100,
       ...initialValues
     } as AssignmentFormValues,
     validators: { onChange: assignmentSchema },
@@ -185,6 +187,28 @@ export function CreateAssignmentForm({
             ) : null
           }
         </form.Subscribe>
+        <form.AppField name='maxMarks'>
+          {(field) => (
+            <div className='space-y-1'>
+              <Label htmlFor='maxMarks'>Total marks</Label>
+              <Input
+                id='maxMarks'
+                type='number'
+                min={1}
+                max={1000}
+                value={field.state.value}
+                onBlur={field.handleBlur}
+                onChange={(e) => field.handleChange(Number(e.target.value) || 0)}
+                placeholder='100'
+              />
+              {field.state.meta.errors[0] && (
+                <p className='text-xs text-destructive'>
+                  {String(field.state.meta.errors[0])}
+                </p>
+              )}
+            </div>
+          )}
+        </form.AppField>
         <div className='flex justify-end gap-2 pt-2'>
           <Button type='button' variant='outline' onClick={onCancel}>
             Cancel

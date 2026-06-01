@@ -44,8 +44,31 @@ export function isAudio(resource: Resource) {
   return (
     resource.type === 'AUDIO' ||
     (resource.mimeType ?? '').startsWith('audio/') ||
-    /\.(mp3|wav|ogg|flac|aac|m4a|webm)$/i.test(resource.url)
+    /\.(mp3|wav|ogg|flac|aac|m4a)$/i.test(resource.url)
   );
+}
+
+/// True for an UPLOADED video file we can play + track inline. We deliberately
+/// exclude YouTube / external links here — those open out and can't report
+/// watch progress through the native <video> element.
+export function isUploadedVideo(resource: Resource) {
+  return (
+    !!resource.originalName &&
+    (resource.type === 'VIDEO' ||
+      (resource.mimeType ?? '').startsWith('video/') ||
+      /\.(mp4|mov|mkv|webm)$/i.test(resource.url))
+  );
+}
+
+/// True for an uploaded audio file we can play + track inline.
+export function isUploadedAudio(resource: Resource) {
+  return !!resource.originalName && isAudio(resource);
+}
+
+/// Either uploaded audio or video — i.e. something the TrackedMediaPlayer can
+/// render and report watch analytics for.
+export function isTrackableMedia(resource: Resource) {
+  return isUploadedVideo(resource) || isUploadedAudio(resource);
 }
 
 /// Pick the right icon for a file based on its mime. We previously rendered

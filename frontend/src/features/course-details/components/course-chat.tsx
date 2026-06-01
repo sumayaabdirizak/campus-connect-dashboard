@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { ListSkeleton } from './_shared/list-skeleton';
 import {
   CornerUpLeft,
   Send,
@@ -249,8 +250,13 @@ export function CourseChat({ courseId }: CourseChatProps) {
   };
 
   if (isLoading && !chatRoom) {
+    // Match the chat panel's normal geometry (border, rounded-lg, 400px tall)
+    // so the layout doesn't reflow when the real chat lands. Inside, a
+    // ListSkeleton renders message-shaped placeholders for a clean fade-in.
     return (
-      <div className='border rounded-lg h-[400px] flex items-center justify-center'>Loading...</div>
+      <div className='h-[400px] rounded-lg border p-4'>
+        <ListSkeleton variant='row' count={5} />
+      </div>
     );
   }
 

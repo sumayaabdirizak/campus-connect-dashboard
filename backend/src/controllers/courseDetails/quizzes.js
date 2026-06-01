@@ -4,6 +4,7 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { auth } from "../../middleware/auth.js";
 import { validateBody } from "../../middleware/validateRequest.js";
 import { finalizeAttempt } from "../../services/quizAttempt.service.js";
+import { emitSubmitted as emitMonitorSubmitted } from "../../socket/quizLiveMonitor.js";
 import {
   requireCourseOfferingRead,
   requireCourseOfferingManage,
@@ -53,7 +54,38 @@ router.get('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler
     orderBy: { created_at: 'desc' },
   });
 
-  res.json(quizzes);
+  // "Needs grading" surfaces the count of SUBMITTED attempts that still
+  // contain at least one short-answer answer the teacher hasn't scored
+  // (is_correct IS NULL). One grouped query for the whole offering — much
+  // cheaper than fanning out per-quiz, and reused by the list card to show
+  // a "3 need grading" badge so the teacher sees pending work at a glance.
+  const quizIds = quizzes.map((q) => q.id);
+  const pendingGroups = quizIds.length
+    ? await prisma.quizAttempt.findMany({
+        where: {
+          quizId: { in: quizIds },
+          submitted_at: { not: null },
+          answers: {
+            some: {
+              is_correct: null,
+              question: { question_type: 'SHORT_ANSWER' },
+            },
+          },
+        },
+        select: { quizId: true },
+      })
+    : [];
+  const pendingByQuiz = new Map();
+  for (const a of pendingGroups) {
+    pendingByQuiz.set(a.quizId, (pendingByQuiz.get(a.quizId) ?? 0) + 1);
+  }
+
+  res.json(
+    quizzes.map((q) => ({
+      ...q,
+      pendingGradingCount: pendingByQuiz.get(q.id) ?? 0,
+    }))
+  );
 }));
 
 /// Verify the moduleId in the body (if any) belongs to `courseOfferingId`.
@@ -80,7 +112,7 @@ router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), validateB
   const {
     title, description, duration_minutes, is_draft, open_at, close_at,
     shuffle_questions, shuffle_answers, max_attempts, passing_score,
-    timing_mode, scheduled_duration, moduleId
+    timing_mode, scheduled_duration, moduleId, questions
   } = req.body;
 
   // Resolve once, surfacing cross-offering attempts as a clean 400.
@@ -90,6 +122,34 @@ router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), validateB
   } catch (e) {
     return res.status(e.status || 400).json({ message: e.message });
   }
+
+  // Optional inline questions (AI "generate a whole quiz" flow). Nest them
+  // under the quiz so the create is atomic — order_index follows the array
+  // position the teacher curated in the preview. Short-answer rows carry no
+  // options. The schema already validated each row's option shape.
+  const nestedQuestions =
+    Array.isArray(questions) && questions.length > 0
+      ? {
+          create: questions.map((q, i) => ({
+            question_text: q.question_text,
+            question_type: q.question_type || 'MCQ',
+            points: q.points ?? 1,
+            correct_answer: q.correct_answer ?? null,
+            explanation: q.explanation ?? null,
+            order_index: i,
+            options:
+              q.question_type !== 'SHORT_ANSWER' && q.options?.length
+                ? {
+                    create: q.options.map((o, idx) => ({
+                      option_text: o.option_text,
+                      is_correct: !!o.is_correct,
+                      order_index: o.order_index ?? idx,
+                    })),
+                  }
+                : undefined,
+          })),
+        }
+      : undefined;
 
   const quiz = await prisma.quiz.create({
     data: {
@@ -107,6 +167,7 @@ router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), validateB
       timing_mode: timing_mode || 'flexible',
       scheduled_duration: scheduled_duration || null,
       ...(resolvedModuleId !== undefined && { moduleId: resolvedModuleId }),
+      ...(nestedQuestions && { questions: nestedQuestions }),
     },
     include: {
       questions: { include: { options: true } },
@@ -176,6 +237,84 @@ router.delete('/:quizId', auth, requireQuizManage(), asyncHandler(async (req, re
   const qid = parseInt(req.params.quizId, 10);
   await prisma.quiz.delete({ where: { id: qid } });
   res.json({ success: true });
+}));
+
+/// Duplicate a quiz including all of its questions and options. The new quiz
+/// lands as a DRAFT, prefixed with "Copy of ", and is filed in the same
+/// chapter (moduleId) as the source so the teacher finds it next to the
+/// original. Attempts / autosaved answers from the source are NOT copied —
+/// the duplicate starts with a clean slate so students don't inherit a peer's
+/// answers if it gets published. Single transaction so a mid-flight failure
+/// can't leave a half-cloned quiz behind.
+router.post('/:quizId/duplicate', auth, requireQuizManage(), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
+
+  const source = await prisma.quiz.findUnique({
+    where: { id: qid },
+    include: {
+      questions: {
+        include: { options: { orderBy: { order_index: 'asc' } } },
+        orderBy: { order_index: 'asc' },
+      },
+    },
+  });
+  if (!source) return res.status(404).json({ message: 'Quiz not found' });
+
+  // Clone in one transaction so any DB error rolls back partial writes.
+  const created = await prisma.$transaction(async (tx) => {
+    const newQuiz = await tx.quiz.create({
+      data: {
+        title: `Copy of ${source.title}`,
+        description: source.description,
+        duration_minutes: source.duration_minutes,
+        courseOfferingId: source.courseOfferingId,
+        is_draft: true, // always start drafts — protects against accidental publish
+        open_at: source.open_at,
+        close_at: source.close_at,
+        shuffle_questions: source.shuffle_questions,
+        shuffle_answers: source.shuffle_answers,
+        max_attempts: source.max_attempts,
+        passing_score: source.passing_score,
+        timing_mode: source.timing_mode,
+        scheduled_duration: source.scheduled_duration,
+        moduleId: source.moduleId,
+      },
+    });
+
+    for (const q of source.questions) {
+      await tx.quizQuestion.create({
+        data: {
+          quizId: newQuiz.id,
+          question_text: q.question_text,
+          question_type: q.question_type,
+          points: q.points,
+          order_index: q.order_index,
+          correct_answer: q.correct_answer,
+          explanation: q.explanation,
+          options: q.options.length
+            ? {
+                create: q.options.map((o) => ({
+                  option_text: o.option_text,
+                  is_correct: o.is_correct,
+                  order_index: o.order_index,
+                })),
+              }
+            : undefined,
+        },
+      });
+    }
+
+    return tx.quiz.findUnique({
+      where: { id: newQuiz.id },
+      include: {
+        questions: { include: { options: true }, orderBy: { order_index: 'asc' } },
+        module: { select: { id: true, title: true, position: true, publishedAt: true } },
+        _count: { select: { attempts: true } },
+      },
+    });
+  });
+
+  res.status(201).json(created);
 }));
 
 // ─── CSV import / export ────────────────────────────────────────────────────
@@ -496,6 +635,126 @@ router.get('/:quizId/attempts', auth, requireQuizManage(), asyncHandler(async (r
   res.json(attempts);
 }));
 
+/// Per-question analytics: how often each question was answered correctly,
+/// which incorrect option students gravitated to, and overall difficulty.
+/// Aggregates over every SUBMITTED attempt — in-progress and abandoned rows
+/// are excluded so the numbers reflect real exam behaviour.
+///
+/// Shape:
+///   { totalSubmissions, avgScore, questions: [{
+///       id, question_text, question_type, points, order_index,
+///       totalAnswered, correctCount, correctRate (0-100), pending (SA only),
+///       optionStats?: [{ optionId, option_text, is_correct, pickedCount, pickedPct }]
+///   }] }
+router.get('/:quizId/analytics', auth, requireQuizManage(), asyncHandler(async (req, res) => {
+  const qid = parseInt(req.params.quizId, 10);
+
+  const quiz = await prisma.quiz.findUnique({
+    where: { id: qid },
+    include: {
+      questions: {
+        include: { options: { orderBy: { order_index: 'asc' } } },
+        orderBy: { order_index: 'asc' },
+      },
+    },
+  });
+  if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
+
+  const submitted = await prisma.quizAttempt.findMany({
+    where: { quizId: qid, submitted_at: { not: null } },
+    select: {
+      id: true,
+      score: true,
+      answers: {
+        select: {
+          questionId: true,
+          selected_option_id: true,
+          is_correct: true,
+        },
+      },
+    },
+  });
+
+  const totalSubmissions = submitted.length;
+  const scoredAttempts = submitted.filter((a) => typeof a.score === 'number');
+  const avgScore = scoredAttempts.length
+    ? Math.round(
+        (scoredAttempts.reduce((sum, a) => sum + (a.score ?? 0), 0) / scoredAttempts.length) * 10
+      ) / 10
+    : null;
+
+  // Bucket answers by question for O(N) aggregation. We track pending
+  // separately so short-answer rows the teacher hasn't graded yet don't
+  // skew the correct-rate downward.
+  const byQuestion = new Map();
+  for (const a of submitted) {
+    for (const ans of a.answers) {
+      let bucket = byQuestion.get(ans.questionId);
+      if (!bucket) {
+        bucket = {
+          totalAnswered: 0,
+          correctCount: 0,
+          pending: 0,
+          // Map<optionId, pickedCount>
+          optionPicks: new Map(),
+        };
+        byQuestion.set(ans.questionId, bucket);
+      }
+      bucket.totalAnswered++;
+      if (ans.is_correct === true) bucket.correctCount++;
+      else if (ans.is_correct === null) bucket.pending++;
+      if (ans.selected_option_id != null) {
+        bucket.optionPicks.set(
+          ans.selected_option_id,
+          (bucket.optionPicks.get(ans.selected_option_id) ?? 0) + 1
+        );
+      }
+    }
+  }
+
+  const questions = quiz.questions.map((q) => {
+    const b = byQuestion.get(q.id) ?? {
+      totalAnswered: 0,
+      correctCount: 0,
+      pending: 0,
+      optionPicks: new Map(),
+    };
+    // correctRate excludes pending rows from the denominator — counting an
+    // ungraded SA as "wrong" would mislead the teacher into thinking the
+    // question was too hard when really it's just unscored.
+    const graded = b.totalAnswered - b.pending;
+    const correctRate = graded > 0 ? Math.round((b.correctCount / graded) * 100) : null;
+
+    const optionStats = q.options.length
+      ? q.options.map((o) => {
+          const picked = b.optionPicks.get(o.id) ?? 0;
+          return {
+            optionId: o.id,
+            option_text: o.option_text,
+            is_correct: o.is_correct,
+            pickedCount: picked,
+            pickedPct: b.totalAnswered > 0 ? Math.round((picked / b.totalAnswered) * 100) : 0,
+          };
+        })
+      : undefined;
+
+    return {
+      id: q.id,
+      question_text: q.question_text,
+      question_type: q.question_type,
+      points: q.points,
+      order_index: q.order_index,
+      totalAnswered: b.totalAnswered,
+      correctCount: b.correctCount,
+      correctRate,
+      pending: b.pending,
+      optionStats,
+    };
+  });
+
+  res.json({ totalSubmissions, avgScore, questions });
+}));
+
 // ─── Submit attempt (student) ────────────────────────────────────────────────
 
 router.post('/:quizId/submit', auth, requireStudentQuizAccess(), validateBody(submitAttemptBodySchema), asyncHandler(async (req, res) => {
@@ -519,6 +778,19 @@ router.post('/:quizId/submit', auth, requireStudentQuizAccess(), validateBody(su
     answers,
     violationsCount: violations_count,
   });
+
+  // Live-monitor: flip the teacher's tile to "submitted" with the score.
+  // closure_reason is either null (manual submit) or whatever finalize put
+  // on the row (e.g. 'time_expired' if cron beat the student to it).
+  try {
+    emitMonitorSubmitted({
+      quizId: qid,
+      attempt: updatedAttempt,
+      closureReason: updatedAttempt?.closure_reason ?? null,
+    });
+  } catch (e) {
+    console.warn("[quiz-monitor] emit on submit failed:", e.message);
+  }
 
   res.json(updatedAttempt);
 }));

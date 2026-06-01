@@ -74,6 +74,57 @@ export interface ResourceFilters {
   status?: 'all' | 'PENDING' | 'APPROVED' | 'REJECTED';
 }
 
+// ─── Watch tracking (video / audio analytics) ───────────────────────────────
+
+/// Heartbeat payload the player POSTs as a student watches. `watchedDelta` is
+/// the seconds of real playback since the previous beat (the server clamps it).
+export interface ResourceProgressInput {
+  watchedDelta: number;
+  position: number;
+  duration: number;
+  /// True on a fresh play from the start — increments the server view count.
+  started?: boolean;
+  /// True when the media fired its `ended` event — the student played through
+  /// to the end, so the server marks the view completed regardless of whether
+  /// accumulated watch time crossed the 90% threshold (buffering / tab
+  /// throttling can otherwise leave a genuine full-watcher just under it).
+  ended?: boolean;
+}
+
+/// The calling student's own progress, used to resume playback.
+export interface MyResourceProgress {
+  watchedSeconds: number;
+  durationSeconds: number;
+  lastPositionSeconds: number;
+  completed: boolean;
+}
+
+/// One row of teacher analytics — a single enrolled student's watch state.
+/// Non-watchers are included with zeroes so the teacher sees who hasn't started.
+export interface ResourceAnalyticsRow {
+  studentId: number;
+  fullName: string;
+  number: string;
+  watchedSeconds: number;
+  durationSeconds: number;
+  /// 0–100, derived from watchedSeconds / durationSeconds.
+  percent: number;
+  completed: boolean;
+  viewCount: number;
+  lastViewedAt: string | null;
+  started: boolean;
+}
+
+export interface ResourceAnalytics {
+  summary: {
+    totalStudents: number;
+    viewers: number;
+    completedCount: number;
+    avgPercent: number;
+  };
+  rows: ResourceAnalyticsRow[];
+}
+
 // ─── Modules ────────────────────────────────────────────────────────────────
 
 export interface CourseModule {

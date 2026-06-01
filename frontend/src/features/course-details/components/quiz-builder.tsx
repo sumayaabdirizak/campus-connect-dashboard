@@ -636,7 +636,7 @@ function SortableQuestionRow({
                     key={o.id}
                     className={`text-xs flex items-center gap-2 ${
                       o.is_correct
-                        ? 'text-emerald-600 dark:text-emerald-400 font-medium'
+                        ? 'text-success font-medium'
                         : 'text-muted-foreground'
                     }`}
                   >

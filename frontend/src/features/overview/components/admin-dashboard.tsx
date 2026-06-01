@@ -49,7 +49,7 @@ export function AdminDashboard({ user }: { user: any }) {
         {/* Welcome Banner */}
         <motion.div
           variants={itemVariants}
-          className='lg:col-span-5 xl:col-span-6 bg-slate-50 text-slate-900 rounded-2xl p-8 relative overflow-hidden shadow-sm border border-slate-200 transform transition-transform hover:scale-[1.01] duration-300 min-h-[240px] flex flex-col justify-center'
+          className='lg:col-span-5 xl:col-span-6 bg-muted text-foreground rounded-2xl p-8 relative overflow-hidden shadow-sm border border-border transform transition-transform hover:scale-[1.01] duration-300 min-h-[240px] flex flex-col justify-center'
         >
           <div className='absolute top-0 right-0 opacity-40 pointer-events-none'>
             <svg
@@ -64,33 +64,33 @@ export function AdminDashboard({ user }: { user: any }) {
             </svg>
           </div>
           <div className='relative z-10'>
-            <h2 className='text-3xl font-bold tracking-tight mb-2 text-slate-800'>
+            <h2 className='text-3xl font-bold tracking-tight mb-2 text-foreground'>
               Welcome Back, {user.full_name?.split(' ')[0] || (isDean ? 'Dean' : 'Admin')}!
             </h2>
-            <p className='text-slate-500 font-medium mb-8'>
+            <p className='text-muted-foreground font-medium mb-8'>
               Here is your core {isDean ? 'faculty overview' : 'system administrative overview'} for
               today.
             </p>
 
             <div className='flex items-center space-x-4'>
-              <div className='bg-white rounded-xl p-3 flex items-center gap-3 border border-slate-200 shadow-sm'>
-                <div className='bg-slate-100 text-slate-600 p-2.5 rounded-lg border border-slate-200'>
+              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm'>
+                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
                   <MonitorPlay className='h-5 w-5' />
                 </div>
                 <div>
-                  <p className='text-sm font-bold text-slate-800 leading-tight'>245</p>
-                  <p className='text-[11px] text-slate-500 font-medium leading-tight'>
+                  <p className='text-sm font-bold text-foreground leading-tight'>245</p>
+                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     Active Sessions
                   </p>
                 </div>
               </div>
-              <div className='bg-white rounded-xl p-3 flex items-center gap-3 border border-slate-200 shadow-sm'>
-                <div className='bg-slate-100 text-slate-600 p-2.5 rounded-lg border border-slate-200'>
+              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm'>
+                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
                   <BookOpen className='h-5 w-5' />
                 </div>
                 <div>
-                  <p className='text-sm font-bold text-slate-800 leading-tight'>48</p>
-                  <p className='text-[11px] text-slate-500 font-medium leading-tight'>
+                  <p className='text-sm font-bold text-foreground leading-tight'>48</p>
+                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     Active Courses
                   </p>
                 </div>
@@ -105,24 +105,24 @@ export function AdminDashboard({ user }: { user: any }) {
             <StatBox
               title='Total Students'
               value='3,920'
-              icon={<GraduationCap className='h-5 w-5 text-slate-700' />}
-              iconBg='bg-slate-100 border border-slate-200'
+              icon={<GraduationCap className='h-5 w-5 text-foreground' />}
+              iconBg='bg-muted border border-border'
             />
           </motion.div>
           <motion.div variants={itemVariants} className='h-full'>
             <StatBox
               title='Departments'
               value='12'
-              icon={<Building2 className='h-5 w-5 text-slate-700' />}
-              iconBg='bg-slate-100 border border-slate-200'
+              icon={<Building2 className='h-5 w-5 text-foreground' />}
+              iconBg='bg-muted border border-border'
             />
           </motion.div>
           <motion.div variants={itemVariants} className='h-full'>
             <StatBox
               title='Total Faculty'
               value='342'
-              icon={<Users className='h-5 w-5 text-slate-700' />}
-              iconBg='bg-slate-100 border border-slate-200'
+              icon={<Users className='h-5 w-5 text-foreground' />}
+              iconBg='bg-muted border border-border'
             />
           </motion.div>
         </div>
@@ -130,12 +130,12 @@ export function AdminDashboard({ user }: { user: any }) {
 
       {/* Chart Section */}
       <motion.div variants={itemVariants} className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-        <Card className='lg:col-span-2 border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl overflow-hidden'>
+        <Card className='lg:col-span-2 border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl overflow-hidden'>
           <CardHeader className='flex flex-row items-center justify-between pb-6 pt-6'>
-            <CardTitle className='text-lg font-bold text-slate-800'>
+            <CardTitle className='text-lg font-bold text-foreground'>
               Faculty Enrollment Figures
             </CardTitle>
-            <div className='text-sm font-medium text-slate-500 cursor-pointer hover:bg-slate-50 p-2 rounded-md transition-colors'>
+            <div className='text-sm font-medium text-muted-foreground cursor-pointer hover:bg-muted p-2 rounded-md transition-colors'>
               Current Semester ▾
             </div>
           </CardHeader>
@@ -196,14 +196,14 @@ function StatBox({
   iconBg: string;
 }) {
   return (
-    <Card className='border-slate-100 shadow-sm rounded-2xl flex flex-col justify-center h-full transform transition-transform hover:scale-[1.02] duration-300'>
+    <Card className='border-border shadow-sm rounded-2xl flex flex-col justify-center h-full transform transition-transform hover:scale-[1.02] duration-300'>
       <CardContent className='p-6'>
         <div className='flex items-center justify-between space-x-4'>
           <div className={`${iconBg} p-3 rounded-xl`}>{icon}</div>
         </div>
         <div className='mt-4'>
-          <p className='text-sm font-semibold text-slate-500'>{title}</p>
-          <h3 className='text-3xl font-bold text-slate-800 mt-1'>{value}</h3>
+          <p className='text-sm font-semibold text-muted-foreground'>{title}</p>
+          <h3 className='text-3xl font-bold text-foreground mt-1'>{value}</h3>
         </div>
       </CardContent>
     </Card>

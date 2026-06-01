@@ -7,7 +7,10 @@ import {
   CourseModule,
   CreateModuleData,
   UpdateModuleData,
-  ReorderItem
+  ReorderItem,
+  ResourceProgressInput,
+  MyResourceProgress,
+  ResourceAnalytics
 } from './resources-types';
 import { apiClient, ensureCsrfToken } from '@/lib/api-client';
 
@@ -77,8 +80,44 @@ export async function uploadResourceFile(file: File): Promise<UploadResourceFile
   return res.json();
 }
 
+// ─── Watch tracking (video / audio analytics) ───────────────────────────────
+
+/// Fire-and-forget heartbeat from the media player. Throttled by the caller;
+/// failures are swallowed there so a dropped beat never interrupts playback.
+export async function recordResourceProgress(
+  resourceId: number,
+  input: ResourceProgressInput
+): Promise<MyResourceProgress> {
+  return fetchWithAuth<MyResourceProgress>(`/resources/${resourceId}/progress`, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
+}
+
+/// The student's own saved progress (for resume). Null when never watched.
+export async function getMyResourceProgress(
+  resourceId: number
+): Promise<MyResourceProgress | null> {
+  return fetchWithAuth<MyResourceProgress | null>(
+    `/resources/${resourceId}/my-progress`,
+    { cache: 'no-store' }
+  );
+}
+
+/// Teacher per-student watch analytics for one resource.
+export async function getResourceAnalytics(
+  resourceId: number
+): Promise<ResourceAnalytics> {
+  return fetchWithAuth<ResourceAnalytics>(`/resources/${resourceId}/analytics`, {
+    cache: 'no-store'
+  });
+}
+
 export function resourceDownloadUrl(resourceId: number): string {
-  return `${API_BASE_URL}/resources/${resourceId}/download`;
+  // Return a same-origin path that next.config.ts rewrites to the backend.
+  // Same-origin requests carry cookies automatically — no CORS preflight,
+  // no credentials juggling, no proxy Route Handler needed.
+  return `/api/download/${resourceId}`;
 }
 
 // ─── Modules ────────────────────────────────────────────────────────────────

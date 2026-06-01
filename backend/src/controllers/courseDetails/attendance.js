@@ -4,6 +4,10 @@ import jwt from 'jsonwebtoken';
 import { prisma } from '../../db/prisma.js';
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { auth } from "../../middleware/auth.js";
+import {
+  requireCourseOfferingRead,
+  requireCourseOfferingManage,
+} from "../../middleware/courseOfferingRbac.js";
 import { dispatchCoursePost } from "../../services/courseAnnouncementDispatcher.service.js";
 
 const QR_TOKEN_TTL_SECONDS = 30;
@@ -38,7 +42,7 @@ function verifyQrToken(token) {
 
 const router = Router();
 
-router.get('/:courseOfferingId/sessions', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId/sessions', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
   
   const schedules = await prisma.classSchedule.findMany({
@@ -56,7 +60,7 @@ router.get('/:courseOfferingId/sessions', auth, asyncHandler(async (req, res) =>
   res.json(schedules);
 }));
 
-router.post('/:courseOfferingId/sessions', auth, asyncHandler(async (req, res) => {
+router.post('/:courseOfferingId/sessions', auth, requireCourseOfferingManage(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
   const { day_of_week, start_time, end_time, location, topic, is_lab } = req.body;
 
@@ -75,7 +79,7 @@ router.post('/:courseOfferingId/sessions', auth, asyncHandler(async (req, res) =
   res.json(schedule);
 }));
 
-router.delete('/:courseOfferingId/sessions/:scheduleId', auth, asyncHandler(async (req, res) => {
+router.delete('/:courseOfferingId/sessions/:scheduleId', auth, requireCourseOfferingManage(), asyncHandler(async (req, res) => {
   const { scheduleId } = req.params;
 
   await prisma.attendance.deleteMany({ where: { scheduleId: parseInt(scheduleId) } });
@@ -84,7 +88,7 @@ router.delete('/:courseOfferingId/sessions/:scheduleId', auth, asyncHandler(asyn
   res.json({ success: true });
 }));
 
-router.get('/:courseOfferingId/records', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId/records', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
   const { scheduleId } = req.query;
 
@@ -101,7 +105,7 @@ router.get('/:courseOfferingId/records', auth, asyncHandler(async (req, res) => 
   res.json(records);
 }));
 
-router.post('/:courseOfferingId/records', auth, asyncHandler(async (req, res) => {
+router.post('/:courseOfferingId/records', auth, requireCourseOfferingManage(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
   const offeringId = parseInt(courseOfferingId, 10);
   const { scheduleId, studentId, status } = req.body;
@@ -143,7 +147,7 @@ router.post('/:courseOfferingId/records', auth, asyncHandler(async (req, res) =>
   res.json(record);
 }));
 
-router.patch('/:courseOfferingId/records/:recordId', auth, asyncHandler(async (req, res) => {
+router.patch('/:courseOfferingId/records/:recordId', auth, requireCourseOfferingManage(), asyncHandler(async (req, res) => {
   const { recordId } = req.params;
   const { status } = req.body;
 
@@ -163,7 +167,7 @@ router.patch('/:courseOfferingId/records/:recordId', auth, asyncHandler(async (r
 /// present, late, absent, excused, recorded, ratePct }] }
 /// ratePct counts PRESENT + LATE as "attended" (LATE still attended) over totalSessions,
 /// so a student with no records yet has ratePct = 0.
-router.get('/:courseOfferingId/summary', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId/summary', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const courseOfferingId = parseInt(req.params.courseOfferingId, 10);
   if (!Number.isInteger(courseOfferingId)) {
     return res.status(400).json({ message: 'Invalid courseOfferingId' });
@@ -237,7 +241,7 @@ router.get('/:courseOfferingId/summary', auth, asyncHandler(async (req, res) => 
   res.json({ totalSessions, avgRatePct, students });
 }));
 
-router.get('/:courseOfferingId/stats', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId/stats', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
   
   const offering = await prisma.courseOffering.findUnique({

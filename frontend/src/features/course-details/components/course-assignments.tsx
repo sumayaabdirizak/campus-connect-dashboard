@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -13,16 +13,41 @@ import {
   Plus,
   Eye,
   Download,
+  EyeOff,
   ArrowLeft,
+  ArrowRight,
+  ArrowUpDown,
   CalendarClock,
   CalendarPlus,
+  Check,
+  CheckSquare,
+  ChevronDown,
+  ChevronUp,
+  Copy,
+  Link as LinkIcon,
+  MoreHorizontal,
+  Pencil,
+  Square,
   Trash2,
+  Upload,
   Paperclip,
   X as XIcon,
   ClipboardCheck,
   Sparkles,
-  Loader2
+  Loader2,
+  AlertTriangle,
+  CheckCircle2,
+  Crown,
+  Users
 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu';
 import { EmptyState } from './_shared/empty-state';
 import { ListSkeleton } from './_shared/list-skeleton';
 import { useDeleteWithUndo } from './_shared/use-delete-with-undo';
@@ -67,15 +92,34 @@ import {
   useCreateAssignment,
   useDeleteAssignment,
   useDeleteAttachment,
+  useDuplicateAssignment,
   useExtensions,
   useGradeSubmission,
   useGrantExtension,
   useGrantExtensionBatch,
+  useMyAssignmentSummary,
+  useMySubmission,
   useSubmissions,
   useSubmitWork,
   useSuggestGradeWithAi,
-  useUploadAttachments
+  useUpdateAssignment,
+  useUploadAttachments,
+  useUploadSubmissionFile
 } from '../api/assignments-queries';
+import { useRoster } from '../api/roster-queries';
+import { useGroups } from '../api/groups-queries';
+import type { CourseGroup } from '../api/groups-types';
+import { updateAssignment as updateAssignmentCall } from '../api/assignments-service';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle
+} from '@/components/ui/alert-dialog';
 import type {
   Assignment,
   AssignmentGradingScope,
@@ -90,6 +134,19 @@ interface CourseAssignmentsProps {
 }
 
 type Outcome = 'grade' | 'extend' | 'missing';
+
+type SubmissionRow = {
+  studentId: number;
+  student: { id: number; full_name: string; email: string; number: string };
+  submission: Submission | null;
+};
+
+type GroupRow = {
+  groupId: number;
+  groupName: string;
+  members: { id: number; full_name: string; email: string; number: string }[];
+  submission: Submission | null;
+};
 
 /**
  * Effective due date for a given submission = max(Assignment.due_date, any
@@ -127,12 +184,19 @@ function statusOf(
 
 export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProps) {
   const { data: assignments = [], isLoading } = useAssignments(courseId);
+  const { data: groups = [] } = useGroups(courseId);
   const createMutation = useCreateAssignment(courseId);
   const deleteMutation = useDeleteAssignment(courseId);
 
   const [view, setView] = useState<'list' | 'submissions'>('list');
   const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'all' | 'submitted' | 'late' | 'missing'>('all');
+  /// Submission filter pills. Status-based (submitted / late / missing) and
+  /// review-based (ungraded / graded) live in the same dimension because
+  /// the teacher only ever wants one filter active at a time — combining
+  /// would just produce two-line query strings nobody asked for.
+  const [filter, setFilter] = useState<
+    'all' | 'submitted' | 'late' | 'missing' | 'ungraded' | 'graded'
+  >('all');
 
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [selectedSubmission, setSelectedSubmission] = useState<Submission | null>(null);
@@ -158,20 +222,127 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   const [alsoApplyTo, setAlsoApplyTo] = useState<Set<number>>(new Set());
   const [submitUrl, setSubmitUrl] = useState('');
 
+  // ── Per-member grading state for GROUP + INDIVIDUAL assignments ──────
+  // When grading a group with gradingScope=INDIVIDUAL, the drawer shows
+  // each member with their own grade + feedback input. Maps memberId → value.
+  const [memberGrades, setMemberGrades] = useState<Map<number, string>>(new Map());
+  const [memberFeedbacks, setMemberFeedbacks] = useState<Map<number, string>>(new Map());
+
   const [bulkOpen, setBulkOpen] = useState(false);
   const [bulkDate, setBulkDate] = useState('');
   const [bulkReason, setBulkReason] = useState('');
 
-  const gradeMutation = useGradeSubmission(selectedAssignment?.id ?? 0);
-  const extensionMutation = useGrantExtension(selectedAssignment?.id ?? 0);
-  const extensionBatchMutation = useGrantExtensionBatch(selectedAssignment?.id ?? 0);
+  // Edit dialog state. null = closed; an Assignment = editing that one.
+  // Reuses CreateAssignmentForm via its `initialValues` prop so the create/
+  // edit shapes never drift apart. Editing doesn't touch attachments here —
+  // attachment add/remove already happens inline on the submissions page.
+  const [editTarget, setEditTarget] = useState<Assignment | null>(null);
+
+  // Confirm-delete state for attachments (replaces the native confirm()).
+  const [attachmentToDelete, setAttachmentToDelete] =
+    useState<{ assignmentId: number; attachmentId: number; name: string } | null>(null);
+
+  // Student-side submission state — kept separate from the teacher's
+  // grading state so the same component can render either view cleanly.
+  // `submitMode` controls whether the student types a link or uploads a file.
+  const [submitMode, setSubmitMode] = useState<'link' | 'file'>('link');
+  const [pendingSubmissionFile, setPendingSubmissionFile] = useState<File | null>(null);
+  const submissionFileInputRef = useRef<HTMLInputElement | null>(null);
+  // `submittingFor` tracks which assignment the student is currently
+  // submitting to so the loading spinner sits on the right card.
+  const [submittingFor, setSubmittingFor] = useState<number | null>(null);
+
+  // Bulk-selection state for the teacher assignment list. Separate from
+  // `selectedRows` (which targets submissions within a single assignment).
+  const [selectedAssignmentIds, setSelectedAssignmentIds] = useState<Set<number>>(new Set());
+  const toggleAssignmentSelect = (id: number) => {
+    setSelectedAssignmentIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+  const clearAssignmentSelection = () => setSelectedAssignmentIds(new Set());
+
+  // Submissions table sort + search state.
+  type SubmissionSortKey = 'name' | 'submitted_at' | 'grade' | 'status';
+  const [subSort, setSubSort] = useState<{ key: SubmissionSortKey; dir: 'asc' | 'desc' }>({
+    key: 'name',
+    dir: 'asc',
+  });
+  const [subSearch, setSubSearch] = useState('');
+
+  // Quick feedback templates — saved phrases the teacher can stamp into the
+  // feedback textarea with one click. Stored per-course in localStorage so
+  // they sync across browser tabs but don't need a backend write path.
+  // We seed a few sensible defaults on first use so the chip strip is
+  // never empty (and the teacher learns the feature exists).
+  const TEMPLATE_STORAGE_KEY = `cc.assign.fb-templates.${courseId}`;
+  const DEFAULT_TEMPLATES = [
+    'Great work! Clear and well-reasoned.',
+    'Good effort — please cite sources next time.',
+    'See feedback inline; revise and resubmit.',
+    'Missing the required components.',
+  ];
+  const [templates, setTemplates] = useState<string[]>([]);
+  const [newTemplate, setNewTemplate] = useState('');
+  const [templatesMenuOpen, setTemplatesMenuOpen] = useState(false);
+  // Hydrate from localStorage after mount so SSR + client render match.
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(TEMPLATE_STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.every((t) => typeof t === 'string')) {
+          setTemplates(parsed);
+          return;
+        }
+      }
+      setTemplates(DEFAULT_TEMPLATES);
+      window.localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(DEFAULT_TEMPLATES));
+    } catch {
+      setTemplates(DEFAULT_TEMPLATES);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  const persistTemplates = (next: string[]) => {
+    setTemplates(next);
+    try { window.localStorage.setItem(TEMPLATE_STORAGE_KEY, JSON.stringify(next)); } catch {}
+  };
+  const insertTemplate = (text: string) => {
+    setFeedback((prev) => (prev.trim() ? `${prev.trim()}\n\n${text}` : text));
+  };
+
+  // Bulk grading state — for the submissions table selection.
+  const [bulkGradeOpen, setBulkGradeOpen] = useState(false);
+  const [bulkGradeValue, setBulkGradeValue] = useState('');
+  const [bulkGradeFeedback, setBulkGradeFeedback] = useState('');
+  const [bulkGradeRunning, setBulkGradeRunning] = useState(false);
+
+  // Multi-tab guard for the submissions view. If a second tab opens the
+  // same assignment's grading page, both tabs raise a banner. Last-writer
+  // wins on PATCH, so warning makes the implicit explicit.
+  const [multiTabGradingConflict, setMultiTabGradingConflict] = useState(false);
+
+  // Mutation hooks: unbound from selectedAssignment.id now (see the
+  // assignments-queries.ts comment on the L1/L2 bug fix). The component
+  // passes assignmentId per `.mutate()` call below so the request always
+  // targets the intended row, regardless of selection-state timing.
+  const gradeMutation = useGradeSubmission();
+  const extensionMutation = useGrantExtension();
+  const extensionBatchMutation = useGrantExtensionBatch();
   const aiSuggestMutation = useSuggestGradeWithAi();
-  const submitMutation = useSubmitWork(selectedAssignment?.id ?? 0);
+  const submitMutation = useSubmitWork();
+  const updateAssignmentMutation = useUpdateAssignment(courseId);
+  const uploadSubmissionFileMutation = useUploadSubmissionFile();
+  const duplicateAssignmentMutation = useDuplicateAssignment(courseId);
 
   const { data: submissions = [], isLoading: subsLoading } = useSubmissions(
     selectedAssignment?.id ?? null
   );
   const { data: extensions = [] } = useExtensions(selectedAssignment?.id ?? null);
+  const { data: roster = [] } = useRoster(courseId);
 
   const filteredAssignments = useMemo(
     () => assignments.filter((a) => a.title.toLowerCase().includes(search.toLowerCase())),
@@ -184,9 +355,106 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     return m;
   }, [submissions]);
 
+  // Full class roster merged with submissions. Every enrolled student appears
+  // regardless of whether they submitted — non-submitters show as "Missing".
+  const allStudentRows = useMemo<SubmissionRow[]>(
+    () =>
+      roster.map((rs) => ({
+        studentId: rs.id,
+        student: rs,
+        submission: submissionsByStudent.get(rs.id) ?? null,
+      })),
+    [roster, submissionsByStudent]
+  );
+
+  // ── Group-based rows for GROUP assignments ────────────────────────────
+  // One row per CourseGroup instead of per student. The group's submission
+  // is the first submission with a matching groupId (all members share the
+  // same grade via fan-out). Ungrouped students are shown separately.
+  // When gradingScope=INDIVIDUAL, the table still shows groups but the
+  // grading modal shows individual member inputs inside it.
+  const isGroupMode = selectedAssignment?.workMode === 'GROUP';
+
+  const submissionsByGroup = useMemo(() => {
+    const m = new Map<number, Submission>();
+    for (const s of submissions) {
+      if (s.groupId != null && !m.has(s.groupId)) m.set(s.groupId, s);
+    }
+    return m;
+  }, [submissions]);
+
+  const allGroupRows = useMemo<GroupRow[]>(() => {
+    return groups.map((g) => ({
+      groupId: g.id,
+      groupName: g.name,
+      members: g.members.map((m) => m.member),
+      submission: submissionsByGroup.get(g.id) ?? null,
+    }));
+  }, [groups, submissionsByGroup]);
+
+  // Grade statistics for the current assignment — only computed from students
+  // who have a numeric grade assigned.
+  const gradeStats = useMemo(() => {
+    if (!selectedAssignment) return null;
+    const grades = isGroupMode
+      ? allGroupRows.map((r) => r.submission?.grade).filter((g): g is number => g != null)
+      : allStudentRows.map((r) => r.submission?.grade).filter((g): g is number => g != null);
+    if (grades.length === 0) return null;
+    const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
+    return {
+      avg: Math.round(avg * 10) / 10,
+      min: Math.min(...grades),
+      max: Math.max(...grades),
+      count: grades.length,
+    };
+  }, [allStudentRows, allGroupRows, isGroupMode, selectedAssignment]);
+
+  const downloadGradeCsv = () => {
+    if (!selectedAssignment) return;
+    const header = ['Name', 'Student ID', 'Email', 'Submitted At', 'Status', 'Grade (%)', 'Feedback'];
+    const rows = allStudentRows.map(({ student, submission: sub }) => {
+      const status = sub
+        ? statusOf(selectedAssignment, sub, extensions)
+        : 'missing';
+      return [
+        student.full_name,
+        student.number,
+        student.email,
+        sub?.submitted_at ? format(new Date(sub.submitted_at), 'yyyy-MM-dd HH:mm') : '',
+        status,
+        sub?.grade != null ? String(sub.grade) : '',
+        sub?.feedback ?? '',
+      ];
+    });
+    // CSV-cell escaper with formula-injection guard. A cell that *starts* with
+    // =, +, -, @ (or a tab/CR) is executed as a formula by Excel / Sheets — and
+    // here `feedback` is free-form teacher text, the most likely place for a
+    // leading `=`. Prefix those with a single quote so the cell stays text.
+    const csvSafe = (value: unknown) => {
+      let s = String(value ?? '');
+      if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+      return `"${s.replace(/"/g, '""')}"`;
+    };
+    const csv = [header, ...rows]
+      .map((r) => r.map(csvSafe).join(','))
+      .join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selectedAssignment.title.replace(/[^a-z0-9]/gi, '_')}_grades.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   /// Called by `<CreateAssignmentForm>` with already-validated values
   /// (cross-field rules live in the Zod schema).
   const handleCreate = async (values: AssignmentFormValues) => {
+    // Block GROUP assignment creation when no groups exist yet.
+    if (values.workMode === 'GROUP' && groups.length === 0) {
+      toast.error('Create groups first — go to the Groups tab and add at least one group before creating a group assignment.');
+      return;
+    }
     try {
       const created = await createMutation.mutateAsync({
         title: values.title,
@@ -195,7 +463,8 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         due_date: new Date(values.due_date).toISOString(),
         workMode: values.workMode,
         gradingScope: values.gradingScope,
-        lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0
+        lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0,
+        maxMarks: values.maxMarks
       });
       if (pendingFiles.length === 0) {
         toast.success('Assignment created');
@@ -213,6 +482,17 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
             `Assignment saved, but file upload failed: ${e instanceof Error ? e.message : ''}`
           );
         }
+      }
+      // Auto-download .ics so the teacher's calendar app picks up the deadline.
+      try {
+        const a = document.createElement('a');
+        a.href = assignmentIcsUrl(created.id);
+        a.download = `${created.title ?? 'assignment'}.ics`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      } catch {
+        // Non-critical — don't block the flow if download fails.
       }
       setCreateOpen(false);
       setPendingFiles([]);
@@ -243,6 +523,67 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   const queryClient = useQueryClient();
   const { run: runDelete } = useDeleteWithUndo();
 
+  /// Optimistic publish-toggle on the teacher assignment row. Flips
+  /// is_draft in cache immediately so the badge updates without a network
+  /// flash, rolls back on PATCH failure. Same pattern as Quiz Phase 2.
+  const togglePublish = (assignment: Assignment) => {
+    const key = assignmentKeys.list(courseId);
+    const nextDraft = !assignment.is_draft;
+    const snapshot = queryClient.getQueryData<Assignment[]>(key);
+    queryClient.setQueryData<Assignment[]>(key, (prev) =>
+      (prev ?? []).map((a) => (a.id === assignment.id ? { ...a, is_draft: nextDraft } : a))
+    );
+    updateAssignmentMutation.mutate(
+      { id: assignment.id, input: { is_draft: nextDraft } },
+      {
+        onSuccess: () => {
+          toast.success(nextDraft ? 'Assignment unpublished' : 'Assignment published');
+        },
+        onError: (e: Error) => {
+          if (snapshot) queryClient.setQueryData<Assignment[]>(key, snapshot);
+          toast.error(e.message);
+        },
+      }
+    );
+  };
+
+  const handleDuplicate = (assignment: Assignment) => {
+    duplicateAssignmentMutation.mutate(assignment.id, {
+      onSuccess: () => toast.success(`Duplicated "${assignment.title}" as a draft`),
+      onError: (e: Error) => toast.error(e.message),
+    });
+  };
+
+  /// Run N requests in parallel via Promise.allSettled — partial failures
+  /// still report what worked. One cache invalidation after the whole batch
+  /// instead of N. Same shape as the Quiz bulk runner.
+  const runAssignmentBulk = async (
+    label: string,
+    op: (id: number) => Promise<unknown>
+  ) => {
+    const ids = Array.from(selectedAssignmentIds);
+    if (ids.length === 0) return;
+    const results = await Promise.allSettled(ids.map(op));
+    const okCount = results.filter((r) => r.status === 'fulfilled').length;
+    const failCount = results.length - okCount;
+    queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseId) });
+    if (failCount === 0) {
+      toast.success(`${label} ${okCount} assignment${okCount === 1 ? '' : 's'}`);
+    } else if (okCount === 0) {
+      toast.error(`Failed to ${label.toLowerCase()} ${failCount} assignment${failCount === 1 ? '' : 's'}`);
+    } else {
+      toast.warning(`${label} ${okCount}, failed ${failCount}`);
+    }
+    clearAssignmentSelection();
+  };
+
+  const handleBulkPublishAssignments = (draft: boolean) =>
+    runAssignmentBulk(draft ? 'Unpublished' : 'Published', (id) =>
+      updateAssignmentCall(id, { is_draft: draft })
+    );
+  const handleBulkDeleteAssignments = () =>
+    runAssignmentBulk('Deleted', (id) => deleteAssignmentCall(id));
+
   const handleDelete = (id: number) => {
     const key = assignmentKeys.list(courseId);
     const snapshot = queryClient.getQueryData<Assignment[]>(key);
@@ -265,7 +606,33 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     setSelectedAssignment(assignment);
     setSelectedRows(new Set());
     setView('submissions');
+    setMultiTabGradingConflict(false); // reset per assignment
   };
+
+  // Multi-tab grading guard — BroadcastChannel keyed on the assignment id.
+  // When this tab enters the submissions/grading view it announces "claim";
+  // if another tab is already grading it replies "ack" and both render a
+  // warning banner. Grades-stop-here is what the backend enforces (PATCH
+  // is last-writer-wins), but the student deserves a consistent grade —
+  // so the teacher should pick one tab. Graceful degradation when the API
+  // is missing (older Safari).
+  useEffect(() => {
+    if (view !== 'submissions' || !selectedAssignment) return;
+    if (typeof BroadcastChannel === 'undefined') return;
+    const channel = new BroadcastChannel(`assignment-grading-${selectedAssignment.id}`);
+    let acknowledged = false;
+    channel.onmessage = (e) => {
+      if (e.data === 'claim') {
+        channel.postMessage('ack');
+        setMultiTabGradingConflict(true);
+      } else if (e.data === 'ack' && !acknowledged) {
+        acknowledged = true;
+        setMultiTabGradingConflict(true);
+      }
+    };
+    channel.postMessage('claim');
+    return () => channel.close();
+  }, [view, selectedAssignment]);
 
   const openGrading = (sub: Submission) => {
     setSelectedSubmission(sub);
@@ -276,6 +643,27 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     setExtensionReason('');
     setAlsoApplyTo(new Set());
     setAiSuggestion(null);
+
+    // For GROUP + INDIVIDUAL: populate per-member grades from existing submissions
+    if (
+      selectedAssignment?.workMode === 'GROUP' &&
+      selectedAssignment?.gradingScope === 'INDIVIDUAL' &&
+      sub.groupId != null
+    ) {
+      const groupSubs = submissions.filter((s) => s.groupId === sub.groupId);
+      const grades = new Map<number, string>();
+      const feedbacks = new Map<number, string>();
+      for (const s of groupSubs) {
+        grades.set(s.studentId, s.grade != null ? String(s.grade) : '');
+        feedbacks.set(s.studentId, s.feedback ?? '');
+      }
+      setMemberGrades(grades);
+      setMemberFeedbacks(feedbacks);
+    } else {
+      setMemberGrades(new Map());
+      setMemberFeedbacks(new Map());
+    }
+
     setDrawerOpen(true);
   };
 
@@ -300,33 +688,120 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     );
   };
 
-  const handleSaveGrade = () => {
-    if (!selectedSubmission) return;
+  /// Save the grade. When `andNext` is true, advance to the next submission
+  /// in the current sort/filter order instead of closing the drawer.
+  /// Computed in the submissions view scope, so the helper accepts the
+  /// next-target submission via an explicit arg (cleanest way to pass it).
+  const handleSaveGrade = (next?: Submission | null) => {
+    if (!selectedSubmission || !selectedAssignment) return;
+    if (grade !== '') {
+      const g = Number(grade);
+      const cap = selectedAssignment.maxMarks ?? 100;
+      if (Number.isNaN(g) || g < 0 || g > cap) {
+        toast.error(`Grade must be between 0 and ${cap}`);
+        return;
+      }
+    }
     gradeMutation.mutate(
       {
-        submissionId: selectedSubmission.id,
-        grade: grade === '' ? undefined : Number(grade),
-        feedback: feedback || undefined,
-        is_reviewed: true
+        assignmentId: selectedAssignment.id,
+        input: {
+          submissionId: selectedSubmission.id,
+          grade: grade === '' ? undefined : Number(grade),
+          feedback: feedback || undefined,
+          is_reviewed: true
+        }
       },
       {
         onSuccess: () => {
           toast.success(
-            selectedAssignment?.gradingScope === 'GROUP'
+            selectedAssignment.gradingScope === 'GROUP'
               ? 'Grade saved — applied to all group members'
               : 'Grade saved'
           );
-          setDrawerOpen(false);
+          if (next) {
+            openGrading(next);
+          } else {
+            setDrawerOpen(false);
+          }
         },
         onError: (e: Error) => toast.error(e.message)
       }
     );
   };
 
+  /// Save individual grades for all members of a group (GROUP + INDIVIDUAL).
+  /// Runs all grade mutations in parallel via Promise.allSettled.
+  const handleSaveIndividualGrades = async () => {
+    if (!selectedAssignment || !selectedSubmission?.groupId) return;
+    const cap = selectedAssignment.maxMarks ?? 100;
+    const groupId = selectedSubmission.groupId;
+
+    // Iterate the group's members (matching the modal UI), not the raw
+    // submission rows. Match each member to their own submission via studentId.
+    const groupRow = allGroupRows.find((r) => r.groupId === groupId);
+    if (!groupRow) return;
+    const subsByStudent = new Map(
+      submissions
+        .filter((s) => s.groupId === groupId)
+        .map((s) => [s.studentId, s] as const)
+    );
+
+    // Validate all entered grades before sending.
+    for (const member of groupRow.members) {
+      const val = memberGrades.get(member.id);
+      if (val !== undefined && val !== '') {
+        const g = Number(val);
+        if (Number.isNaN(g) || g < 0 || g > cap) {
+          toast.error(`Grade for ${member.full_name} must be 0–${cap}`);
+          return;
+        }
+      }
+    }
+
+    // Only members with an existing submission row can be graded (the grade
+    // endpoint keys off submissionId). Members without one are skipped.
+    const gradable = groupRow.members.filter((m) => subsByStudent.has(m.id));
+    const skipped = groupRow.members.length - gradable.length;
+
+    const results = await Promise.allSettled(
+      gradable.map((member) => {
+        const sub = subsByStudent.get(member.id)!;
+        const val = memberGrades.get(member.id);
+        return gradeMutation.mutateAsync({
+          assignmentId: selectedAssignment.id,
+          input: {
+            submissionId: sub.id,
+            grade: val === undefined || val === '' ? undefined : Number(val),
+            feedback: memberFeedbacks.get(member.id) || undefined,
+            is_reviewed: true
+          }
+        });
+      })
+    );
+    const failed = results.filter((r) => r.status === 'rejected').length;
+    if (failed > 0) {
+      toast.error(`${failed} grade(s) failed to save`);
+    } else {
+      toast.success(
+        `Grades saved for ${results.length} member${results.length !== 1 ? 's' : ''}` +
+          (skipped > 0 ? ` · ${skipped} skipped (no submission)` : '')
+      );
+      setDrawerOpen(false);
+    }
+  };
+
   const handleMarkMissing = () => {
-    if (!selectedSubmission) return;
+    if (!selectedSubmission || !selectedAssignment) return;
     gradeMutation.mutate(
-      { submissionId: selectedSubmission.id, feedback: feedback || undefined, is_reviewed: true },
+      {
+        assignmentId: selectedAssignment.id,
+        input: {
+          submissionId: selectedSubmission.id,
+          feedback: feedback || undefined,
+          is_reviewed: true
+        }
+      },
       {
         onSuccess: () => {
           toast.success('Marked as reviewed (no grade)');
@@ -349,7 +824,10 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     if (isGroupGraded && selectedSubmission.groupId != null) {
       // Group grading: single group target — batch endpoint not needed.
       extensionMutation.mutate(
-        { groupId: selectedSubmission.groupId, newDueAt, reason },
+        {
+          assignmentId: selectedAssignment.id,
+          input: { groupId: selectedSubmission.groupId, newDueAt, reason }
+        },
         {
           onSuccess: () => {
             toast.success('Another chance granted to the group');
@@ -366,7 +844,10 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
       new Set<number>([selectedSubmission.studentId, ...alsoApplyTo])
     );
     extensionBatchMutation.mutate(
-      { studentIds, newDueAt, reason },
+      {
+        assignmentId: selectedAssignment.id,
+        input: { studentIds, newDueAt, reason }
+      },
       {
         onSuccess: ({ count }) => {
           toast.success(`Another chance granted (${count} student${count === 1 ? '' : 's'})`);
@@ -375,6 +856,56 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         onError: (e: Error) => toast.error(e.message)
       }
     );
+  };
+
+  /// Bulk grade — apply the same grade + feedback to every selected
+  /// submission. Common for participation marks (everyone gets 10%) and
+  /// quick "OK" passes. Runs requests in parallel via Promise.allSettled
+  /// so partial failures still report what worked.
+  const handleBulkGrade = async () => {
+    if (!selectedAssignment || selectedRows.size === 0) return;
+    const gradeNum = bulkGradeValue === '' ? undefined : Number(bulkGradeValue);
+    const cap = selectedAssignment.maxMarks ?? 100;
+    if (gradeNum != null && (Number.isNaN(gradeNum) || gradeNum < 0 || gradeNum > cap)) {
+      toast.error(`Grade must be 0–${cap}`);
+      return;
+    }
+    setBulkGradeRunning(true);
+    try {
+      // Map student ids → submission rows so we can call the grade endpoint
+      // (which is keyed on submissionId, not studentId).
+      const targets = Array.from(selectedRows)
+        .map((sid) => submissionsByStudent.get(sid))
+        .filter((s): s is Submission => s != null);
+      const results = await Promise.allSettled(
+        targets.map((sub) =>
+          gradeMutation.mutateAsync({
+            assignmentId: selectedAssignment.id,
+            input: {
+              submissionId: sub.id,
+              grade: gradeNum,
+              feedback: bulkGradeFeedback || undefined,
+              is_reviewed: true,
+            },
+          })
+        )
+      );
+      const okCount = results.filter((r) => r.status === 'fulfilled').length;
+      const failCount = results.length - okCount;
+      if (failCount === 0) {
+        toast.success(`Graded ${okCount} submission${okCount === 1 ? '' : 's'}`);
+      } else if (okCount === 0) {
+        toast.error(`Failed to grade ${failCount} submission${failCount === 1 ? '' : 's'}`);
+      } else {
+        toast.warning(`Graded ${okCount}, failed ${failCount}`);
+      }
+      setBulkGradeOpen(false);
+      setBulkGradeValue('');
+      setBulkGradeFeedback('');
+      setSelectedRows(new Set());
+    } finally {
+      setBulkGradeRunning(false);
+    }
   };
 
   const handleBulkExtend = () => {
@@ -400,7 +931,10 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         return;
       }
       extensionBatchMutation.mutate(
-        { groupIds, newDueAt, reason },
+        {
+          assignmentId: selectedAssignment.id,
+          input: { groupIds, newDueAt, reason }
+        },
         {
           onSuccess: ({ count }) => {
             toast.success(`Extension granted to ${count} group${count === 1 ? '' : 's'}`);
@@ -414,7 +948,10 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
       );
     } else {
       extensionBatchMutation.mutate(
-        { studentIds: Array.from(selectedRows), newDueAt, reason },
+        {
+          assignmentId: selectedAssignment.id,
+          input: { studentIds: Array.from(selectedRows), newDueAt, reason }
+        },
         {
           onSuccess: ({ count }) => {
             toast.success(`Extension granted to ${count} student${count === 1 ? '' : 's'}`);
@@ -429,29 +966,96 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     }
   };
 
-  const handleStudentSubmit = (a: Assignment) => {
-    if (!submitUrl.trim()) {
+  /// Student submit handler. Takes the assignment as an arg (NOT from
+  /// selectedAssignment state) so the mutation always targets the right
+  /// row — selectedAssignment is only set after the mutation completes.
+  /// Two paths:
+  ///   - 'link' mode: pass `link: submitUrl` directly
+  ///   - 'file' mode: upload the file first, then submit with the returned URL
+  const handleStudentSubmit = async (a: Assignment) => {
+    if (submitMode === 'link' && !submitUrl.trim()) {
       toast.error('Paste a link to your work first');
       return;
     }
-    setSelectedAssignment(a);
-    submitMutation.mutate(
-      { link: submitUrl },
-      {
-        onSuccess: () => {
-          toast.success('Submitted');
-          setSubmitUrl('');
-        },
-        onError: (e: Error) => toast.error(e.message)
+    if (submitMode === 'file' && !pendingSubmissionFile) {
+      toast.error('Pick a file to upload first');
+      return;
+    }
+    setSubmittingFor(a.id);
+    try {
+      let urlToSubmit = submitUrl.trim();
+      if (submitMode === 'file' && pendingSubmissionFile) {
+        const uploaded = await uploadSubmissionFileMutation.mutateAsync({
+          assignmentId: a.id,
+          file: pendingSubmissionFile,
+        });
+        urlToSubmit = uploaded.url;
       }
-    );
+      await submitMutation.mutateAsync({
+        assignmentId: a.id,
+        input: { link: urlToSubmit },
+      });
+      toast.success('Submitted');
+      setSubmitUrl('');
+      setPendingSubmissionFile(null);
+      if (submissionFileInputRef.current) submissionFileInputRef.current.value = '';
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Submit failed');
+    } finally {
+      setSubmittingFor(null);
+    }
   };
+
+  const handleEditAssignment = async (values: AssignmentFormValues) => {
+    if (!editTarget) return;
+    try {
+      await updateAssignmentMutation.mutateAsync({
+        id: editTarget.id,
+        input: {
+          title: values.title,
+          description: values.description || undefined,
+          open_at: values.open_at ? new Date(values.open_at).toISOString() : null,
+          due_date: new Date(values.due_date).toISOString(),
+          workMode: values.workMode,
+          gradingScope: values.gradingScope,
+          lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0,
+          maxMarks: values.maxMarks,
+        },
+      });
+      toast.success('Assignment updated');
+      setEditTarget(null);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Update failed');
+    }
+  };
+
+  // Map an Assignment row → CreateAssignmentForm `initialValues` shape. The
+  // form expects local-datetime strings, not ISO, because <input
+  // type="datetime-local"> stores `YYYY-MM-DDTHH:mm`.
+  const editInitialValues = useMemo<Partial<AssignmentFormValues> | undefined>(() => {
+    if (!editTarget) return undefined;
+    const toLocal = (iso: string | null | undefined) =>
+      iso ? new Date(iso).toISOString().slice(0, 16) : '';
+    return {
+      title: editTarget.title,
+      description: editTarget.description ?? '',
+      open_at: toLocal(editTarget.open_at),
+      due_date: toLocal(editTarget.due_date),
+      workMode: editTarget.workMode,
+      gradingScope: editTarget.gradingScope,
+      allowLate: (editTarget.lateWindowMinutes ?? 0) > 0,
+      lateWindow: String(editTarget.lateWindowMinutes ?? 0),
+      maxMarks: editTarget.maxMarks ?? 100,
+    };
+  }, [editTarget]);
 
   // ── Student view ───────────────────────────────────────────────────────
   if (isStudent) {
+    const publishedAssignments = filteredAssignments.filter((a) => !a.is_draft);
     return (
       <div className='space-y-4'>
-        {filteredAssignments.length > 0 && (
+        <StudentSummaryCard courseId={courseId} />
+        {publishedAssignments.length > 0 && (
           <div className='flex justify-end'>
             <a
               href={courseAssignmentsIcsUrl(courseId)}
@@ -462,135 +1066,227 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
           </div>
         )}
         {isLoading && <ListSkeleton variant='card' count={3} />}
-        {!isLoading && filteredAssignments.length === 0 && (
+        {!isLoading && publishedAssignments.length === 0 && (
           <EmptyState
             icon={ClipboardCheck}
             title='No assignments yet'
-            description='Your teacher hasn’t posted any work for this course.'
+            description="Your teacher hasn't posted any work for this course."
           />
         )}
-        {filteredAssignments
-          .filter((a) => !a.is_draft)
-          .map((a) => {
-            const now = new Date();
-            const openAt = a.open_at ? new Date(a.open_at) : null;
-            const due = new Date(a.due_date);
-            const notOpenYet = openAt != null && now < openAt;
-            const closed =
-              now > new Date(due.getTime() + (a.lateWindowMinutes ?? 0) * 60_000);
-            return (
-              <div key={a.id} className='border rounded-lg p-4'>
-                <div className='flex items-center justify-between mb-2'>
-                  <span className='font-medium'>{a.title}</span>
-                  <div className='flex gap-1'>
-                    <Badge variant='outline'>
-                      {a.workMode === 'GROUP' ? 'Group work' : 'Individual'}
-                    </Badge>
-                    {a.gradingScope === 'GROUP' && <Badge>Group grade</Badge>}
-                  </div>
-                </div>
-                {a.description && (
-                  <p className='text-sm text-muted-foreground mb-2'>{a.description}</p>
-                )}
-                <div className='flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground'>
-                  {openAt && (
-                    <span>Opens: {format(openAt, 'MMM d, yyyy h:mm a')}</span>
-                  )}
-                  <span>Due: {format(due, 'MMM d, yyyy h:mm a')}</span>
-                  <a
-                    href={assignmentIcsUrl(a.id)}
-                    className='inline-flex items-center gap-1 hover:underline'
-                  >
-                    <CalendarPlus className='w-3 h-3' /> Add to calendar
-                  </a>
-                </div>
-                {a.attachments && a.attachments.length > 0 && (
-                  <div className='mt-2 space-y-1'>
-                    {a.attachments.map((att) => (
-                      <div
-                        key={att.id}
-                        className='flex items-center gap-2 text-xs bg-muted/30 rounded px-2 py-1'
-                      >
-                        <Paperclip className='w-3 h-3 text-muted-foreground shrink-0' />
-                        <a
-                          href={att.url}
-                          target='_blank'
-                          rel='noreferrer'
-                          className='truncate flex-1 hover:underline'
-                        >
-                          {att.name}
-                        </a>
-                        {typeof att.size === 'number' && (
-                          <span className='text-muted-foreground shrink-0'>
-                            {(att.size / 1024).toFixed(1)} KB
-                          </span>
-                        )}
-                        <a
-                          href={attachmentDownloadUrl(att.id)}
-                          className='inline-flex items-center gap-1 text-muted-foreground hover:text-foreground shrink-0'
-                          title='Download'
-                        >
-                          <Download className='w-3 h-3' />
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-                <div className='flex gap-2 mt-3'>
-                  <Input
-                    placeholder={
-                      notOpenYet
-                        ? 'Submissions open soon…'
-                        : closed
-                          ? 'Submissions closed'
-                          : 'Paste a link to your work...'
-                    }
-                    value={submitUrl}
-                    onChange={(e) => setSubmitUrl(e.target.value)}
-                    disabled={notOpenYet || closed}
-                  />
-                  <Button
-                    onClick={() => handleStudentSubmit(a)}
-                    disabled={submitMutation.isPending || notOpenYet || closed}
-                  >
-                    {notOpenYet ? 'Not open yet' : closed ? 'Closed' : 'Submit'}
-                  </Button>
-                </div>
-              </div>
-            );
-          })}
+        {publishedAssignments.map((a) => (
+          <StudentAssignmentCard
+            key={a.id}
+            assignment={a}
+            submitMode={submitMode}
+            onSubmitModeChange={setSubmitMode}
+            submitUrl={submitUrl}
+            onSubmitUrlChange={setSubmitUrl}
+            pendingFile={pendingSubmissionFile}
+            onPendingFileChange={setPendingSubmissionFile}
+            fileInputRef={submissionFileInputRef}
+            isSubmitting={submittingFor === a.id}
+            onSubmit={() => handleStudentSubmit(a)}
+          />
+        ))}
       </div>
     );
   }
 
   // ── Submissions view (teacher) ─────────────────────────────────────────
   if (view === 'submissions' && selectedAssignment) {
-    const subRows = Array.from(submissionsByStudent.values());
-    const filteredSubs = subRows.filter((s) => {
-      if (filter === 'all') return true;
-      return statusOf(selectedAssignment, s, extensions) === filter;
-    });
+    // Filter → search → sort across the full enrolled roster (not just
+    // submitters). Non-submitters always appear as "missing" so the teacher
+    // sees the complete picture without manual cross-referencing.
+    const filteredSubs = allStudentRows
+      .filter((row) => {
+        if (filter === 'all') return true;
+        if (filter === 'ungraded') return !(row.submission?.is_reviewed ?? false);
+        if (filter === 'graded') return row.submission?.is_reviewed ?? false;
+        return statusOf(selectedAssignment, row.submission ?? undefined, extensions) === filter;
+      })
+      .filter((row) => {
+        if (!subSearch.trim()) return true;
+        const needle = subSearch.toLowerCase();
+        return (
+          row.student.full_name.toLowerCase().includes(needle) ||
+          row.student.number.toLowerCase().includes(needle) ||
+          row.student.email.toLowerCase().includes(needle)
+        );
+      })
+      .sort((a, b) => {
+        const dir = subSort.dir === 'asc' ? 1 : -1;
+        switch (subSort.key) {
+          case 'name':
+            return a.student.full_name.localeCompare(b.student.full_name) * dir;
+          case 'submitted_at': {
+            const av = a.submission?.submitted_at ? new Date(a.submission.submitted_at).getTime() : 0;
+            const bv = b.submission?.submitted_at ? new Date(b.submission.submitted_at).getTime() : 0;
+            return (av - bv) * dir;
+          }
+          case 'grade': {
+            const av = a.submission?.grade;
+            const bv = b.submission?.grade;
+            if (av == null && bv == null) return 0;
+            if (av == null) return 1;
+            if (bv == null) return -1;
+            return (av - bv) * dir;
+          }
+          case 'status': {
+            const sa = statusOf(selectedAssignment, a.submission ?? undefined, extensions);
+            const sb = statusOf(selectedAssignment, b.submission ?? undefined, extensions);
+            return sa.localeCompare(sb) * dir;
+          }
+        }
+      });
 
-    const otherStudentsForExtension = subRows.filter(
-      (s) => s.studentId !== selectedSubmission?.studentId
+    // ── Group-mode filtering ──────────────────────────────────────────
+    const filteredGroupSubs = isGroupMode
+      ? allGroupRows
+          .filter((row) => {
+            if (filter === 'all') return true;
+            if (filter === 'ungraded') return !(row.submission?.is_reviewed ?? false);
+            if (filter === 'graded') return row.submission?.is_reviewed ?? false;
+            if (filter === 'submitted') return row.submission !== null;
+            if (filter === 'missing') return row.submission === null;
+            if (filter === 'late') return row.submission?.is_late ?? false;
+            return true;
+          })
+          .filter((row) => {
+            if (!subSearch.trim()) return true;
+            const needle = subSearch.toLowerCase();
+            return (
+              row.groupName.toLowerCase().includes(needle) ||
+              row.members.some((m) => m.full_name.toLowerCase().includes(needle))
+            );
+          })
+          .sort((a, b) => {
+            const dir = subSort.dir === 'asc' ? 1 : -1;
+            switch (subSort.key) {
+              case 'name':
+                return a.groupName.localeCompare(b.groupName) * dir;
+              case 'submitted_at': {
+                const av = a.submission?.submitted_at ? new Date(a.submission.submitted_at).getTime() : 0;
+                const bv = b.submission?.submitted_at ? new Date(b.submission.submitted_at).getTime() : 0;
+                return (av - bv) * dir;
+              }
+              case 'grade': {
+                const av = a.submission?.grade;
+                const bv = b.submission?.grade;
+                if (av == null && bv == null) return 0;
+                if (av == null) return 1;
+                if (bv == null) return -1;
+                return (av - bv) * dir;
+              }
+              case 'status': {
+                const sa = a.submission ? (a.submission.is_late ? 'late' : 'submitted') : 'missing';
+                const sb = b.submission ? (b.submission.is_late ? 'late' : 'submitted') : 'missing';
+                return sa.localeCompare(sb) * dir;
+              }
+            }
+          })
+      : [];
+
+    // For extensions: all other enrolled students, not just those who submitted.
+    const otherStudentsForExtension = allStudentRows.filter(
+      (r) => r.studentId !== selectedSubmission?.studentId
     );
+
+    // Prev/Next navigation skips rows without a submission — can only open
+    // the grading drawer for students who actually submitted something.
+    const gradableRows = isGroupMode
+      ? filteredGroupSubs.filter((r) => r.submission !== null)
+      : filteredSubs.filter((r) => r.submission !== null);
+    const currentSubIdx = selectedSubmission
+      ? gradableRows.findIndex((r) => r.submission?.id === selectedSubmission.id)
+      : -1;
+    const prevSubmission = currentSubIdx > 0 ? gradableRows[currentSubIdx - 1].submission! : null;
+    const nextSubmission =
+      currentSubIdx >= 0 && currentSubIdx < gradableRows.length - 1
+        ? gradableRows[currentSubIdx + 1].submission!
+        : null;
+
+    // Sort-header helper — renders a clickable column header with arrow.
+    const SortHeader = ({
+      label,
+      sortKey,
+    }: {
+      label: string;
+      sortKey: SubmissionSortKey;
+    }) => {
+      const active = subSort.key === sortKey;
+      return (
+        <button
+          type='button'
+          onClick={() =>
+            setSubSort((prev) =>
+              prev.key === sortKey
+                ? { key: sortKey, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
+                : { key: sortKey, dir: 'asc' }
+            )
+          }
+          className='inline-flex items-center gap-1 hover:text-foreground transition-colors'
+        >
+          {label}
+          {active ? (
+            subSort.dir === 'asc' ? (
+              <ChevronUp className='w-3 h-3' />
+            ) : (
+              <ChevronDown className='w-3 h-3' />
+            )
+          ) : (
+            <ArrowUpDown className='w-3 h-3 opacity-30' />
+          )}
+        </button>
+      );
+    };
 
     return (
       <div className='space-y-4'>
-        <div className='flex items-center justify-between'>
+        <div className='flex items-center justify-between flex-wrap gap-2'>
           <Button variant='ghost' onClick={() => setView('list')} className='gap-1'>
             <ArrowLeft className='w-4 h-4' /> Back
           </Button>
-          {selectedRows.size > 0 && (
-            <Button
-              variant='outline'
-              className='gap-1'
-              onClick={() => setBulkOpen(true)}
-            >
-              <CalendarClock className='w-4 h-4' /> Grant extension to {selectedRows.size}
+          <div className='flex gap-2 flex-wrap items-center'>
+            {selectedRows.size > 0 && (
+              <>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-1'
+                  onClick={() => setBulkGradeOpen(true)}
+                >
+                  <ClipboardCheck className='w-4 h-4' /> Grade {selectedRows.size}
+                </Button>
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-1'
+                  onClick={() => setBulkOpen(true)}
+                >
+                  <CalendarClock className='w-4 h-4' /> Extend {selectedRows.size}
+                </Button>
+              </>
+            )}
+            <Button variant='outline' size='sm' className='gap-1' onClick={downloadGradeCsv}>
+              <Download className='w-4 h-4' /> Export CSV
             </Button>
-          )}
+          </div>
         </div>
+
+        {/* Multi-tab grading banner — fires when another tab opens the same
+            assignment's grading view. Same pattern as the Quiz attempt
+            guard. Backend PATCH is last-writer-wins, so warn explicitly. */}
+        {multiTabGradingConflict && (
+          <div className='rounded-lg border border-warning bg-warning-muted text-warning-foreground px-3 py-2 text-sm flex items-start gap-2'>
+            <AlertTriangle className='w-4 h-4 shrink-0 mt-0.5' />
+            <div>
+              <p className='font-medium'>This assignment is open in another tab.</p>
+              <p className='text-xs'>
+                Grading in both tabs at once will overwrite — close one to be safe.
+              </p>
+            </div>
+          </div>
+        )}
 
         <div className='mb-4 space-y-2'>
           <h2 className='text-xl font-bold'>{selectedAssignment.title}</h2>
@@ -605,6 +1301,70 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
             {selectedAssignment.lateWindowMinutes > 0 &&
               ` · late window ${selectedAssignment.lateWindowMinutes}m`}
           </p>
+          {/* Grading progress bar — denominator is total enrolled students
+              so the teacher sees "reviewed 8 of 30" not "8 of 10 who submitted".
+              This makes it obvious that 20 students haven't submitted yet. */}
+          {(isGroupMode ? allGroupRows.length : allStudentRows.length) > 0 && (() => {
+            const rows = isGroupMode ? allGroupRows : allStudentRows;
+            const submitted = rows.filter((r) => r.submission !== null).length;
+            const graded = rows.filter((r) => r.submission?.is_reviewed).length;
+            const total = rows.length;
+            const unitLabel = isGroupMode ? 'groups' : 'enrolled';
+            const subPct = total > 0 ? Math.round((submitted / total) * 100) : 0;
+            const gradePct = total > 0 ? Math.round((graded / total) * 100) : 0;
+            return (
+              <div className='space-y-2 max-w-md pt-1'>
+                <div className='space-y-1'>
+                  <div className='flex items-center justify-between text-[11px] tabular-nums'>
+                    <span className='text-muted-foreground'>
+                      Submitted · {submitted} of {total} {unitLabel}
+                    </span>
+                    <span className='text-muted-foreground'>{subPct}%</span>
+                  </div>
+                  <div className='h-1.5 rounded-full overflow-hidden bg-muted'>
+                    <div
+                      className='h-full bg-info transition-all duration-300'
+                      style={{ width: `${subPct}%` }}
+                      aria-hidden
+                    />
+                  </div>
+                </div>
+                <div className='space-y-1'>
+                  <div className='flex items-center justify-between text-[11px] tabular-nums'>
+                    <span className='text-muted-foreground'>
+                      Grading progress · {graded} of {total} reviewed
+                    </span>
+                    <span
+                      className={
+                        gradePct === 100
+                          ? 'text-success font-medium'
+                          : 'text-muted-foreground'
+                      }
+                    >
+                      {gradePct}%
+                    </span>
+                  </div>
+                  <div className='h-1.5 rounded-full overflow-hidden bg-muted'>
+                    <div
+                      className={`h-full transition-all duration-300 ${
+                        gradePct === 100 ? 'bg-success' : 'bg-primary'
+                      }`}
+                      style={{ width: `${gradePct}%` }}
+                      aria-hidden
+                    />
+                  </div>
+                </div>
+                {gradeStats && (
+                  <div className='flex gap-3 text-[11px] tabular-nums text-muted-foreground pt-0.5'>
+                    <span>Avg <span className='font-medium text-foreground'>{gradeStats.avg}%</span></span>
+                    <span>Min <span className='font-medium text-foreground'>{gradeStats.min}%</span></span>
+                    <span>Max <span className='font-medium text-foreground'>{gradeStats.max}%</span></span>
+                    <span>Graded <span className='font-medium text-foreground'>{gradeStats.count}</span></span>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
           {selectedAssignment.attachments && selectedAssignment.attachments.length > 0 && (
             <div className='flex flex-wrap gap-2'>
               {selectedAssignment.attachments.map((att) => (
@@ -631,13 +1391,13 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                   <button
                     type='button'
                     className='text-muted-foreground hover:text-destructive'
-                    onClick={() => {
-                      if (!confirm(`Delete "${att.name}"?`)) return;
-                      deleteAttachmentMutation.mutate({
+                    onClick={() =>
+                      setAttachmentToDelete({
                         assignmentId: selectedAssignment.id,
-                        attachmentId: att.id
-                      });
-                    }}
+                        attachmentId: att.id,
+                        name: att.name,
+                      })
+                    }
                     aria-label='Delete attachment'
                   >
                     <XIcon className='w-3 h-3' />
@@ -648,91 +1408,267 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
           )}
         </div>
 
-        <div className='flex gap-2 mb-4'>
-          {(['all', 'submitted', 'late', 'missing'] as const).map((f) => (
-            <Button
-              key={f}
-              variant={filter === f ? 'default' : 'outline'}
-              size='sm'
-              onClick={() => setFilter(f)}
-            >
-              {f} (
-              {f === 'all'
-                ? subRows.length
-                : subRows.filter((s) => statusOf(selectedAssignment, s, extensions) === f).length}
-              )
-            </Button>
-          ))}
+        <div className='flex gap-2 mb-4 flex-wrap items-center'>
+          {/* Filter pills — split into 2 segmented controls so the status
+              dimension (submitted/late/missing) is visually separate from
+              the review dimension (ungraded/graded). Only one can be
+              active at a time; clicking on the other clears the first.
+              That tradeoff keeps the filter logic predictable: one filter
+              key, one query result. */}
+          <SegmentedControl
+            ariaLabel='Filter submissions by submission status'
+            value={(['all', 'submitted', 'late', 'missing'] as const).includes(filter as 'all' | 'submitted' | 'late' | 'missing') ? (filter as 'all' | 'submitted' | 'late' | 'missing') : 'all'}
+            onChange={setFilter}
+            options={(['all', 'submitted', 'late', 'missing'] as const).map((f) => ({
+              value: f,
+              label: <span className='capitalize'>{f}</span>,
+              count: isGroupMode
+                ? f === 'all'
+                  ? allGroupRows.length
+                  : f === 'submitted'
+                    ? allGroupRows.filter((r) => r.submission !== null).length
+                    : f === 'missing'
+                      ? allGroupRows.filter((r) => r.submission === null).length
+                      : allGroupRows.filter((r) => r.submission?.is_late).length
+                : f === 'all'
+                  ? allStudentRows.length
+                  : allStudentRows.filter(
+                      (r) => statusOf(selectedAssignment, r.submission ?? undefined, extensions) === f
+                    ).length
+            }))}
+          />
+          <SegmentedControl
+            ariaLabel='Filter submissions by review status'
+            value={(['ungraded', 'graded'] as const).includes(filter as 'ungraded' | 'graded') ? (filter as 'ungraded' | 'graded') : 'ungraded'}
+            onChange={setFilter}
+            options={(['ungraded', 'graded'] as const).map((f) => ({
+              value: f,
+              label: <span className='capitalize'>{f}</span>,
+              count: (isGroupMode ? allGroupRows : allStudentRows).filter((r) =>
+                f === 'graded' ? (r.submission?.is_reviewed ?? false) : !(r.submission?.is_reviewed ?? false)
+              ).length
+            }))}
+          />
+          {/* Search by name / id / email */}
+          <div className='relative flex-1 max-w-xs'>
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+            <Input
+              placeholder='Search students…'
+              value={subSearch}
+              onChange={(e) => setSubSearch(e.target.value)}
+              className='pl-10 h-8'
+            />
+          </div>
         </div>
 
-        {subsLoading && <p className='text-sm text-muted-foreground'>Loading…</p>}
+        {subsLoading && <ListSkeleton variant='row' count={4} />}
 
         <div className='border rounded-lg overflow-hidden'>
           <Table>
             <TableHeader className='bg-muted/30'>
               <TableRow>
                 <TableHead className='w-8'></TableHead>
-                <TableHead>Student</TableHead>
-                <TableHead>ID</TableHead>
-                <TableHead>Submitted</TableHead>
-                <TableHead>Effective due</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Grade</TableHead>
+                <TableHead>
+                  <SortHeader label={isGroupMode ? 'Group' : 'Student'} sortKey='name' />
+                </TableHead>
+                {!isGroupMode && <TableHead>ID</TableHead>}
+                {isGroupMode && <TableHead>Members</TableHead>}
+                <TableHead>
+                  <SortHeader label='Submitted' sortKey='submitted_at' />
+                </TableHead>
+                {!isGroupMode && <TableHead>Effective due</TableHead>}
+                <TableHead>
+                  <SortHeader label='Status' sortKey='status' />
+                </TableHead>
+                <TableHead>
+                  <SortHeader label='Grade' sortKey='grade' />
+                </TableHead>
                 <TableHead></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredSubs.map((sub) => {
-                const status = statusOf(selectedAssignment, sub, extensions);
-                const eff = effectiveDue(selectedAssignment, sub, extensions);
-                const isOverridden =
-                  eff.getTime() !== new Date(selectedAssignment.due_date).getTime();
-                const isChecked = selectedRows.has(sub.studentId);
+              {/* ── Group-mode table body ─────────────────────────────── */}
+              {isGroupMode && filteredGroupSubs.length === 0 && !subsLoading && (
+                <TableRow>
+                  <TableCell colSpan={7} className='text-center py-8 text-sm text-muted-foreground'>
+                    {subSearch.trim() || filter !== 'all'
+                      ? 'No groups match your filters.'
+                      : groups.length === 0
+                        ? 'No groups created yet — go to the Groups tab first.'
+                        : 'No submissions yet.'}
+                  </TableCell>
+                </TableRow>
+              )}
+              {isGroupMode && filteredGroupSubs.map((row) => {
+                const { groupId, groupName, members, submission: sub } = row;
+                const status: 'submitted' | 'late' | 'missing' = sub
+                  ? sub.is_late ? 'late' : 'submitted'
+                  : 'missing';
+                const isChecked = selectedRows.has(groupId);
                 return (
-                  <TableRow key={sub.id}>
+                  <TableRow key={groupId} className={!sub ? 'opacity-60' : ''}>
                     <TableCell>
                       <Checkbox
                         checked={isChecked}
                         onCheckedChange={(v) => {
                           setSelectedRows((prev) => {
                             const next = new Set(prev);
-                            if (v) next.add(sub.studentId);
-                            else next.delete(sub.studentId);
+                            if (v) next.add(groupId);
+                            else next.delete(groupId);
                             return next;
                           });
                         }}
                       />
                     </TableCell>
-                    <TableCell className='font-medium'>{sub.student?.full_name ?? '—'}</TableCell>
-                    <TableCell>{sub.student?.number ?? '—'}</TableCell>
-                    <TableCell>
-                      {sub.submitted_at
-                        ? format(new Date(sub.submitted_at), 'MMM d, h:mm a')
-                        : '—'}
+                    <TableCell className='font-medium'>
+                      <div className='flex items-center gap-2'>
+                        <Users className='w-4 h-4 text-muted-foreground shrink-0' />
+                        {groupName}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      <span className={isOverridden ? 'font-medium text-amber-600 dark:text-amber-400' : ''}>
+                      <div className='flex flex-wrap gap-1'>
+                        {members.map((m) => (
+                          <span
+                            key={m.id}
+                            className='text-xs bg-muted/50 rounded px-1.5 py-0.5'
+                            title={m.email}
+                          >
+                            {m.full_name}
+                          </span>
+                        ))}
+                        {members.length === 0 && (
+                          <span className='text-xs text-muted-foreground italic'>No members</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {sub?.submitted_at
+                        ? format(new Date(sub.submitted_at), 'MMM d, h:mm a')
+                        : <span className='text-muted-foreground text-xs'>—</span>}
+                    </TableCell>
+                    <TableCell>
+                      <Badge
+                        variant='outline'
+                        className={`gap-1 capitalize ${
+                          status === 'submitted'
+                            ? 'text-success border-success'
+                            : status === 'late'
+                              ? 'text-warning border-warning'
+                              : 'text-destructive border-destructive/40'
+                        }`}
+                      >
+                        {status === 'submitted' && <Check className='w-3 h-3' />}
+                        {status === 'late' && <AlertTriangle className='w-3 h-3' />}
+                        {status === 'missing' && <XIcon className='w-3 h-3' />}
+                        {status}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {sub?.grade != null ? (
+                        <span className='tabular-nums font-medium'>{sub.grade}%</span>
+                      ) : sub?.is_reviewed ? (
+                        <span className='text-xs text-muted-foreground'>reviewed</span>
+                      ) : (
+                        <span className='text-xs text-muted-foreground'>—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {sub ? (
+                        <Button variant='ghost' size='sm' onClick={() => openGrading(sub)}>
+                          Grade
+                        </Button>
+                      ) : (
+                        <span className='text-xs text-muted-foreground px-3'>No submission</span>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+
+              {/* ── Student-mode table body (individual assignments) ── */}
+              {!isGroupMode && filteredSubs.length === 0 && !subsLoading && (
+                <TableRow>
+                  <TableCell colSpan={8} className='text-center py-8 text-sm text-muted-foreground'>
+                    {subSearch.trim() || filter !== 'all'
+                      ? 'No students match your filters.'
+                      : roster.length === 0
+                        ? 'No students enrolled yet.'
+                        : 'No submissions yet.'}
+                  </TableCell>
+                </TableRow>
+              )}
+              {!isGroupMode && filteredSubs.map((row) => {
+                const { studentId, student, submission: sub } = row;
+                const status = statusOf(selectedAssignment, sub ?? undefined, extensions);
+                const eff = sub
+                  ? effectiveDue(selectedAssignment, sub, extensions)
+                  : new Date(selectedAssignment.due_date);
+                const isOverridden = sub
+                  ? eff.getTime() !== new Date(selectedAssignment.due_date).getTime()
+                  : false;
+                const isChecked = selectedRows.has(studentId);
+                return (
+                  <TableRow key={studentId} className={!sub ? 'opacity-60' : ''}>
+                    <TableCell>
+                      <Checkbox
+                        checked={isChecked}
+                        onCheckedChange={(v) => {
+                          setSelectedRows((prev) => {
+                            const next = new Set(prev);
+                            if (v) next.add(studentId);
+                            else next.delete(studentId);
+                            return next;
+                          });
+                        }}
+                      />
+                    </TableCell>
+                    <TableCell className='font-medium'>{student.full_name}</TableCell>
+                    <TableCell className='text-muted-foreground'>{student.number}</TableCell>
+                    <TableCell>
+                      {sub?.submitted_at
+                        ? format(new Date(sub.submitted_at), 'MMM d, h:mm a')
+                        : <span className='text-muted-foreground text-xs'>—</span>}
+                    </TableCell>
+                    <TableCell>
+                      <span className={isOverridden ? 'font-medium text-warning' : ''}>
                         {format(eff, 'MMM d, h:mm a')}
                       </span>
                     </TableCell>
                     <TableCell>
                       <Badge
-                        variant={
+                        variant='outline'
+                        className={`gap-1 capitalize ${
                           status === 'submitted'
-                            ? 'default'
+                            ? 'text-success border-success'
                             : status === 'late'
-                              ? 'outline'
-                              : 'secondary'
-                        }
+                              ? 'text-warning border-warning'
+                              : 'text-destructive border-destructive/40'
+                        }`}
                       >
+                        {status === 'submitted' && <Check className='w-3 h-3' />}
+                        {status === 'late' && <AlertTriangle className='w-3 h-3' />}
+                        {status === 'missing' && <XIcon className='w-3 h-3' />}
                         {status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{sub.grade != null ? `${sub.grade}%` : '—'}</TableCell>
                     <TableCell>
-                      <Button variant='ghost' size='sm' onClick={() => openGrading(sub)}>
-                        Grade
-                      </Button>
+                      {sub?.grade != null ? (
+                        <span className='tabular-nums font-medium'>{sub.grade}%</span>
+                      ) : sub?.is_reviewed ? (
+                        <span className='text-xs text-muted-foreground'>reviewed</span>
+                      ) : (
+                        <span className='text-xs text-muted-foreground'>—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {sub ? (
+                        <Button variant='ghost' size='sm' onClick={() => openGrading(sub)}>
+                          Grade
+                        </Button>
+                      ) : (
+                        <span className='text-xs text-muted-foreground px-3'>No submission</span>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -745,20 +1681,77 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
           <SheetContent className='w-full sm:max-w-4xl overflow-y-auto'>
             <SheetHeader>
-              <SheetTitle>Review submission</SheetTitle>
+              <div className='flex items-center justify-between gap-2 pr-8'>
+                <div className='flex flex-col items-start gap-0.5'>
+                  <SheetTitle>Review submission</SheetTitle>
+                  {currentSubIdx >= 0 && (
+                    <p className='text-[11px] text-muted-foreground tabular-nums'>
+                      {currentSubIdx + 1} of {gradableRows.length} submitted
+                    </p>
+                  )}
+                </div>
+                {/* Prev/Next nav — jumps to the adjacent submission in the
+                    current sort/filter order. Disabled at ends so the
+                    teacher always knows where they are in the list. */}
+                <div className='flex items-center gap-1'>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='gap-1'
+                    disabled={!prevSubmission}
+                    onClick={() => prevSubmission && openGrading(prevSubmission)}
+                    aria-label='Previous submission'
+                  >
+                    <ArrowLeft className='w-3.5 h-3.5' />
+                    Prev
+                  </Button>
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    className='gap-1'
+                    disabled={!nextSubmission}
+                    onClick={() => nextSubmission && openGrading(nextSubmission)}
+                    aria-label='Next submission'
+                  >
+                    Next
+                    <ArrowRight className='w-3.5 h-3.5' />
+                  </Button>
+                </div>
+              </div>
             </SheetHeader>
             {selectedSubmission && (
               <div className='flex gap-4 py-4'>
                 <div className='flex-1 min-w-0 space-y-4'>
                 <div className='p-3 bg-muted/30 rounded'>
-                  <p className='font-medium'>{selectedSubmission.student?.full_name ?? '—'}</p>
-                  <p className='text-sm text-muted-foreground'>
-                    {selectedSubmission.student?.number ?? '—'}
-                  </p>
-                  {selectedAssignment.gradingScope === 'GROUP' && (
-                    <Badge variant='outline' className='mt-2'>
-                      Group grade · fans out to all members
-                    </Badge>
+                  {selectedAssignment.workMode === 'GROUP' && selectedSubmission.groupId != null ? (() => {
+                    const groupRow = allGroupRows.find((r) => r.groupId === selectedSubmission.groupId);
+                    return (
+                      <>
+                        <div className='flex items-center gap-2'>
+                          <Users className='w-4 h-4 text-muted-foreground' />
+                          <p className='font-medium'>{groupRow?.groupName ?? 'Group'}</p>
+                        </div>
+                        <div className='flex flex-wrap gap-1 mt-1'>
+                          {groupRow?.members.map((m) => (
+                            <span key={m.id} className='text-xs bg-muted/50 rounded px-1.5 py-0.5'>
+                              {m.full_name}
+                            </span>
+                          ))}
+                        </div>
+                        <Badge variant='outline' className='mt-2'>
+                          {selectedAssignment.gradingScope === 'GROUP'
+                            ? 'Group grade · fans out to all members'
+                            : 'Individual grade · each member graded separately'}
+                        </Badge>
+                      </>
+                    );
+                  })() : (
+                    <>
+                      <p className='font-medium'>{selectedSubmission.student?.full_name ?? '—'}</p>
+                      <p className='text-sm text-muted-foreground'>
+                        {selectedSubmission.student?.number ?? '—'}
+                      </p>
+                    </>
                   )}
                 </div>
 
@@ -783,7 +1776,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                   <div className='flex items-center gap-2 text-sm'>
                     <Sparkles className='w-4 h-4 text-primary' />
                     <span className='text-muted-foreground'>
-                      Let Claude draft a grade + feedback — you decide whether to keep, edit,
+                      Let AI draft a grade + feedback — you decide whether to keep, edit,
                       or discard it.
                     </span>
                   </div>
@@ -830,137 +1823,293 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                 )}
 
                 <div className='space-y-2'>
-                  <Label>Feedback</Label>
+                  <div className='flex items-center justify-between gap-2'>
+                    <Label>Feedback</Label>
+                    {/* "Manage templates" toggle reveals the add-form. Keeps
+                        the default state compact — chips below are the
+                        primary affordance. */}
+                    <button
+                      type='button'
+                      onClick={() => setTemplatesMenuOpen((v) => !v)}
+                      className='text-[11px] text-muted-foreground hover:text-foreground transition-colors'
+                    >
+                      {templatesMenuOpen ? 'Done' : 'Manage templates'}
+                    </button>
+                  </div>
                   <Textarea
                     value={feedback}
                     onChange={(e) => setFeedback(e.target.value)}
                     rows={4}
                     placeholder='Comments to the student (used for all outcomes)…'
                   />
+                  {/* Quick-template chips. Click to append to the current
+                      feedback (with a separator newline if there's already
+                      text). Stored per-course in localStorage so teachers
+                      build up their phrase library over a term. */}
+                  {templates.length > 0 && (
+                    <div className='flex flex-wrap gap-1.5'>
+                      {templates.map((t, i) => (
+                        <div
+                          key={`${t}-${i}`}
+                          className='group inline-flex items-center gap-1 border rounded-full pl-2.5 py-0.5 text-xs bg-muted/40 hover:bg-muted/70 transition-colors'
+                        >
+                          <button
+                            type='button'
+                            onClick={() => insertTemplate(t)}
+                            className='max-w-[28ch] truncate'
+                            title={`Insert: "${t}"`}
+                          >
+                            {t}
+                          </button>
+                          {templatesMenuOpen && (
+                            <button
+                              type='button'
+                              onClick={() =>
+                                persistTemplates(templates.filter((_, j) => j !== i))
+                              }
+                              aria-label={`Remove template "${t}"`}
+                              className='text-muted-foreground hover:text-destructive pr-1.5'
+                            >
+                              <XIcon className='w-3 h-3' />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {templatesMenuOpen && (
+                    <div className='flex gap-2 items-center pt-1'>
+                      <Input
+                        value={newTemplate}
+                        onChange={(e) => setNewTemplate(e.target.value)}
+                        placeholder='Save a new template…'
+                        className='h-8 text-xs'
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && newTemplate.trim()) {
+                            e.preventDefault();
+                            persistTemplates([...templates, newTemplate.trim()]);
+                            setNewTemplate('');
+                          }
+                        }}
+                      />
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={() => {
+                          if (!newTemplate.trim()) return;
+                          persistTemplates([...templates, newTemplate.trim()]);
+                          setNewTemplate('');
+                        }}
+                      >
+                        Save
+                      </Button>
+                    </div>
+                  )}
                 </div>
 
+                {/* Outcome picker — tabs instead of stacked radio cards.
+                    Cuts vertical space by ~60% and makes the three options
+                    visible at a glance. Each tab body owns its own form
+                    state from the parent scope (grade/feedback/extensionDate
+                    etc.). The Save action lives inside each panel so the
+                    teacher can't accidentally submit the wrong outcome. */}
                 <div className='border rounded-lg p-3 space-y-3'>
-                  <Label className='text-sm font-medium'>Outcome</Label>
-
-                  <label className='flex items-start gap-2 cursor-pointer'>
-                    <input
-                      type='radio'
-                      checked={outcome === 'grade'}
-                      onChange={() => setOutcome('grade')}
-                      className='mt-1'
+                  <div className='flex items-center justify-between gap-2'>
+                    <Label className='text-sm font-medium'>Outcome</Label>
+                    <SegmentedControl
+                      ariaLabel='Submission grading outcome'
+                      value={outcome}
+                      onChange={setOutcome}
+                      options={[
+                        { value: 'grade', label: 'Grade' },
+                        { value: 'extend', label: 'Extend' },
+                        { value: 'missing', label: 'Mark missing' }
+                      ]}
                     />
-                    <div className='flex-1'>
-                      <p className='text-sm font-medium'>Accept &amp; grade</p>
-                      {outcome === 'grade' && (
-                        <div className='mt-2 flex gap-2 items-center'>
-                          <Input
-                            type='number'
-                            min={0}
-                            max={100}
-                            value={grade}
-                            onChange={(e) => setGrade(e.target.value)}
-                            placeholder='0-100'
-                            className='w-32'
-                          />
-                          <Button
-                            size='sm'
-                            onClick={handleSaveGrade}
-                            disabled={gradeMutation.isPending}
-                          >
-                            {gradeMutation.isPending ? 'Saving…' : 'Save grade'}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  </label>
+                  </div>
 
-                  <label className='flex items-start gap-2 cursor-pointer'>
-                    <input
-                      type='radio'
-                      checked={outcome === 'extend'}
-                      onChange={() => setOutcome('extend')}
-                      className='mt-1'
-                    />
-                    <div className='flex-1'>
-                      <p className='text-sm font-medium'>Give another chance</p>
-                      {outcome === 'extend' && (
-                        <div className='mt-2 space-y-2'>
-                          <Input
-                            type='datetime-local'
-                            value={extensionDate}
-                            onChange={(e) => setExtensionDate(e.target.value)}
-                          />
-                          <Input
-                            placeholder='Reason (optional)'
-                            value={extensionReason}
-                            onChange={(e) => setExtensionReason(e.target.value)}
-                          />
-                          {selectedAssignment.gradingScope === 'INDIVIDUAL' &&
-                            otherStudentsForExtension.length > 0 && (
-                              <div className='border rounded p-2 max-h-40 overflow-y-auto'>
-                                <p className='text-xs font-medium mb-1 text-muted-foreground'>
-                                  Also apply to:
+                  {outcome === 'grade' &&
+                    selectedAssignment.workMode === 'GROUP' &&
+                    selectedAssignment.gradingScope === 'INDIVIDUAL' &&
+                    selectedSubmission.groupId != null ? (
+                    /* ── Per-member grade inputs (GROUP + INDIVIDUAL) ── */
+                    <div className='space-y-3'>
+                      {(() => {
+                        const groupRow = allGroupRows.find(
+                          (r) => r.groupId === selectedSubmission.groupId
+                        );
+                        if (!groupRow) return null;
+                        const subsByStudent = new Map(
+                          submissions
+                            .filter((s) => s.groupId === selectedSubmission.groupId)
+                            .map((s) => [s.studentId, s] as const)
+                        );
+                        const cap = selectedAssignment.maxMarks ?? 100;
+                        return groupRow.members.map((member) => {
+                          const sub = subsByStudent.get(member.id);
+                          return (
+                            <div
+                              key={member.id}
+                              className='border rounded-md p-2.5 space-y-1.5'
+                            >
+                              <div className='flex items-center gap-2'>
+                                <p className='text-sm font-medium'>
+                                  {member.full_name}
                                 </p>
-                                {otherStudentsForExtension.map((s) => (
-                                  <label
-                                    key={s.studentId}
-                                    className='flex items-center gap-2 text-sm py-0.5'
-                                  >
-                                    <Checkbox
-                                      checked={alsoApplyTo.has(s.studentId)}
-                                      onCheckedChange={(v) => {
-                                        setAlsoApplyTo((prev) => {
-                                          const next = new Set(prev);
-                                          if (v) next.add(s.studentId);
-                                          else next.delete(s.studentId);
-                                          return next;
-                                        });
-                                      }}
-                                    />
-                                    {s.student?.full_name ?? `#${s.studentId}`}
-                                  </label>
-                                ))}
+                                <span className='text-xs text-muted-foreground'>
+                                  {member.number}
+                                </span>
+                                {!sub && (
+                                  <Badge variant='outline' className='text-[10px] text-muted-foreground'>
+                                    No submission
+                                  </Badge>
+                                )}
                               </div>
-                            )}
-                          <Button
-                            size='sm'
-                            variant='outline'
-                            onClick={handleGiveAnotherChance}
-                            disabled={
-                              extensionMutation.isPending || extensionBatchMutation.isPending
-                            }
-                          >
-                            {selectedAssignment.gradingScope === 'GROUP'
-                              ? 'Grant to group'
-                              : `Grant another chance${alsoApplyTo.size > 0 ? ` (${alsoApplyTo.size + 1})` : ''}`}
-                          </Button>
-                        </div>
-                      )}
+                              <div className='flex gap-2 items-center'>
+                                <Input
+                                  type='number'
+                                  min={0}
+                                  max={cap}
+                                  value={memberGrades.get(member.id) ?? ''}
+                                  onChange={(e) =>
+                                    setMemberGrades((prev) => {
+                                      const next = new Map(prev);
+                                      next.set(member.id, e.target.value);
+                                      return next;
+                                    })
+                                  }
+                                  placeholder={`0-${cap}`}
+                                  className='w-24 h-8 text-sm'
+                                />
+                                <Input
+                                  value={memberFeedbacks.get(member.id) ?? ''}
+                                  onChange={(e) =>
+                                    setMemberFeedbacks((prev) => {
+                                      const next = new Map(prev);
+                                      next.set(member.id, e.target.value);
+                                      return next;
+                                    })
+                                  }
+                                  placeholder='Feedback (optional)'
+                                  className='flex-1 h-8 text-sm'
+                                />
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                      <Button
+                        size='sm'
+                        onClick={handleSaveIndividualGrades}
+                        disabled={gradeMutation.isPending}
+                      >
+                        {gradeMutation.isPending ? 'Saving…' : 'Save all grades'}
+                      </Button>
                     </div>
-                  </label>
-
-                  <label className='flex items-start gap-2 cursor-pointer'>
-                    <input
-                      type='radio'
-                      checked={outcome === 'missing'}
-                      onChange={() => setOutcome('missing')}
-                      className='mt-1'
-                    />
-                    <div className='flex-1'>
-                      <p className='text-sm font-medium'>Mark as missing</p>
-                      {outcome === 'missing' && (
+                  ) : outcome === 'grade' ? (
+                    <div className='flex gap-2 items-center flex-wrap'>
+                      <Input
+                        type='number'
+                        min={0}
+                        max={selectedAssignment?.maxMarks ?? 100}
+                        value={grade}
+                        onChange={(e) => setGrade(e.target.value)}
+                        placeholder={`0-${selectedAssignment?.maxMarks ?? 100}`}
+                        className='w-32'
+                      />
+                      <Button
+                        size='sm'
+                        onClick={() => handleSaveGrade(null)}
+                        disabled={gradeMutation.isPending}
+                      >
+                        {gradeMutation.isPending ? 'Saving…' : 'Save grade'}
+                      </Button>
+                      {nextSubmission && (
                         <Button
                           size='sm'
                           variant='outline'
-                          className='mt-2'
-                          onClick={handleMarkMissing}
+                          className='gap-1'
+                          onClick={() => handleSaveGrade(nextSubmission)}
                           disabled={gradeMutation.isPending}
+                          title='Save this grade and jump to the next submission'
                         >
-                          Save without grade
+                          Save & Next
+                          <ArrowRight className='w-3.5 h-3.5' />
                         </Button>
                       )}
                     </div>
-                  </label>
+                  ) : null}
+
+                  {outcome === 'extend' && (
+                    <div className='space-y-2'>
+                      <Input
+                        type='datetime-local'
+                        value={extensionDate}
+                        onChange={(e) => setExtensionDate(e.target.value)}
+                      />
+                      <Input
+                        placeholder='Reason (optional)'
+                        value={extensionReason}
+                        onChange={(e) => setExtensionReason(e.target.value)}
+                      />
+                      {selectedAssignment.gradingScope === 'INDIVIDUAL' &&
+                        otherStudentsForExtension.length > 0 && (
+                          <div className='border rounded p-2 max-h-40 overflow-y-auto'>
+                            <p className='text-xs font-medium mb-1 text-muted-foreground'>
+                              Also apply to:
+                            </p>
+                            {otherStudentsForExtension.map((r) => (
+                              <label
+                                key={r.studentId}
+                                className='flex items-center gap-2 text-sm py-0.5'
+                              >
+                                <Checkbox
+                                  checked={alsoApplyTo.has(r.studentId)}
+                                  onCheckedChange={(v) => {
+                                    setAlsoApplyTo((prev) => {
+                                      const next = new Set(prev);
+                                      if (v) next.add(r.studentId);
+                                      else next.delete(r.studentId);
+                                      return next;
+                                    });
+                                  }}
+                                />
+                                {r.student.full_name}
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={handleGiveAnotherChance}
+                        disabled={
+                          extensionMutation.isPending || extensionBatchMutation.isPending
+                        }
+                      >
+                        {selectedAssignment.gradingScope === 'GROUP'
+                          ? 'Grant to group'
+                          : `Grant another chance${alsoApplyTo.size > 0 ? ` (${alsoApplyTo.size + 1})` : ''}`}
+                      </Button>
+                    </div>
+                  )}
+
+                  {outcome === 'missing' && (
+                    <div className='space-y-2'>
+                      <p className='text-xs text-muted-foreground'>
+                        Mark this submission as reviewed without assigning a grade.
+                        The student will see it as graded with no score.
+                      </p>
+                      <Button
+                        size='sm'
+                        variant='outline'
+                        onClick={handleMarkMissing}
+                        disabled={gradeMutation.isPending}
+                      >
+                        Save without grade
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 </div>
                 {selectedSubmission.student && (
@@ -974,6 +2123,58 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
             )}
           </SheetContent>
         </Sheet>
+
+        {/* Bulk grade dialog — applies the same grade + feedback to every
+            selected submission. Common for participation marks and quick
+            "OK" passes. Empty grade means "mark reviewed, no score". */}
+        <Dialog open={bulkGradeOpen} onOpenChange={setBulkGradeOpen}>
+          <DialogContent className='max-w-md'>
+            <DialogHeader>
+              <DialogTitle>Grade {selectedRows.size} submissions</DialogTitle>
+            </DialogHeader>
+            <div className='space-y-3 py-2'>
+              <p className='text-xs text-muted-foreground'>
+                Apply the same grade and feedback to every selected student.
+                Leave grade blank to mark reviewed without a score.
+              </p>
+              <div className='space-y-1.5'>
+                <Label className='text-xs'>Grade (0–{selectedAssignment?.maxMarks ?? 100})</Label>
+                <Input
+                  type='number'
+                  min={0}
+                  max={selectedAssignment?.maxMarks ?? 100}
+                  value={bulkGradeValue}
+                  onChange={(e) => setBulkGradeValue(e.target.value)}
+                  placeholder={`e.g. ${Math.round((selectedAssignment?.maxMarks ?? 100) * 0.85)}`}
+                />
+              </div>
+              <div className='space-y-1.5'>
+                <Label className='text-xs'>Feedback (optional)</Label>
+                <Textarea
+                  value={bulkGradeFeedback}
+                  onChange={(e) => setBulkGradeFeedback(e.target.value)}
+                  rows={3}
+                  placeholder='Comment shared with all selected students…'
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant='outline' onClick={() => setBulkGradeOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleBulkGrade} disabled={bulkGradeRunning}>
+                {bulkGradeRunning ? (
+                  <>
+                    <Loader2 className='w-4 h-4 mr-1 animate-spin' />
+                    Grading…
+                  </>
+                ) : (
+                  `Apply to ${selectedRows.size}`
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Bulk extension dialog */}
         <Dialog open={bulkOpen} onOpenChange={setBulkOpen}>
@@ -1036,32 +2237,121 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         />
       )}
 
+      {/* Bulk action bar — appears when at least one assignment is selected.
+          Sticky so it stays accessible while scrolling. Same shape as the
+          Quiz bulk bar to keep the cross-tab UX consistent. */}
+      {selectedAssignmentIds.size > 0 && (
+        <div className='sticky top-0 z-10 -mx-1 px-1 pb-2 pt-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70'>
+          <div className='border rounded-xl p-2.5 shadow-sm bg-card flex items-center justify-between gap-3 flex-wrap'>
+            <div className='flex items-center gap-3 min-w-0'>
+              <Button
+                variant='ghost'
+                size='sm'
+                onClick={() => {
+                  if (selectedAssignmentIds.size === filteredAssignments.length)
+                    clearAssignmentSelection();
+                  else setSelectedAssignmentIds(new Set(filteredAssignments.map((a) => a.id)));
+                }}
+                className='gap-1'
+              >
+                {selectedAssignmentIds.size === filteredAssignments.length ? (
+                  <CheckSquare className='w-4 h-4' />
+                ) : (
+                  <Square className='w-4 h-4' />
+                )}
+                {selectedAssignmentIds.size === filteredAssignments.length
+                  ? 'Deselect all'
+                  : 'Select all'}
+              </Button>
+              <p className='text-sm tabular-nums'>{selectedAssignmentIds.size} selected</p>
+            </div>
+            <div className='flex gap-2 flex-wrap'>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => handleBulkPublishAssignments(false)}
+                className='gap-1'
+              >
+                <Check className='w-3.5 h-3.5' /> Publish
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={() => handleBulkPublishAssignments(true)}
+              >
+                Unpublish
+              </Button>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={handleBulkDeleteAssignments}
+                className='gap-1 text-destructive hover:text-destructive'
+              >
+                <Trash2 className='w-3.5 h-3.5' /> Delete
+              </Button>
+              <Button variant='ghost' size='sm' onClick={clearAssignmentSelection}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {filteredAssignments.length > 0 && (
-        <div className='border rounded-lg overflow-hidden'>
-          <Table>
-            <TableHeader className='bg-muted/30'>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Work</TableHead>
-                <TableHead>Grading</TableHead>
-                <TableHead>Opens</TableHead>
-                <TableHead>Due Date</TableHead>
-                <TableHead>Submissions</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead></TableHead>
+        <div className='border rounded-lg overflow-auto max-h-[65vh]'>
+          <Table className='w-full table-fixed min-w-[860px]'>
+            <TableHeader className='sticky top-0 z-10 bg-muted/40 backdrop-blur supports-[backdrop-filter]:bg-muted/60'>
+              <TableRow className='hover:bg-transparent border-b [&>th]:h-8 [&>th]:px-2 [&>th]:text-[10px] [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-muted-foreground'>
+                <TableHead className='w-7'></TableHead>
+                <TableHead className='min-w-0'>Title</TableHead>
+                <TableHead className='w-20'>Work</TableHead>
+                <TableHead className='w-20'>Grading</TableHead>
+                <TableHead className='w-24'>Opens</TableHead>
+                <TableHead className='w-24'>Due</TableHead>
+                <TableHead className='w-20 text-right'>Submissions</TableHead>
+                <TableHead className='w-16'>Status</TableHead>
+                <TableHead className='w-24'></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAssignments.map((a) => {
                 const attCount = a.attachments?.length ?? 0;
+                const isSelected = selectedAssignmentIds.has(a.id);
                 return (
-                  <TableRow key={a.id}>
+                  <TableRow
+                    key={a.id}
+                    className={`group transition-colors hover:bg-muted/40 [&>td]:px-2 [&>td]:py-1.5 ${
+                      isSelected ? 'bg-primary/[0.04]' : ''
+                    } ${a.is_draft ? 'opacity-70' : ''}`}
+                  >
+                    <TableCell>
+                      {/* Selection checkbox — same hover/visibility behaviour
+                          as the Quiz card. Hidden until hover unless the row
+                          is selected or a different row already is. */}
+                      <button
+                        type='button'
+                        onClick={() => toggleAssignmentSelect(a.id)}
+                        aria-label={isSelected ? `Deselect ${a.title}` : `Select ${a.title}`}
+                        aria-pressed={isSelected}
+                        className={`p-1 -m-1 rounded transition-opacity ${
+                          isSelected || selectedAssignmentIds.size > 0
+                            ? 'opacity-100'
+                            : 'opacity-0 group-hover:opacity-60 hover:!opacity-100 focus:opacity-100'
+                        }`}
+                      >
+                        {isSelected ? (
+                          <CheckSquare className='w-4 h-4 text-primary' />
+                        ) : (
+                          <Square className='w-4 h-4 text-muted-foreground' />
+                        )}
+                      </button>
+                    </TableCell>
                     <TableCell className='font-medium'>
-                      <div className='flex items-center gap-2'>
-                        <span>{a.title}</span>
+                      <div className='flex min-w-0 items-center gap-2'>
+                        <span className='truncate'>{a.title}</span>
                         {attCount > 0 && (
                           <span
-                            className='inline-flex items-center gap-0.5 text-xs text-muted-foreground'
+                            className='inline-flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground'
                             title={`${attCount} attachment${attCount === 1 ? '' : 's'}`}
                           >
                             <Paperclip className='w-3 h-3' />
@@ -1071,43 +2361,117 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant='outline'>{a.workMode}</Badge>
+                      <Badge variant='outline' className='px-1.5 py-0 text-[10px] font-normal'>
+                        {a.workMode}
+                      </Badge>
                     </TableCell>
                     <TableCell>
-                      <Badge variant='outline'>{a.gradingScope}</Badge>
+                      <Badge variant='outline' className='px-1.5 py-0 text-[10px] font-normal'>
+                        {a.gradingScope}
+                      </Badge>
                     </TableCell>
-                    <TableCell className='text-muted-foreground'>
+                    <TableCell className='whitespace-nowrap text-xs text-muted-foreground'>
                       {a.open_at ? format(new Date(a.open_at), 'MMM d, h:mm a') : '—'}
                     </TableCell>
-                    <TableCell>{format(new Date(a.due_date), 'MMM d, h:mm a')}</TableCell>
-                    <TableCell className='text-emerald-600 dark:text-emerald-400'>
+                    <TableCell className='whitespace-nowrap text-xs'>
+                      {format(new Date(a.due_date), 'MMM d, h:mm a')}
+                    </TableCell>
+                    <TableCell className='text-right text-sm font-medium text-success tabular-nums'>
                       {a._count?.submissions ?? a.submissions?.length ?? 0}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={a.is_draft ? 'secondary' : 'default'}>
-                        {a.is_draft ? 'draft' : 'published'}
+                      {/* Read-only publish state. The toggle action moved to
+                          the ⋯ menu (Publish / Unpublish). */}
+                      <Badge
+                        variant={a.is_draft ? 'outline' : 'secondary'}
+                        className='px-1.5 py-0 text-[10px] font-normal'
+                        title={
+                          a.is_draft
+                            ? 'Draft — students cannot see this assignment'
+                            : 'Published — visible to students'
+                        }
+                      >
+                        {a.is_draft ? 'Draft' : 'Live'}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className='flex gap-1 justify-end'>
-                        <a
-                          href={assignmentIcsUrl(a.id)}
-                          className='inline-flex items-center justify-center h-8 w-8 text-muted-foreground hover:text-foreground'
-                          title='Add to calendar'
-                        >
-                          <CalendarPlus className='w-4 h-4' />
-                        </a>
-                        <Button variant='ghost' size='sm' onClick={() => openSubmissions(a)}>
-                          <Eye className='w-4 h-4 mr-1' /> View
-                        </Button>
                         <Button
                           variant='ghost'
-                          size='icon'
-                          className='text-destructive'
-                          onClick={() => handleDelete(a.id)}
+                          size='sm'
+                          onClick={() => openSubmissions(a)}
+                          aria-label={
+                            (a.pendingGradingCount ?? 0) > 0
+                              ? `View ${a.title} — ${a.pendingGradingCount} need grading`
+                              : `View ${a.title}`
+                          }
+                          className='relative h-7 px-2 text-xs'
                         >
-                          <Trash2 className='w-4 h-4' />
+                          <Eye className='w-3.5 h-3.5 mr-1' /> View
+                          {(a.pendingGradingCount ?? 0) > 0 && (
+                            <span
+                              className='absolute -top-1.5 -right-1.5 inline-flex items-center justify-center min-w-[16px] h-[16px] px-1 rounded-full text-[9px] font-semibold tabular-nums bg-destructive text-destructive-foreground shadow-sm'
+                              title={`${a.pendingGradingCount} submission${a.pendingGradingCount === 1 ? '' : 's'} need grading`}
+                            >
+                              {a.pendingGradingCount}
+                            </span>
+                          )}
                         </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className='h-7 w-7'
+                              aria-label={`More actions for ${a.title}`}
+                            >
+                              <MoreHorizontal className='w-3.5 h-3.5' />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align='end' className='w-44'>
+                            <DropdownMenuLabel className='text-xs text-muted-foreground'>
+                              Manage
+                            </DropdownMenuLabel>
+                            <DropdownMenuItem
+                              onClick={() => togglePublish(a)}
+                              className='gap-2'
+                            >
+                              {a.is_draft ? (
+                                <>
+                                  <Eye className='w-4 h-4' /> Publish
+                                </>
+                              ) : (
+                                <>
+                                  <EyeOff className='w-4 h-4' /> Unpublish
+                                </>
+                              )}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => setEditTarget(a)}
+                              className='gap-2'
+                            >
+                              <Pencil className='w-4 h-4' /> Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDuplicate(a)}
+                              className='gap-2'
+                            >
+                              <Copy className='w-4 h-4' /> Duplicate
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild className='gap-2'>
+                              <a href={assignmentIcsUrl(a.id)}>
+                                <CalendarPlus className='w-4 h-4' /> Calendar (.ics)
+                              </a>
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem
+                              onClick={() => handleDelete(a.id)}
+                              className='gap-2 text-destructive focus:text-destructive'
+                            >
+                              <Trash2 className='w-4 h-4' /> Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -1180,6 +2544,558 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
           />
         </DialogContent>
       </Dialog>
+
+      {/* Edit dialog — reuses the same form via `initialValues`. Editing
+          doesn't touch attachments here (the submissions page already has
+          inline add/remove for those). */}
+      <Dialog open={editTarget !== null} onOpenChange={(open) => !open && setEditTarget(null)}>
+        <DialogContent className='max-w-md max-h-[90vh] overflow-y-auto'>
+          <DialogHeader>
+            <DialogTitle>Edit assignment</DialogTitle>
+          </DialogHeader>
+          {editTarget && (
+            <CreateAssignmentForm
+              initialValues={editInitialValues}
+              onSubmit={handleEditAssignment}
+              pending={updateAssignmentMutation.isPending}
+              onCancel={() => setEditTarget(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Confirm attachment delete — replaces the native browser confirm()
+          with the app's AlertDialog so the visual style is consistent. */}
+      <AlertDialog
+        open={attachmentToDelete !== null}
+        onOpenChange={(open) => !open && setAttachmentToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete attachment?</AlertDialogTitle>
+            <AlertDialogDescription>
+              <span>
+                Remove <strong>{attachmentToDelete?.name}</strong>? Students will lose access.
+                This can&apos;t be undone.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!attachmentToDelete) return;
+                deleteAttachmentMutation.mutate(
+                  {
+                    assignmentId: attachmentToDelete.assignmentId,
+                    attachmentId: attachmentToDelete.attachmentId,
+                  },
+                  {
+                    onSuccess: () => toast.success(`Removed ${attachmentToDelete.name}`),
+                    onError: (e: Error) => toast.error(e.message),
+                  }
+                );
+                setAttachmentToDelete(null);
+              }}
+              className='bg-destructive text-destructive-foreground hover:bg-destructive/90'
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+}
+
+/// Student-facing per-assignment card. Owns its own `useMySubmission`
+/// query so the card can render the student's submission state without
+/// the parent having to fan out N queries. Three states this handles:
+///
+///   1. **Not submitted** + window open  → submit UI (link or file tabs)
+///   2. **Submitted, ungraded**          → confirmation + resubmit option
+///   3. **Submitted, graded**            → score + feedback + (maybe) resubmit
+///
+/// The submit UI itself supports two modes:
+///   - 'link' — paste a URL
+///   - 'file' — upload a single file (PDF, doc, etc.) up to 25 MB
+/// Both go through the same `POST /submissions` endpoint; the file path
+/// uploads first and uses the returned URL.
+function StudentAssignmentCard({
+  assignment: a,
+  submitMode,
+  onSubmitModeChange,
+  submitUrl,
+  onSubmitUrlChange,
+  pendingFile,
+  onPendingFileChange,
+  fileInputRef,
+  isSubmitting,
+  onSubmit,
+}: {
+  assignment: Assignment;
+  submitMode: 'link' | 'file';
+  onSubmitModeChange: (mode: 'link' | 'file') => void;
+  submitUrl: string;
+  onSubmitUrlChange: (v: string) => void;
+  pendingFile: File | null;
+  onPendingFileChange: (f: File | null) => void;
+  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
+  isSubmitting: boolean;
+  onSubmit: () => void;
+}) {
+  const { data: rawMySubmission } = useMySubmission(a.id);
+
+  // The my-submission endpoint returns `{ _noSubmission: true, _extension }`
+  // when the student hasn't submitted yet, or `{ ...submission, _extension }`
+  // when they have. Normalise so `mySubmission` is either a real Submission or null.
+  const mySubmission =
+    rawMySubmission && !('_noSubmission' in rawMySubmission) ? rawMySubmission : null;
+  // Extension is present in both cases.
+  const myExtension = rawMySubmission?._extension ?? null;
+  // Group info for GROUP-mode assignments (group name, members, leader status).
+  const groupInfo = rawMySubmission?._groupInfo ?? null;
+  const isGroupAssignment = a.workMode === 'GROUP';
+  const isLeader = groupInfo?.isLeader === true;
+
+  const now = new Date();
+  const openAt = a.open_at ? new Date(a.open_at) : null;
+  const baseDue = new Date(a.due_date);
+  // Use the extension deadline if granted (student or group level).
+  const extensionDue = myExtension?.newDueAt
+    ? new Date(myExtension.newDueAt)
+    : null;
+  const due = extensionDue && extensionDue > baseDue ? extensionDue : baseDue;
+  const hasExtension = extensionDue != null && extensionDue > baseDue;
+  const notOpenYet = openAt != null && now < openAt;
+  const closed = now > new Date(due.getTime() + (a.lateWindowMinutes ?? 0) * 60_000);
+
+  // Resubmission allowed up to the (effective) deadline — the backend's
+  // POST endpoint upserts so we can use the same submit UI for first-time
+  // and resubmissions.
+  const hasSubmitted = mySubmission != null;
+  const isGraded = mySubmission?.is_reviewed === true && mySubmission?.grade != null;
+  const passed = isGraded && (mySubmission?.grade ?? 0) >= 50; // soft pass threshold for color
+
+  // "Due in X" countdown for the next non-closed assignment. We bucket
+  // into days / hours so we don't show useless precision ("1d 4h 17m 42s").
+  const msUntilDue = due.getTime() - now.getTime();
+  const dueSoon = !closed && msUntilDue > 0 && msUntilDue < 48 * 60 * 60 * 1000;
+  const dueSoonLabel = (() => {
+    if (msUntilDue <= 0) return null;
+    const hours = Math.floor(msUntilDue / (60 * 60 * 1000));
+    if (hours < 1) return `in ${Math.max(1, Math.floor(msUntilDue / 60_000))}m`;
+    if (hours < 24) return `in ${hours}h`;
+    const days = Math.floor(hours / 24);
+    return `in ${days}d`;
+  })();
+
+  const handlePickFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 25 * 1024 * 1024) {
+      toast.error(`"${file.name}" exceeds the 25 MB limit`);
+      e.target.value = '';
+      return;
+    }
+    onPendingFileChange(file);
+    e.target.value = '';
+  };
+
+  return (
+    <div className='border rounded-lg p-4'>
+      <div className='flex items-center justify-between mb-2 gap-2 flex-wrap'>
+        <span className='font-medium truncate'>{a.title}</span>
+        <div className='flex gap-1 flex-wrap'>
+          {/* Submission status pill — semantic colors */}
+          {isGraded ? (
+            <Badge
+              variant='outline'
+              className={`gap-1 ${
+                passed
+                  ? 'text-success border-success'
+                  : 'text-destructive border-destructive/40'
+              }`}
+            >
+              <CheckCircle2 className='w-3 h-3' />
+              Graded · {mySubmission.grade}%
+            </Badge>
+          ) : hasSubmitted ? (
+            <Badge
+              variant='success'
+              className='gap-1'
+            >
+              <Check className='w-3 h-3' />
+              Submitted
+            </Badge>
+          ) : closed ? (
+            <Badge variant='destructive' className='gap-1'>
+              <XIcon className='w-3 h-3' />
+              Missed
+            </Badge>
+          ) : dueSoon ? (
+            <Badge variant='destructive' className='gap-1'>
+              <AlertTriangle className='w-3 h-3' />
+              Due {dueSoonLabel}
+            </Badge>
+          ) : null}
+          <Badge variant='outline'>
+            {a.workMode === 'GROUP' ? 'Group work' : 'Individual'}
+          </Badge>
+          {a.gradingScope === 'GROUP' && <Badge>Group grade</Badge>}
+        </div>
+      </div>
+      {a.description && (
+        <p className='text-sm text-muted-foreground mb-2'>{a.description}</p>
+      )}
+      <div className='flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground'>
+        {openAt && <span>Opens: {format(openAt, 'MMM d, yyyy h:mm a')}</span>}
+        <span>Due: {format(due, 'MMM d, yyyy h:mm a')}</span>
+        {hasExtension && (
+          <Badge variant='outline' className='text-[10px] gap-1 text-warning border-warning'>
+            <CalendarClock className='w-3 h-3' />
+            Extended from {format(baseDue, 'MMM d')}
+          </Badge>
+        )}
+        <a
+          href={assignmentIcsUrl(a.id)}
+          className='inline-flex items-center gap-1 hover:underline'
+        >
+          <CalendarPlus className='w-3 h-3' /> Add to calendar
+        </a>
+      </div>
+      {a.attachments && a.attachments.length > 0 && (
+        <div className='mt-2 space-y-1'>
+          {a.attachments.map((att) => (
+            <div
+              key={att.id}
+              className='flex items-center gap-2 text-xs bg-muted/30 rounded px-2 py-1'
+            >
+              <Paperclip className='w-3 h-3 text-muted-foreground shrink-0' />
+              <a
+                href={att.url}
+                target='_blank'
+                rel='noreferrer'
+                className='truncate flex-1 hover:underline'
+              >
+                {att.name}
+              </a>
+              {typeof att.size === 'number' && (
+                <span className='text-muted-foreground shrink-0'>
+                  {att.size >= 1024 * 1024
+                    ? `${(att.size / (1024 * 1024)).toFixed(1)} MB`
+                    : `${(att.size / 1024).toFixed(1)} KB`}
+                </span>
+              )}
+              <a
+                href={attachmentDownloadUrl(att.id)}
+                className='inline-flex items-center gap-1 text-muted-foreground hover:text-foreground shrink-0'
+                title='Download'
+              >
+                <Download className='w-3 h-3' />
+              </a>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Group info card — shows group name, members, and leader for GROUP assignments */}
+      {isGroupAssignment && groupInfo && (
+        <div className='mt-3 border rounded-md bg-muted/20 px-3 py-2'>
+          <div className='flex items-center gap-1.5 mb-1.5'>
+            <Users className='w-3.5 h-3.5 text-muted-foreground' />
+            <p className='text-xs font-medium'>{groupInfo.groupName}</p>
+            {isLeader && (
+              <Badge variant='outline' className='text-[10px] gap-0.5 text-amber-600 border-amber-300'>
+                <Crown className='w-2.5 h-2.5' /> You are the leader
+              </Badge>
+            )}
+          </div>
+          <div className='flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground'>
+            {groupInfo.members.map((m) => (
+              <span key={m.id} className='inline-flex items-center gap-0.5'>
+                {m.role === 'LEADER' && <Crown className='w-2.5 h-2.5 text-amber-500' />}
+                {m.name}
+              </span>
+            ))}
+          </div>
+          {!isLeader && (
+            <p className='text-[11px] text-muted-foreground mt-1.5'>
+              Your group leader will submit on behalf of the group.
+            </p>
+          )}
+        </div>
+      )}
+      {isGroupAssignment && !groupInfo && (
+        <div className='mt-3 border rounded-md bg-destructive/5 px-3 py-2'>
+          <p className='text-xs text-destructive'>
+            You are not assigned to any group. Ask your teacher to add you to a group.
+          </p>
+        </div>
+      )}
+
+      {/* Your submission panel — only shown after the student has submitted.
+          Surfaces the current submission URL, submission time, grade, and
+          teacher feedback. If the assignment is still open the student can
+          submit again (backend upserts in place). */}
+      {hasSubmitted && (
+        <div className='mt-3 border-l-2 border-primary/50 bg-primary/[0.03] rounded-r-md px-3 py-2 space-y-1.5'>
+          <div className='flex items-center justify-between gap-2 flex-wrap'>
+            <p className='text-xs font-medium'>
+              {isGroupAssignment ? 'Group submission' : 'Your submission'}
+            </p>
+            <p className='text-[11px] text-muted-foreground tabular-nums'>
+              {format(new Date(mySubmission.submitted_at), 'MMM d, h:mm a')}
+              {mySubmission.is_late && (
+                <span className='text-warning ml-1'>· late</span>
+              )}
+            </p>
+          </div>
+          {mySubmission.content_url && (
+            <a
+              href={mySubmission.content_url}
+              target='_blank'
+              rel='noreferrer'
+              className='inline-flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-full'
+            >
+              <LinkIcon className='w-3 h-3 shrink-0' />
+              <span className='truncate'>{mySubmission.content_url}</span>
+            </a>
+          )}
+          {isGraded && mySubmission.feedback && (
+            <div className='mt-2 pt-2 border-t border-primary/20'>
+              <p className='text-[11px] font-medium text-muted-foreground mb-0.5'>
+                Teacher feedback
+              </p>
+              <p className='text-xs whitespace-pre-wrap'>{mySubmission.feedback}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Submit UI — shows when the window is open. For GROUP assignments
+          only the leader can submit. Non-leaders see the group info card
+          above with "Your leader will submit" message instead. */}
+      {!notOpenYet && !closed && (!isGroupAssignment || isLeader) && (
+        <div className='mt-3 space-y-2'>
+          {hasSubmitted && (
+            <p className='text-[11px] text-muted-foreground'>
+              Submit a new version — this will <strong>replace</strong> your
+              current submission and reset the grade.
+            </p>
+          )}
+          {/* Link / File tabs */}
+          <div className='inline-flex rounded-md border p-0.5 text-xs'>
+            <button
+              type='button'
+              onClick={() => onSubmitModeChange('link')}
+              className={`px-2.5 py-1 rounded transition-colors inline-flex items-center gap-1 ${
+                submitMode === 'link'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <LinkIcon className='w-3 h-3' /> Link
+            </button>
+            <button
+              type='button'
+              onClick={() => onSubmitModeChange('file')}
+              className={`px-2.5 py-1 rounded transition-colors inline-flex items-center gap-1 ${
+                submitMode === 'file'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              <Upload className='w-3 h-3' /> File
+            </button>
+          </div>
+          <div className='flex gap-2'>
+            {submitMode === 'link' ? (
+              <Input
+                placeholder='Paste a link to your work…'
+                value={submitUrl}
+                onChange={(e) => onSubmitUrlChange(e.target.value)}
+              />
+            ) : (
+              <div className='flex-1 flex items-center gap-2'>
+                <input
+                  ref={fileInputRef}
+                  type='file'
+                  onChange={handlePickFile}
+                  className='hidden'
+                />
+                <Button
+                  type='button'
+                  variant='outline'
+                  size='sm'
+                  className='gap-1 shrink-0'
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Paperclip className='w-3.5 h-3.5' /> Pick file
+                </Button>
+                {pendingFile ? (
+                  <div className='flex items-center gap-2 text-xs min-w-0 flex-1'>
+                    <span className='truncate'>{pendingFile.name}</span>
+                    <span className='text-muted-foreground shrink-0'>
+                      {pendingFile.size >= 1024 * 1024
+                        ? `${(pendingFile.size / (1024 * 1024)).toFixed(1)} MB`
+                        : `${(pendingFile.size / 1024).toFixed(1)} KB`}
+                    </span>
+                    <button
+                      type='button'
+                      onClick={() => onPendingFileChange(null)}
+                      className='text-muted-foreground hover:text-destructive'
+                      aria-label='Remove file'
+                    >
+                      <XIcon className='w-3 h-3' />
+                    </button>
+                  </div>
+                ) : (
+                  <span className='text-xs text-muted-foreground'>
+                    No file selected · 25 MB max
+                  </span>
+                )}
+              </div>
+            )}
+            <Button
+              onClick={onSubmit}
+              disabled={
+                isSubmitting ||
+                (submitMode === 'link' && !submitUrl.trim()) ||
+                (submitMode === 'file' && !pendingFile)
+              }
+            >
+              {isSubmitting ? (
+                <>
+                  <Loader2 className='w-4 h-4 mr-1 animate-spin' />
+                  Submitting…
+                </>
+              ) : hasSubmitted ? (
+                'Resubmit'
+              ) : (
+                'Submit'
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+      {(notOpenYet || closed) && (
+        <div className='mt-3'>
+          <p className='text-xs text-muted-foreground'>
+            {notOpenYet
+              ? `Submissions open ${openAt ? format(openAt, 'MMM d, h:mm a') : 'soon'}.`
+              : `Submissions closed${
+                  (a.lateWindowMinutes ?? 0) > 0
+                    ? ` ${a.lateWindowMinutes} min after the due date`
+                    : ''
+                }.`}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/// Course-wide rollup at the top of the student assignments view. Five
+/// numbers that answer "where do I stand?" at a glance:
+///   - average grade across all graded submissions
+///   - submitted of total published
+///   - graded count
+///   - late count
+///   - missing count (past due + never submitted)
+/// Renders nothing when there are no assignments yet — saves an empty card
+/// taking up space on an otherwise-empty tab.
+function StudentSummaryCard({ courseId }: { courseId: string }) {
+  const { data } = useMyAssignmentSummary(courseId);
+  if (!data || data.totalPublished === 0) return null;
+
+  const avgColor =
+    data.avgGrade == null
+      ? 'text-muted-foreground'
+      : data.avgGrade >= 80
+        ? 'text-success'
+        : data.avgGrade >= 60
+          ? 'text-warning'
+          : 'text-destructive';
+
+  return (
+    <div className='border rounded-xl p-4 bg-card'>
+      <div className='flex items-center justify-between mb-3'>
+        <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
+          Your progress
+        </p>
+        {data.missingCount > 0 && (
+          <Badge variant='destructive' className='gap-1'>
+            <AlertTriangle className='w-3 h-3' />
+            {data.missingCount} overdue
+          </Badge>
+        )}
+      </div>
+      <div className='grid grid-cols-2 sm:grid-cols-5 gap-3'>
+        <div>
+          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
+            Avg grade
+          </p>
+          <p className={`text-2xl font-semibold tabular-nums ${avgColor}`}>
+            {data.avgGrade != null ? `${data.avgGrade}%` : '—'}
+          </p>
+        </div>
+        <div>
+          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
+            Submitted
+          </p>
+          <p className='text-2xl font-semibold tabular-nums'>
+            {data.submittedCount}
+            <span className='text-sm text-muted-foreground'> / {data.totalPublished}</span>
+          </p>
+        </div>
+        <div>
+          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
+            Graded
+          </p>
+          <p className='text-2xl font-semibold tabular-nums'>{data.gradedCount}</p>
+        </div>
+        <div>
+          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
+            Late
+          </p>
+          <p
+            className={`text-2xl font-semibold tabular-nums ${
+              data.lateCount > 0 ? 'text-warning' : ''
+            }`}
+          >
+            {data.lateCount}
+          </p>
+        </div>
+        <div>
+          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
+            Missing
+          </p>
+          <p
+            className={`text-2xl font-semibold tabular-nums ${
+              data.missingCount > 0 ? 'text-destructive' : ''
+            }`}
+          >
+            {data.missingCount}
+          </p>
+        </div>
+      </div>
+      {/* Submission progress bar — visual cue of "X of Y submitted". */}
+      <div className='mt-3 space-y-1'>
+        <div className='h-1.5 rounded-full overflow-hidden bg-muted'>
+          <div
+            className='h-full bg-primary transition-all duration-300'
+            style={{
+              width: `${
+                data.totalPublished > 0
+                  ? (data.submittedCount / data.totalPublished) * 100
+                  : 0
+              }%`,
+            }}
+            aria-hidden
+          />
+        </div>
+      </div>
     </div>
   );
 }

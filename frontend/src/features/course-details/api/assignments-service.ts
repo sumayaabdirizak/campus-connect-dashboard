@@ -8,6 +8,7 @@ import type {
   GradeInput,
   GrantExtensionBatchInput,
   GrantExtensionInput,
+  StudentAssignmentSummary,
   Submission,
   SubmissionExtension,
   SubmitWorkInput,
@@ -46,6 +47,15 @@ export async function deleteAssignment(assignmentId: number): Promise<{ success:
   });
 }
 
+/// Deep-clone an assignment (including attachment rows — the underlying
+/// files on disk are shared by URL, not duplicated). Lands as a draft.
+export async function duplicateAssignment(assignmentId: number): Promise<Assignment> {
+  return apiClient<Assignment>(`/course-offerings/${assignmentId}/duplicate`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+}
+
 export async function getSubmissions(assignmentId: number): Promise<Submission[]> {
   return apiClient<Submission[]>(`/course-offerings/${assignmentId}/submissions`);
 }
@@ -75,6 +85,49 @@ export async function submitWork(
     method: 'POST',
     body: JSON.stringify(input)
   });
+}
+
+/// Fetch the calling student's own submission (or null if none yet). Lets
+/// the student card render its actual state without scanning the teacher's
+/// submissions list.
+export async function getMySubmission(assignmentId: number): Promise<Submission | null> {
+  return apiClient<Submission | null>(`/course-offerings/${assignmentId}/my-submission`);
+}
+
+/// Course-wide grade summary for the calling student. Powers the rollup
+/// card at the top of the student assignments view.
+export async function getMyAssignmentSummary(
+  courseOfferingId: string
+): Promise<StudentAssignmentSummary> {
+  return apiClient<StudentAssignmentSummary>(
+    `/course-offerings/course/${courseOfferingId}/my-summary`
+  );
+}
+
+/// Upload a single file for a student submission. Returns the URL the
+/// regular `submitWork` endpoint should be called with. Two-step on purpose:
+/// the submit endpoint stays JSON-only and identical for link / text / file.
+export async function uploadSubmissionFile(
+  assignmentId: number,
+  file: File
+): Promise<{ url: string; originalName: string; mimeType: string; size: number }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const csrfToken = await ensureCsrfToken();
+  const res = await fetch(
+    `${API_BASE_URL}/course-offerings/${assignmentId}/submissions/upload`,
+    {
+      method: 'POST',
+      credentials: 'include',
+      headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
+      body: formData
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || `Upload failed: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
 }
 
 export async function listExtensions(assignmentId: number): Promise<SubmissionExtension[]> {

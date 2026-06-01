@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from '@/components/ui/table';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
   fetchUsersByRole,
   assignStudentToSection,
   fetchBatches,
@@ -32,8 +41,38 @@ import {
   SelectValue
 } from '@/components/ui/select';
 
+/**
+ * Dean-facing user management surface, rendered inside the shared
+ * `PageContainer` at `app/dashboard/users/page.tsx` for users whose role
+ * is DEAN. The page-level container already provides the page title and
+ * sticky header, so this component MUST NOT render its own `<h1>` — doing
+ * so produced the double-header bug flagged in the UI audit.
+ *
+ * All loading + table + status patterns route through the shared shadcn
+ * primitives so dark mode + theme switching work without per-file fixes.
+ */
+
+/// Table-shaped skeleton for the row tables (Students + Lecturers).
+/// We render N actual `<TableRow>` rows of `<Skeleton>` cells so the layout
+/// doesn't shift when data lands — much nicer than the previous
+/// "Loading..." colspan placeholder.
+function TableLoadingRows({ rows = 4, cols = 4 }: { rows?: number; cols?: number }) {
+  return (
+    <>
+      {Array.from({ length: rows }).map((_, i) => (
+        <TableRow key={i}>
+          {Array.from({ length: cols }).map((_, j) => (
+            <TableCell key={j}>
+              <Skeleton className='h-4 w-full max-w-[120px]' />
+            </TableCell>
+          ))}
+        </TableRow>
+      ))}
+    </>
+  );
+}
+
 export default function DeanUserManagement() {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState('students');
   const [search, setSearch] = useState('');
 
@@ -53,40 +92,51 @@ export default function DeanUserManagement() {
     queryFn: () => fetchUsersByRole('STUDENT', true)
   });
 
+  // The dean service returns loosely-typed user rows that include extra
+  // fields not on the canonical User type (isAssigned, batchName, sectionName,
+  // status). We keep this row alias narrow to where it's actually used.
+  type DeanUserRow = {
+    id: number;
+    full_name: string;
+    email: string;
+    isAssigned?: boolean;
+    batchName?: string;
+    sectionName?: string;
+    status?: string;
+  };
+
   // Filtered Lists
-  const filteredStudents =
-    allStudents?.users.filter(
-      (s: any) =>
+  const filteredStudents: DeanUserRow[] =
+    ((allStudents?.users ?? []) as unknown as DeanUserRow[]).filter(
+      (s) =>
         s.full_name.toLowerCase().includes(search.toLowerCase()) ||
         s.email.toLowerCase().includes(search.toLowerCase())
-    ) || [];
+    );
 
-  const filteredLecturers =
-    lecturers?.users.filter(
-      (l: any) =>
+  const filteredLecturers: DeanUserRow[] =
+    ((lecturers?.users ?? []) as unknown as DeanUserRow[]).filter(
+      (l) =>
         l.full_name.toLowerCase().includes(search.toLowerCase()) ||
         l.email.toLowerCase().includes(search.toLowerCase())
-    ) || [];
+    );
 
   return (
     <div className='space-y-6'>
-      <div className='flex items-center justify-between'>
-        <div>
-          <h1 className='text-3xl font-bold tracking-tight'>Manage Faculty Users</h1>
-          <p className='text-muted-foreground'>
-            Manage lecturers, students, and academic assignments.
-          </p>
-        </div>
-        <div className='flex gap-2'>
-          <Button variant='outline'>
-            <Icons.download className='mr-2 h-4 w-4' /> Export
-          </Button>
-        </div>
+      {/* Header row — the actual page title is owned by PageContainer;
+          this row is purely for the secondary "Export" action and the
+          search input. Keeps a single source of truth for the header. */}
+      <div className='flex items-start justify-between gap-2'>
+        <p className='text-muted-foreground text-sm'>
+          Manage lecturers, students, and academic assignments.
+        </p>
+        <Button variant='outline' size='sm'>
+          <Icons.download className='mr-2 h-4 w-4' /> Export
+        </Button>
       </div>
 
       <div className='flex items-center space-x-2'>
-        <div className='relative flex-1 max-w-sm'>
-          <Icons.search className='absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground' />
+        <div className='relative max-w-sm flex-1'>
+          <Icons.search className='text-muted-foreground absolute left-2.5 top-2.5 h-4 w-4' />
           <Input
             placeholder='Search by name or email...'
             className='pl-8'
@@ -108,19 +158,21 @@ export default function DeanUserManagement() {
             <Card>
               <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
                 <CardTitle className='text-sm font-medium'>Total Students</CardTitle>
-                <Icons.user className='h-4 w-4 text-muted-foreground' />
+                <Icons.user className='text-muted-foreground h-4 w-4' />
               </CardHeader>
               <CardContent>
                 <div className='text-2xl font-bold'>{allStudents?.users.length || 0}</div>
               </CardContent>
             </Card>
-            <Card className='border-amber-200 bg-amber-50/30'>
+            {/* "Unassigned" KPI card uses the warning token so it reads as
+                an action-needed signal in both light and dark mode. */}
+            <Card className='border-warning bg-warning-muted'>
               <CardHeader className='flex flex-row items-center justify-between space-y-0 pb-2'>
-                <CardTitle className='text-sm font-medium text-amber-700'>Unassigned</CardTitle>
-                <Icons.warning className='h-4 w-4 text-amber-600' />
+                <CardTitle className='text-warning-foreground text-sm font-medium'>Unassigned</CardTitle>
+                <Icons.warning className='text-warning h-4 w-4' />
               </CardHeader>
               <CardContent>
-                <div className='text-2xl font-bold text-amber-700'>
+                <div className='text-warning-foreground text-2xl font-bold'>
                   {unassignedStudents?.users.length || 0}
                 </div>
               </CardContent>
@@ -138,47 +190,43 @@ export default function DeanUserManagement() {
               </CardHeader>
               <CardContent>
                 <div className='rounded-md border'>
-                  <table className='w-full text-sm'>
-                    <thead className='bg-muted/50 border-b'>
-                      <tr>
-                        <th className='px-4 py-3 text-left'>Student</th>
-                        <th className='px-4 py-3 text-left'>Batch</th>
-                        <th className='px-4 py-3 text-left'>Section</th>
-                        <th className='px-4 py-3 text-right'>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Student</TableHead>
+                        <TableHead>Batch</TableHead>
+                        <TableHead>Section</TableHead>
+                        <TableHead className='text-right'>Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
                       {loadingStudents ? (
-                        <tr>
-                          <td colSpan={4} className='p-8 text-center animate-pulse'>
-                            Loading...
-                          </td>
-                        </tr>
+                        <TableLoadingRows rows={4} cols={4} />
                       ) : (
                         filteredStudents
-                          .filter((s: any) => s.isAssigned)
-                          .map((s: any) => (
-                            <tr key={s.id} className='border-b last:border-0'>
-                              <td className='px-4 py-3'>
+                          .filter((s) => s.isAssigned)
+                          .map((s) => (
+                            <TableRow key={s.id}>
+                              <TableCell>
                                 <div className='font-medium'>{s.full_name}</div>
-                                <div className='text-xs text-muted-foreground'>{s.email}</div>
-                              </td>
-                              <td className='px-4 py-3'>
+                                <div className='text-muted-foreground text-xs'>{s.email}</div>
+                              </TableCell>
+                              <TableCell>
                                 <Badge variant='secondary'>{s.batchName}</Badge>
-                              </td>
-                              <td className='px-4 py-3'>
+                              </TableCell>
+                              <TableCell>
                                 <Badge variant='outline'>{s.sectionName}</Badge>
-                              </td>
-                              <td className='px-4 py-3 text-right'>
+                              </TableCell>
+                              <TableCell className='text-right'>
                                 <Button variant='ghost' size='sm'>
                                   Details
                                 </Button>
-                              </td>
-                            </tr>
+                              </TableCell>
+                            </TableRow>
                           ))
                       )}
-                    </tbody>
-                  </table>
+                    </TableBody>
+                  </Table>
                 </div>
               </CardContent>
             </Card>
@@ -195,27 +243,27 @@ export default function DeanUserManagement() {
               <CardContent>
                 <div className='space-y-4'>
                   {loadingUnassigned ? (
-                    <div className='animate-pulse space-y-2'>
+                    <div className='space-y-2'>
                       {[1, 2, 3].map((i) => (
-                        <div key={i} className='h-12 bg-muted rounded' />
+                        <Skeleton key={i} className='h-12 w-full' />
                       ))}
                     </div>
                   ) : (
-                    unassignedStudents?.users.map((s: any) => (
+                    unassignedStudents?.users.map((s: { id: number; full_name: string; email: string }) => (
                       <div
                         key={s.id}
-                        className='flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors'
+                        className='hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors'
                       >
                         <div className='overflow-hidden'>
-                          <div className='font-medium truncate'>{s.full_name}</div>
-                          <div className='text-xs text-muted-foreground truncate'>{s.email}</div>
+                          <div className='truncate font-medium'>{s.full_name}</div>
+                          <div className='text-muted-foreground truncate text-xs'>{s.email}</div>
                         </div>
                         <AssignDialog student={s} />
                       </div>
                     ))
                   )}
-                  {unassignedStudents?.users.length === 0 && (
-                    <div className='text-center py-8 text-muted-foreground italic text-sm'>
+                  {unassignedStudents?.users.length === 0 && !loadingUnassigned && (
+                    <div className='text-muted-foreground py-8 text-center text-sm italic'>
                       All students are assigned.
                     </div>
                   )}
@@ -239,48 +287,44 @@ export default function DeanUserManagement() {
             </CardHeader>
             <CardContent>
               <div className='rounded-md border'>
-                <table className='w-full text-sm'>
-                  <thead className='bg-muted/50 border-b'>
-                    <tr>
-                      <th className='px-4 py-3 text-left'>Name</th>
-                      <th className='px-4 py-3 text-left'>Email</th>
-                      <th className='px-4 py-3 text-left'>Status</th>
-                      <th className='px-4 py-3 text-right'>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className='text-right'>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
                     {loadingLecturers ? (
-                      <tr>
-                        <td colSpan={4} className='p-8 text-center animate-pulse'>
-                          Loading...
-                        </td>
-                      </tr>
+                      <TableLoadingRows rows={4} cols={4} />
                     ) : (
-                      filteredLecturers.map((l: any) => (
-                        <tr key={l.id} className='border-b last:border-0 hover:bg-muted/30'>
-                          <td className='px-4 py-3 font-medium'>{l.full_name}</td>
-                          <td className='px-4 py-3 text-muted-foreground'>{l.email}</td>
-                          <td className='px-4 py-3'>
-                            <Badge
-                              variant='outline'
-                              className='text-green-600 border-green-200 bg-green-50'
-                            >
-                              {l.status}
-                            </Badge>
-                          </td>
-                          <td className='px-4 py-3 text-right space-x-1'>
+                      filteredLecturers.map((l) => (
+                        <TableRow key={l.id}>
+                          <TableCell className='font-medium'>{l.full_name}</TableCell>
+                          <TableCell className='text-muted-foreground'>{l.email}</TableCell>
+                          <TableCell>
+                            {/* `success` Badge variant replaces the bespoke
+                                `text-green-600 border-green-200 bg-green-50`
+                                — dark mode + theme-safe via tokens. */}
+                            <Badge variant='success'>{l.status}</Badge>
+                          </TableCell>
+                          <TableCell className='space-x-1 text-right'>
                             <Button variant='ghost' size='sm'>
                               Edit
                             </Button>
-                            <Button variant='ghost' size='sm' className='text-red-500'>
+                            {/* `destructive` variant carries its own colour;
+                                no need for the `text-red-500` className override. */}
+                            <Button variant='ghost' size='sm' className='text-destructive hover:text-destructive'>
                               Delete
                             </Button>
-                          </td>
-                        </tr>
+                          </TableCell>
+                        </TableRow>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             </CardContent>
           </Card>
@@ -290,7 +334,7 @@ export default function DeanUserManagement() {
   );
 }
 
-function AssignDialog({ student }: { student: any }) {
+function AssignDialog({ student }: { student: { id: number; full_name: string } }) {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [batchId, setBatchId] = useState<string>('');
@@ -314,7 +358,7 @@ function AssignDialog({ student }: { student: any }) {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       setOpen(false);
     },
-    onError: (error: any) => {
+    onError: (error: Error) => {
       toast.error(error.message || 'Assignment failed');
     }
   });
@@ -356,7 +400,7 @@ function AssignDialog({ student }: { student: any }) {
                 <SelectValue placeholder='Select a batch' />
               </SelectTrigger>
               <SelectContent>
-                {batches?.batches.map((b: any) => (
+                {batches?.batches.map((b: { id: number; name: string }) => (
                   <SelectItem key={b.id} value={b.id.toString()}>
                     {b.name}
                   </SelectItem>
@@ -372,7 +416,7 @@ function AssignDialog({ student }: { student: any }) {
                 <SelectValue placeholder='Select a section' />
               </SelectTrigger>
               <SelectContent>
-                {sections?.sections.map((s: any) => (
+                {sections?.sections.map((s: { id: number; name: string }) => (
                   <SelectItem key={s.id} value={s.id.toString()}>
                     {s.name}
                   </SelectItem>

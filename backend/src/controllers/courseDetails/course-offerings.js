@@ -37,6 +37,27 @@ const assignmentUpload = multer({
   limits: { fileSize: ASSIGNMENT_FILE_LIMIT },
 });
 
+// Student submissions live in a separate directory so teacher-uploaded
+// reference materials don't get mixed up with student work in storage.
+// Same 25 MB cap, same filename scheme.
+const SUBMISSION_UPLOAD_DIR = './uploads/submissions';
+const submissionStorage = multer.diskStorage({
+  destination: (_req, _file, cb) => {
+    if (!fs.existsSync(SUBMISSION_UPLOAD_DIR)) {
+      fs.mkdirSync(SUBMISSION_UPLOAD_DIR, { recursive: true });
+    }
+    cb(null, SUBMISSION_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+  },
+});
+const submissionUpload = multer({
+  storage: submissionStorage,
+  limits: { fileSize: ASSIGNMENT_FILE_LIMIT },
+});
+
 const attachmentInclude = {
   attachments: {
     orderBy: { created_at: 'asc' },
@@ -57,7 +78,17 @@ router.get('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler
     orderBy: { due_date: 'asc' },
   });
 
-  res.json(assignments);
+  // Compute pending-grading count per assignment from the embedded
+  // submissions array (already in memory — no extra DB round-trip). A
+  // submission is "pending" if it hasn't been reviewed yet. Drives the
+  // teacher card badge so they can see at a glance which assignments
+  // need their attention without drilling in.
+  res.json(
+    assignments.map((a) => ({
+      ...a,
+      pendingGradingCount: a.submissions.filter((s) => !s.is_reviewed).length,
+    }))
+  );
 }));
 
 function normaliseModes({ workMode, gradingScope }) {
@@ -73,7 +104,7 @@ function normaliseModes({ workMode, gradingScope }) {
 
 router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
-  const { title, description, open_at, due_date, is_draft, workMode, gradingScope, lateWindowMinutes } = req.body;
+  const { title, description, open_at, due_date, is_draft, workMode, gradingScope, lateWindowMinutes, maxMarks } = req.body;
   const modes = normaliseModes({ workMode, gradingScope });
   if (modes.error) return res.status(400).json({ message: modes.error });
 
@@ -83,6 +114,7 @@ router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), asyncHand
     return res.status(400).json({ message: 'open_at must be before due_date' });
   }
 
+  const coId = parseInt(courseOfferingId, 10);
   const assignment = await prisma.assignment.create({
     data: {
       title,
@@ -90,9 +122,10 @@ router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), asyncHand
       open_at: openAtDate,
       due_date: dueDateObj,
       is_draft: Boolean(is_draft),
-      courseOfferingId: parseInt(courseOfferingId, 10),
+      courseOfferingId: coId,
       ...modes.data,
       ...(Number.isInteger(lateWindowMinutes) ? { lateWindowMinutes } : {}),
+      ...(Number.isInteger(maxMarks) && maxMarks > 0 ? { maxMarks } : {}),
     },
     include: {
       submissions: true,
@@ -101,14 +134,42 @@ router.post('/:courseOfferingId', auth, requireCourseOfferingManage(), asyncHand
     },
   });
 
+  // ── Notify enrolled students when a published assignment is created ──
+  if (!assignment.is_draft) {
+    (async () => {
+      const offering = await prisma.courseOffering.findUnique({
+        where: { id: coId },
+        include: {
+          section: {
+            include: { studentRegistrations: { select: { studentId: true } } },
+          },
+        },
+      });
+      const studentIds = offering?.section?.studentRegistrations?.map((r) => r.studentId) ?? [];
+      if (studentIds.length === 0) return;
+      pushToUsers(studentIds, {
+        title: 'New assignment',
+        body: `${assignment.title} · due ${dueDateObj.toLocaleDateString()}`,
+        url: `/dashboard/courses/${coId}?tab=assignments`,
+        tag: `assignment-new-${assignment.id}`,
+      }).catch(() => {});
+    })();
+  }
+
   res.json(assignment);
 }));
 
 router.patch('/:assignmentId', auth, requireAssignmentManage(), asyncHandler(async (req, res) => {
   const { assignmentId } = req.params;
-  const { title, description, open_at, due_date, is_draft, workMode, gradingScope, lateWindowMinutes } = req.body;
+  const { title, description, open_at, due_date, is_draft, workMode, gradingScope, lateWindowMinutes, maxMarks } = req.body;
   const modes = normaliseModes({ workMode, gradingScope });
   if (modes.error) return res.status(400).json({ message: modes.error });
+
+  // Snapshot the old draft state so we can detect publish transitions.
+  const before = await prisma.assignment.findUnique({
+    where: { id: parseInt(assignmentId, 10) },
+    select: { is_draft: true },
+  });
 
   const assignment = await prisma.assignment.update({
     where: { id: parseInt(assignmentId, 10) },
@@ -120,6 +181,7 @@ router.patch('/:assignmentId', auth, requireAssignmentManage(), asyncHandler(asy
       ...(is_draft !== undefined && { is_draft: Boolean(is_draft) }),
       ...modes.data,
       ...(Number.isInteger(lateWindowMinutes) && { lateWindowMinutes }),
+      ...(Number.isInteger(maxMarks) && maxMarks > 0 ? { maxMarks } : {}),
     },
     include: {
       submissions: true,
@@ -127,6 +189,29 @@ router.patch('/:assignmentId', auth, requireAssignmentManage(), asyncHandler(asy
       _count: { select: { submissions: true } }
     },
   });
+
+  // ── Notify enrolled students when an assignment is published ─────────
+  // Only fires on the draft→published transition (not on every PATCH).
+  if (before?.is_draft && !assignment.is_draft) {
+    (async () => {
+      const offering = await prisma.courseOffering.findUnique({
+        where: { id: assignment.courseOfferingId },
+        include: {
+          section: {
+            include: { studentRegistrations: { select: { studentId: true } } },
+          },
+        },
+      });
+      const studentIds = offering?.section?.studentRegistrations?.map((r) => r.studentId) ?? [];
+      if (studentIds.length === 0) return;
+      pushToUsers(studentIds, {
+        title: 'New assignment',
+        body: `${assignment.title} · due ${new Date(assignment.due_date).toLocaleDateString()}`,
+        url: `/dashboard/courses/${assignment.courseOfferingId}?tab=assignments`,
+        tag: `assignment-new-${assignment.id}`,
+      }).catch(() => {});
+    })();
+  }
 
   res.json(assignment);
 }));
@@ -139,6 +224,74 @@ router.delete('/:assignmentId', auth, requireAssignmentManage(), asyncHandler(as
 
   res.json({ success: true });
 }));
+
+/// Duplicate an assignment including its attachments. Lands as DRAFT with
+/// "Copy of " prefix so the teacher can polish before publishing. Attachment
+/// ROWS are cloned (sharing the same underlying file URLs — the file on
+/// disk is referenced by URL, not copied) so the new draft has the same
+/// reference materials without doubling disk usage. Submissions and
+/// extensions from the source are NOT copied (they belong to the original
+/// assignment and shouldn't follow the duplicate).
+router.post(
+  '/:assignmentId/duplicate',
+  auth,
+  requireAssignmentManage(),
+  asyncHandler(async (req, res) => {
+    const id = parseInt(req.params.assignmentId, 10);
+
+    const source = await prisma.assignment.findUnique({
+      where: { id },
+      include: {
+        attachments: true,
+      },
+    });
+    if (!source) return res.status(404).json({ message: 'Assignment not found' });
+
+    const created = await prisma.$transaction(async (tx) => {
+      const fresh = await tx.assignment.create({
+        data: {
+          title: `Copy of ${source.title}`,
+          description: source.description,
+          open_at: source.open_at,
+          due_date: source.due_date,
+          is_draft: true, // always draft — protects against accidental publish
+          courseOfferingId: source.courseOfferingId,
+          workMode: source.workMode,
+          gradingScope: source.gradingScope,
+          lateWindowMinutes: source.lateWindowMinutes,
+        },
+      });
+
+      // Clone attachment ROWS (file URLs are shared — the on-disk files
+      // are referenced, not copied, since both rows point to the same URL).
+      if (source.attachments.length > 0) {
+        await tx.assignmentAttachment.createMany({
+          data: source.attachments.map((att) => ({
+            assignmentId: fresh.id,
+            name: att.name,
+            url: att.url,
+            size: att.size,
+            mimeType: att.mimeType,
+            uploadedById: req.user.id ?? req.user.sub,
+          })),
+        });
+      }
+
+      return tx.assignment.findUnique({
+        where: { id: fresh.id },
+        include: {
+          attachments: {
+            orderBy: { created_at: 'asc' },
+            include: { uploadedBy: { select: { id: true, full_name: true } } },
+          },
+          _count: { select: { submissions: true } },
+        },
+      });
+    });
+
+    res.status(201).json(created);
+  })
+);
 
 /// Upload one or more files and attach them to an assignment. `field` is "files"
 /// (array). Stores to /uploads/assignments and persists rows to
@@ -259,9 +412,37 @@ router.post('/:assignmentId/submissions', auth, requireStudentSubmission(), asyn
   // effective due date can be extended per-student via SubmissionExtension.
   const assignment = await prisma.assignment.findUnique({
     where: { id: assignmentId },
-    select: { id: true, open_at: true, due_date: true, lateWindowMinutes: true },
+    select: { id: true, open_at: true, due_date: true, lateWindowMinutes: true, workMode: true, courseOfferingId: true },
   });
   if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+
+  // ── Resolve group membership for GROUP-mode assignments ──────────────
+  // The Submission.groupId column drives grade fan-out — if it's null the
+  // teacher can't grade the whole group at once. We look up the student's
+  // CourseGroup for this offering and reject the submit if they aren't in
+  // one (they can't submit GROUP work without a group).
+  // Only the group LEADER is allowed to submit for the whole group.
+  let resolvedGroupId = null;
+  if (assignment.workMode === 'GROUP') {
+    const membership = await prisma.groupMember.findFirst({
+      where: {
+        memberId: selfId,
+        group: { courseOfferingId: assignment.courseOfferingId },
+      },
+      select: { groupId: true, role: true },
+    });
+    if (!membership) {
+      return res.status(400).json({
+        message: 'You must be in a group to submit a group assignment. Ask your teacher to assign you to a group.',
+      });
+    }
+    if (membership.role !== 'LEADER') {
+      return res.status(403).json({
+        message: 'Only the group leader can submit for the group.',
+      });
+    }
+    resolvedGroupId = membership.groupId;
+  }
 
   const now = new Date();
   if (assignment.open_at && now < assignment.open_at) {
@@ -270,30 +451,294 @@ router.post('/:assignmentId/submissions', auth, requireStudentSubmission(), asyn
     });
   }
 
+  // Check for student-level OR group-level extension (whichever grants
+  // the latest deadline wins). Group extensions apply when the assignment
+  // is group-graded and the student belongs to a group.
   const ext = await prisma.submissionExtension.findUnique({
     where: { assignmentId_studentId: { assignmentId, studentId: selfId } },
   });
-  const effectiveDue = ext?.newDueAt && ext.newDueAt > assignment.due_date ? ext.newDueAt : assignment.due_date;
+  let effectiveDue = ext?.newDueAt && ext.newDueAt > assignment.due_date ? ext.newDueAt : assignment.due_date;
+  if (resolvedGroupId != null) {
+    const groupExt = await prisma.submissionExtension.findUnique({
+      where: { assignmentId_groupId: { assignmentId, groupId: resolvedGroupId } },
+    });
+    if (groupExt?.newDueAt && groupExt.newDueAt > effectiveDue) {
+      effectiveDue = groupExt.newDueAt;
+    }
+  }
   const closeWithGrace = new Date(effectiveDue.getTime() + assignment.lateWindowMinutes * 60_000);
   if (now > closeWithGrace) {
     return res.status(403).json({ message: 'Submissions closed' });
   }
   const isLate = now > effectiveDue;
 
-  const submission = await prisma.submission.create({
-    data: {
-      assignmentId,
-      studentId: targetStudentId,
-      content_url,
-      is_late: isLate,
-    },
-    include: {
-      student: { select: { id: true, full_name: true, email: true, number: true } }
-    },
+  // Resubmission semantics: if the student already has a submission row for
+  // this assignment we UPDATE it in place (preserving the id but resetting
+  // grade/feedback/is_reviewed so the teacher knows to re-grade). Without
+  // this we silently accumulated duplicate rows on every "resubmit", and
+  // the teacher's submission count would lie. The grade reset is the only
+  // safe behaviour — keeping the old grade on a new piece of work would
+  // be misleading.
+  const existing = await prisma.submission.findFirst({
+    where: { assignmentId, studentId: targetStudentId },
+    select: { id: true },
   });
+  const submission = existing
+    ? await prisma.submission.update({
+        where: { id: existing.id },
+        data: {
+          content_url,
+          is_late: isLate,
+          submitted_at: now,
+          grade: null,
+          feedback: null,
+          is_reviewed: false,
+          ...(resolvedGroupId != null && { groupId: resolvedGroupId }),
+        },
+        include: {
+          student: { select: { id: true, full_name: true, email: true, number: true } }
+        },
+      })
+    : await prisma.submission.create({
+        data: {
+          assignmentId,
+          studentId: targetStudentId,
+          content_url,
+          is_late: isLate,
+          ...(resolvedGroupId != null && { groupId: resolvedGroupId }),
+        },
+        include: {
+          student: { select: { id: true, full_name: true, email: true, number: true } }
+        },
+      });
+
+  // ── Fan-out submission to all group members ──────────────────────────
+  // When the leader submits for a GROUP assignment, create/update submission
+  // rows for every other member in the group. This ensures the teacher sees
+  // all members in the submissions list (with the shared content_url) and
+  // can grade them — either as a group or individually depending on
+  // gradingScope.
+  if (resolvedGroupId != null) {
+    const members = await prisma.groupMember.findMany({
+      where: { groupId: resolvedGroupId },
+      select: { memberId: true },
+    });
+    const otherIds = members.map((m) => m.memberId).filter((id) => id !== targetStudentId);
+    if (otherIds.length > 0) {
+      await Promise.all(
+        otherIds.map(async (memberId) => {
+          const memberSub = await prisma.submission.findFirst({
+            where: { assignmentId, studentId: memberId },
+            select: { id: true },
+          });
+          if (memberSub) {
+            await prisma.submission.update({
+              where: { id: memberSub.id },
+              data: {
+                content_url,
+                is_late: isLate,
+                submitted_at: now,
+                groupId: resolvedGroupId,
+                grade: null,
+                feedback: null,
+                is_reviewed: false,
+              },
+            });
+          } else {
+            await prisma.submission.create({
+              data: {
+                assignmentId,
+                studentId: memberId,
+                content_url,
+                is_late: isLate,
+                groupId: resolvedGroupId,
+              },
+            });
+          }
+        })
+      );
+    }
+  }
 
   res.json(submission);
 }));
+
+/// Student-side file upload for submissions. Saves to /uploads/submissions/
+/// and returns the URL — the frontend then POSTs to /submissions with that
+/// URL in the `link` field. We split the steps so the regular submit
+/// endpoint stays simple and identical for link / text / file submissions.
+router.post(
+  '/:assignmentId/submissions/upload',
+  auth,
+  requireStudentSubmission(),
+  submissionUpload.single('file'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+    const hostBase = `${req.protocol}://${req.get('host')}`;
+    res.status(201).json({
+      url: `${hostBase}/uploads/submissions/${req.file.filename}`,
+      originalName: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+    });
+  })
+);
+
+/// Returns the calling student's own submission for this assignment (or
+/// null if they haven't submitted). Lets the student-side card render
+/// "Submitted X · Score Y%" without scanning the full submissions list
+/// (which they can't see anyway — that endpoint is teacher-only).
+router.get(
+  '/:assignmentId/my-submission',
+  auth,
+  requireStudentSubmission(),
+  asyncHandler(async (req, res) => {
+    const assignmentId = parseInt(req.params.assignmentId, 10);
+    const studentId = req.user.id ?? req.user.sub;
+    const [submission, studentExt, assignment] = await Promise.all([
+      prisma.submission.findFirst({
+        where: { assignmentId, studentId },
+        include: {
+          student: { select: { id: true, full_name: true, email: true, number: true } },
+        },
+      }),
+      prisma.submissionExtension.findUnique({
+        where: { assignmentId_studentId: { assignmentId, studentId } },
+        select: { newDueAt: true, reason: true },
+      }),
+      prisma.assignment.findUnique({
+        where: { id: assignmentId },
+        select: { courseOfferingId: true, workMode: true },
+      }),
+    ]);
+
+    // Also check for a group-level extension and resolve full group info
+    // if the student belongs to a group (for GROUP-mode assignments).
+    let groupExt = null;
+    let _groupInfo = null;
+    if (assignment?.workMode === 'GROUP') {
+      const membership = await prisma.groupMember.findFirst({
+        where: { memberId: studentId, group: { courseOfferingId: assignment.courseOfferingId } },
+        select: {
+          groupId: true,
+          role: true,
+          group: {
+            select: {
+              id: true,
+              name: true,
+              members: {
+                include: { member: { select: { id: true, full_name: true } } },
+                orderBy: [{ role: 'asc' }, { joined_at: 'asc' }],
+              },
+            },
+          },
+        },
+      });
+      if (membership) {
+        groupExt = await prisma.submissionExtension.findUnique({
+          where: { assignmentId_groupId: { assignmentId, groupId: membership.groupId } },
+          select: { newDueAt: true, reason: true },
+        });
+        _groupInfo = {
+          groupId: membership.group.id,
+          groupName: membership.group.name,
+          isLeader: membership.role === 'LEADER',
+          members: membership.group.members.map((m) => ({
+            id: m.memberId,
+            name: m.member.full_name,
+            role: m.role,
+          })),
+        };
+      }
+    }
+
+    // Return the latest extension deadline (student or group, whichever is later).
+    const effectiveExt = (() => {
+      if (!studentExt && !groupExt) return null;
+      if (!studentExt) return groupExt;
+      if (!groupExt) return studentExt;
+      return new Date(studentExt.newDueAt) >= new Date(groupExt.newDueAt) ? studentExt : groupExt;
+    })();
+
+    // When there is no submission, return null (preserves old contract) but
+    // attach `_extension` only when a submission exists. The extension is
+    // also returned at the top level so the student card can use it even
+    // before submitting.
+    if (!submission) {
+      return res.json({ _noSubmission: true, _extension: effectiveExt, _groupInfo });
+    }
+    res.json({ ...submission, _extension: effectiveExt, _groupInfo });
+  })
+);
+
+/// Student-side course-wide grade summary. One query for everything the
+/// summary card at the top of the student view needs:
+///   - total published assignments in the course
+///   - how many the student has submitted
+///   - how many are graded
+///   - how many were late
+///   - how many are still missing (past due, never submitted)
+///   - average grade across graded submissions
+/// Cheaper than fanning out N per-assignment queries; the response is
+/// flat numbers so it stays tiny on the wire.
+router.get(
+  '/course/:courseOfferingId/my-summary',
+  auth,
+  requireCourseOfferingRead(),
+  asyncHandler(async (req, res) => {
+    const courseOfferingId = parseInt(req.params.courseOfferingId, 10);
+    const studentId = req.user.id ?? req.user.sub;
+    const now = new Date();
+
+    const [assignments, submissions] = await Promise.all([
+      prisma.assignment.findMany({
+        where: { courseOfferingId, is_draft: false },
+        select: { id: true, due_date: true },
+      }),
+      prisma.submission.findMany({
+        where: {
+          studentId,
+          assignment: { courseOfferingId, is_draft: false },
+        },
+        select: {
+          id: true,
+          assignmentId: true,
+          grade: true,
+          is_late: true,
+          is_reviewed: true,
+        },
+      }),
+    ]);
+
+    const submittedIds = new Set(submissions.map((s) => s.assignmentId));
+    const totalPublished = assignments.length;
+    const submittedCount = submissions.length;
+    const gradedSubmissions = submissions.filter(
+      (s) => s.is_reviewed && typeof s.grade === 'number'
+    );
+    const lateCount = submissions.filter((s) => s.is_late).length;
+    // "Missing" = past due AND never submitted. We don't count not-yet-due
+    // assignments as missing — the student still has time.
+    const missingCount = assignments.filter(
+      (a) => !submittedIds.has(a.id) && new Date(a.due_date) < now
+    ).length;
+    const avgGrade = gradedSubmissions.length
+      ? Math.round(
+          (gradedSubmissions.reduce((sum, s) => sum + (s.grade ?? 0), 0) /
+            gradedSubmissions.length) * 10
+        ) / 10
+      : null;
+
+    res.json({
+      totalPublished,
+      submittedCount,
+      gradedCount: gradedSubmissions.length,
+      lateCount,
+      missingCount,
+      avgGrade,
+    });
+  })
+);
 
 router.patch('/:assignmentId/submissions/:submissionId', auth, requireSubmissionGrade(), asyncHandler(async (req, res) => {
   const assignmentId = parseInt(req.params.assignmentId, 10);
@@ -302,10 +747,19 @@ router.patch('/:assignmentId/submissions/:submissionId', auth, requireSubmission
 
   const existing = await prisma.submission.findFirst({
     where: { id: submissionId, assignmentId },
-    include: { assignment: { select: { id: true, gradingScope: true } } },
+    include: { assignment: { select: { id: true, gradingScope: true, maxMarks: true } } },
   });
   if (!existing) {
     return res.status(404).json({ message: "Submission not found" });
+  }
+
+  // ── Grade range validation (uses assignment's maxMarks) ─────────────
+  const cap = existing.assignment?.maxMarks ?? 100;
+  if (grade !== undefined && grade !== null) {
+    const g = Number(grade);
+    if (Number.isNaN(g) || g < 0 || g > cap) {
+      return res.status(400).json({ message: `Grade must be a number between 0 and ${cap}` });
+    }
   }
 
   const data = {

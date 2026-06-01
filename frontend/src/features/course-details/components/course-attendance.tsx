@@ -4,7 +4,7 @@ import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, Calendar, Plus, QrCode, Trash2 } from 'lucide-react';
+import { ArrowLeft, Plus, QrCode, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
   Table,
@@ -17,7 +17,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogFooter,
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
@@ -42,6 +41,9 @@ import {
 } from '../api/attendance-queries';
 import { useRoster } from '../api/roster-queries';
 import type { AttendanceRecord, ClassSchedule } from '../api/attendance-types';
+import { ListSkeleton } from './_shared/list-skeleton';
+import { AttendanceSessionForm } from './attendance-session-form';
+import type { AttendanceSessionFormValues } from '../schemas/attendance-session';
 
 interface CourseAttendanceProps {
   courseId: string;
@@ -68,14 +70,8 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
   const [scanOpen, setScanOpen] = useState(false);
   const [selectedSession, setSelectedSession] = useState<ClassSchedule | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
-  const [newSession, setNewSession] = useState({
-    day_of_week: new Date().getDay(),
-    start_time: '09:00',
-    end_time: '10:30',
-    location: '',
-    topic: '',
-    is_lab: false
-  });
+  // The new-session form's local field state is owned by `AttendanceSessionForm`
+  // (TanStack Form + Zod). We only track dialog open/close here.
 
   const { data: sessions = [], isLoading: sessionsLoading } = useSessions(courseId);
   const { data: summary } = useAttendanceSummary(courseId);
@@ -107,23 +103,14 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
     [sessions, search]
   );
 
-  const handleCreateSession = () => {
-    if (!newSession.location.trim()) {
-      toast.error('Location is required');
-      return;
-    }
-    createSessionMutation.mutate(newSession, {
+  // Called by AttendanceSessionForm once Zod has accepted the values. We
+  // no longer hand-validate `location` here — the schema's `min(1)` rule
+  // covers it and surfaces the error inline next to the input.
+  const handleCreateSession = (values: AttendanceSessionFormValues) => {
+    createSessionMutation.mutate(values, {
       onSuccess: () => {
         toast.success('Session created');
         setCreateOpen(false);
-        setNewSession({
-          day_of_week: new Date().getDay(),
-          start_time: '09:00',
-          end_time: '10:30',
-          location: '',
-          topic: '',
-          is_lab: false
-        });
       },
       onError: (e: Error) => toast.error(e.message)
     });
@@ -180,7 +167,7 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
           </p>
         </div>
 
-        {recordsLoading && <p className='text-sm text-muted-foreground'>Loading…</p>}
+        {recordsLoading && <ListSkeleton variant='row' count={4} />}
 
         <div className='border rounded-lg overflow-hidden'>
           <Table>
@@ -289,13 +276,13 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
         <Card>
           <CardContent className='p-3'>
             <p className='text-xs text-muted-foreground'>Average rate</p>
-            <p className='text-xl font-bold text-emerald-600 dark:text-emerald-400'>{avgRatePct}%</p>
+            <p className='text-xl font-bold text-success'>{avgRatePct}%</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className='p-3'>
             <p className='text-xs text-muted-foreground'>Students</p>
-            <p className='text-xl font-bold text-blue-600 dark:text-blue-400'>{perStudent.length}</p>
+            <p className='text-xl font-bold text-info'>{perStudent.length}</p>
           </CardContent>
         </Card>
       </div>
@@ -365,7 +352,7 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
                     {s.topic ?? '—'}
                   </TableCell>
                   <TableCell
-                    className='text-right text-emerald-600 dark:text-emerald-400 cursor-pointer'
+                    className='text-right text-success cursor-pointer'
                     onClick={() => setSelectedSession(s)}
                   >
                     {s._count?.attendance ?? s.attendance?.length ?? 0}
@@ -412,7 +399,7 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
                 <TableRow key={s.studentId}>
                   <TableCell className='font-medium'>{s.full_name}</TableCell>
                   <TableCell className='text-muted-foreground'>{s.number}</TableCell>
-                  <TableCell className='text-right text-emerald-600 dark:text-emerald-400'>{s.present}</TableCell>
+                  <TableCell className='text-right text-success'>{s.present}</TableCell>
                   <TableCell className='text-right'>{s.late}</TableCell>
                   <TableCell className='text-right text-destructive'>{s.absent}</TableCell>
                   <TableCell className='text-right'>{s.excused}</TableCell>
@@ -437,66 +424,12 @@ export function CourseAttendance({ courseId, isStudent }: CourseAttendanceProps)
           <DialogHeader>
             <DialogTitle>New session</DialogTitle>
           </DialogHeader>
-          <div className='space-y-3 py-2'>
-            <Select
-              value={String(newSession.day_of_week)}
-              onValueChange={(v) =>
-                setNewSession({ ...newSession, day_of_week: Number(v) })
-              }
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {DAY_NAMES.map((d, i) => (
-                  <SelectItem key={d} value={String(i)}>
-                    {d}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <div className='grid grid-cols-2 gap-2'>
-              <Input
-                type='time'
-                value={newSession.start_time}
-                onChange={(e) => setNewSession({ ...newSession, start_time: e.target.value })}
-              />
-              <Input
-                type='time'
-                value={newSession.end_time}
-                onChange={(e) => setNewSession({ ...newSession, end_time: e.target.value })}
-              />
-            </div>
-            <Input
-              placeholder='Location'
-              value={newSession.location}
-              onChange={(e) => setNewSession({ ...newSession, location: e.target.value })}
-            />
-            <Input
-              placeholder='Topic (optional)'
-              value={newSession.topic}
-              onChange={(e) => setNewSession({ ...newSession, topic: e.target.value })}
-            />
-            <label className='flex items-center gap-2 text-sm'>
-              <input
-                type='checkbox'
-                checked={newSession.is_lab}
-                onChange={(e) => setNewSession({ ...newSession, is_lab: e.target.checked })}
-              />
-              This is a lab session
-            </label>
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={handleCreateSession}
-              disabled={createSessionMutation.isPending}
-            >
-              {createSessionMutation.isPending ? 'Creating…' : 'Create'}
-            </Button>
-          </DialogFooter>
+          {/* All field state + Zod validation lives inside this component. */}
+          <AttendanceSessionForm
+            onSubmit={handleCreateSession}
+            onCancel={() => setCreateOpen(false)}
+            submitting={createSessionMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
 

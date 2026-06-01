@@ -25,7 +25,20 @@ function urlBase64ToUint8Array(base64String: string): BufferSource {
 }
 
 export async function subscribeUserToPush(): Promise<PushSubscription | null> {
-  const { publicKey } = await apiClient<{ publicKey: string }>('/push/vapid-public-key');
+  // The backend returns 503 when VAPID keys are not configured (dev / self-
+  // hosted without push set up). Treat this as "push unavailable" rather than
+  // a hard error so the toggle doesn't crash the page.
+  let publicKey: string | undefined;
+  try {
+    const resp = await apiClient<{ publicKey: string }>('/push/vapid-public-key');
+    publicKey = resp.publicKey;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : '';
+    if (msg.includes('VAPID') || msg.includes('503') || msg.includes('not configured')) {
+      return null;
+    }
+    throw err;
+  }
   if (!publicKey) return null;
   const reg = await registerAnnouncementServiceWorker();
   if (!reg) return null;

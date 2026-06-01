@@ -9,8 +9,10 @@ interface PushSubscriptionState {
   permission: Permission;
   subscribed: boolean;
   loading: boolean;
-  /** Request OS permission (if needed), then subscribe + persist on the server. */
-  enable: () => Promise<void>;
+  /** Request OS permission (if needed), then subscribe + persist on the server.
+   *  Returns `true` when the subscription was created, `false` when push is
+   *  unavailable on this server (VAPID not configured). */
+  enable: () => Promise<boolean>;
   /** Drop the local + server subscription. Browser permission stays granted. */
   disable: () => Promise<void>;
 }
@@ -39,17 +41,19 @@ export function usePushSubscription(): PushSubscriptionState {
       .catch(() => {});
   }, []);
 
-  const enable = useCallback(async () => {
-    if (permission === 'unsupported') return;
+  const enable = useCallback(async (): Promise<boolean> => {
+    if (permission === 'unsupported') return false;
     setLoading(true);
     try {
       if (Notification.permission !== 'granted') {
         const result = await Notification.requestPermission();
         setPermission(result as Permission);
-        if (result !== 'granted') return;
+        if (result !== 'granted') return false;
       }
       const sub = await subscribeUserToPush();
       setSubscribed(!!sub);
+      // null means server-side push is not configured (VAPID missing).
+      return sub !== null;
     } finally {
       setLoading(false);
     }

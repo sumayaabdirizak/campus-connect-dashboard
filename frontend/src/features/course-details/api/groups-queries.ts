@@ -1,10 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@/lib/async-query';
+import type { GroupMemberRole } from './groups-types';
 import {
   getGroups,
   createGroup,
   deleteGroup,
   addGroupMember,
-  removeGroupMember
+  removeGroupMember,
+  renameGroup,
+  setGroupMemberRole
 } from './groups-service';
 
 export const groupKeys = {
@@ -30,6 +33,18 @@ export function useCreateGroup(courseOfferingId: string) {
   });
 }
 
+export function useRenameGroup(courseOfferingId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ groupId, name }: { groupId: string; name: string }) =>
+      renameGroup(groupId, name),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.list(courseOfferingId) });
+    }
+  });
+}
+
 export function useDeleteGroup(courseOfferingId: string) {
   const queryClient = useQueryClient();
 
@@ -45,8 +60,8 @@ export function useAddGroupMember(courseOfferingId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ groupId, memberId }: { groupId: string; memberId: number }) =>
-      addGroupMember(groupId, memberId),
+    mutationFn: ({ groupId, memberId, role }: { groupId: string; memberId: number; role?: GroupMemberRole }) =>
+      addGroupMember(groupId, memberId, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupKeys.list(courseOfferingId) });
     }
@@ -59,6 +74,18 @@ export function useRemoveGroupMember(courseOfferingId: string) {
   return useMutation({
     mutationFn: ({ groupId, memberId }: { groupId: string; memberId: string }) =>
       removeGroupMember(groupId, memberId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: groupKeys.list(courseOfferingId) });
+    }
+  });
+}
+
+export function useSetGroupMemberRole(courseOfferingId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ groupId, memberId, role }: { groupId: string; memberId: string; role: GroupMemberRole }) =>
+      setGroupMemberRole(groupId, memberId, role),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupKeys.list(courseOfferingId) });
     }

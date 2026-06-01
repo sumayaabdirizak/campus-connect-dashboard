@@ -36,6 +36,11 @@ export function useHotkeys(map: HotkeyMap, enabled = true): void {
   useEffect(() => {
     if (!enabled) return;
     const handler = (e: KeyboardEvent) => {
+      // Some keydown events carry no `key` — IME composition, browser autofill,
+      // and certain synthetic/media events all fire without one. Bail before we
+      // touch `.length` on undefined.
+      if (!e.key) return;
+
       const inEditor = isTextEntryTarget(e.target);
       const isMac = typeof navigator !== 'undefined' && /Mac/.test(navigator.platform);
       const mod = isMac ? e.metaKey : e.ctrlKey;

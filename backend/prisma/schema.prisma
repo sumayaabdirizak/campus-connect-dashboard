@@ -153,6 +153,11 @@ enum GroupDmMemberRole {
   MEMBER
 }
 
+enum GroupMemberRole {
+  LEADER
+  MEMBER
+}
+
 enum AnnouncementPriority {
   NORMAL
   IMPORTANT
@@ -205,6 +210,32 @@ model Role {
   users User[]
 }
 
+/// Deny-list for JWT IDs (jti) revoked before their natural expiry. Every
+/// access + refresh token is issued with a UUID jti; on logout (and on
+/// refresh-token rotation) the old jti is inserted here. The auth
+/// middleware checks this table after `jwt.verify` succeeds — if the jti
+/// is present, the token is treated as if it had expired.
+///
+/// `expiresAt` lets us clean the table up periodically without losing the
+/// revocation guarantee — rows for tokens past their natural expiry are
+/// safe to delete because the token would be rejected by `jwt.verify`
+/// anyway. A small cron can run `DELETE WHERE expiresAt < NOW()` daily.
+model RevokedToken {
+  jti       String   @id
+  /// User who owned the token. Stored for forensics + bulk-revoke ("nuke
+  /// every active session for user X" becomes one query).
+  userId    Int?
+  /// Why the token was revoked. Useful for audit logs and for distinguishing
+  /// "user logged out" from "admin force-revoked".
+  reason    String?
+  /// When the underlying JWT naturally expires — used by the cleanup cron.
+  expiresAt DateTime
+  revokedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
 model User {
   id                   Int           @id @default(autoincrement())
   full_name            String
@@ -236,6 +267,7 @@ model User {
   studentRegistrations StudentRegistration[]
   teacherAssignings    TeacherAssigning[]
   resourcesUploads     Resource[]
+  resourceViews        ResourceView[]
   announcementsWritten Announcement[]
   messagesSent         ChatMessage[]
   chatMentions         ChatMessageMention[]
@@ -649,6 +681,9 @@ model Assignment {
   /// Grace window after `due_date` during which submissions are still accepted
   /// (recorded with is_late=true). Zero disables the grace window.
   lateWindowMinutes  Int                    @default(0)
+  /// Total marks for this assignment. Grades are validated 0..maxMarks.
+  /// Default 100 preserves the existing percentage-based grading behaviour.
+  maxMarks           Int                    @default(100)
 
   courseOffering CourseOffering        @relation(fields: [courseOfferingId], references: [id])
   submissions    Submission[]
@@ -737,6 +772,13 @@ model Quiz {
   // Timing modes: flexible (default) or fixed
   timing_mode        String   @default("flexible") // "flexible" | "fixed"
   scheduled_duration Int?                     // Duration for planning (fixed mode)
+
+  /// Confidence-based scoring (Cologne / Bristol style). When enabled the
+  /// student tags every objective answer with a confidence level (LOW / MED
+  /// / HIGH); scoring then rewards calibrated thinking and penalises
+  /// confidently-wrong answers. Off by default — teachers opt in per quiz.
+  /// See `scoreAnswer` in services/quizAttempt.service.js for the formula.
+  confidence_scoring Boolean   @default(false)
 
   /// Optional chapter / unit bucket. Re-uses the same CourseModule rows
   /// resources are grouped under so a "Week 1" module shows its quiz and
@@ -878,6 +920,13 @@ model QuizAnswer {
   text_answer   String?
   is_correct   Boolean?
   points_earned Float?
+  /// Student-declared confidence for confidence-scored quizzes. Null on
+  /// quizzes that don't use confidence scoring AND on short-answer rows
+  /// (confidence only applies to objective answers the system can score).
+  /// Persisted as the bare string ('LOW' | 'MED' | 'HIGH') so future
+  /// values don't require an enum migration; the scoring function
+  /// validates and falls back to MED on unknown values.
+  confidence    String?
 
   attempt   QuizAttempt  @relation(fields: [attemptId], references: [id], onDelete: Cascade, onUpdate: Cascade)
   // If a teacher deletes a question after attempts exist, the answer rows go
@@ -998,9 +1047,40 @@ model Resource {
   teacher        User            @relation(fields: [teacherId], references: [id])
   courseOffering CourseOffering? @relation(fields: [courseOfferingId], references: [id], onDelete: Cascade)
   module         CourseModule?   @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  views          ResourceView[]
 
   @@index([courseOfferingId])
   @@index([moduleId, position])
+}
+
+/// Per-student watch record for a video/audio resource. One row per
+/// (resource, student) — upserted as the student watches. `watchedSeconds`
+/// accumulates unique playback time (we add the wall-clock delta between
+/// heartbeats only while the media is playing, so seeking ahead doesn't
+/// inflate it). `durationSeconds` is the media length reported by the
+/// player; completion is derived as watchedSeconds / durationSeconds.
+model ResourceView {
+  id                  Int      @id @default(autoincrement())
+  resourceId          Int
+  studentId           Int
+  /// Accumulated seconds of actual playback (monotonic — never decreases).
+  watchedSeconds      Int      @default(0)
+  /// Media duration in seconds as reported by the player (0 until known).
+  durationSeconds     Int      @default(0)
+  /// Last playback position — lets the player resume where the student left off.
+  lastPositionSeconds Int      @default(0)
+  /// Flipped true once watched/duration crosses the completion threshold (~0.9).
+  completed           Boolean  @default(false)
+  /// Number of distinct play sessions (incremented when playback starts from ~0).
+  viewCount           Int      @default(0)
+  created_at          DateTime @default(now())
+  updated_at          DateTime @updatedAt
+
+  resource Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  student  User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([resourceId, studentId])
+  @@index([resourceId])
 }
 
 /// Teacher-curated grouping for course resources (Week 1, Module 2, etc.).
@@ -1739,10 +1819,11 @@ model CourseGroup {
 }
 
 model GroupMember {
-  id        Int         @id @default(autoincrement())
+  id        Int             @id @default(autoincrement())
   groupId   Int
   memberId  Int
-  joined_at DateTime   @default(now())
+  role      GroupMemberRole @default(MEMBER)
+  joined_at DateTime        @default(now())
 
   group  CourseGroup @relation(fields: [groupId], references: [id])
   member User       @relation(fields: [memberId], references: [id])

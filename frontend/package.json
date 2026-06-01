@@ -16,7 +16,8 @@
     "lint:strict": "oxlint --deny-warnings",
     "format": "oxfmt --write .",
     "format:check": "oxfmt --check .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "postinstall": "node scripts/copy-pdf-worker.js"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",

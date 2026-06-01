@@ -2,10 +2,14 @@ import { Router } from 'express';
 import { prisma } from '../../db/prisma.js';
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { auth } from "../../middleware/auth.js";
+import {
+  requireCourseOfferingRead,
+  requireCourseOfferingManage,
+} from "../../middleware/courseOfferingRbac.js";
 
 const router = Router();
 
-router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const { courseOfferingId } = req.params;
 
   const offering = await prisma.courseOffering.findUnique({
@@ -27,7 +31,7 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   res.json(offering?.section?.studentRegistrations || []);
 }));
 
-router.delete('/:courseOfferingId/students/:studentId', auth, asyncHandler(async (req, res) => {
+router.delete('/:courseOfferingId/students/:studentId', auth, requireCourseOfferingManage(), asyncHandler(async (req, res) => {
   const { courseOfferingId, studentId } = req.params;
 
   // StudentRegistration belongs to a BatchSection (not directly to a

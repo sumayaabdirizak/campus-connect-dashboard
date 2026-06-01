@@ -1,10 +1,20 @@
 import { Router } from 'express';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { prisma } from '../../db/prisma.js';
 import { asyncHandler } from '../../utils/asyncHandler.js';
 import { auth } from '../../middleware/auth.js';
+import {
+  requireCourseOfferingRead,
+  requireCoursePostRead,
+} from '../../middleware/courseOfferingRbac.js';
+import { isSafeExternalUrl } from '../../utils/safeUrl.js';
+import {
+  uploadExtensionFilter,
+  enforceUploadContentSafety,
+} from './resources.js';
 
 const router = Router();
 
@@ -16,11 +26,18 @@ const storage = multer.diskStorage({
     cb(null, FEED_UPLOAD_DIR);
   },
   filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`);
+    // CSPRNG-generated stored filename — `originalname` can carry path
+    // traversal or unicode bidi tricks, so we keep only the extension
+    // (lowercased) and discard the rest.
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${crypto.randomBytes(16).toString('hex')}${ext}`);
   },
 });
-const upload = multer({ storage, limits: { fileSize: FEED_FILE_LIMIT } });
+const upload = multer({
+  storage,
+  limits: { fileSize: FEED_FILE_LIMIT },
+  fileFilter: uploadExtensionFilter,
+});
 
 const replyAuthor = { select: { id: true, full_name: true, role: { select: { name: true } } } };
 
@@ -34,7 +51,7 @@ const postInclude = {
   },
 };
 
-router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
+router.get('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const courseOfferingId = parseInt(req.params.courseOfferingId, 10);
   if (!Number.isInteger(courseOfferingId)) {
     return res.status(400).json({ message: 'Invalid courseOfferingId' });
@@ -49,7 +66,7 @@ router.get('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   res.json(posts);
 }));
 
-router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
+router.post('/:courseOfferingId', auth, requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const courseOfferingId = parseInt(req.params.courseOfferingId, 10);
   if (!Number.isInteger(courseOfferingId)) {
     return res.status(400).json({ message: 'Invalid courseOfferingId' });
@@ -69,8 +86,11 @@ router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
       isPinned: Boolean(isPinned),
       attachments: Array.isArray(attachments) && attachments.length > 0
         ? {
+            // Drop any attachment whose URL isn't http(s) or same-origin —
+            // prevents an attacker who crafts a manual POST from saving
+            // `javascript:` URLs that would later render as <a href={...}>.
             create: attachments
-              .filter((a) => a && a.url && a.name)
+              .filter((a) => a && a.url && a.name && isSafeExternalUrl(a.url))
               .map((a) => ({
                 name: String(a.name),
                 url: String(a.url),
@@ -86,7 +106,7 @@ router.post('/:courseOfferingId', auth, asyncHandler(async (req, res) => {
   res.status(201).json(post);
 }));
 
-router.patch('/post/:postId', auth, asyncHandler(async (req, res) => {
+router.patch('/post/:postId', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.postId, 10);
   if (!Number.isInteger(postId)) {
     return res.status(400).json({ message: 'Invalid postId' });
@@ -112,7 +132,7 @@ router.patch('/post/:postId', auth, asyncHandler(async (req, res) => {
   res.json(post);
 }));
 
-router.delete('/post/:postId', auth, asyncHandler(async (req, res) => {
+router.delete('/post/:postId', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.postId, 10);
   if (!Number.isInteger(postId)) {
     return res.status(400).json({ message: 'Invalid postId' });
@@ -134,6 +154,7 @@ router.delete('/post/:postId', auth, asyncHandler(async (req, res) => {
 router.post(
   '/post/:postId/attachments',
   auth,
+  requireCoursePostRead(),
   upload.array('files', 10),
   asyncHandler(async (req, res) => {
     const postId = parseInt(req.params.postId, 10);
@@ -150,6 +171,18 @@ router.post(
       for (const f of files) try { fs.unlinkSync(f.path); } catch {}
       return res.status(403).json({ message: 'Only the author can attach files' });
     }
+
+    // Magic-byte / content-family check — multer's fileFilter only sees
+    // the user-supplied filename; this sweep reads the actual bytes that
+    // landed on disk and deletes any file whose contents don't match the
+    // declared extension family.
+    const verdict = await enforceUploadContentSafety(files);
+    if (!verdict.ok) {
+      return res.status(400).json({
+        message: 'File contents do not match the declared type. Upload rejected.',
+      });
+    }
+
     const hostBase = `${req.protocol}://${req.get('host')}`;
     const created = await prisma.$transaction(
       files.map((f) =>
@@ -168,7 +201,7 @@ router.post(
   })
 );
 
-router.delete('/attachments/:attachmentId', auth, asyncHandler(async (req, res) => {
+router.delete('/attachments/:attachmentId', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const attachmentId = parseInt(req.params.attachmentId, 10);
   const att = await prisma.coursePostAttachment.findUnique({
     where: { id: attachmentId },
@@ -190,7 +223,7 @@ router.delete('/attachments/:attachmentId', auth, asyncHandler(async (req, res) 
 // Reactions — toggle a single (post, user, emoji) tuple.
 // ────────────────────────────────────────────────────────────────────────────
 
-router.post('/post/:postId/reactions', auth, asyncHandler(async (req, res) => {
+router.post('/post/:postId/reactions', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.postId, 10);
   const { emoji } = req.body ?? {};
   if (!emoji || typeof emoji !== 'string' || emoji.length > 16) {
@@ -215,7 +248,7 @@ router.post('/post/:postId/reactions', auth, asyncHandler(async (req, res) => {
 // Replies — one-level deep thread under a post.
 // ────────────────────────────────────────────────────────────────────────────
 
-router.post('/post/:postId/replies', auth, asyncHandler(async (req, res) => {
+router.post('/post/:postId/replies', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const postId = parseInt(req.params.postId, 10);
   const { content } = req.body ?? {};
   if (!content || typeof content !== 'string' || !content.trim()) {
@@ -231,7 +264,7 @@ router.post('/post/:postId/replies', auth, asyncHandler(async (req, res) => {
   res.status(201).json(reply);
 }));
 
-router.patch('/replies/:replyId', auth, asyncHandler(async (req, res) => {
+router.patch('/replies/:replyId', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const replyId = parseInt(req.params.replyId, 10);
   const { content } = req.body ?? {};
   if (!content || typeof content !== 'string' || !content.trim()) {
@@ -250,7 +283,7 @@ router.patch('/replies/:replyId', auth, asyncHandler(async (req, res) => {
   res.json(updated);
 }));
 
-router.delete('/replies/:replyId', auth, asyncHandler(async (req, res) => {
+router.delete('/replies/:replyId', auth, requireCoursePostRead(), asyncHandler(async (req, res) => {
   const replyId = parseInt(req.params.replyId, 10);
   const existing = await prisma.coursePostReply.findUnique({ where: { id: replyId } });
   if (!existing) return res.status(404).json({ message: 'Reply not found' });

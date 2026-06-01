@@ -4,13 +4,16 @@ import {
   createQuiz,
   deleteQuestion,
   deleteQuiz,
+  duplicateQuiz,
   exportQuizCsv,
   getAvailableQuizzes,
+  getQuizAnalytics,
   getQuizAttempts,
   getQuizzesForOffering,
   gradeAttempt,
   importQuizCsv,
   reorderQuestions,
+  reportViolation,
   saveAttemptAnswers,
   startQuiz,
   submitQuiz,
@@ -32,7 +35,8 @@ export const quizKeys = {
   list: (courseOfferingId: string) => [...quizKeys.all, 'list', courseOfferingId] as const,
   available: (courseOfferingId: string) =>
     [...quizKeys.all, 'available', courseOfferingId] as const,
-  attempts: (quizId: number) => [...quizKeys.all, 'attempts', quizId] as const
+  attempts: (quizId: number) => [...quizKeys.all, 'attempts', quizId] as const,
+  analytics: (quizId: number) => [...quizKeys.all, 'analytics', quizId] as const
 };
 
 export function useQuizzes(courseOfferingId: string) {
@@ -53,6 +57,17 @@ export function useQuizAttempts(quizId: number | null) {
   return useQuery({
     queryKey: quizId ? quizKeys.attempts(quizId) : ['quizzes', 'attempts', 'none'],
     queryFn: () => (quizId ? getQuizAttempts(quizId) : Promise.resolve([])),
+    enabled: !!quizId
+  });
+}
+
+export function useQuizAnalytics(quizId: number | null) {
+  return useQuery({
+    queryKey: quizId ? quizKeys.analytics(quizId) : ['quizzes', 'analytics', 'none'],
+    queryFn: () =>
+      quizId
+        ? getQuizAnalytics(quizId)
+        : Promise.resolve({ totalSubmissions: 0, avgScore: null, questions: [] }),
     enabled: !!quizId
   });
 }
@@ -91,6 +106,19 @@ export function useDeleteQuiz(courseOfferingId: string) {
   });
 }
 
+/// Deep-clone a quiz including its questions. Invalidates the same caches
+/// as create so the new "Copy of …" draft slides into the list immediately.
+export function useDuplicateQuiz(courseOfferingId: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (quizId: number) => duplicateQuiz(quizId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: quizKeys.list(courseOfferingId) });
+      queryClient.invalidateQueries({ queryKey: quizKeys.available(courseOfferingId) });
+    }
+  });
+}
+
 export function useStartQuiz() {
   return useMutation({
     mutationFn: (quizId: number) => startQuiz(quizId)
@@ -108,6 +136,19 @@ export function useSubmitQuiz() {
       attemptId: number;
       answers: QuizAttemptAnswer[];
     }) => submitQuiz(quizId, attemptId, answers)
+  });
+}
+
+/// Cheating-signal reporter. The student component calls this on every
+/// detected violation (tab leave, copy, paste). The server increments and,
+/// at the 3rd, finalizes the attempt — the response's `auto_closed: true`
+/// is the client's signal to render the "Session Closed" modal and route
+/// to the post-submit review. No cache invalidation here — the parent
+/// handles state by inspecting the mutation result.
+export function useReportViolation() {
+  return useMutation({
+    mutationFn: ({ attemptId, kind }: { attemptId: number; kind: string }) =>
+      reportViolation(attemptId, kind)
   });
 }
 
@@ -141,6 +182,7 @@ export function useGradeAttempt(courseOfferingId: string, quizId: number) {
     }) => gradeAttempt(attemptId, answers),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: quizKeys.attempts(quizId) });
+      queryClient.invalidateQueries({ queryKey: quizKeys.analytics(quizId) });
       queryClient.invalidateQueries({ queryKey: quizKeys.list(courseOfferingId) });
     }
   });

@@ -2,7 +2,7 @@
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, XCircle, Lightbulb, Award, ArrowLeft, Clock3 } from 'lucide-react';
+import { CheckCircle2, XCircle, Lightbulb, Award, ArrowLeft, Clock3, ShieldAlert } from 'lucide-react';
 import { format } from 'date-fns';
 import type { QuizAttempt, QuizQuestion } from '../api/quizzes-types';
 
@@ -48,15 +48,27 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
     0
   );
 
+  const closureReason = attempt.closure_reason ?? null;
+  const violationsCount = attempt.violations_count ?? 0;
   const closureBadge = (() => {
-    const reason = (attempt as unknown as { closure_reason?: string | null })
-      .closure_reason;
-    if (!reason) return null;
-    if (reason === 'time_expired')
+    if (!closureReason) return null;
+    if (closureReason === 'time_expired')
       return { label: 'Auto-submitted on time-out', tone: 'destructive' as const };
-    if (reason === 'violations')
+    if (closureReason === 'violations')
       return { label: 'Closed for violations', tone: 'destructive' as const };
-    return { label: reason, tone: 'secondary' as const };
+    return { label: closureReason, tone: 'secondary' as const };
+  })();
+  // Human-readable callout body for the auto-close banner. Mirrors the
+  // language the in-quiz warning modal uses so the student sees consistent
+  // wording across the flow.
+  const closureCallout = (() => {
+    if (closureReason === 'violations') {
+      return 'Your quiz was auto-submitted after you reached the warning limit. Your answers up to that point were saved and graded.';
+    }
+    if (closureReason === 'time_expired') {
+      return 'Time ran out — your quiz was submitted automatically with the answers you had saved.';
+    }
+    return null;
   })();
 
   const submittedAt = attempt.submitted_at
@@ -83,7 +95,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
       <div
         className={`border rounded-xl p-5 flex items-center justify-between gap-4 ${
           passed
-            ? 'border-emerald-300/60 bg-emerald-50 dark:bg-emerald-950/30'
+            ? 'border-success bg-success-muted'
             : 'border-destructive/40 bg-destructive/5'
         }`}
       >
@@ -109,13 +121,25 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
                 <Clock3 className='w-3 h-3' /> {elapsedLabel}
               </span>
             )}
+            {/* Surface the violations counter inline so the student (and the
+                teacher reviewing alongside them) sees the monitoring outcome
+                at a glance. Only renders when non-zero — a clean attempt
+                doesn't need a "0 violations" badge cluttering the line. */}
+            {violationsCount > 0 && (
+              <span
+                className='inline-flex items-center gap-0.5 ml-1 text-destructive'
+                title={`${violationsCount} monitoring event${violationsCount === 1 ? '' : 's'} during this attempt`}
+              >
+                · <ShieldAlert className='w-3 h-3' /> {violationsCount} violation{violationsCount === 1 ? '' : 's'}
+              </span>
+            )}
           </p>
         </div>
         <div className='text-right shrink-0'>
           <p
             className={`text-4xl font-bold tabular-nums ${
               passed
-                ? 'text-emerald-600 dark:text-emerald-400'
+                ? 'text-success'
                 : 'text-destructive'
             }`}
           >
@@ -123,6 +147,22 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
           </p>
         </div>
       </div>
+
+      {/* Auto-close callout — only renders when the attempt was force-closed
+          (by the violations limit or the timer). Gives the student a clear
+          explanation instead of leaving them to interpret the closure badge
+          alone. Mirrors the design's "Auto-Closed Session" card. */}
+      {closureCallout && (
+        <div className='rounded-lg border border-destructive/40 bg-destructive/5 p-4 flex items-start gap-3'>
+          <ShieldAlert className='w-5 h-5 text-destructive shrink-0 mt-0.5' />
+          <div className='space-y-0.5'>
+            <p className='text-sm font-medium text-destructive'>
+              {closureReason === 'violations' ? 'Session auto-closed' : 'Time expired'}
+            </p>
+            <p className='text-xs text-destructive/90'>{closureCallout}</p>
+          </div>
+        </div>
+      )}
 
       {/* ── Per-question breakdown ────────────────────────────────────── */}
       <div className='space-y-3'>
@@ -141,7 +181,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
               key={q.id}
               className={`border rounded-lg p-4 space-y-3 ${
                 isCorrect
-                  ? 'border-emerald-300/40'
+                  ? 'border-success'
                   : isWrong
                     ? 'border-destructive/30'
                     : 'border-muted-foreground/20'
@@ -151,7 +191,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
               <div className='flex items-start justify-between gap-3'>
                 <div className='flex items-start gap-2 min-w-0 flex-1'>
                   {isCorrect ? (
-                    <CheckCircle2 className='w-4 h-4 text-emerald-600 dark:text-emerald-400 mt-0.5 shrink-0' />
+                    <CheckCircle2 className='w-4 h-4 text-success mt-0.5 shrink-0' />
                   ) : (
                     <XCircle
                       className={`w-4 h-4 mt-0.5 shrink-0 ${
@@ -197,7 +237,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
                         key={o.id}
                         className={`flex items-start gap-2 text-sm rounded p-1.5 ${
                           isAnswerKey
-                            ? 'bg-emerald-50 dark:bg-emerald-950/30'
+                            ? 'bg-success-muted'
                             : isSelected
                               ? 'bg-destructive/5'
                               : ''
@@ -205,7 +245,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
                       >
                         <span className='mt-0.5 shrink-0'>
                           {isAnswerKey ? (
-                            <CheckCircle2 className='w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400' />
+                            <CheckCircle2 className='w-3.5 h-3.5 text-success' />
                           ) : isSelected ? (
                             <XCircle className='w-3.5 h-3.5 text-destructive' />
                           ) : (
@@ -224,7 +264,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
                         {isAnswerKey && !isSelected && (
                           <Badge
                             variant='outline'
-                            className='text-[9px] shrink-0 self-center text-emerald-700 dark:text-emerald-400'
+                            className='text-[9px] shrink-0 self-center text-success'
                           >
                             Correct
                           </Badge>
@@ -237,13 +277,13 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
 
               {/* Teacher explanation — only render if set */}
               {q.explanation && (
-                <div className='ml-6 rounded-md border border-amber-300/40 bg-amber-50 dark:bg-amber-950/20 p-3 flex gap-2'>
-                  <Lightbulb className='w-4 h-4 text-amber-600 shrink-0 mt-0.5' />
+                <div className='ml-6 rounded-md border border-warning bg-warning-muted p-3 flex gap-2'>
+                  <Lightbulb className='w-4 h-4 text-warning shrink-0 mt-0.5' />
                   <div>
-                    <p className='text-[11px] font-medium text-amber-900 dark:text-amber-200 uppercase tracking-wide mb-1'>
+                    <p className='text-[11px] font-medium text-warning-foreground uppercase tracking-wide mb-1'>
                       Why?
                     </p>
-                    <p className='text-xs text-amber-900 dark:text-amber-200 whitespace-pre-wrap'>
+                    <p className='text-xs text-warning-foreground whitespace-pre-wrap'>
                       {q.explanation}
                     </p>
                   </div>

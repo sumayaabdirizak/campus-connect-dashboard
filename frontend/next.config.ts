@@ -4,6 +4,22 @@ import { withSentryConfig } from '@sentry/nextjs';
 // Define the base Next.js configuration
 const baseConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
+
+  // Proxy the backend download endpoint through the Next.js server so the
+  // browser makes a same-origin request.  Same-origin requests automatically
+  // include every cookie (no CORS, no credentials juggling), so the
+  // httpOnly auth_token cookie reaches the backend without any extra work.
+  async rewrites() {
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+    return [
+      {
+        source: '/api/download/:id',
+        destination: `${apiBase}/resources/:id/download`,
+      },
+    ];
+  },
+
   images: {
     remotePatterns: [
       {

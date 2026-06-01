@@ -1,3 +1,5 @@
+export type GroupMemberRole = 'LEADER' | 'MEMBER';
+
 export interface CourseGroup {
   id: number;
   name: string;
@@ -16,6 +18,7 @@ export interface GroupMember {
   id: number;
   groupId: number;
   memberId: number;
+  role: GroupMemberRole;
   joined_at: string;
   member: {
     id: number;
@@ -23,4 +26,17 @@ export interface GroupMember {
     email: string;
     number: string;
   };
+}
+
+/// Returned by the my-submission endpoint for GROUP-mode assignments.
+/// Gives the student visibility into their group's composition + role.
+export interface GroupInfo {
+  groupId: number;
+  groupName: string;
+  isLeader: boolean;
+  members: {
+    id: number;
+    name: string;
+    role: GroupMemberRole;
+  }[];
 }

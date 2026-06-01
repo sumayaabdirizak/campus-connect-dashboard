@@ -76,6 +76,12 @@ export interface Quiz {
   timing_mode: 'flexible' | 'fixed';
   /// Per-student time budget override in fixed mode. null = use duration_minutes.
   scheduled_duration: number | null;
+  /// When true, students declare LOW/MED/HIGH confidence on each objective
+  /// answer and scoring uses the Cologne / Bristol multiplier table:
+  ///   HIGH+right = 100%, MED+right = 75%, LOW+right = 50%
+  ///   HIGH+wrong = -50%, MED+wrong = 0, LOW+wrong = 0
+  /// Optional; defaults to false when omitted.
+  confidence_scoring?: boolean;
   /// Optional chapter / unit grouping. `null` lands the quiz in the
   /// "Ungrouped" bucket. The full module record can be loaded via the
   /// resources-feature `useModules(courseOfferingId)` hook.
@@ -87,6 +93,41 @@ export interface Quiz {
   updated_at: string;
   questions?: QuizQuestion[];
   _count?: { attempts: number };
+  /// Teacher list only — count of submitted attempts with at least one
+  /// short-answer answer awaiting manual grading. Drives the "X need
+  /// grading" badge on the quiz card so the teacher sees pending work
+  /// without drilling into each quiz.
+  pendingGradingCount?: number;
+  /// Surfaced by `GET /quiz-taking/:id/available` only — total attempts the
+  /// student has already used (including any in-progress row). Undefined on
+  /// the teacher list query.
+  attemptsUsed?: number;
+  /// Convenience pair to `attemptsUsed`. `max_attempts - attemptsUsed`,
+  /// floored at 0. Drives the "Attempt N of M" badge on student cards.
+  attemptsLeft?: number;
+  /// Set when the student has an unsubmitted attempt waiting. The card uses
+  /// this to swap "Start" for "Continue (12 min left)" with no extra fetch.
+  inProgressAttempt?: {
+    id: number;
+    started_at: string;
+    expires_at: string | null;
+  } | null;
+  /// The student's most recent SUBMITTED attempt (never the in-progress
+  /// one). Null until the first submit. `passed` is null for ungraded
+  /// short-answer attempts where score isn't yet decided.
+  lastAttempt?: {
+    /// Attempt id — lets the student re-open the full per-question review
+    /// from the quiz card via `GET /quiz-taking/attempts/:id`.
+    id: number;
+    score: number | null;
+    submitted_at: string;
+    is_graded: boolean;
+    passed: boolean | null;
+  } | null;
+  /// Best score across all submitted attempts on this quiz (or null if no
+  /// scored attempts yet). Lets the card surface "Best: 88%" alongside the
+  /// most-recent badge.
+  bestScore?: number | null;
 }
 
 export interface CreateQuizInput {
@@ -105,17 +146,38 @@ export interface CreateQuizInput {
   /// Chapter / module bucket. Omit or send `null` for Ungrouped. The server
   /// rejects ids that belong to a different course offering.
   moduleId?: number | null;
+  /// Cologne/Bristol confidence-based scoring — off by default.
+  confidence_scoring?: boolean;
+  /// Optional inline questions — create the quiz AND its questions in one
+  /// request. Used by the "Generate a whole quiz with AI" flow so the teacher
+  /// lands in the builder with a populated draft. Omit for a normal
+  /// empty-quiz create. Capped at 100 server-side. `order_index` is stamped
+  /// from array position by the backend, so it isn't sent here.
+  questions?: Array<{
+    question_text: string;
+    question_type: QuizQuestionType;
+    points: number;
+    correct_answer?: string | null;
+    explanation?: string | null;
+    options?: OptionInput[];
+  }>;
 }
 
 /// PATCH body for editing an existing quiz. All fields optional; backend
 /// requires at least one (Joi `.min(1)`).
 export type UpdateQuizInput = Partial<CreateQuizInput>;
 
+export type QuizConfidence = 'LOW' | 'MED' | 'HIGH';
+
 export interface QuizAttemptAnswer {
   id?: number;
   questionId: number;
   selected_option_id?: number | null;
   text_answer?: string | null;
+  /// Only sent / persisted on confidence-scored quizzes. Optional on every
+  /// other quiz — the backend ignores it when `quiz.confidence_scoring`
+  /// is false.
+  confidence?: QuizConfidence | null;
 }
 
 export interface QuizStartResponse {
@@ -141,6 +203,9 @@ export interface QuizStartResponse {
     timing_mode: string;
     open_at: string | null;
     close_at: string | null;
+    /// Echoed by the backend so the client knows to render the LOW/MED/HIGH
+    /// confidence selector beneath every objective option.
+    confidence_scoring?: boolean;
   };
   questions: Array<{
     id: number;
@@ -156,6 +221,7 @@ export interface QuizStartResponse {
     questionId: number;
     selected_option_id: number | null;
     text_answer: string | null;
+    confidence?: QuizConfidence | null;
   }>;
   totalQuestions: number;
   totalPoints: number;
@@ -167,6 +233,21 @@ export interface SaveAttemptAnswersResponse {
   savedAt: string; // ISO timestamp from the server
 }
 
+/// Response from `POST /quiz-taking/attempts/:attemptId/violation`. The
+/// client increments locally too, but always trusts the server number on
+/// success — covers cases where two violations land in the same tick.
+export interface ReportViolationResponse {
+  violations_count: number;
+  warnings_shown: number;
+  /// True iff the server finalized the attempt because the warning limit
+  /// was crossed. The client should redirect to the post-submit review and
+  /// stop sending further violations.
+  auto_closed: boolean;
+  /// Server-configured warning ceiling. Exposed so the UI can render
+  /// "1 of N" without hard-coding 3.
+  max_warnings: number;
+}
+
 export interface QuizAttempt {
   id: number;
   quizId: number;
@@ -175,6 +256,12 @@ export interface QuizAttempt {
   submitted_at: string | null;
   score: number | null;
   grade: number | null;
+  /// Cheating signals: # of violations the student triggered (tab leave,
+  /// copy/paste, etc.) and the # of those that crossed the warn threshold.
+  /// These are surfaced post-submit on the attempt review and the teacher's
+  /// attempts table monitoring column.
+  violations_count?: number;
+  warnings_shown?: number;
   /// True once a teacher has manually graded the short-answer questions.
   /// Auto-graded MCQ/T-F attempts come back from submit with `is_graded:
   /// false` and remain so until the teacher saves grades — that lets the
@@ -246,4 +333,33 @@ export interface ImportQuizCsvInput {
 export interface ImportQuizCsvResponse {
   success: boolean;
   imported: number;
+}
+
+/// Per-question stats returned by GET /quizzes/:id/analytics. `correctRate`
+/// is null until at least one graded attempt exists (short-answer rows
+/// awaiting grading don't push it down — they sit in `pending`).
+export interface QuestionAnalytic {
+  id: number;
+  question_text: string;
+  question_type: QuizQuestionType;
+  points: number;
+  order_index: number;
+  totalAnswered: number;
+  correctCount: number;
+  correctRate: number | null;
+  pending: number;
+  /// Per-option pick counts for MCQ / T-F. Omitted on SHORT_ANSWER.
+  optionStats?: Array<{
+    optionId: number;
+    option_text: string;
+    is_correct: boolean;
+    pickedCount: number;
+    pickedPct: number;
+  }>;
+}
+
+export interface QuizAnalytics {
+  totalSubmissions: number;
+  avgScore: number | null;
+  questions: QuestionAnalytic[];
 }

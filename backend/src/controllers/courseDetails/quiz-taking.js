@@ -4,7 +4,13 @@ import { asyncHandler } from "../../utils/asyncHandler.js";
 import { auth } from "../../middleware/auth.js";
 import { validateBody } from "../../middleware/validateRequest.js";
 import { shuffle } from "../../utils/shuffle.js";
-import { saveAttemptAnswers } from "../../services/quizAttempt.service.js";
+import { finalizeAttempt, saveAttemptAnswers } from "../../services/quizAttempt.service.js";
+import {
+  emitStarted as emitMonitorStarted,
+  emitAnswerSaved as emitMonitorAnswerSaved,
+  emitViolation as emitMonitorViolation,
+  emitSubmitted as emitMonitorSubmitted,
+} from "../../socket/quizLiveMonitor.js";
 import {
   requireCourseOfferingRead,
   requireStudentQuizAccess,
@@ -15,6 +21,7 @@ import {
   gradeAttemptBodySchema,
   saveAttemptAnswersBodySchema,
 } from "../../validation/quizSchemas.js";
+import { quizViolationRateLimit } from "../../middleware/perUserRateLimit.js";
 
 const router = Router();
 
@@ -51,10 +58,97 @@ router.get('/:courseOfferingId/available', auth, requireCourseOfferingRead(), as
     orderBy: { created_at: 'desc' },
   });
 
-  const available = quizzes.filter((q) => {
-    if (q._count.attempts >= q.max_attempts) return false;
-    return quizIsOpen(q, now);
-  });
+  // For "Continue" UX: surface the in-progress attempt (if any) so the
+  // student card can swap "Start" for "Continue (12 min left)" without an
+  // extra round-trip per quiz. We treat an attempt as in-progress iff it has
+  // no submitted_at — server cron auto-submits on expiry so a row with
+  // expires_at in the past will still have submitted_at set.
+  const quizIds = quizzes.map((q) => q.id);
+  const inProgress = quizIds.length
+    ? await prisma.quizAttempt.findMany({
+        where: {
+          quizId: { in: quizIds },
+          studentId,
+          submitted_at: null,
+        },
+        select: { id: true, quizId: true, started_at: true, expires_at: true },
+      })
+    : [];
+  const inProgressByQuiz = new Map(inProgress.map((a) => [a.quizId, a]));
+
+  // For "previous attempt" UX: pull every submitted attempt the student has
+  // on these quizzes so we can surface (a) their most recent score and
+  // (b) their best score so far. One query — group server-side in JS.
+  const submitted = quizIds.length
+    ? await prisma.quizAttempt.findMany({
+        where: {
+          quizId: { in: quizIds },
+          studentId,
+          submitted_at: { not: null },
+        },
+        select: { id: true, quizId: true, score: true, grade: true, submitted_at: true, is_graded: true },
+        orderBy: { submitted_at: 'desc' },
+      })
+    : [];
+  // Group by quizId. First entry is the most recent (orderBy desc).
+  const submittedByQuiz = new Map();
+  for (const a of submitted) {
+    if (!submittedByQuiz.has(a.quizId)) submittedByQuiz.set(a.quizId, []);
+    submittedByQuiz.get(a.quizId).push(a);
+  }
+
+  const available = quizzes
+    .filter((q) => {
+      const ip = inProgressByQuiz.get(q.id);
+      const hasSubmitted = (submittedByQuiz.get(q.id)?.length ?? 0) > 0;
+      // Always keep quizzes the student has already submitted — they remain
+      // reviewable (results + per-question breakdown) even after the window
+      // closes or attempts are exhausted. Previously we hid every exhausted
+      // quiz, which made single-attempt quizzes vanish the moment a student
+      // submitted, leaving no way to re-open their results.
+      if (hasSubmitted) return true;
+      // Otherwise this is a quiz they haven't finished: hide it if exhausted
+      // with no in-progress row to resume, and only show it while open.
+      if (q._count.attempts >= q.max_attempts && !ip) return false;
+      return quizIsOpen(q, now);
+    })
+    .map((q) => {
+      const ip = inProgressByQuiz.get(q.id) ?? null;
+      const attemptsUsed = q._count.attempts;
+      const attempts = submittedByQuiz.get(q.id) ?? [];
+      const last = attempts[0] ?? null;
+      // Best by score. NB: we only include rows where score is set so
+      // ungraded short-answer attempts don't pollute the running best.
+      const bestScore = attempts.reduce((best, a) => {
+        const s = typeof a.score === 'number' ? a.score : null;
+        if (s == null) return best;
+        return best == null || s > best ? s : best;
+      }, null);
+      return {
+        ...q,
+        // `attemptsUsed` includes the in-progress row (it has a row in
+        // QuizAttempt). `attemptsLeft` is what the student still has after
+        // any in-progress one resolves. Both fields are convenience surfaces
+        // the frontend uses for the "Attempt N of M" badge.
+        attemptsUsed,
+        attemptsLeft: Math.max(0, q.max_attempts - attemptsUsed),
+        inProgressAttempt: ip,
+        // `lastAttempt` is the most recent SUBMITTED attempt (never the
+        // in-progress row). Lets the card show "Last: 72%" without exposing
+        // the entire attempt history.
+        lastAttempt: last
+          ? {
+              id: last.id,
+              score: last.score,
+              submitted_at: last.submitted_at,
+              is_graded: last.is_graded ?? false,
+              passed:
+                typeof last.score === 'number' ? last.score >= q.passing_score : null,
+            }
+          : null,
+        bestScore,
+      };
+    });
 
   res.json(available);
 }));
@@ -77,8 +171,12 @@ router.post('/:quizId/start', auth, requireStudentQuizAccess(), asyncHandler(asy
   });
   if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
 
+  // Only count SUBMITTED attempts toward the max. An in-progress row isn't
+  // a consumed attempt until submitted — counting it would block the student
+  // from resuming their own current attempt (e.g. max_attempts=1, 1 in-flight
+  // row → count=1 >= 1 → erroneously returns 400 instead of resuming).
   const existingAttempts = await prisma.quizAttempt.count({
-    where: { quizId: qid, studentId }
+    where: { quizId: qid, studentId, submitted_at: { not: null } }
   });
   if (existingAttempts >= quiz.max_attempts) {
     return res.status(400).json({ error: 'Maximum attempts reached' });
@@ -163,8 +261,20 @@ router.post('/:quizId/start', auth, requireStudentQuizAccess(), asyncHandler(asy
       questionId: true,
       selected_option_id: true,
       text_answer: true,
+      // Include confidence so a resumed attempt restores the student's
+      // previous LOW/MED/HIGH selections — they shouldn't have to re-pick.
+      confidence: true,
     },
   });
+
+  // Live-monitor signal: tell any teacher subscribed to this quiz that the
+  // student just opened it. We resolve their display name here so the tile
+  // can render immediately without a separate user lookup on the teacher side.
+  const studentRow = await prisma.user.findUnique({
+    where: { id: Number(studentId) },
+    select: { id: true, full_name: true, number: true },
+  });
+  emitMonitorStarted({ quizId: qid, attempt, student: studentRow });
 
   res.json({
     attempt: {
@@ -189,6 +299,9 @@ router.post('/:quizId/start', auth, requireStudentQuizAccess(), asyncHandler(asy
       timing_mode: quiz.timing_mode,
       open_at: quiz.open_at,
       close_at: quiz.close_at,
+      // Echoed so the client knows whether to render the confidence selector
+      // below each MCQ / T-F option. Default false when the column is null.
+      confidence_scoring: !!quiz.confidence_scoring,
     },
     questions: studentQuestions,
     savedAnswers: savedAnswerRows,
@@ -228,6 +341,42 @@ router.put(
       // Echo back a server timestamp so the client can render an accurate
       // "Saved Xs ago" without trusting its own clock too much.
       res.json({ ...result, savedAt: new Date() });
+
+      // Live-monitor signal: emit answeredCount to any teacher subscribed.
+      // We fire-and-forget here so a slow socket doesn't delay the autosave
+      // response. The req.quizAttempt was loaded by RBAC middleware so the
+      // quizId is already on hand.
+      try {
+        const quizId = req.quizAttempt?.quizId;
+        if (quizId) {
+          // Count distinct answered questions on this attempt — drives the
+          // "answered N/M" pill on the teacher's monitoring tile.
+          const answeredCount = await prisma.quizAnswer.count({
+            where: {
+              attemptId,
+              OR: [
+                { selected_option_id: { not: null } },
+                { text_answer: { not: null, notIn: [""] } },
+              ],
+            },
+          });
+          // The student's currently-active question is approximated by the
+          // last questionId in the saved payload (their most recent edit).
+          const lastAnswer = Array.isArray(req.body.answers) && req.body.answers.length > 0
+            ? req.body.answers[req.body.answers.length - 1]
+            : null;
+          emitMonitorAnswerSaved({
+            quizId,
+            attemptId,
+            studentId,
+            answeredCount,
+            currentQuestionId: lastAnswer?.questionId ?? null,
+          });
+        }
+      } catch (e) {
+        // Never let monitor emission disrupt the autosave success path.
+        console.warn("[quiz-monitor] emit on answer save failed:", e.message);
+      }
     } catch (err) {
       const status = err.statusCode ?? 500;
       res.status(status).json({ message: err.message ?? 'Failed to save answers' });
@@ -254,7 +403,135 @@ router.get('/attempts/:attemptId', auth, requireQuizAttemptAccess(), asyncHandle
     },
   });
   if (!attempt) return res.status(404).json({ message: 'Attempt not found' });
+  // This payload includes the canonical correct options (`is_correct`) and the
+  // teacher's explanations. That's fine for a finished attempt (we reveal
+  // answers on submit anyway) but it would let a student GET their OWN
+  // in-progress attempt to read the answer key mid-quiz. Teachers/graders may
+  // inspect in-progress attempts; students may only review submitted ones.
+  if (req.user?.role === 'STUDENT' && !attempt.submitted_at) {
+    return res.status(403).json({ message: 'Attempt not yet submitted' });
+  }
   res.json(attempt);
+}));
+
+// ─── Report a violation (student) ────────────────────────────────────────────
+//
+// Called by the student client whenever the in-quiz code detects a cheating
+// signal (tab visibility change, copy/paste, etc.). Increments the row's
+// `violations_count` by 1 and echoes the new count back so the client can
+// sync its UI without computing locally. When the count crosses the 3-warning
+// threshold the same endpoint finalizes the attempt with
+// `closure_reason: 'violations'` — the client sees `auto_closed: true` in
+// the response and renders the "Session Closed" modal + redirects.
+//
+// Body: { kind?: string }  — short label like "visibility" / "copy" / "paste",
+// purely informational (logged server-side, not persisted to the row yet).
+//
+// Idempotency: if the attempt is already submitted, the endpoint returns the
+// current state without re-incrementing. That keeps "fire-and-forget" client
+// calls safe even if the server-side cron auto-submitted on a parallel tick.
+
+const MAX_WARNINGS = 3;
+
+router.post('/attempts/:attemptId/violation', auth, quizViolationRateLimit, requireQuizAttemptAccess(), asyncHandler(async (req, res) => {
+  const attemptId = parseInt(req.params.attemptId, 10);
+  const studentId = req.user.id ?? req.user.sub;
+  const kind = typeof req.body?.kind === 'string' ? req.body.kind.slice(0, 32) : 'unknown';
+
+  // Only the owning student can report on their own attempt — teachers
+  // shouldn't be incrementing this counter manually (would corrupt analytics).
+  if (req.user.role !== 'STUDENT' || req.quizAttempt?.studentId !== studentId) {
+    return res.status(403).json({ message: 'Only the owning student can report violations' });
+  }
+
+  const current = await prisma.quizAttempt.findUnique({
+    where: { id: attemptId },
+    select: { id: true, submitted_at: true, violations_count: true, warnings_shown: true }
+  });
+  if (!current) return res.status(404).json({ message: 'Attempt not found' });
+
+  // Idempotent: if the attempt is already finalized, surface state without
+  // changing anything. The client may receive this if the auto-submit cron
+  // closed the row a moment before the violation POST hit the server.
+  if (current.submitted_at) {
+    return res.json({
+      violations_count: current.violations_count,
+      warnings_shown: current.warnings_shown,
+      auto_closed: true,
+      max_warnings: MAX_WARNINGS,
+    });
+  }
+
+  const nextCount = (current.violations_count ?? 0) + 1;
+  const shouldClose = nextCount >= MAX_WARNINGS;
+
+  const quizIdForMonitor = req.quizAttempt?.quizId;
+
+  if (shouldClose) {
+    // Hit the limit — finalize the attempt with the violations closure
+    // reason. `finalizeAttempt` re-scores from autosaved rows so the
+    // student's most recent answers are preserved.
+    const finalized = await finalizeAttempt({
+      attemptId,
+      violationsCount: nextCount,
+      closureReason: 'violations',
+    });
+    console.log(`[quiz] auto-closed attempt ${attemptId} for student ${studentId} after ${nextCount} violations (last: ${kind})`);
+
+    // Live-monitor: emit BOTH a violation event (so the running counter on
+    // the tile bumps to N) AND a submitted event (so the tile flips to
+    // "auto-closed" status). Order matters — the violation tells the
+    // teacher what just happened; submitted is the consequence.
+    if (quizIdForMonitor) {
+      emitMonitorViolation({
+        quizId: quizIdForMonitor,
+        attemptId, studentId,
+        violations_count: nextCount,
+        kind, auto_closed: true,
+      });
+      if (finalized) {
+        emitMonitorSubmitted({
+          quizId: quizIdForMonitor,
+          attempt: finalized,
+          closureReason: 'violations',
+        });
+      }
+    }
+
+    return res.json({
+      violations_count: nextCount,
+      warnings_shown: MAX_WARNINGS,
+      auto_closed: true,
+      max_warnings: MAX_WARNINGS,
+    });
+  }
+
+  // Below threshold — bump counters and return.
+  const updated = await prisma.quizAttempt.update({
+    where: { id: attemptId },
+    data: {
+      violations_count: nextCount,
+      warnings_shown: nextCount,
+    },
+    select: { violations_count: true, warnings_shown: true },
+  });
+
+  // Live-monitor: bump the tile's violation badge.
+  if (quizIdForMonitor) {
+    emitMonitorViolation({
+      quizId: quizIdForMonitor,
+      attemptId, studentId,
+      violations_count: updated.violations_count,
+      kind, auto_closed: false,
+    });
+  }
+
+  res.json({
+    violations_count: updated.violations_count,
+    warnings_shown: updated.warnings_shown,
+    auto_closed: false,
+    max_warnings: MAX_WARNINGS,
+  });
 }));
 
 // ─── Manual grading (teacher) ────────────────────────────────────────────────

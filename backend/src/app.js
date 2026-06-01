@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { prisma } from "./db/prisma.js";
 import { requestLogger } from "./middleware/requestLogger.js";
 import { notFound } from "./middleware/notFound.js";
@@ -51,12 +52,60 @@ import discussionsRouter from "./controllers/discussions/discussions.js";
 import clubsRouter from "./controllers/clubs/clubs.js";
 import rateLimit from "express-rate-limit";
 
+// ─── Security headers (Helmet) ──────────────────────────────────────────────
+// `helmet()` ships sensible defaults: X-Content-Type-Options nosniff,
+// Referrer-Policy strict-origin-when-cross-origin, X-Frame-Options DENY,
+// X-DNS-Prefetch-Control off, X-Permitted-Cross-Domain-Policies none,
+// Cross-Origin-Resource-Policy same-origin, plus HSTS in production.
+//
+// CSP is OFF by default because this app's frontend lives on a different
+// origin and uploads itself runs through tight allowlists already — turning
+// CSP on without a per-route audit would break inline styles in shadcn.
+// If you want CSP, do it in a follow-up with a CSP report-only deployment
+// for a week first to find every inline-style violation in shadcn theming.
+//
+// We DO keep COEP off because our static `/uploads` route serves images
+// that other frontend origins fetch — strict COEP would break them.
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
 app.use(express.json());
 app.use(requestLogger());
-app.use("/uploads", express.static("uploads"));
+
+// `/uploads` files are forced to download (not inline-render) — defence-in-
+// depth against a stored XSS where someone uploads `.html` masquerading as
+// an image. The MIME / extension allowlist on the upload endpoint is the
+// primary defence; this is the second layer.
+app.use("/uploads", (req, res, next) => {
+  res.setHeader("Content-Disposition", "attachment");
+  res.setHeader("X-Content-Type-Options", "nosniff");
+  next();
+}, express.static("uploads"));
+
+// CORS — allowlist driven by env so prod can lock down to the production
+// frontend origin. Comma-separated `CORS_ORIGINS` overrides; falls back to
+// `FRONTEND_URL` (used by the socket layer too) or to localhost defaults
+// for dev. Credentialed requests require an exact origin match — wildcards
+// would let a malicious site read authenticated responses.
+const corsAllowlist = (
+  process.env.CORS_ORIGINS ||
+  process.env.FRONTEND_URL ||
+  "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
+)
+  .split(",")
+  .map((x) => x.trim())
+  .filter(Boolean);
 
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: (origin, callback) => {
+    // Same-origin requests (server-side fetch, curl) have no Origin header
+    // and should be allowed through.
+    if (!origin) return callback(null, true);
+    if (corsAllowlist.includes(origin)) return callback(null, true);
+    return callback(new Error(`CORS blocked for origin: ${origin}`));
+  },
   credentials: true
 }));
 

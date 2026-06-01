@@ -336,7 +336,7 @@ router.post(
     if (!isAiEnabled()) {
       return res.status(503).json({
         message:
-          "AI generation is disabled — GEMINI_API_KEY is not configured on the server.",
+          "AI generation is disabled — no AI provider key is configured on the server. Set GROQ_API_KEY (recommended) or GEMINI_API_KEY in the backend .env.",
       });
     }
 

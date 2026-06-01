@@ -1,14 +1,19 @@
 import { ZodError } from "zod";
 import { Prisma } from "@prisma/client";
-import fs from "node:fs";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { HttpError } from "../utils/httpError.js";
-
-const __agentLogPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "../../../debug-b7cda9.log");
 
 /**
  * Global Express error handler — consistent JSON for all API failures.
+ *
+ * Security note: this file used to ship every Prisma error (with full
+ * request paths + method + meta) to a hard-coded localhost ingestion
+ * endpoint and write the same payload to `debug-b7cda9.log`. That was
+ * agent-instrumentation debris and has been removed in the Sprint 5
+ * security pass — every error response is now logged ONLY via
+ * `console.error` (gated on NODE_ENV !== "test"). If you need temporary
+ * forensics, prefer attaching a real logger (Pino/Winston) rather than
+ * hard-coded fetch URLs.
+ *
  * @type {import("express").ErrorRequestHandler}
  */
 export function errorHandler(err, req, res, next) {
@@ -38,45 +43,6 @@ export function errorHandler(err, req, res, next) {
   }
 
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
-    // #region agent log
-    fetch("http://127.0.0.1:7768/ingest/31870779-47f0-4312-b278-1c6da891de23", {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Debug-Session-Id": "b7cda9" },
-      body: JSON.stringify({
-        sessionId: "b7cda9",
-        hypothesisId: "H_prisma_known",
-        location: "errorHandler.js:PrismaClientKnownRequestError",
-        message: String(err.message || "prisma_known"),
-        data: {
-          code: err.code,
-          meta: err.meta ?? null,
-          path: req.originalUrl,
-          method: req.method,
-        },
-        timestamp: Date.now(),
-      }),
-    }).catch(() => {});
-    try {
-      fs.appendFileSync(
-        __agentLogPath,
-        `${JSON.stringify({
-          sessionId: "b7cda9",
-          hypothesisId: "H_prisma_known",
-          location: "errorHandler.js:PrismaClientKnownRequestError:file",
-          message: String(err.message || "prisma_known"),
-          data: {
-            code: err.code,
-            meta: err.meta ?? null,
-            path: req.originalUrl,
-            method: req.method,
-          },
-          timestamp: Date.now(),
-        })}\n`,
-      );
-    } catch {
-      /* ignore */
-    }
-    // #endregion
     if (err.code === "P2025") {
       return res.status(404).json({
         status: "error",

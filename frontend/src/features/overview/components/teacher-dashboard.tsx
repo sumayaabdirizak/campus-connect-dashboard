@@ -103,7 +103,7 @@ export function TeacherDashboard({ user }: { user: any }) {
           {/* Welcome Banner */}
           <motion.div
             variants={itemVariants}
-            className='bg-slate-50 text-slate-900 rounded-2xl p-8 relative overflow-hidden shadow-sm border border-slate-200 transform transition-transform hover:scale-[1.01] duration-300 min-h-[220px] flex flex-col justify-between'
+            className='bg-muted text-foreground rounded-2xl p-8 relative overflow-hidden shadow-sm border border-border transform transition-transform hover:scale-[1.01] duration-300 min-h-[220px] flex flex-col justify-between'
           >
             {/* Background vector accents matching Trezo style */}
             <div className='absolute top-0 right-0 opacity-40 pointer-events-none'>
@@ -121,10 +121,10 @@ export function TeacherDashboard({ user }: { user: any }) {
 
             <div className='relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6'>
               <div>
-                <h2 className='text-3xl font-bold tracking-tight mb-2 text-slate-800'>
+                <h2 className='text-3xl font-bold tracking-tight mb-2 text-foreground'>
                   Good Morning, {user?.full_name?.split(' ')[0] || 'Professor'}!
                 </h2>
-                <p className='text-slate-500 font-medium max-w-md'>
+                <p className='text-muted-foreground font-medium max-w-md'>
                   Here's what's happening across your faculty today.
                 </p>
               </div>
@@ -135,24 +135,24 @@ export function TeacherDashboard({ user }: { user: any }) {
 
             {/* Embedded info cards directly inside the banner */}
             <div className='relative z-10 flex flex-wrap gap-4 mt-8'>
-              <div className='bg-white rounded-xl p-3 flex items-center gap-3 border border-slate-200 shadow-sm min-w-[200px]'>
-                <div className='bg-slate-100 text-slate-800 p-2.5 rounded-lg border border-slate-200'>
+              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm min-w-[200px]'>
+                <div className='bg-muted text-foreground p-2.5 rounded-lg border border-border'>
                   <FileText className='h-5 w-5' />
                 </div>
                 <div>
-                  <p className='text-sm font-bold text-slate-800 leading-tight'>42 To Grade</p>
-                  <p className='text-[11px] text-slate-500 font-medium leading-tight'>
+                  <p className='text-sm font-bold text-foreground leading-tight'>42 To Grade</p>
+                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     Awaiting processing
                   </p>
                 </div>
               </div>
-              <div className='bg-white rounded-xl p-3 flex items-center gap-3 border border-slate-200 shadow-sm min-w-[200px]'>
-                <div className='bg-slate-100 text-slate-600 p-2.5 rounded-lg border border-slate-200'>
+              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm min-w-[200px]'>
+                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
                   <CheckCircle2 className='h-5 w-5' />
                 </div>
                 <div>
-                  <p className='text-sm font-bold text-slate-800 leading-tight'>3 Classes</p>
-                  <p className='text-[11px] text-slate-500 font-medium leading-tight'>
+                  <p className='text-sm font-bold text-foreground leading-tight'>3 Classes</p>
+                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     Scheduled today
                   </p>
                 </div>
@@ -163,7 +163,7 @@ export function TeacherDashboard({ user }: { user: any }) {
           {/* My Courses Section */}
           <motion.div variants={itemVariants}>
             <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100'>
+              <h3 className='text-xl font-bold tracking-tight text-foreground'>
                 My Courses
               </h3>
               <Button variant='ghost' size='sm' onClick={() => router.push('/dashboard/courses')}>
@@ -174,7 +174,7 @@ export function TeacherDashboard({ user }: { user: any }) {
               {myCourses.map((course) => (
                 <Card
                   key={course.id}
-                  className='border-slate-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer rounded-2xl'
+                  className='border-border shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer rounded-2xl'
                   onClick={() => router.push(`/dashboard/courses/${course.id}`)}
                 >
                   <CardContent className='p-5'>
@@ -185,16 +185,16 @@ export function TeacherDashboard({ user }: { user: any }) {
                       >
                         <BookOpen className='h-5 w-5' />
                       </div>
-                      <Badge variant='secondary' className='bg-slate-100 text-slate-600 border-0'>
+                      <Badge variant='secondary' className='bg-muted text-muted-foreground border-0'>
                         {course.code}
                       </Badge>
                     </div>
-                    <h4 className='font-bold text-slate-800 text-lg mb-1'>{course.name}</h4>
-                    <div className='flex items-center justify-between text-sm text-slate-500 mt-4'>
+                    <h4 className='font-bold text-foreground text-lg mb-1'>{course.name}</h4>
+                    <div className='flex items-center justify-between text-sm text-muted-foreground mt-4'>
                       <div className='flex items-center gap-1.5 font-medium'>
                         <Users className='h-4 w-4' /> {course.students}
                       </div>
-                      <div className='text-xs font-semibold bg-slate-100 px-2.5 py-1 rounded-md'>
+                      <div className='text-xs font-semibold bg-muted px-2.5 py-1 rounded-md'>
                         {course.nextClass}
                       </div>
                     </div>
@@ -207,13 +207,13 @@ export function TeacherDashboard({ user }: { user: any }) {
           {/* Chart Split */}
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <motion.div variants={itemVariants} className='md:col-span-2'>
-              <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
+              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
                 <CardHeader className='flex flex-row items-center justify-between pb-4'>
                   <div>
                     <CardTitle className='text-lg'>Grading Velocity</CardTitle>
                     <CardDescription>Assignments graded per week</CardDescription>
                   </div>
-                  <Badge variant='outline' className='text-slate-800 bg-slate-100 border-slate-300'>
+                  <Badge variant='outline' className='text-foreground bg-muted border-border'>
                     +12%
                   </Badge>
                 </CardHeader>
@@ -266,7 +266,7 @@ export function TeacherDashboard({ user }: { user: any }) {
           {/* Attendance & Analytics Split */}
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <motion.div variants={itemVariants}>
-              <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
+              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
                 <CardHeader className='pb-2'>
                   <CardTitle className='text-lg'>Overall Attendance</CardTitle>
                   <CardDescription>Average across all courses</CardDescription>
@@ -275,7 +275,7 @@ export function TeacherDashboard({ user }: { user: any }) {
                   <div className='relative h-24 w-24'>
                     <svg className='w-full h-full' viewBox='0 0 100 100'>
                       <circle
-                        className='text-slate-100 stroke-current'
+                        className='text-muted stroke-current'
                         strokeWidth='10'
                         cx='50'
                         cy='50'
@@ -283,7 +283,7 @@ export function TeacherDashboard({ user }: { user: any }) {
                         fill='transparent'
                       ></circle>
                       <circle
-                        className='text-slate-800 progress-ring stroke-current'
+                        className='text-foreground progress-ring stroke-current'
                         strokeWidth='10'
                         strokeLinecap='round'
                         cx='50'
@@ -300,16 +300,16 @@ export function TeacherDashboard({ user }: { user: any }) {
                   </div>
                   <div className='space-y-2'>
                     <div className='flex items-center justify-between gap-4 text-sm'>
-                      <span className='text-slate-500'>Present</span>
-                      <span className='font-semibold text-slate-800'>88%</span>
+                      <span className='text-muted-foreground'>Present</span>
+                      <span className='font-semibold text-foreground'>88%</span>
                     </div>
                     <div className='flex items-center justify-between gap-4 text-sm'>
-                      <span className='text-slate-500'>Absent</span>
-                      <span className='font-semibold text-slate-800'>10%</span>
+                      <span className='text-muted-foreground'>Absent</span>
+                      <span className='font-semibold text-foreground'>10%</span>
                     </div>
                     <div className='flex items-center justify-between gap-4 text-sm'>
-                      <span className='text-slate-500'>Late</span>
-                      <span className='font-semibold text-slate-800'>2%</span>
+                      <span className='text-muted-foreground'>Late</span>
+                      <span className='font-semibold text-foreground'>2%</span>
                     </div>
                   </div>
                 </CardContent>
@@ -317,31 +317,31 @@ export function TeacherDashboard({ user }: { user: any }) {
             </motion.div>
 
             <motion.div variants={itemVariants}>
-              <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
+              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
                 <CardHeader className='pb-2'>
                   <CardTitle className='text-lg'>Recent Assignments</CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-4 pt-4'>
-                  <div className='flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors border border-slate-100 rounded-xl cursor-pointer'>
+                  <div className='flex items-center justify-between p-3 bg-card hover:bg-muted transition-colors border border-border rounded-xl cursor-pointer'>
                     <div className='flex items-center gap-3'>
-                      <div className='bg-slate-100 p-2 rounded-lg text-slate-800'>
+                      <div className='bg-muted p-2 rounded-lg text-foreground'>
                         <FileText className='h-4 w-4' />
                       </div>
                       <div>
-                        <p className='text-sm font-bold text-slate-800'>Midterm Web Dev</p>
-                        <p className='text-xs text-slate-500'>CS401 • 120/150 Graded</p>
+                        <p className='text-sm font-bold text-foreground'>Midterm Web Dev</p>
+                        <p className='text-xs text-muted-foreground'>CS401 • 120/150 Graded</p>
                       </div>
                     </div>
-                    <span className='text-xs font-semibold text-slate-800'>80%</span>
+                    <span className='text-xs font-semibold text-foreground'>80%</span>
                   </div>
-                  <div className='flex items-center justify-between p-3 bg-white hover:bg-slate-50 transition-colors border border-slate-100 rounded-xl cursor-pointer'>
+                  <div className='flex items-center justify-between p-3 bg-card hover:bg-muted transition-colors border border-border rounded-xl cursor-pointer'>
                     <div className='flex items-center gap-3'>
-                      <div className='bg-slate-100 p-2 rounded-lg text-slate-600'>
+                      <div className='bg-muted p-2 rounded-lg text-muted-foreground'>
                         <CheckCircle2 className='h-4 w-4' />
                       </div>
                       <div>
-                        <p className='text-sm font-bold text-slate-800'>Data Normalization</p>
-                        <p className='text-xs text-slate-500'>CS301 • Published</p>
+                        <p className='text-sm font-bold text-foreground'>Data Normalization</p>
+                        <p className='text-xs text-muted-foreground'>CS301 • Published</p>
                       </div>
                     </div>
                   </div>
@@ -355,10 +355,10 @@ export function TeacherDashboard({ user }: { user: any }) {
         <div className='lg:col-span-4 flex flex-col gap-6'>
           {/* Calendar Widget */}
           <motion.div variants={itemVariants}>
-            <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
-              <CardHeader className='pb-2 border-b border-slate-100'>
+            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
+              <CardHeader className='pb-2 border-b border-border'>
                 <CardTitle className='text-lg flex items-center gap-2'>
-                  <CalendarIcon className='h-5 w-5 text-slate-800' /> Planner
+                  <CalendarIcon className='h-5 w-5 text-foreground' /> Planner
                 </CardTitle>
               </CardHeader>
               <CardContent className='p-0'>
@@ -370,24 +370,24 @@ export function TeacherDashboard({ user }: { user: any }) {
                     className='rounded-md border-0'
                     classNames={{
                       day_selected:
-                        'bg-slate-800 text-white hover:bg-slate-800 hover:text-white focus:bg-slate-800 focus:text-white'
+                        'bg-foreground text-background hover:bg-foreground hover:text-background focus:bg-foreground focus:text-background'
                     }}
                   />
                 </div>
                 <div className='px-6 pb-6 space-y-4'>
-                  <h4 className='text-sm font-bold text-slate-800 uppercase tracking-wider mb-2'>
+                  <h4 className='text-sm font-bold text-foreground uppercase tracking-wider mb-2'>
                     Upcoming Events
                   </h4>
                   {upcomingEvents.map((ev, i) => (
                     <div key={i} className='flex gap-3'>
                       <div
-                        className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 ${ev.type === 'publish' ? 'bg-slate-1000' : ev.type === 'grade' ? 'bg-slate-400' : 'bg-slate-300'}`}
+                        className={`mt-1 h-2.5 w-2.5 rounded-full shrink-0 ${ev.type === 'publish' ? 'bg-foreground' : ev.type === 'grade' ? 'bg-muted-foreground' : 'bg-muted'}`}
                       />
                       <div>
-                        <p className='text-sm font-semibold text-slate-800 leading-tight'>
+                        <p className='text-sm font-semibold text-foreground leading-tight'>
                           {ev.title}
                         </p>
-                        <p className='text-xs text-slate-500 font-medium mt-0.5'>{ev.time}</p>
+                        <p className='text-xs text-muted-foreground font-medium mt-0.5'>{ev.time}</p>
                       </div>
                     </div>
                   ))}
@@ -398,25 +398,25 @@ export function TeacherDashboard({ user }: { user: any }) {
 
           {/* Announcements */}
           <motion.div variants={itemVariants}>
-            <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
+            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
               <CardHeader className='pb-4'>
                 <CardTitle className='text-lg flex items-center gap-2'>
-                  <Bell className='h-5 w-5 text-slate-1000' /> Announcements
+                  <Bell className='h-5 w-5 text-foreground' /> Announcements
                 </CardTitle>
               </CardHeader>
               <CardContent className='space-y-4'>
-                <div className='p-3 bg-slate-100/50 rounded-xl border border-slate-200'>
+                <div className='p-3 bg-muted/50 rounded-xl border border-border'>
                   <div className='flex justify-between items-start mb-1'>
-                    <Badge className='bg-slate-800 text-white hover:bg-slate-900 border-slate-300 uppercase text-[10px] tracking-wider px-2 py-0'>
+                    <Badge className='bg-foreground text-background hover:bg-foreground/90 border-border uppercase text-[10px] tracking-wider px-2 py-0'>
                       Urgent
                     </Badge>
-                    <span className='text-[10px] text-slate-400 font-medium'>2h ago</span>
+                    <span className='text-[10px] text-muted-foreground font-medium'>2h ago</span>
                   </div>
-                  <p className='text-sm font-bold text-slate-800 leading-tight mt-2'>
+                  <p className='text-sm font-bold text-foreground leading-tight mt-2'>
                     Faculty system maintenance this weekend
                   </p>
                 </div>
-                <div className='p-3 bg-white border border-slate-200 rounded-xl'>
+                <div className='p-3 bg-card border border-border rounded-xl'>
                   <div className='flex justify-between items-start mb-1'>
                     <Badge
                       variant='secondary'
@@ -424,15 +424,15 @@ export function TeacherDashboard({ user }: { user: any }) {
                     >
                       Dept
                     </Badge>
-                    <span className='text-[10px] text-slate-400 font-medium'>1d ago</span>
+                    <span className='text-[10px] text-muted-foreground font-medium'>1d ago</span>
                   </div>
-                  <p className='text-sm font-bold text-slate-800 leading-tight mt-2'>
+                  <p className='text-sm font-bold text-foreground leading-tight mt-2'>
                     Submit final grades for CS101
                   </p>
                 </div>
                 <Button
                   variant='ghost'
-                  className='w-full text-sm text-slate-800 font-semibold hover:bg-slate-100'
+                  className='w-full text-sm text-foreground font-semibold hover:bg-muted'
                 >
                   View All Announcements
                 </Button>

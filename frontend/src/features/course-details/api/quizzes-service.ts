@@ -7,10 +7,12 @@ import type {
   ImportQuizCsvInput,
   ImportQuizCsvResponse,
   Quiz,
+  QuizAnalytics,
   QuizAttempt,
   QuizAttemptAnswer,
   QuizQuestion,
   QuizStartResponse,
+  ReportViolationResponse,
   SaveAttemptAnswersResponse,
   UpdateQuestionInput,
   UpdateQuizInput
@@ -45,8 +47,25 @@ export async function deleteQuiz(quizId: number): Promise<{ success: boolean }> 
   return apiClient<{ success: boolean }>(`/quizzes/${quizId}`, { method: 'DELETE' });
 }
 
+/// Deep-clone a quiz (including all questions + options). Backend returns
+/// the freshly-created draft; the caller invalidates the quiz list so it
+/// appears in the UI without an extra fetch.
+export async function duplicateQuiz(quizId: number): Promise<Quiz> {
+  return apiClient<Quiz>(`/quizzes/${quizId}/duplicate`, {
+    method: 'POST',
+    body: JSON.stringify({})
+  });
+}
+
 export async function getQuizAttempts(quizId: number): Promise<QuizAttempt[]> {
   return apiClient<QuizAttempt[]>(`/quizzes/${quizId}/attempts`);
+}
+
+/// Per-question analytics aggregated over every submitted attempt. The
+/// component caches with the attempts list because the same teacher action
+/// (manual grade save) invalidates both.
+export async function getQuizAnalytics(quizId: number): Promise<QuizAnalytics> {
+  return apiClient<QuizAnalytics>(`/quizzes/${quizId}/analytics`);
 }
 
 /// Teacher-side: PATCH grades for one or more short-answer responses on an
@@ -60,6 +79,15 @@ export async function gradeAttempt(
     method: 'PATCH',
     body: JSON.stringify({ answers })
   });
+}
+
+/// Fetch a single attempt with its full quiz tree (questions, options,
+/// correct answers, explanations) + the student's answers — exactly the shape
+/// `AttemptReview` needs. Used to let a student re-open their results from the
+/// quiz card after they've navigated away from the post-submit screen.
+/// Access is scoped server-side: a student can only fetch their own attempt.
+export async function getAttemptReview(attemptId: number): Promise<QuizAttempt> {
+  return apiClient<QuizAttempt>(`/quiz-taking/attempts/${attemptId}`);
 }
 
 export async function startQuiz(quizId: number): Promise<QuizStartResponse> {
@@ -78,6 +106,23 @@ export async function submitQuiz(
     method: 'POST',
     body: JSON.stringify({ attemptId, answers })
   });
+}
+
+/// Report a cheating signal (tab leave, copy, paste, …) on an in-progress
+/// attempt. Server increments the counter and — at the 3rd violation —
+/// finalizes the attempt itself, signaling that via `auto_closed: true`.
+/// `kind` is a short label persisted only in server logs for forensics.
+export async function reportViolation(
+  attemptId: number,
+  kind: string
+): Promise<ReportViolationResponse> {
+  return apiClient<ReportViolationResponse>(
+    `/quiz-taking/attempts/${attemptId}/violation`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ kind })
+    }
+  );
 }
 
 /// Debounced autosave of in-progress answers. The server writes them as

@@ -6,6 +6,24 @@
 
 @import './theme.css';
 
+/* ─── Semantic status colours exposed as Tailwind utilities ────────────
+ * `bg-warning`, `text-warning-foreground`, `border-warning`, `bg-warning-muted`
+ * (and the success / info variants) replace the 100+ literal amber-*,
+ * emerald-*, sky-* usages flagged in the UI audit. Tokens themselves are
+ * defined in theme.css so all themes inherit them and dark mode works
+ * automatically. */
+@theme inline {
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-muted: var(--warning-muted);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-muted: var(--success-muted);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-muted: var(--info-muted);
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
@@ -104,5 +122,39 @@
   }
   100% {
     background-position: 0% 50%;
+  }
+}
+
+
+/* ─── View Transitions for quiz question swap ────────────────────────────
+ * Defines a custom slide animation when the .startViewTransition() callback
+ * in StudentAttempt.navigateTo() swaps questions. Without these rules the
+ * browser's default cross-fade is used (still nice, but slide reads better
+ * for a 'next page' interaction). Each question card declares
+ * `view-transition-name: quiz-question-card` inline.
+ * 
+ * The ::view-transition-{old,new} pseudo-elements only exist during the
+ * transition — outside of it these rules are inert.
+ */
+::view-transition-old(quiz-question-card) {
+  animation: quiz-card-out 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+::view-transition-new(quiz-question-card) {
+  animation: quiz-card-in 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+@keyframes quiz-card-out {
+  to { opacity: 0; transform: translateX(-24px); }
+}
+@keyframes quiz-card-in {
+  from { opacity: 0; transform: translateX(24px); }
+}
+
+/* Honour reduced-motion: students who have the OS setting on get a clean
+ * cross-fade instead of the slide. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(quiz-question-card),
+  ::view-transition-new(quiz-question-card) {
+    animation-duration: 100ms;
+    animation-name: none;
   }
 }

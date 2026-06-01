@@ -29,6 +29,7 @@ import {
 } from '../api/question-bank-queries';
 import { useModules } from '../api/resources-queries';
 import type { BankQuestion, BankQuestionFilters } from '../api/question-bank-types';
+import { ListSkeleton } from './_shared/list-skeleton';
 
 const ANY_VALUE = '__any__';
 const NO_MODULE = '__none__';
@@ -252,7 +253,7 @@ export function AddFromBankDialog({
         {/* List */}
         <div className='flex-1 overflow-y-auto pr-1 -mr-1 space-y-1.5'>
           {isLoading ? (
-            <div className='text-sm text-muted-foreground py-8 text-center'>Loading…</div>
+            <ListSkeleton variant='row' count={4} />
           ) : questions.length === 0 ? (
             <div className='border border-dashed rounded-lg p-10 text-center text-sm text-muted-foreground'>
               {hasFilters

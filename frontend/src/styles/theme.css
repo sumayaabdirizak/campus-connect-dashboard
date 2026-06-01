@@ -16,6 +16,38 @@ body {
 
 :root {
   --header-height: calc(var(--spacing, 0.25rem) * 12 + 1px);
+
+  /* ─── Semantic status tokens ──────────────────────────────────────────
+   * Theme-independent fallbacks so `bg-warning`, `text-success`,
+   * `border-info` work consistently across all 10 themes (per-theme files
+   * may override these for branded variants). Replaces the 100+ hard-coded
+   * `text-amber-700` / `bg-emerald-50` / `text-blue-600` literals scattered
+   * across the dashboard. OKLCH values picked to match the design audit's
+   * semantic intent (warning = amber-600, success = emerald-600, info =
+   * sky-600) while staying within the project's perceptual lightness scale. */
+  --warning: oklch(0.7591 0.1574 70.08);            /* amber-500 */
+  --warning-foreground: oklch(0.2823 0.0588 79.34); /* amber-950 */
+  --warning-muted: oklch(0.9849 0.022 95.28);       /* amber-50 */
+  --success: oklch(0.6959 0.157 162.48);            /* emerald-500 */
+  --success-foreground: oklch(0.2531 0.045 156.74); /* emerald-950 */
+  --success-muted: oklch(0.9789 0.027 158.49);      /* emerald-50 */
+  --info: oklch(0.6859 0.1454 230.66);              /* sky-500 */
+  --info-foreground: oklch(0.2823 0.0588 246.79);   /* sky-950 */
+  --info-muted: oklch(0.9772 0.0244 230.42);        /* sky-50 */
+}
+
+/* Dark-mode shifts: pull lightness up so foreground stays legible on dark
+ * surfaces; mute saturation slightly to avoid neon. */
+.dark {
+  --warning: oklch(0.8127 0.1641 75.45);
+  --warning-foreground: oklch(0.9849 0.022 95.28);
+  --warning-muted: oklch(0.3023 0.0588 75.45 / 0.25);
+  --success: oklch(0.7588 0.1574 162.48);
+  --success-foreground: oklch(0.9789 0.027 158.49);
+  --success-muted: oklch(0.3023 0.0588 158.49 / 0.25);
+  --info: oklch(0.7588 0.1554 230.66);
+  --info-foreground: oklch(0.9772 0.0244 230.42);
+  --info-muted: oklch(0.3023 0.0588 230.66 / 0.25);
 }
 
 /* Apply theme fonts to body for all themes */

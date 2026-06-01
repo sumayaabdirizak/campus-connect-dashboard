@@ -3,9 +3,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, UserMinus, UserPlus, Users } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Crown, Pencil, Plus, Trash2, UserMinus, UserPlus, Users } from 'lucide-react';
 import { EmptyState } from './_shared/empty-state';
 import { ListSkeleton } from './_shared/list-skeleton';
+import { StudyGroupForm } from './study-group-form';
+import type { StudyGroupFormValues } from '../schemas/study-group';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -22,12 +25,18 @@ import {
   SelectValue
 } from '@/components/ui/select';
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger
+} from '@/components/ui/tooltip';
+import {
   groupKeys,
   useAddGroupMember,
   useCreateGroup,
   useDeleteGroup,
   useGroups,
-  useRemoveGroupMember
+  useRemoveGroupMember,
+  useSetGroupMemberRole
 } from '../api/groups-queries';
 import { deleteGroup as deleteGroupCall } from '../api/groups-service';
 import { useRoster } from '../api/roster-queries';
@@ -47,25 +56,29 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
   const deleteMutation = useDeleteGroup(courseId);
   const addMemberMutation = useAddGroupMember(courseId);
   const removeMemberMutation = useRemoveGroupMember(courseId);
+  const setRoleMutation = useSetGroupMemberRole(courseId);
 
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  const [newName, setNewName] = useState('');
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [addingTo, setAddingTo] = useState<number | null>(null);
   const [pickMember, setPickMember] = useState<string>('');
+  const [renamingId, setRenamingId] = useState<number | null>(null);
+  const [renameValue, setRenameValue] = useState('');
 
   const filtered = groups.filter((g) => g.name.toLowerCase().includes(search.toLowerCase()));
 
-  const handleCreate = () => {
-    if (!newName.trim()) return;
+  // All students already assigned to ANY group in this course.
+  // Used to filter the "add member" dropdown so a student can't be in two groups.
+  const allAssignedIds = new Set(groups.flatMap((g) => g.members.map((m) => m.memberId)));
+
+  const handleCreate = (values: StudyGroupFormValues) => {
     createMutation.mutate(
-      { name: newName.trim() },
+      { name: values.name },
       {
         onSuccess: () => {
           toast.success('Group created');
           setCreateOpen(false);
-          setNewName('');
         },
         onError: (e: Error) => toast.error(e.message)
       }
@@ -119,8 +132,41 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
     );
   };
 
+  const handleToggleLeader = (groupId: number, memberId: number, currentRole: string) => {
+    const newRole = currentRole === 'LEADER' ? 'MEMBER' : 'LEADER';
+    setRoleMutation.mutate(
+      { groupId: String(groupId), memberId: String(memberId), role: newRole },
+      {
+        onSuccess: () =>
+          toast.success(
+            newRole === 'LEADER' ? 'Set as group leader' : 'Demoted to member'
+          ),
+        onError: (e: Error) => toast.error(e.message)
+      }
+    );
+  };
+
+  // Count stats for the header
+  const totalStudents = roster.length;
+  const assignedCount = allAssignedIds.size;
+  const unassignedCount = totalStudents - assignedCount;
+
   return (
     <div className='space-y-4'>
+      {/* Stats bar */}
+      {!isStudent && !isLoading && (
+        <div className='flex flex-wrap gap-3 text-xs text-muted-foreground'>
+          <span>{groups.length} group{groups.length !== 1 ? 's' : ''}</span>
+          <span>·</span>
+          <span>{assignedCount} / {totalStudents} students assigned</span>
+          {unassignedCount > 0 && (
+            <Badge variant='outline' className='text-warning border-warning text-[10px]'>
+              {unassignedCount} unassigned
+            </Badge>
+          )}
+        </div>
+      )}
+
       <div className='flex gap-2'>
         <Input
           placeholder='Search groups...'
@@ -143,7 +189,7 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
           title='No groups yet'
           description={
             isStudent
-              ? 'Your teacher hasn’t organised this course into groups yet.'
+              ? "Your teacher hasn't organised this course into groups yet."
               : 'Create groups for group assignments, discussions, or peer review.'
           }
           actionLabel={isStudent ? undefined : 'Create group'}
@@ -153,13 +199,68 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
 
       <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
         {filtered.map((g) => {
-          const memberIds = new Set(g.members.map((m) => m.memberId));
-          const candidates = roster.filter((s) => !memberIds.has(s.id));
+          const hasLeader = g.members.some((m) => m.role === 'LEADER');
+          const candidates = roster.filter((s) => !allAssignedIds.has(s.id));
           return (
             <div key={g.id} className='border rounded-lg p-4'>
               <div className='flex items-center justify-between mb-3'>
-                <h3 className='font-medium'>{g.name}</h3>
-                {!isStudent && (
+                {renamingId === g.id ? (
+                  <form
+                    className='flex gap-1 flex-1 mr-2'
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      if (!renameValue.trim()) return;
+                      // Inline rename — optimistic update would be nice but
+                      // the mutation already invalidates the query.
+                      import('../api/groups-service').then(({ renameGroup }) =>
+                        renameGroup(String(g.id), renameValue.trim())
+                          .then(() => {
+                            toast.success('Group renamed');
+                            setRenamingId(null);
+                            queryClient.invalidateQueries({ queryKey: groupKeys.list(courseId) });
+                          })
+                          .catch((err: Error) => toast.error(err.message))
+                      );
+                    }}
+                  >
+                    <Input
+                      value={renameValue}
+                      onChange={(e) => setRenameValue(e.target.value)}
+                      className='h-7 text-sm'
+                      autoFocus
+                    />
+                    <Button type='submit' size='sm' className='h-7'>
+                      Save
+                    </Button>
+                    <Button
+                      type='button'
+                      size='sm'
+                      variant='ghost'
+                      className='h-7'
+                      onClick={() => setRenamingId(null)}
+                    >
+                      ✕
+                    </Button>
+                  </form>
+                ) : (
+                  <div className='flex items-center gap-1.5'>
+                    <h3 className='font-medium'>{g.name}</h3>
+                    {!isStudent && (
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className='h-6 w-6'
+                        onClick={() => {
+                          setRenamingId(g.id);
+                          setRenameValue(g.name);
+                        }}
+                      >
+                        <Pencil className='w-3 h-3' />
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {!isStudent && renamingId !== g.id && (
                   <Button
                     variant='ghost'
                     size='icon'
@@ -170,27 +271,62 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
                   </Button>
                 )}
               </div>
-              <p className='text-sm text-muted-foreground mb-3'>{g.members.length} members</p>
+              <div className='flex items-center gap-2 mb-3'>
+                <p className='text-sm text-muted-foreground'>{g.members.length} members</p>
+                {!hasLeader && g.members.length > 0 && !isStudent && (
+                  <Badge variant='outline' className='text-warning border-warning text-[10px]'>
+                    No leader
+                  </Badge>
+                )}
+              </div>
               <div className='space-y-2'>
                 {g.members.map((m) => (
                   <div
                     key={m.id}
                     className='flex items-center justify-between p-2 bg-muted/30 rounded'
                   >
-                    <div className='min-w-0'>
-                      <p className='text-sm font-medium truncate'>{m.member.full_name}</p>
-                      <p className='text-xs text-muted-foreground'>{m.member.number}</p>
+                    <div className='flex items-center gap-2 min-w-0'>
+                      {m.role === 'LEADER' && (
+                        <Crown className='w-3.5 h-3.5 text-amber-500 shrink-0' />
+                      )}
+                      <div className='min-w-0'>
+                        <p className='text-sm font-medium truncate'>
+                          {m.member.full_name}
+                          {m.role === 'LEADER' && (
+                            <span className='text-[10px] text-amber-600 ml-1'>Leader</span>
+                          )}
+                        </p>
+                        <p className='text-xs text-muted-foreground'>{m.member.number}</p>
+                      </div>
                     </div>
                     {!isStudent && (
-                      <Button
-                        variant='ghost'
-                        size='icon'
-                        className='h-6 w-6'
-                        onClick={() => handleRemoveMember(g.id, m.memberId)}
-                        disabled={removeMemberMutation.isPending}
-                      >
-                        <UserMinus className='w-3 h-3' />
-                      </Button>
+                      <div className='flex items-center gap-0.5'>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant='ghost'
+                              size='icon'
+                              className={`h-6 w-6 ${m.role === 'LEADER' ? 'text-amber-500' : ''}`}
+                              onClick={() => handleToggleLeader(g.id, m.memberId, m.role)}
+                              disabled={setRoleMutation.isPending}
+                            >
+                              <Crown className='w-3 h-3' />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {m.role === 'LEADER' ? 'Remove leader role' : 'Set as leader'}
+                          </TooltipContent>
+                        </Tooltip>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='h-6 w-6'
+                          onClick={() => handleRemoveMember(g.id, m.memberId)}
+                          disabled={removeMemberMutation.isPending}
+                        >
+                          <UserMinus className='w-3 h-3' />
+                        </Button>
+                      </div>
                     )}
                   </div>
                 ))}
@@ -255,21 +391,11 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
           <DialogHeader>
             <DialogTitle>Create Group</DialogTitle>
           </DialogHeader>
-          <div className='space-y-4 py-4'>
-            <Input
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              placeholder='Group name'
-            />
-          </div>
-          <DialogFooter>
-            <Button variant='outline' onClick={() => setCreateOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleCreate} disabled={createMutation.isPending || !newName.trim()}>
-              {createMutation.isPending ? 'Creating…' : 'Create'}
-            </Button>
-          </DialogFooter>
+          <StudyGroupForm
+            onSubmit={handleCreate}
+            onCancel={() => setCreateOpen(false)}
+            submitting={createMutation.isPending}
+          />
         </DialogContent>
       </Dialog>
 
@@ -279,7 +405,8 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
             <DialogTitle>Delete Group?</DialogTitle>
           </DialogHeader>
           <p className='text-sm text-muted-foreground'>
-            This will remove the group and all its members.
+            This will remove the group and all its members. Existing submissions will
+            keep their grades but lose the group association.
           </p>
           <DialogFooter>
             <Button variant='outline' onClick={() => setDeleteId(null)}>

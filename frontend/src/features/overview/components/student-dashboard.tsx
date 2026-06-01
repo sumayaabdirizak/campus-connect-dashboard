@@ -91,7 +91,7 @@ export function StudentDashboard({ user }: { user: any }) {
           {/* Welcome Banner */}
           <motion.div
             variants={itemVariants}
-            className='bg-slate-50 text-slate-900 rounded-2xl p-8 relative overflow-hidden shadow-sm border border-slate-200 transform transition-transform hover:scale-[1.01] duration-300 min-h-[220px] flex flex-col justify-between'
+            className='bg-muted text-foreground rounded-2xl p-8 relative overflow-hidden shadow-sm border border-border transform transition-transform hover:scale-[1.01] duration-300 min-h-[220px] flex flex-col justify-between'
           >
             {/* Background vector accents matching Trezo style */}
             <div className='absolute top-0 right-0 opacity-40 pointer-events-none'>
@@ -109,10 +109,10 @@ export function StudentDashboard({ user }: { user: any }) {
 
             <div className='relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6'>
               <div>
-                <h2 className='text-3xl font-bold tracking-tight mb-2 text-slate-800'>
+                <h2 className='text-3xl font-bold tracking-tight mb-2 text-foreground'>
                   Good Morning, {user?.full_name?.split(' ')[0] || 'Student'}!
                 </h2>
-                <p className='text-slate-500 font-medium max-w-md'>
+                <p className='text-muted-foreground font-medium max-w-md'>
                   Here's what's happening with your courses today.
                 </p>
               </div>
@@ -123,32 +123,32 @@ export function StudentDashboard({ user }: { user: any }) {
 
             {/* Embedded info cards directly inside the banner */}
             <div className='relative z-10 flex flex-wrap gap-4 mt-8'>
-              <div className='bg-white rounded-xl p-3 flex items-center gap-3 border border-slate-200 shadow-sm min-w-[200px]'>
-                <div className='bg-slate-100 text-slate-800 p-2.5 rounded-lg border border-slate-200'>
+              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm min-w-[200px]'>
+                <div className='bg-muted text-foreground p-2.5 rounded-lg border border-border'>
                   <FileText className='h-5 w-5' />
                 </div>
                 <div>
-                  <div className='text-sm font-bold text-slate-800 leading-tight'>
+                  <div className='text-sm font-bold text-foreground leading-tight'>
                     {coursesLoading ? <Skeleton className='h-4 w-12' /> : `${totalPending} Due`}
                   </div>
-                  <p className='text-[11px] text-slate-500 font-medium leading-tight'>
+                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     Action required
                   </p>
                 </div>
               </div>
-              <div className='bg-white rounded-xl p-3 flex items-center gap-3 border border-slate-200 shadow-sm min-w-[200px]'>
-                <div className='bg-slate-100 text-slate-600 p-2.5 rounded-lg border border-slate-200'>
+              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm min-w-[200px]'>
+                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
                   <Bell className='h-5 w-5' />
                 </div>
                 <div>
-                  <div className='text-sm font-bold text-slate-800 leading-tight'>
+                  <div className='text-sm font-bold text-foreground leading-tight'>
                     {announcementsLoading ? (
                       <Skeleton className='h-4 w-12' />
                     ) : (
                       `${announcements.length} Updates`
                     )}
                   </div>
-                  <p className='text-[11px] text-slate-500 font-medium leading-tight'>
+                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     System Announcements
                   </p>
                 </div>
@@ -159,7 +159,7 @@ export function StudentDashboard({ user }: { user: any }) {
           {/* My Courses Section */}
           <motion.div variants={itemVariants}>
             <div className='flex items-center justify-between mb-4'>
-              <h3 className='text-xl font-bold tracking-tight text-slate-800 dark:text-slate-100'>
+              <h3 className='text-xl font-bold tracking-tight text-foreground'>
                 My Enrolled Courses
               </h3>
               <Button variant='ghost' size='sm' onClick={() => router.push('/dashboard/courses')}>
@@ -188,13 +188,13 @@ export function StudentDashboard({ user }: { user: any }) {
           {/* Performance Chart Split */}
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             <motion.div variants={itemVariants} className='md:col-span-2'>
-              <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
+              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
                 <CardHeader className='flex flex-row items-center justify-between pb-4'>
                   <div>
                     <CardTitle className='text-lg'>Overall Performance</CardTitle>
                     <CardDescription>Average grades over the current module</CardDescription>
                   </div>
-                  <Badge variant='outline' className='text-slate-800 bg-slate-100 border-slate-300'>
+                  <Badge variant='outline' className='text-foreground bg-muted border-border'>
                     +3.4%
                   </Badge>
                 </CardHeader>
@@ -247,8 +247,8 @@ export function StudentDashboard({ user }: { user: any }) {
 
           {/* Today's Schedule (NEW) */}
           <motion.div variants={itemVariants}>
-            <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl overflow-hidden'>
-              <div className='h-1.5 bg-slate-800 w-full' />
+            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl overflow-hidden'>
+              <div className='h-1.5 bg-foreground w-full' />
               <CardHeader className='flex flex-row items-center justify-between pb-2'>
                 <div>
                   <CardTitle className='text-lg'>Today's Schedule</CardTitle>
@@ -274,25 +274,25 @@ export function StudentDashboard({ user }: { user: any }) {
                       .map((course, idx) => (
                         <div
                           key={idx}
-                          className='flex items-center gap-4 p-4 bg-slate-50 border border-slate-100 rounded-2xl hover:bg-slate-100 transition-colors cursor-pointer group'
+                          className='flex items-center gap-4 p-4 bg-muted border border-border rounded-2xl hover:bg-muted/70 transition-colors cursor-pointer group'
                           onClick={() => router.push(`/dashboard/courses/${course.id}`)}
                         >
-                          <div className='p-3 rounded-xl bg-white shadow-sm text-slate-800'>
+                          <div className='p-3 rounded-xl bg-card shadow-sm text-foreground'>
                             <Clock className='h-5 w-5' />
                           </div>
                           <div className='flex-1 min-w-0'>
-                            <p className='text-sm font-bold text-slate-800 truncate'>
+                            <p className='text-sm font-bold text-foreground truncate'>
                               {course.courseName}
                             </p>
-                            <p className='text-xs text-slate-500 font-medium'>
+                            <p className='text-xs text-muted-foreground font-medium'>
                               {course.nextClass.time} • {course.nextClass.location}
                             </p>
                           </div>
-                          <ChevronRight className='h-4 w-4 text-slate-300 group-hover:text-slate-500 transition-colors' />
+                          <ChevronRight className='h-4 w-4 text-muted-foreground group-hover:text-foreground transition-colors' />
                         </div>
                       ))
                   ) : (
-                    <div className='col-span-full py-8 text-center bg-slate-50/50 rounded-2xl border border-dashed text-muted-foreground text-sm'>
+                    <div className='col-span-full py-8 text-center bg-muted/50 rounded-2xl border border-dashed text-muted-foreground text-sm'>
                       No classes scheduled for today
                     </div>
                   )}
@@ -305,7 +305,7 @@ export function StudentDashboard({ user }: { user: any }) {
           <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
             {/* Visual Progress / Attendance Status */}
             <motion.div variants={itemVariants}>
-              <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
+              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
                 <CardHeader className='pb-2'>
                   <CardTitle className='text-lg'>My Attendance</CardTitle>
                   <CardDescription>Semester progress</CardDescription>
@@ -326,21 +326,21 @@ export function StudentDashboard({ user }: { user: any }) {
                       courses.slice(0, 4).map((course: any) => (
                         <div key={course.id}>
                           <div className='flex justify-between text-[13px] font-bold mb-2'>
-                            <span className='text-slate-800 truncate pr-4'>
+                            <span className='text-foreground truncate pr-4'>
                               {course.courseCode} {course.courseName}
                             </span>
-                            <span className='text-slate-500'>{course.progress || 0}%</span>
+                            <span className='text-muted-foreground'>{course.progress || 0}%</span>
                           </div>
-                          <div className='h-1.5 w-full bg-slate-100 rounded-full overflow-hidden'>
+                          <div className='h-1.5 w-full bg-muted rounded-full overflow-hidden'>
                             <div
-                              className='h-full bg-slate-800 rounded-full'
+                              className='h-full bg-foreground rounded-full'
                               style={{ width: `${course.progress || 0}%` }}
                             />
                           </div>
                         </div>
                       ))
                     ) : (
-                      <div className='text-center py-6 text-slate-400 text-xs italic'>
+                      <div className='text-center py-6 text-muted-foreground text-xs italic'>
                         No enrollment data available
                       </div>
                     )}
@@ -351,7 +351,7 @@ export function StudentDashboard({ user }: { user: any }) {
 
             {/* Upcoming Assessments */}
             <motion.div variants={itemVariants}>
-              <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
+              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
                 <CardHeader className='pb-2'>
                   <CardTitle className='text-lg'>Upcoming Assessments</CardTitle>
                 </CardHeader>
@@ -367,7 +367,7 @@ export function StudentDashboard({ user }: { user: any }) {
                       .map((item: any, idx: number) => (
                         <div
                           key={idx}
-                          className='flex items-center justify-between p-3 bg-white hover:bg-slate-50 rounded-xl border border-slate-200 transition-colors cursor-pointer group'
+                          className='flex items-center justify-between p-3 bg-card hover:bg-muted rounded-xl border border-border transition-colors cursor-pointer group'
                           onClick={() => router.push(`/dashboard/courses/${item.id}`)}
                         >
                           <div className='flex items-center gap-3'>
@@ -375,31 +375,31 @@ export function StudentDashboard({ user }: { user: any }) {
                               <FileText className='h-4 w-4' />
                             </div>
                             <div>
-                              <p className='text-sm font-bold text-slate-800 truncate max-w-[150px]'>
+                              <p className='text-sm font-bold text-foreground truncate max-w-[150px]'>
                                 {item.courseName}
                               </p>
-                              <p className='text-xs text-slate-500 font-medium'>
+                              <p className='text-xs text-muted-foreground font-medium'>
                                 {item.pendingItems} Pending Tasks
                               </p>
                             </div>
                           </div>
-                          <ChevronRight className='h-4 w-4 text-slate-400' />
+                          <ChevronRight className='h-4 w-4 text-muted-foreground' />
                         </div>
                       ))
                   ) : (
                     <div className='py-8 flex flex-col items-center justify-center text-center'>
-                      <div className='bg-green-50 p-3 rounded-full mb-3'>
-                        <CheckCircle2 className='h-6 w-6 text-green-500' />
+                      <div className='bg-success-muted p-3 rounded-full mb-3'>
+                        <CheckCircle2 className='h-6 w-6 text-success' />
                       </div>
-                      <p className='text-sm font-bold text-slate-800'>All caught up!</p>
-                      <p className='text-[11px] text-slate-500 max-w-[180px]'>
+                      <p className='text-sm font-bold text-foreground'>All caught up!</p>
+                      <p className='text-[11px] text-muted-foreground max-w-[180px]'>
                         You have no pending assignments at the moment.
                       </p>
                     </div>
                   )}
                   <Button
                     variant='ghost'
-                    className='w-full text-sm text-slate-800 font-semibold mt-auto hover:bg-slate-100'
+                    className='w-full text-sm text-foreground font-semibold mt-auto hover:bg-muted'
                     onClick={() => router.push('/dashboard/assignments')}
                   >
                     View All Assignments
@@ -414,10 +414,10 @@ export function StudentDashboard({ user }: { user: any }) {
         <div className='lg:col-span-4 flex flex-col gap-6'>
           {/* Calendar Widget */}
           <motion.div variants={itemVariants}>
-            <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
-              <CardHeader className='pb-2 border-b border-slate-100'>
+            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
+              <CardHeader className='pb-2 border-b border-border'>
                 <CardTitle className='text-lg flex items-center gap-2'>
-                  <CalendarIcon className='h-5 w-5 text-slate-800' /> Due Dates
+                  <CalendarIcon className='h-5 w-5 text-foreground' /> Due Dates
                 </CardTitle>
               </CardHeader>
               <CardContent className='p-0'>
@@ -429,24 +429,24 @@ export function StudentDashboard({ user }: { user: any }) {
                     className='rounded-md border-0'
                     classNames={{
                       day_selected:
-                        'bg-slate-800 text-white hover:bg-slate-800 hover:text-white focus:bg-slate-800 focus:text-white'
+                        'bg-foreground text-background hover:bg-foreground hover:text-background focus:bg-foreground focus:text-background'
                     }}
                   />
                 </div>
                 <div className='px-6 pb-6 space-y-4'>
                   <div className='flex items-center justify-between'>
-                    <span className='text-xs font-bold text-slate-500 uppercase tracking-wider'>
+                    <span className='text-xs font-bold text-muted-foreground uppercase tracking-wider'>
                       Legend
                     </span>
                   </div>
                   <div className='flex gap-4'>
                     <div className='flex items-center gap-1.5'>
-                      <div className='h-2 w-2 rounded-full bg-slate-400' />
-                      <span className='text-xs text-slate-600 font-medium'>Assignment</span>
+                      <div className='h-2 w-2 rounded-full bg-muted-foreground' />
+                      <span className='text-xs text-muted-foreground font-medium'>Assignment</span>
                     </div>
                     <div className='flex items-center gap-1.5'>
-                      <div className='h-2 w-2 rounded-full bg-slate-1000' />
-                      <span className='text-xs text-slate-600 font-medium'>Assignment</span>
+                      <div className='h-2 w-2 rounded-full bg-foreground' />
+                      <span className='text-xs text-muted-foreground font-medium'>Assignment</span>
                     </div>
                   </div>
                 </div>
@@ -456,17 +456,17 @@ export function StudentDashboard({ user }: { user: any }) {
 
           {/* Recent Messages Area (NEW) */}
           <motion.div variants={itemVariants}>
-            <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl bg-white overflow-hidden'>
-              <CardHeader className='pb-4 flex flex-row items-center justify-between border-b border-slate-50'>
+            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl bg-card overflow-hidden'>
+              <CardHeader className='pb-4 flex flex-row items-center justify-between border-b border-border'>
                 <CardTitle className='text-lg flex items-center gap-2'>
-                  <div className='p-1.5 rounded-lg bg-blue-50 text-[#486eb5]'>
+                  <div className='p-1.5 rounded-lg bg-info-muted text-info'>
                     <Users className='h-4 w-4' />
                   </div>
                   Recent Messages
                 </CardTitle>
               </CardHeader>
               <CardContent className='p-0'>
-                <div className='divide-y divide-slate-100'>
+                <div className='divide-y divide-border'>
                   {[
                     {
                       name: 'Dr. Smith',
@@ -483,18 +483,18 @@ export function StudentDashboard({ user }: { user: any }) {
                   ].map((msg, i) => (
                     <div
                       key={i}
-                      className='p-4 hover:bg-slate-50 cursor-pointer transition-colors flex gap-3 group'
+                      className='p-4 hover:bg-muted cursor-pointer transition-colors flex gap-3 group'
                       onClick={() => router.push('/dashboard/chat')}
                     >
-                      <div className='h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-xs font-bold shrink-0 border border-slate-200'>
+                      <div className='h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0 border border-border'>
                         {msg.initials}
                       </div>
                       <div className='flex-1 min-w-0'>
                         <div className='flex justify-between mb-0.5'>
-                          <span className='text-[13px] font-bold text-slate-800'>{msg.name}</span>
-                          <span className='text-[10px] text-slate-400 font-medium'>{msg.time}</span>
+                          <span className='text-[13px] font-bold text-foreground'>{msg.name}</span>
+                          <span className='text-[10px] text-muted-foreground font-medium'>{msg.time}</span>
                         </div>
-                        <p className='text-[12px] text-slate-500 truncate leading-relaxed'>
+                        <p className='text-[12px] text-muted-foreground truncate leading-relaxed'>
                           {msg.text}
                         </p>
                       </div>
@@ -503,7 +503,7 @@ export function StudentDashboard({ user }: { user: any }) {
                 </div>
                 <Button
                   variant='ghost'
-                  className='w-full rounded-none border-t border-slate-100 text-xs font-bold text-slate-600 hover:bg-slate-50 h-10'
+                  className='w-full rounded-none border-t border-border text-xs font-bold text-muted-foreground hover:bg-muted h-10'
                   onClick={() => router.push('/dashboard/chat')}
                 >
                   Open All Chats
@@ -514,10 +514,10 @@ export function StudentDashboard({ user }: { user: any }) {
 
           {/* Announcements */}
           <motion.div variants={itemVariants}>
-            <Card className='border-slate-100 shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
+            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
               <CardHeader className='pb-4 flex flex-row items-center justify-between'>
                 <CardTitle className='text-lg flex items-center gap-2'>
-                  <Bell className='h-5 w-5 text-slate-1000' /> Announcements
+                  <Bell className='h-5 w-5 text-foreground' /> Announcements
                 </CardTitle>
               </CardHeader>
               <CardContent className='space-y-4'>
@@ -529,7 +529,7 @@ export function StudentDashboard({ user }: { user: any }) {
                   announcements.slice(0, 3).map((announcement: any) => (
                     <div
                       key={announcement.id}
-                      className='p-3 bg-white hover:bg-slate-50 transition-colors border border-slate-200 rounded-xl group cursor-pointer'
+                      className='p-3 bg-card hover:bg-muted transition-colors border border-border rounded-xl group cursor-pointer'
                     >
                       <div className='flex justify-between items-start mb-1'>
                         <Badge
@@ -538,11 +538,11 @@ export function StudentDashboard({ user }: { user: any }) {
                         >
                           {announcement.important ? 'Important' : 'Announcement'}
                         </Badge>
-                        <span className='text-[10px] text-slate-400 font-medium'>
+                        <span className='text-[10px] text-muted-foreground font-medium'>
                           {getAnnouncementTimeAgo(announcement)}
                         </span>
                       </div>
-                      <p className='text-sm font-bold text-slate-800 leading-tight mt-2 line-clamp-2'>
+                      <p className='text-sm font-bold text-foreground leading-tight mt-2 line-clamp-2'>
                         {announcement.title}
                       </p>
                     </div>

@@ -31,6 +31,32 @@ const optionInputSchema = Joi.object({
   order_index: Joi.number().integer().min(0).max(1000).optional(),
 });
 
+// Inline question shape accepted when creating a quiz AND its questions in a
+// single request (the "Generate whole quiz with AI" flow). Same option-shape
+// rules as the standalone create-question endpoint; `order_index` is stamped
+// server-side from array position, so it isn't accepted here.
+const nestedQuizQuestionSchema = Joi.object({
+  question_text: Joi.string().trim().min(1).max(5000).required(),
+  question_type: Joi.string().valid(...QUESTION_TYPES).default("MCQ"),
+  points: Joi.number().min(0.01).max(100).default(1),
+  correct_answer: Joi.string().allow("", null).max(2000).optional(),
+  explanation: Joi.string().trim().allow("", null).max(5000).optional(),
+  options: Joi.array().items(optionInputSchema).max(50).optional(),
+}).custom((value, helpers) => {
+  if (value.question_type === "SHORT_ANSWER") return value;
+  const opts = value.options ?? [];
+  if (opts.length < 2) {
+    return helpers.error("any.custom", { message: "At least 2 options required" });
+  }
+  if (!opts.some((o) => o.is_correct)) {
+    return helpers.error("any.custom", { message: "Mark at least one option as correct" });
+  }
+  if (value.question_type === "TRUE_FALSE" && opts.filter((o) => o.is_correct).length > 1) {
+    return helpers.error("any.custom", { message: "True/False allows only one correct option" });
+  }
+  return value;
+}, "options shape");
+
 // ─── Quiz CRUD ───────────────────────────────────────────────────────────────
 
 export const createQuizBodySchema = Joi.object({
@@ -49,6 +75,14 @@ export const createQuizBodySchema = Joi.object({
   // Optional chapter / module bucket. The route handler verifies the module
   // belongs to the same course offering before writing.
   moduleId: Joi.number().integer().positive().allow(null).optional(),
+  // Cologne / Bristol confidence-based scoring. Off by default; teachers
+  // opt in per quiz. See scoreAnswer() in quizAttempt.service.js.
+  confidence_scoring: Joi.boolean().default(false),
+  // Optional inline questions — create the quiz AND its questions atomically.
+  // Used by the AI "generate a whole quiz" flow so the teacher lands in the
+  // builder with a populated draft. Capped at 100 to bound the create
+  // transaction; omit for a normal empty-quiz create.
+  questions: Joi.array().items(nestedQuizQuestionSchema).max(100).optional(),
 })
   // open_at < close_at when both are set. Joi gives a readable error.
   .custom((value, helpers) => {
@@ -72,6 +106,7 @@ export const patchQuizBodySchema = Joi.object({
   timing_mode: Joi.string().valid(...TIMING_MODES).optional(),
   scheduled_duration: Joi.number().integer().min(1).max(480).allow(null).optional(),
   moduleId: Joi.number().integer().positive().allow(null).optional(),
+  confidence_scoring: Joi.boolean().optional(),
 }).min(1); // require at least one field
 
 // ─── Questions ───────────────────────────────────────────────────────────────
@@ -119,6 +154,9 @@ const answerInputSchema = Joi.object({
   questionId: Joi.number().integer().positive().required(),
   selected_option_id: Joi.number().integer().positive().allow(null).optional(),
   text_answer: Joi.string().allow("", null).max(20000).optional(),
+  // Confidence is optional. Quizzes without confidence_scoring ignore it.
+  // We accept lowercase too — the service normalises via toUpperCase().
+  confidence: Joi.string().valid("LOW", "MED", "HIGH", "low", "med", "high").allow(null).optional(),
 });
 
 export const submitAttemptBodySchema = Joi.object({

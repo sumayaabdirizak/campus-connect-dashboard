@@ -57,6 +57,7 @@ import { PdfViewer } from './pdf-viewer';
 import { ResourceFormDialog } from './resource-form';
 import { ModuleFormDialog } from './module-form';
 import { ResourceModules } from './resource-modules';
+import { ResourceAnalyticsPanel } from './resource-analytics-panel';
 import { humanizeType } from './resource-renderers';
 
 interface CourseResourcesProps {
@@ -140,6 +141,7 @@ export function CourseResources({ courseId, isStudent }: CourseResourcesProps) {
   const [deleteModuleId, setDeleteModuleId] = useState<number | null>(null);
 
   const [previewing, setPreviewing] = useState<Resource | null>(null);
+  const [analyticsResource, setAnalyticsResource] = useState<Resource | null>(null);
 
   const { data: resources = [], isLoading, isError } = useResources(courseId);
   const { data: modules = [] } = useModules(courseId);
@@ -397,6 +399,7 @@ export function CourseResources({ courseId, isStudent }: CourseResourcesProps) {
           onEditResource={openEditResource}
           onDeleteResource={(id) => setDeleteResourceId(id)}
           onPreviewResource={setPreviewing}
+          onAnalytics={isStudent ? undefined : setAnalyticsResource}
           onReorderModules={isStudent ? undefined : handleReorderModules}
           onReorderResources={isStudent ? undefined : handleReorderResources}
         />
@@ -496,6 +499,14 @@ export function CourseResources({ courseId, isStudent }: CourseResourcesProps) {
           )}
         </SheetContent>
       </Sheet>
+
+      {!isStudent && (
+        <ResourceAnalyticsPanel
+          resource={analyticsResource}
+          open={!!analyticsResource}
+          onOpenChange={(o) => !o && setAnalyticsResource(null)}
+        />
+      )}
     </div>
   );
 }
