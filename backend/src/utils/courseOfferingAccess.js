@@ -140,6 +140,33 @@ export async function canManageOfferingContent(user, offering) {
   return false;
 }
 
+/**
+ * Read-access check for the socket layer, whose authenticated user has a
+ * different shape than the HTTP `req.user`: `{ id, role, facultyIds[],
+ * sectionIds[], ... }` (no `sub`, no scalar `facultyId`). Mirrors
+ * `canAccessOfferingRead` but resolves scope from the array fields, so it
+ * needs no extra DB round-trip for students/admins.
+ *
+ * @param {{ id: number, role: string, facultyIds?: number[], sectionIds?: number[] }} socketUser
+ * @param {import("@prisma/client").CourseOffering} offering offering with section→…→department scope loaded
+ */
+export function canSocketUserReadOffering(socketUser, offering) {
+  if (!socketUser?.role || !offering) return false;
+  const role = socketUser.role;
+  const uid = Number(socketUser.id);
+  const fid = offeringFacultyId(offering);
+
+  if (role === "SUPER_ADMIN") return true;
+  if (role === "DEAN" || role === "FACULTY_ADMIN") {
+    return fid != null && (socketUser.facultyIds ?? []).map(Number).includes(Number(fid));
+  }
+  if (role === "TEACHER") return offering.teacherId === uid;
+  if (role === "STUDENT") {
+    return (socketUser.sectionIds ?? []).map(Number).includes(Number(offering.sectionId));
+  }
+  return false;
+}
+
 export async function canStudentSubmitToAssignment(user, offering) {
   if (user.role !== "STUDENT") return false;
   return studentInSection(user.sub, offering.sectionId);

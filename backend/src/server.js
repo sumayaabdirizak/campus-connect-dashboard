@@ -474,15 +474,29 @@ io.on("connection", (socket) => {
   // Track course-room presence on socket.data so disconnect can clean up.
   socket.data.courseRooms = socket.data.courseRooms || new Set();
 
-  socket.on("join_room", (courseOfferingId) => {
+  socket.on("join_room", async (courseOfferingId) => {
     const cid = Number(courseOfferingId);
     if (!Number.isFinite(cid)) return;
+    const user = socket.data.user;
+    if (!user?.id) return;
+
+    // Gate room join on course-offering read access — without this any
+    // authenticated user could join `course_${cid}` for an offering they
+    // aren't enrolled in / don't teach and read its live chat stream.
+    try {
+      const { fetchOfferingWithScope, canSocketUserReadOffering } = await import(
+        "./utils/courseOfferingAccess.js"
+      );
+      const offering = await fetchOfferingWithScope(cid);
+      if (!offering || !canSocketUserReadOffering(user, offering)) return;
+    } catch (error) {
+      console.error("join_room access check failed:", error);
+      return;
+    }
+
     socket.join(`course_${cid}`);
     socket.data.courseRooms.add(cid);
-    const user = socket.data.user;
-    if (user?.id) {
-      joinChatPresence(cid, Number(user.id), user.full_name || `User ${user.id}`, socket.id);
-    }
+    joinChatPresence(cid, Number(user.id), user.full_name || `User ${user.id}`, socket.id);
   });
 
   socket.on("leave_room", (courseOfferingId) => {
@@ -568,10 +582,21 @@ io.on("connection", (socket) => {
   });
 
   socket.on("send_message", async (data) => {
-    const { courseOfferingId, content, senderId, replyToId } = data;
-    if (!content || !courseOfferingId || !senderId) return;
+    const { courseOfferingId, content, replyToId } = data;
+    // Sender is the authenticated socket user — never the client-supplied
+    // `senderId`, which could be forged to impersonate anyone.
+    const senderId = Number(socket.data.user?.id);
+    if (!content || !courseOfferingId || !Number.isFinite(senderId)) return;
 
     try {
+      // Gate on read access so a user can't post into an offering they aren't
+      // enrolled in / don't teach.
+      const { fetchOfferingWithScope, canSocketUserReadOffering } = await import(
+        "./utils/courseOfferingAccess.js"
+      );
+      const offering = await fetchOfferingWithScope(parseInt(courseOfferingId));
+      if (!offering || !canSocketUserReadOffering(socket.data.user, offering)) return;
+
       let room = await prisma.chatRoom.findFirst({
         where: { courseOfferingId: parseInt(courseOfferingId) },
       });
