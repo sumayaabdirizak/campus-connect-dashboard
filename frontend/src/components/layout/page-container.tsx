@@ -72,7 +72,7 @@ export default function PageContainer({
   );
 
   if (scrollable) {
-    return <ScrollArea className='h-[calc(100dvh-52px)]'>{inner}</ScrollArea>;
+    return <ScrollArea className='h-[calc(100dvh-var(--header-height))]'>{inner}</ScrollArea>;
   }
 
   return inner;

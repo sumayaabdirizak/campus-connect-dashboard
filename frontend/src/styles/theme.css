@@ -15,7 +15,9 @@ body {
 }
 
 :root {
-  --header-height: calc(var(--spacing, 0.25rem) * 12 + 1px);
+  /* Matches the actual app header (`h-16` = 4rem) in layout/header.tsx. Used as
+   * the single source of truth for full-height scroll areas (e.g. PageContainer). */
+  --header-height: calc(var(--spacing, 0.25rem) * 16);
 
   /* ─── Semantic status tokens ──────────────────────────────────────────
    * Theme-independent fallbacks so `bg-warning`, `text-success`,
