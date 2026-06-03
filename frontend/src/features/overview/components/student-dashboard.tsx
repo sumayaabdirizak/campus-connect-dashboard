@@ -20,6 +20,7 @@ import { apiClient } from '@/lib/api-client';
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { CourseTile } from './course-tile';
+import { DashboardHero } from './dashboard-hero';
 import { StudentWeekCalendar } from './student-week-calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -116,72 +117,16 @@ export function StudentDashboard({ user }: { user: any }) {
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
         {/* Main Content Area */}
         <div className='lg:col-span-8 flex flex-col gap-6'>
-          {/* Welcome Banner */}
-          <motion.div
-            variants={itemVariants}
-            className='bg-muted text-foreground rounded-2xl p-8 relative overflow-hidden shadow-sm border border-border transform transition-transform hover:scale-[1.01] duration-300 min-h-[220px] flex flex-col justify-between'
-          >
-            {/* Background vector accents matching Trezo style */}
-            <div className='absolute top-0 right-0 opacity-40 pointer-events-none'>
-              <svg
-                width='300'
-                height='300'
-                viewBox='0 0 300 300'
-                fill='none'
-                xmlns='http://www.w3.org/2000/svg'
-              >
-                <circle cx='250' cy='50' r='150' fill='#f8fafc' />
-                <circle cx='250' cy='50' r='100' fill='#e2e8f0' />
-              </svg>
-            </div>
-
-            <div className='relative z-10 flex flex-col md:flex-row justify-between items-start md:items-center gap-6'>
-              <div>
-                <h2 className='text-3xl font-bold tracking-tight mb-2 text-foreground'>
-                  Good Morning, {user?.full_name?.split(' ')[0] || 'Student'}!
-                </h2>
-                <p className='text-muted-foreground font-medium max-w-md'>
-                  Here's what's happening with your courses today.
-                </p>
-              </div>
-
-              {/* 3D Illustration / Graphic container placeholder */}
-              <div className='hidden md:flex items-center justify-end flex-1 pr-10'></div>
-            </div>
-
-            {/* Embedded info cards directly inside the banner */}
-            <div className='relative z-10 flex flex-wrap gap-4 mt-8'>
-              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm min-w-[200px]'>
-                <div className='bg-muted text-foreground p-2.5 rounded-lg border border-border'>
-                  <FileText className='h-5 w-5' />
-                </div>
-                <div>
-                  <div className='text-sm font-bold text-foreground leading-tight'>
-                    {deadlinesLoading ? <Skeleton className='h-4 w-12' /> : `${dueSoonCount} Due`}
-                  </div>
-                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
-                    Action required
-                  </p>
-                </div>
-              </div>
-              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm min-w-[200px]'>
-                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
-                  <Bell className='h-5 w-5' />
-                </div>
-                <div>
-                  <div className='text-sm font-bold text-foreground leading-tight'>
-                    {announcementsLoading ? (
-                      <Skeleton className='h-4 w-12' />
-                    ) : (
-                      `${announcements.length} Updates`
-                    )}
-                  </div>
-                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
-                    System Announcements
-                  </p>
-                </div>
-              </div>
-            </div>
+          {/* Up Next hero */}
+          <motion.div variants={itemVariants}>
+            <DashboardHero
+              userName={user?.full_name}
+              nextDeadline={upcomingAssessments[0] ?? null}
+              dueSoonCount={dueSoonCount}
+              coursesCount={courses.length}
+              updatesCount={announcements.length}
+              loading={deadlinesLoading}
+            />
           </motion.div>
 
           {/* My Courses Section */}
