@@ -19,7 +19,7 @@ import { useQuery } from '@/lib/async-query';
 import { apiClient } from '@/lib/api-client';
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
-import { StudentCourseCard } from '@/features/student-courses/components/student-course-card';
+import { CourseTile } from './course-tile';
 import { StudentWeekCalendar } from './student-week-calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
@@ -197,11 +197,11 @@ export function StudentDashboard({ user }: { user: any }) {
             <div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
               {coursesLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className='h-64 w-full rounded-2xl' />
+                  <Skeleton key={i} className='h-40 w-full rounded-2xl' />
                 ))
               ) : courses.length > 0 ? (
                 courses.map((offering) => (
-                  <StudentCourseCard key={offering.id} offering={offering} />
+                  <CourseTile key={offering.id} course={offering} />
                 ))
               ) : (
                 <Card className='col-span-full p-8 text-center border-dashed'>
