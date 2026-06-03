@@ -16,8 +16,9 @@ const META_THEME_COLORS = {
 };
 
 export const metadata: Metadata = {
-  title: 'Next Shadcn',
-  description: 'Basic dashboard with Next.js and Shadcn'
+  title: 'Campus Connect — Jazeera University',
+  description:
+    'Campus Connect — the Jazeera University student portal for courses, assignments, quizzes, attendance, discussions, and announcements.'
 };
 
 export const viewport: Viewport = {
