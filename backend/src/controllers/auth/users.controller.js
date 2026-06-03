@@ -1,5 +1,5 @@
-import bcrypt from "bcrypt";
 import { prisma } from "../../db/prisma.js";
+import { hashPassword } from "../../utils/password.js";
 import { HttpError } from "../../utils/httpError.js";
 import { parsePaginationQuery, paginatedPayload } from "../../utils/pagination.js";
 import { syncDiscussionMembershipsForUser } from "../../features/discussions/membershipSync.service.js";
@@ -100,8 +100,9 @@ export const registerUserByAdmin = async (req, res) => {
       facultyId = dept.facultyId;
     }
 
-    // Hash password
-    const password_hash = await bcrypt.hash(password, 10);
+    // Hash password (cost 12, via shared helper — keeps factor consistent
+    // with the rest of the app).
+    const password_hash = await hashPassword(password);
 
     // Create user with nested profile based on role
     const user = await prisma.user.create({

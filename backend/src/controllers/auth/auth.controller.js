@@ -6,7 +6,7 @@ import { issueCsrfCookie } from "../../middleware/csrf.js";
 import { getFacultyIdForFacultyAdminUser } from "../../utils/facultyAccess.js";
 import { HttpError } from "../../utils/httpError.js";
 import { syncDiscussionMembershipsForUser } from "../../features/discussions/membershipSync.service.js";
-import { newJti, revokeJti } from "../../utils/tokenRevocation.js";
+import { newJti, revokeJti, isJtiRevoked } from "../../utils/tokenRevocation.js";
 
 const ACCESS_COOKIE = "auth_token";
 const REFRESH_COOKIE = "refresh_token";
@@ -177,6 +177,15 @@ export async function postRefresh(req, res) {
   try {
     const payload = jwt.verify(refreshToken, env.JWT_SECRET);
     if (payload.tokenType !== "refresh") {
+      return res.status(401).json({ message: "Invalid refresh token" });
+    }
+
+    // Enforce the revocation deny-list on the refresh path too — the `auth`
+    // middleware only checks it for access tokens. Without this, a refresh
+    // token revoked on logout or by rotation would still mint fresh access
+    // tokens. A presented-but-revoked refresh token also signals reuse
+    // (theft / replay of a rotated token), so we reject it outright.
+    if (payload.jti && (await isJtiRevoked(payload.jti))) {
       return res.status(401).json({ message: "Invalid refresh token" });
     }
 
