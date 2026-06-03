@@ -5,8 +5,6 @@ import Link from 'next/link';
 import { Clock, ArrowRight, CheckCircle2, CalendarClock, BookOpen, Bell } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { courseColor, courseTint } from '@/features/student-courses/lib/course-color';
-import { cn } from '@/lib/utils';
 
 interface NextDeadline {
   kind: 'announcement' | 'assignment' | 'quiz';
@@ -48,31 +46,20 @@ function formatCountdown(ms: number): string {
   return `Due in ${m}m`;
 }
 
-function Pill({
-  icon: Icon,
-  value,
-  label,
-  accent
-}: {
-  icon: typeof Clock;
-  value: number;
-  label: string;
-  accent?: boolean;
-}) {
+function GlassPill({ icon: Icon, value, label }: { icon: typeof Clock; value: number; label: string }) {
   return (
-    <div className='flex items-center gap-2 rounded-full border bg-card px-3 py-1.5 shadow-sm'>
-      <Icon className={cn('size-4', accent ? 'text-primary' : 'text-muted-foreground')} />
-      <span className='text-sm font-bold tabular-nums text-foreground'>{value}</span>
-      <span className='text-xs text-muted-foreground'>{label}</span>
+    <div className='flex items-center gap-2 rounded-full border border-primary-foreground/20 bg-primary-foreground/10 px-3 py-1.5 backdrop-blur'>
+      <Icon className='size-4 text-primary-foreground/80' />
+      <span className='text-sm font-bold tabular-nums'>{value}</span>
+      <span className='text-xs text-primary-foreground/70'>{label}</span>
     </div>
   );
 }
 
 /**
- * "Up Next" focus hero for the student dashboard. Surfaces the single most
- * imminent deadline with a live countdown + Open CTA, accented in that course's
- * identity color, plus a row of honest at-a-glance pills. Token-driven (themes
- * + dark mode); replaces the old welcome banner.
+ * "Up Next" focus hero — a vivid gradient focal anchor (theme `primary`, so it
+ * adapts to every theme + dark mode). Surfaces the most imminent deadline with a
+ * live countdown + Open CTA, plus honest at-a-glance pills.
  */
 export function DashboardHero({
   userName,
@@ -90,98 +77,98 @@ export function DashboardHero({
   loading?: boolean;
 }) {
   const ms = useCountdown(nextDeadline?.deadlineAt ?? null);
-  const color = nextDeadline?.courseCode ? courseColor(nextDeadline.courseCode) : undefined;
-  const tint = nextDeadline?.courseCode ? courseTint(nextDeadline.courseCode, 10) : undefined;
   const overdue = ms != null && ms <= 0;
   const firstName = userName?.split(' ')[0] || 'there';
 
   return (
-    <div className='space-y-4'>
-      <div>
-        <h2 className='text-2xl font-bold tracking-tight text-foreground'>
+    <div className='relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-primary/75 p-6 text-primary-foreground shadow-lg sm:p-7'>
+      {/* soft light glow for depth */}
+      <div
+        className='pointer-events-none absolute -top-20 -right-16 size-64 rounded-full bg-primary-foreground/10 blur-3xl'
+        aria-hidden
+      />
+      <div className='relative'>
+        <h2 className='text-2xl font-bold tracking-tight sm:text-3xl'>
           {greeting()}, {firstName}.
         </h2>
-        <p className='text-sm text-muted-foreground'>Here's what needs your attention.</p>
-      </div>
+        <p className='mt-1 text-sm text-primary-foreground/80'>Here's what needs your attention.</p>
 
-      {/* Up Next card */}
-      {loading ? (
-        <Skeleton className='h-24 w-full rounded-2xl' />
-      ) : nextDeadline ? (
-        <div
-          className='relative overflow-hidden rounded-2xl border bg-card p-5 shadow-sm'
-          style={tint ? { backgroundImage: `linear-gradient(to right, ${tint}, transparent 60%)` } : undefined}
-        >
-          <span
-            className='absolute inset-y-0 left-0 w-1.5'
-            style={{ backgroundColor: color }}
-            aria-hidden
-          />
-          <div className='flex flex-col gap-4 pl-2 sm:flex-row sm:items-center sm:justify-between'>
-            <div className='min-w-0'>
-              <div className='flex items-center gap-2'>
-                <span className='text-[11px] font-bold uppercase tracking-widest text-muted-foreground'>
-                  Up Next
-                </span>
-                {nextDeadline.courseCode && (
-                  <span
-                    className='rounded-md px-1.5 py-0.5 text-[11px] font-bold'
-                    style={{ backgroundColor: tint, color }}
-                  >
-                    {nextDeadline.courseCode}
+        {/* Up Next */}
+        <div className='mt-5'>
+          {loading ? (
+            <Skeleton className='h-24 w-full rounded-2xl bg-primary-foreground/15' />
+          ) : nextDeadline ? (
+            <div className='flex flex-col gap-4 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 p-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between'>
+              <div className='min-w-0'>
+                <div className='flex flex-wrap items-center gap-2'>
+                  <span className='text-[11px] font-bold uppercase tracking-widest text-primary-foreground/70'>
+                    Up Next
                   </span>
-                )}
-                <span className='rounded-md bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground'>
-                  {nextDeadline.kind === 'quiz' ? 'Quiz' : 'Assignment'}
+                  {nextDeadline.courseCode && (
+                    <span className='rounded-md bg-primary-foreground/20 px-1.5 py-0.5 text-[11px] font-bold'>
+                      {nextDeadline.courseCode}
+                    </span>
+                  )}
+                  <span className='rounded-md bg-primary-foreground/15 px-1.5 py-0.5 text-[11px] font-medium text-primary-foreground/80'>
+                    {nextDeadline.kind === 'quiz' ? 'Quiz' : 'Assignment'}
+                  </span>
+                </div>
+                <h3 className='mt-1.5 truncate text-lg font-bold'>{nextDeadline.title}</h3>
+                <span
+                  className={cnUrgency(overdue)}
+                >
+                  <Clock className='size-3.5' />
+                  {ms != null ? formatCountdown(ms) : 'No due time'}
                 </span>
               </div>
-              <h3 className='mt-1.5 truncate text-lg font-bold text-foreground'>
-                {nextDeadline.title}
-              </h3>
-              <p
-                className={cn(
-                  'mt-0.5 flex items-center gap-1.5 text-sm font-medium',
-                  overdue ? 'text-destructive' : 'text-muted-foreground'
-                )}
-              >
-                <Clock className='size-3.5' />
-                {ms != null ? formatCountdown(ms) : 'No due time'}
-              </p>
-            </div>
-            {nextDeadline.courseOfferingId && (
-              <Button asChild className='shrink-0 gap-1.5'>
-                <Link
-                  href={`/dashboard/courses/${nextDeadline.courseOfferingId}?tab=${
-                    nextDeadline.kind === 'quiz' ? 'quizzes' : 'assignments'
-                  }`}
+              {nextDeadline.courseOfferingId && (
+                <Button
+                  asChild
+                  className='shrink-0 gap-1.5 bg-background text-foreground hover:bg-background/90'
                 >
-                  Open
-                  <ArrowRight className='size-4' />
-                </Link>
-              </Button>
-            )}
-          </div>
+                  <Link
+                    href={`/dashboard/courses/${nextDeadline.courseOfferingId}?tab=${
+                      nextDeadline.kind === 'quiz' ? 'quizzes' : 'assignments'
+                    }`}
+                  >
+                    Open
+                    <ArrowRight className='size-4' />
+                  </Link>
+                </Button>
+              )}
+            </div>
+          ) : (
+            <div className='flex items-center gap-3 rounded-2xl border border-primary-foreground/15 bg-primary-foreground/10 p-4 backdrop-blur'>
+              <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-primary-foreground/20'>
+                <CheckCircle2 className='size-5' />
+              </span>
+              <div>
+                <p className='text-sm font-bold'>You're all caught up</p>
+                <p className='text-xs text-primary-foreground/75'>
+                  No assignments or quizzes due in the next 30 days.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
-      ) : (
-        <div className='flex items-center gap-3 rounded-2xl border border-dashed bg-card p-5 shadow-sm'>
-          <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-success-muted text-success'>
-            <CheckCircle2 className='size-5' />
-          </span>
-          <div>
-            <p className='text-sm font-bold text-foreground'>You're all caught up</p>
-            <p className='text-xs text-muted-foreground'>
-              No assignments or quizzes due in the next 30 days.
-            </p>
-          </div>
-        </div>
-      )}
 
-      {/* At-a-glance pills */}
-      <div className='flex flex-wrap gap-2'>
-        <Pill icon={CalendarClock} value={dueSoonCount} label='due this week' accent={dueSoonCount > 0} />
-        <Pill icon={BookOpen} value={coursesCount} label='courses' />
-        <Pill icon={Bell} value={updatesCount} label='updates' />
+        {/* At-a-glance pills */}
+        <div className='mt-4 flex flex-wrap gap-2'>
+          <GlassPill icon={CalendarClock} value={dueSoonCount} label='due this week' />
+          <GlassPill icon={BookOpen} value={coursesCount} label='courses' />
+          <GlassPill icon={Bell} value={updatesCount} label='updates' />
+        </div>
       </div>
     </div>
   );
+}
+
+/** Countdown chip styling — light on the gradient, with an urgent tint when overdue. */
+function cnUrgency(overdue: boolean): string {
+  return [
+    'mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-sm font-semibold',
+    overdue
+      ? 'bg-destructive text-destructive-foreground'
+      : 'bg-primary-foreground/15 text-primary-foreground'
+  ].join(' ');
 }
