@@ -14,15 +14,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer
-} from 'recharts';
+import { useMemo } from 'react';
+import { useQuery } from '@/lib/async-query';
+import { apiClient } from '@/lib/api-client';
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { StudentCourseCard } from '@/features/student-courses/components/student-course-card';
@@ -30,15 +24,15 @@ import { StudentWeekCalendar } from './student-week-calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 
-const performanceData = [
-  { week: 'W1', score: 85 },
-  { week: 'W2', score: 88 },
-  { week: 'W3', score: 82 },
-  { week: 'W4', score: 90 },
-  { week: 'W5', score: 95 },
-  { week: 'W6', score: 92 },
-  { week: 'W7', score: 96 }
-];
+type DeadlineKind = 'announcement' | 'assignment' | 'quiz';
+interface DeadlineRow {
+  kind: DeadlineKind;
+  id: number;
+  title: string;
+  deadlineAt: string | null;
+  courseCode?: string | null;
+  courseOfferingId?: number | null;
+}
 
 export function StudentDashboard({ user }: { user: any }) {
   const router = useRouter();
@@ -48,7 +42,39 @@ export function StudentDashboard({ user }: { user: any }) {
 
   const courses = coursesData?.offerings || [];
   const announcements = announcementsData || [];
-  const totalPending = courses.reduce((acc, curr) => acc + (curr.pendingItems || 0), 0);
+
+  // Upcoming assessment deadlines (assignments + quizzes) from the unified feed,
+  // next 30 days. Replaces the old `pendingItems` field the API never returned
+  // (so the "Due" stat and this list used to always be empty).
+  const { fromIso, toIso } = useMemo(() => {
+    const now = new Date();
+    return {
+      fromIso: now.toISOString(),
+      toIso: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString()
+    };
+  }, []);
+  const { data: deadlineData, isLoading: deadlinesLoading } = useQuery({
+    queryKey: ['calendar', 'deadlines', 'dashboard', fromIso],
+    queryFn: () =>
+      apiClient<{ results: DeadlineRow[] }>(
+        `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
+      )
+  });
+  const upcomingAssessments = useMemo(() => {
+    const now = Date.now();
+    return (deadlineData?.results ?? [])
+      .filter(
+        (d) =>
+          (d.kind === 'assignment' || d.kind === 'quiz') &&
+          d.deadlineAt &&
+          new Date(d.deadlineAt).getTime() >= now
+      )
+      .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime());
+  }, [deadlineData]);
+  const dueSoonCount = useMemo(() => {
+    const weekEnd = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    return upcomingAssessments.filter((d) => new Date(d.deadlineAt!).getTime() <= weekEnd).length;
+  }, [upcomingAssessments]);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -131,7 +157,7 @@ export function StudentDashboard({ user }: { user: any }) {
                 </div>
                 <div>
                   <div className='text-sm font-bold text-foreground leading-tight'>
-                    {coursesLoading ? <Skeleton className='h-4 w-12' /> : `${totalPending} Due`}
+                    {deadlinesLoading ? <Skeleton className='h-4 w-12' /> : `${dueSoonCount} Due`}
                   </div>
                   <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
                     Action required
@@ -186,66 +212,6 @@ export function StudentDashboard({ user }: { user: any }) {
               )}
             </div>
           </motion.div>
-
-          {/* Performance Chart Split */}
-          <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-            <motion.div variants={itemVariants} className='md:col-span-2'>
-              <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
-                <CardHeader className='flex flex-row items-center justify-between pb-4'>
-                  <div>
-                    <CardTitle className='text-lg'>Overall Performance</CardTitle>
-                    <CardDescription>Average grades over the current module</CardDescription>
-                  </div>
-                  <Badge variant='outline' className='text-foreground bg-muted border-border'>
-                    +3.4%
-                  </Badge>
-                </CardHeader>
-                <CardContent className='h-[250px]'>
-                  <ResponsiveContainer width='100%' height='100%'>
-                    <AreaChart
-                      data={performanceData}
-                      margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
-                    >
-                      <defs>
-                        <linearGradient id='colorScore' x1='0' y1='0' x2='0' y2='1'>
-                          <stop offset='5%' stopColor='#1e293b' stopOpacity={0.3} />
-                          <stop offset='95%' stopColor='#1e293b' stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray='3 3' vertical={false} stroke='#E2E8F0' />
-                      <XAxis
-                        dataKey='week'
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#94A3B8', fontSize: 12 }}
-                      />
-                      <YAxis
-                        axisLine={false}
-                        tickLine={false}
-                        tick={{ fill: '#94A3B8', fontSize: 12 }}
-                        domain={[60, 100]}
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          borderRadius: '8px',
-                          border: 'none',
-                          boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                        }}
-                      />
-                      <Area
-                        type='monotone'
-                        dataKey='score'
-                        stroke='#1e293b'
-                        strokeWidth={3}
-                        fillOpacity={1}
-                        fill='url(#colorScore)'
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            </motion.div>
-          </div>
 
           {/* Today's Schedule (NEW) */}
           <motion.div variants={itemVariants}>
@@ -358,36 +324,41 @@ export function StudentDashboard({ user }: { user: any }) {
                   <CardTitle className='text-lg'>Upcoming Assessments</CardTitle>
                 </CardHeader>
                 <CardContent className='space-y-4 pt-4'>
-                  {coursesLoading ? (
+                  {deadlinesLoading ? (
                     Array.from({ length: 2 }).map((_, i) => (
                       <Skeleton key={i} className='h-16 w-full rounded-xl' />
                     ))
-                  ) : courses.some((c: any) => c.pendingItems > 0) ? (
-                    courses
-                      .filter((c: any) => c.pendingItems > 0)
-                      .slice(0, 3)
-                      .map((item: any, idx: number) => (
-                        <div
-                          key={idx}
-                          className='flex items-center justify-between p-3 bg-card hover:bg-muted rounded-xl border border-border transition-colors cursor-pointer group'
-                          onClick={() => router.push(`/dashboard/courses/${item.id}`)}
-                        >
-                          <div className='flex items-center gap-3'>
-                            <div className='p-2 rounded-lg bg-orange-50 text-orange-600'>
-                              <FileText className='h-4 w-4' />
-                            </div>
-                            <div>
-                              <p className='text-sm font-bold text-foreground truncate max-w-[150px]'>
-                                {item.courseName}
-                              </p>
-                              <p className='text-xs text-muted-foreground font-medium'>
-                                {item.pendingItems} Pending Tasks
-                              </p>
-                            </div>
+                  ) : upcomingAssessments.length > 0 ? (
+                    upcomingAssessments.slice(0, 3).map((d) => (
+                      <div
+                        key={`${d.kind}-${d.id}`}
+                        className='flex items-center justify-between p-3 bg-card hover:bg-muted rounded-xl border border-border transition-colors cursor-pointer group'
+                        onClick={() =>
+                          d.courseOfferingId &&
+                          router.push(
+                            `/dashboard/courses/${d.courseOfferingId}?tab=${d.kind === 'quiz' ? 'quizzes' : 'assignments'}`
+                          )
+                        }
+                      >
+                        <div className='flex items-center gap-3 min-w-0'>
+                          <div className='p-2 rounded-lg bg-primary/10 text-primary shrink-0'>
+                            <FileText className='h-4 w-4' />
                           </div>
-                          <ChevronRight className='h-4 w-4 text-muted-foreground' />
+                          <div className='min-w-0'>
+                            <p className='text-sm font-bold text-foreground truncate'>
+                              {d.courseCode ? `${d.courseCode} · ${d.title}` : d.title}
+                            </p>
+                            <p className='text-xs text-muted-foreground font-medium'>
+                              {d.kind === 'quiz' ? 'Quiz' : 'Assignment'} ·{' '}
+                              {d.deadlineAt
+                                ? formatDistanceToNow(new Date(d.deadlineAt), { addSuffix: true })
+                                : ''}
+                            </p>
+                          </div>
                         </div>
-                      ))
+                        <ChevronRight className='h-4 w-4 text-muted-foreground shrink-0' />
+                      </div>
+                    ))
                   ) : (
                     <div className='py-8 flex flex-col items-center justify-center text-center'>
                       <div className='bg-success-muted p-3 rounded-full mb-3'>
@@ -395,7 +366,7 @@ export function StudentDashboard({ user }: { user: any }) {
                       </div>
                       <p className='text-sm font-bold text-foreground'>All caught up!</p>
                       <p className='text-[11px] text-muted-foreground max-w-[180px]'>
-                        You have no pending assignments at the moment.
+                        No assignments or quizzes due in the next 30 days.
                       </p>
                     </div>
                   )}
