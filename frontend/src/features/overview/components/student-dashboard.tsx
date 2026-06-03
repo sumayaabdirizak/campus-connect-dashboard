@@ -5,7 +5,6 @@ import {
   BookOpen,
   Bell,
   CheckCircle2,
-  Users,
   ChevronRight,
   Clock,
   FileText
@@ -20,6 +19,7 @@ import { apiClient } from '@/lib/api-client';
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { CourseTile } from './course-tile';
+import { courseColor } from '@/features/student-courses/lib/course-color';
 import { DashboardHero } from './dashboard-hero';
 import { StudentWeekCalendar } from './student-week-calendar';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -161,7 +161,7 @@ export function StudentDashboard({ user }: { user: any }) {
           {/* Today's Schedule (NEW) */}
           <motion.div variants={itemVariants}>
             <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl overflow-hidden'>
-              <div className='h-1.5 bg-foreground w-full' />
+              <div className='h-1.5 bg-primary w-full' />
               <CardHeader className='flex flex-row items-center justify-between pb-2'>
                 <div>
                   <CardTitle className='text-lg'>Today's Schedule</CardTitle>
@@ -220,8 +220,8 @@ export function StudentDashboard({ user }: { user: any }) {
             <motion.div variants={itemVariants}>
               <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl h-full'>
                 <CardHeader className='pb-2'>
-                  <CardTitle className='text-lg'>My Attendance</CardTitle>
-                  <CardDescription>Semester progress</CardDescription>
+                  <CardTitle className='text-lg'>Course Progress</CardTitle>
+                  <CardDescription>Lesson completion by course</CardDescription>
                 </CardHeader>
                 <CardContent className='pt-4'>
                   <div className='space-y-6'>
@@ -246,8 +246,11 @@ export function StudentDashboard({ user }: { user: any }) {
                           </div>
                           <div className='h-1.5 w-full bg-muted rounded-full overflow-hidden'>
                             <div
-                              className='h-full bg-foreground rounded-full'
-                              style={{ width: `${course.progress || 0}%` }}
+                              className='h-full rounded-full'
+                              style={{
+                                width: `${course.progress || 0}%`,
+                                backgroundColor: courseColor(course.courseCode)
+                              }}
                             />
                           </div>
                         </div>
@@ -330,64 +333,6 @@ export function StudentDashboard({ user }: { user: any }) {
 
         {/* Sidebar Area */}
         <div className='lg:col-span-4 flex flex-col gap-6'>
-          {/* Recent Messages Area (NEW) */}
-          <motion.div variants={itemVariants}>
-            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl bg-card overflow-hidden'>
-              <CardHeader className='pb-4 flex flex-row items-center justify-between border-b border-border'>
-                <CardTitle className='text-lg flex items-center gap-2'>
-                  <div className='p-1.5 rounded-lg bg-info-muted text-info'>
-                    <Users className='h-4 w-4' />
-                  </div>
-                  Recent Messages
-                </CardTitle>
-              </CardHeader>
-              <CardContent className='p-0'>
-                <div className='divide-y divide-border'>
-                  {[
-                    {
-                      name: 'Dr. Smith',
-                      text: 'The updated lab schedules are now available.',
-                      time: '10:08',
-                      initials: 'DS'
-                    },
-                    {
-                      name: 'Alice (Section A)',
-                      text: 'Does the binary tree need to be balanced?',
-                      time: '09:25',
-                      initials: 'AL'
-                    }
-                  ].map((msg, i) => (
-                    <div
-                      key={i}
-                      className='p-4 hover:bg-muted cursor-pointer transition-colors flex gap-3 group'
-                      onClick={() => router.push('/dashboard/chat')}
-                    >
-                      <div className='h-10 w-10 rounded-full bg-muted flex items-center justify-center text-xs font-bold shrink-0 border border-border'>
-                        {msg.initials}
-                      </div>
-                      <div className='flex-1 min-w-0'>
-                        <div className='flex justify-between mb-0.5'>
-                          <span className='text-[13px] font-bold text-foreground'>{msg.name}</span>
-                          <span className='text-[10px] text-muted-foreground font-medium'>{msg.time}</span>
-                        </div>
-                        <p className='text-[12px] text-muted-foreground truncate leading-relaxed'>
-                          {msg.text}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <Button
-                  variant='ghost'
-                  className='w-full rounded-none border-t border-border text-xs font-bold text-muted-foreground hover:bg-muted h-10'
-                  onClick={() => router.push('/dashboard/chat')}
-                >
-                  Open All Chats
-                </Button>
-              </CardContent>
-            </Card>
-          </motion.div>
-
           {/* Announcements */}
           <motion.div variants={itemVariants}>
             <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
