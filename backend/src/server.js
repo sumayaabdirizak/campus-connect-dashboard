@@ -379,6 +379,11 @@ io.use(async (socket, next) => {
     const scope = await loadUserAnnouncementScope(prisma, Number(payload.sub));
     if (!scope) return next(new Error("Unauthorized"));
 
+    // Mirror the HTTP auth gate: a disabled (INACTIVE/SUSPENDED) account can't
+    // hold a live socket either, so a user suspended mid-session is dropped on
+    // their next (re)connect rather than lingering until token expiry.
+    if (scope.status !== "ACTIVE") return next(new Error("Unauthorized"));
+
     socket.data.user = {
       id: scope.userId,
       role: scope.role,

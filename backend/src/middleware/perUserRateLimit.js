@@ -1,4 +1,4 @@
-import rateLimit from "express-rate-limit";
+import rateLimit, { ipKeyGenerator } from "express-rate-limit";
 
 const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
 
@@ -22,7 +22,9 @@ const isTest = process.env.VITEST === "true" || process.env.NODE_ENV === "test";
 function keyByUserOrIp(req) {
   const uid = req.user?.id ?? req.user?.sub;
   if (uid != null) return `u:${uid}`;
-  return `ip:${req.ip}`;
+  // Normalize the IP (esp. IPv6 — bucket by /56) via the official helper so
+  // an IPv6 client can't sidestep the limit by varying the low-order bits.
+  return `ip:${ipKeyGenerator(req.ip)}`;
 }
 
 export const quizViolationRateLimit = rateLimit({
