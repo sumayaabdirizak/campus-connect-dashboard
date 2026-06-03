@@ -3,7 +3,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   BookOpen,
-  Calendar as CalendarIcon,
   Bell,
   CheckCircle2,
   Users,
@@ -12,8 +11,6 @@ import {
   FileText
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -29,6 +26,7 @@ import {
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { StudentCourseCard } from '@/features/student-courses/components/student-course-card';
+import { StudentWeekCalendar } from './student-week-calendar';
 import { Skeleton } from '@/components/ui/skeleton';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -43,7 +41,6 @@ const performanceData = [
 ];
 
 export function StudentDashboard({ user }: { user: any }) {
-  const [date, setDate] = useState<Date | undefined>(new Date());
   const router = useRouter();
 
   const { data: coursesData, isLoading: coursesLoading } = useStudentCourses();
@@ -85,6 +82,11 @@ export function StudentDashboard({ user }: { user: any }) {
       animate='show'
       className='flex-1 space-y-6'
     >
+      {/* This-week calendar + agenda (real deadlines: assignments, quizzes, announcements) */}
+      <motion.div variants={itemVariants}>
+        <StudentWeekCalendar />
+      </motion.div>
+
       <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
         {/* Main Content Area */}
         <div className='lg:col-span-8 flex flex-col gap-6'>
@@ -412,48 +414,6 @@ export function StudentDashboard({ user }: { user: any }) {
 
         {/* Sidebar Area */}
         <div className='lg:col-span-4 flex flex-col gap-6'>
-          {/* Calendar Widget */}
-          <motion.div variants={itemVariants}>
-            <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl'>
-              <CardHeader className='pb-2 border-b border-border'>
-                <CardTitle className='text-lg flex items-center gap-2'>
-                  <CalendarIcon className='h-5 w-5 text-foreground' /> Due Dates
-                </CardTitle>
-              </CardHeader>
-              <CardContent className='p-0'>
-                <div className='p-4 flex justify-center'>
-                  <Calendar
-                    mode='single'
-                    selected={date}
-                    onSelect={setDate}
-                    className='rounded-md border-0'
-                    classNames={{
-                      day_selected:
-                        'bg-foreground text-background hover:bg-foreground hover:text-background focus:bg-foreground focus:text-background'
-                    }}
-                  />
-                </div>
-                <div className='px-6 pb-6 space-y-4'>
-                  <div className='flex items-center justify-between'>
-                    <span className='text-xs font-bold text-muted-foreground uppercase tracking-wider'>
-                      Legend
-                    </span>
-                  </div>
-                  <div className='flex gap-4'>
-                    <div className='flex items-center gap-1.5'>
-                      <div className='h-2 w-2 rounded-full bg-muted-foreground' />
-                      <span className='text-xs text-muted-foreground font-medium'>Assignment</span>
-                    </div>
-                    <div className='flex items-center gap-1.5'>
-                      <div className='h-2 w-2 rounded-full bg-foreground' />
-                      <span className='text-xs text-muted-foreground font-medium'>Assignment</span>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </motion.div>
-
           {/* Recent Messages Area (NEW) */}
           <motion.div variants={itemVariants}>
             <Card className='border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl bg-card overflow-hidden'>
