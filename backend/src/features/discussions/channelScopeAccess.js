@@ -140,3 +140,145 @@ export async function userMayAccessDiscussionChannelScope({
 
   return true;
 }
+
+/**
+ * Batched form of {@link userMayAccessDiscussionChannelScope}: given many
+ * userIds and a SINGLE channel scope, returns the Set of userIds allowed to
+ * see it. Uses a constant number of queries (one user fetch + at most a couple
+ * of scope-resolution / membership fetches) instead of O(N) per-user lookups —
+ * the per-user form was being called once per member via Promise.all, which
+ * fanned out to ~3N round-trips on large channels.
+ *
+ * The allow/deny logic mirrors the per-user function exactly.
+ *
+ * @param {{ userIds: number[], scopeType: string | null, scopeId: number | null, prismaClient?: object }} args
+ * @returns {Promise<Set<number>>}
+ */
+export async function usersMayAccessDiscussionChannelScope({
+  userIds,
+  scopeType,
+  scopeId,
+  prismaClient = prisma,
+}) {
+  const ids = Array.from(
+    new Set((userIds ?? []).map(Number).filter((n) => Number.isInteger(n)))
+  );
+  // No academic scope (common channel) → everyone is allowed.
+  if (scopeType == null || scopeId == null) return new Set(ids);
+
+  const type = String(scopeType).toUpperCase();
+  const sid = Number(scopeId);
+  if (!Number.isInteger(sid) || sid <= 0) return new Set();
+  if (ids.length === 0) return new Set();
+
+  const users = await prismaClient.user.findMany({
+    where: { id: { in: ids } },
+    select: {
+      id: true,
+      role: { select: { name: true } },
+      studentProfile: { select: { facultyId: true, departmentId: true } },
+      lecturerProfile: {
+        select: {
+          departmentId: true,
+          faculties: { select: { facultyId: true } },
+        },
+      },
+      deanProfile: { select: { facultyId: true } },
+      facultyAdminProfile: { select: { faculty_id: true } },
+    },
+  });
+
+  // Resolve the scope's owning faculty once (for dean / faculty-admin coverage).
+  let scopeFacultyId = null;
+  if (type === DISCUSSION_SCOPE_TYPES.FACULTY) {
+    scopeFacultyId = sid;
+  } else if (type === DISCUSSION_SCOPE_TYPES.DEPARTMENT) {
+    const dept = await prismaClient.department.findUnique({
+      where: { id: sid },
+      select: { facultyId: true },
+    });
+    scopeFacultyId = dept?.facultyId ?? null;
+  } else if (type === DISCUSSION_SCOPE_TYPES.BATCH) {
+    const batch = await prismaClient.batch.findUnique({
+      where: { id: sid },
+      select: { program: { select: { department: { select: { facultyId: true } } } } },
+    });
+    scopeFacultyId = batch?.program?.department?.facultyId ?? null;
+  } else if (type === DISCUSSION_SCOPE_TYPES.SECTION) {
+    const sec = await prismaClient.batchSection.findUnique({
+      where: { id: sid },
+      select: {
+        batch: { select: { program: { select: { department: { select: { facultyId: true } } } } } },
+      },
+    });
+    scopeFacultyId = sec?.batch?.program?.department?.facultyId ?? null;
+  }
+
+  // Pre-fetch enrollment / teaching matches once for BATCH and SECTION scopes.
+  const studentMatch = new Set(); // userIds enrolled in the batch/section
+  const teacherMatch = new Set(); // userIds teaching the batch/section
+  if (type === DISCUSSION_SCOPE_TYPES.BATCH) {
+    const regs = await prismaClient.studentRegistration.findMany({
+      where: { studentId: { in: ids }, batchSection: { batchId: sid } },
+      select: { studentId: true },
+    });
+    for (const r of regs) studentMatch.add(r.studentId);
+    const taught = await prismaClient.courseOffering.findMany({
+      where: { teacherId: { in: ids }, section: { batchId: sid } },
+      select: { teacherId: true },
+    });
+    for (const t of taught) teacherMatch.add(t.teacherId);
+  } else if (type === DISCUSSION_SCOPE_TYPES.SECTION) {
+    const regs = await prismaClient.studentRegistration.findMany({
+      where: { studentId: { in: ids }, batchSectionId: sid },
+      select: { studentId: true },
+    });
+    for (const r of regs) studentMatch.add(r.studentId);
+    const taught = await prismaClient.courseOffering.findMany({
+      where: { teacherId: { in: ids }, sectionId: sid },
+      select: { teacherId: true },
+    });
+    for (const t of taught) teacherMatch.add(t.teacherId);
+  }
+
+  const allowed = new Set();
+  for (const u of users) {
+    const globalRole = String(u.role?.name || "").toUpperCase();
+    if (globalRole === "SUPER_ADMIN") {
+      allowed.add(u.id);
+      continue;
+    }
+
+    const deanFacultyId = u.deanProfile?.facultyId ?? null;
+    const adminFacultyId = u.facultyAdminProfile?.faculty_id ?? null;
+    const staffFacultyId = deanFacultyId ?? adminFacultyId;
+    const staffCoversScope =
+      staffFacultyId != null && scopeFacultyId != null && scopeFacultyId === staffFacultyId;
+
+    let ok = false;
+    if (type === DISCUSSION_SCOPE_TYPES.FACULTY) {
+      const lectFac = u.lecturerProfile?.faculties?.map((f) => f.facultyId) ?? [];
+      ok =
+        u.studentProfile?.facultyId === sid ||
+        lectFac.includes(sid) ||
+        deanFacultyId === sid ||
+        adminFacultyId === sid;
+    } else if (type === DISCUSSION_SCOPE_TYPES.DEPARTMENT) {
+      ok =
+        u.studentProfile?.departmentId === sid ||
+        u.lecturerProfile?.departmentId === sid ||
+        staffCoversScope;
+    } else if (
+      type === DISCUSSION_SCOPE_TYPES.BATCH ||
+      type === DISCUSSION_SCOPE_TYPES.SECTION
+    ) {
+      ok = studentMatch.has(u.id) || teacherMatch.has(u.id) || staffCoversScope;
+    } else {
+      // Unknown scope type — mirror the per-user function's permissive default.
+      ok = true;
+    }
+    if (ok) allowed.add(u.id);
+  }
+
+  return allowed;
+}

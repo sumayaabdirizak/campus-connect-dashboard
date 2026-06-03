@@ -43,7 +43,7 @@ import {
   requireChannelPermission,
   requireServerPermission,
 } from "../../features/discussions/permissions.js";
-import { userMayAccessDiscussionChannelScope } from "../../features/discussions/channelScopeAccess.js";
+import { usersMayAccessDiscussionChannelScope } from "../../features/discussions/channelScopeAccess.js";
 import { assertMessageReactionAllowed } from "../../features/discussions/messageAccess.js";
 import { extractMentionHandles, resolveMentionUserIds } from "../../features/discussions/mentionResolution.js";
 import {
@@ -202,18 +202,15 @@ async function getServerVisibleChannels(serverId, userId) {
 
 async function filterMembershipRowsByChannelScope(rows, channel) {
   if (!channel?.scopeType || channel?.scopeId == null || rows.length === 0) return rows;
-  const checks = await Promise.all(
-    rows.map(async (row) => {
-      const allowed = await userMayAccessDiscussionChannelScope({
-        userId: row.userId,
-        scopeType: channel.scopeType,
-        scopeId: channel.scopeId,
-        prismaClient: prisma,
-      });
-      return allowed ? row : null;
-    })
-  );
-  return checks.filter(Boolean);
+  // Batched scope check: one allow-set for all members instead of a per-member
+  // query fan-out (was ~3N round-trips via Promise.all).
+  const allowed = await usersMayAccessDiscussionChannelScope({
+    userIds: rows.map((row) => row.userId),
+    scopeType: channel.scopeType,
+    scopeId: channel.scopeId,
+    prismaClient: prisma,
+  });
+  return rows.filter((row) => allowed.has(row.userId));
 }
 
 router.get("/servers", async (req, res) => {
