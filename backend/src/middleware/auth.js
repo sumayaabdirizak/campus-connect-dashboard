@@ -4,19 +4,7 @@ import { env } from "../config/env.js";
 import { prisma } from "../db/prisma.js";
 import { apiErrorBody } from "../utils/apiEnvelope.js";
 import { isJtiRevoked } from "../utils/tokenRevocation.js";
-
-function readCookie(req, key) {
-  const cookieHeader = req.headers.cookie;
-  if (!cookieHeader) return null;
-  const chunks = cookieHeader.split(";").map((entry) => entry.trim());
-  for (const chunk of chunks) {
-    const [name, ...rest] = chunk.split("=");
-    if (name === key) {
-      return decodeURIComponent(rest.join("="));
-    }
-  }
-  return null;
-}
+import { readCookie } from "../utils/cookies.js";
 
 export async function auth(req, res, next) {
   const header = req.headers.authorization || "";

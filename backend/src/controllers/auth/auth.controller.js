@@ -7,6 +7,7 @@ import { getFacultyIdForFacultyAdminUser } from "../../utils/facultyAccess.js";
 import { HttpError } from "../../utils/httpError.js";
 import { syncDiscussionMembershipsForUser } from "../../features/discussions/membershipSync.service.js";
 import { newJti, revokeJti, isJtiRevoked } from "../../utils/tokenRevocation.js";
+import { readCookie } from "../../utils/cookies.js";
 
 const ACCESS_COOKIE = "auth_token";
 const REFRESH_COOKIE = "refresh_token";
@@ -100,17 +101,6 @@ function setAuthCookies(res, accessToken, refreshToken) {
     maxAge: REFRESH_TTL_SECONDS * 1000,
     path: "/",
   });
-}
-
-function readCookie(req, key) {
-  const cookieHeader = req.headers.cookie;
-  if (!cookieHeader) return null;
-  const chunks = cookieHeader.split(";").map((entry) => entry.trim());
-  for (const chunk of chunks) {
-    const [name, ...rest] = chunk.split("=");
-    if (name === key) return decodeURIComponent(rest.join("="));
-  }
-  return null;
 }
 
 export async function postLogin(req, res) {

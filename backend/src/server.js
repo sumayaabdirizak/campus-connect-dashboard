@@ -6,6 +6,7 @@ import { prisma } from "./db/prisma.js";
 import jwt from "jsonwebtoken";
 import { setIo } from "./socket/hub.js";
 import { loadUserAnnouncementScope } from "./utils/userAnnouncementScope.js";
+import { readCookieFromHeader } from "./utils/cookies.js";
 import { createPresenceStore } from "./features/discussions/reliability/presenceStore.js";
 import { createFanout } from "./features/discussions/reliability/fanout.js";
 import { metricCount, metricTimerEnd, metricTimerStart } from "./features/discussions/reliability/metrics.js";
@@ -354,16 +355,6 @@ function ackOrEmitError(socket, ack, code, message, extra = {}) {
 
 function ackSuccess(ack, payload = {}) {
   if (typeof ack === "function") ack({ ok: true, ...payload });
-}
-
-function readCookieFromHeader(cookieHeader, key) {
-  if (!cookieHeader) return null;
-  const chunks = cookieHeader.split(";").map((entry) => entry.trim());
-  for (const chunk of chunks) {
-    const [name, ...rest] = chunk.split("=");
-    if (name === key) return decodeURIComponent(rest.join("="));
-  }
-  return null;
 }
 
 io.use(async (socket, next) => {

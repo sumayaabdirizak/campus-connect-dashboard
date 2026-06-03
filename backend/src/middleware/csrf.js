@@ -1,19 +1,9 @@
 import crypto from "crypto";
 import { apiErrorBody } from "../utils/apiEnvelope.js";
+import { readCookie } from "../utils/cookies.js";
 
 const CSRF_COOKIE = "csrf_token";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
-
-function readCookie(req, key) {
-  const cookieHeader = req.headers.cookie;
-  if (!cookieHeader) return null;
-  const chunks = cookieHeader.split(";").map((entry) => entry.trim());
-  for (const chunk of chunks) {
-    const [name, ...rest] = chunk.split("=");
-    if (name === key) return decodeURIComponent(rest.join("="));
-  }
-  return null;
-}
 
 function isProduction() {
   return process.env.NODE_ENV === "production";

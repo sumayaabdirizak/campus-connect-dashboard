@@ -143,7 +143,12 @@ router.post('/:courseOfferingId/records', auth, requireCourseOfferingManage(), a
         content: `${attended}/${total} attended · ${counts.LATE} late · ${counts.ABSENT} absent · ${counts.EXCUSED} excused`,
       });
     })
-    .catch(() => { /* swallow dispatcher errors */ });
+    .catch((err) => {
+      console.error('[attendance] course-feed dispatch failed', {
+        scheduleId,
+        message: err?.message,
+      });
+    });
 
   res.json(record);
 }));
