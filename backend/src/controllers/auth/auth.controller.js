@@ -132,6 +132,13 @@ export async function postLogin(req, res) {
     throw new HttpError(401, "Invalid credentials", null);
   }
 
+  // Disabled accounts (INACTIVE / SUSPENDED) can't log in even with valid
+  // credentials. Checked after the password compare so it doesn't reveal
+  // account state to an unauthenticated guesser.
+  if (user.status !== "ACTIVE") {
+    throw new HttpError(403, "Account is not active. Contact your administrator.", null);
+  }
+
   loginPhase = "discussion_sync";
   try {
     await syncDiscussionMembershipsForUser(user.id);
@@ -195,6 +202,10 @@ export async function postRefresh(req, res) {
     });
     if (!user) {
       return res.status(401).json({ message: "Invalid refresh token" });
+    }
+    // A disabled account can't mint fresh access tokens via refresh either.
+    if (user.status !== "ACTIVE") {
+      return res.status(403).json({ message: "Account is not active" });
     }
 
     try {

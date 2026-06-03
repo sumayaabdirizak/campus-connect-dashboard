@@ -1,6 +1,7 @@
 // src/middleware/auth.js
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import { prisma } from "../db/prisma.js";
 import { apiErrorBody } from "../utils/apiEnvelope.js";
 import { isJtiRevoked } from "../utils/tokenRevocation.js";
 
@@ -55,6 +56,26 @@ export async function auth(req, res, next) {
       console.error("[auth] revocation lookup failed", { message: e?.message });
       return res.status(503).json(apiErrorBody("Auth temporarily unavailable", null));
     }
+  }
+
+  // Account-status enforcement. The token can outlive an admin disabling the
+  // account (up to 1h for access tokens), so we check live status on every
+  // request — a user flipped to INACTIVE/SUSPENDED is locked out immediately
+  // rather than at token expiry. One indexed PK lookup (~1ms).
+  let account;
+  try {
+    account = await prisma.user.findUnique({
+      where: { id: Number(payload.sub) },
+      select: { status: true },
+    });
+  } catch (e) {
+    // Fail-closed, same rationale as the revocation lookup above.
+    console.error("[auth] account-status lookup failed", { message: e?.message });
+    return res.status(503).json(apiErrorBody("Auth temporarily unavailable", null));
+  }
+  if (!account) return res.status(401).json(apiErrorBody("Invalid token", null));
+  if (account.status !== "ACTIVE") {
+    return res.status(403).json(apiErrorBody("Account is not active", null));
   }
 
   const facultyId = payload.facultyId ?? payload.faculty_id ?? null;

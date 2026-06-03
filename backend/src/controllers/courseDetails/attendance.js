@@ -9,9 +9,10 @@ import {
   requireCourseOfferingManage,
 } from "../../middleware/courseOfferingRbac.js";
 import { dispatchCoursePost } from "../../services/courseAnnouncementDispatcher.service.js";
+import { getSigningSecret } from "../../utils/signingSecret.js";
 
 const QR_TOKEN_TTL_SECONDS = 30;
-const QR_TOKEN_SECRET = process.env.QR_TOKEN_SECRET || process.env.JWT_SECRET || 'dev-qr-secret';
+const QR_TOKEN_SECRET = getSigningSecret('QR_TOKEN_SECRET');
 
 function haversineMetres(lat1, lon1, lat2, lon2) {
   const R = 6371000;

@@ -22,6 +22,7 @@ import {
 } from "../../features/discussions/permissions.js";
 import { computeMemberPresence } from "../../features/discussions/discussionPresence.js";
 import { enrichDiscussionNotificationsForApi } from "../../features/discussions/enrichDiscussionNotifications.js";
+import { getSigningSecret } from "../../utils/signingSecret.js";
 import {
   collectThreadParticipantSenderIds,
   resolveThreadRootMessageId,
@@ -43,8 +44,7 @@ const FILE_SIZE_LIMITS = {
   VIDEO: 100 * 1024 * 1024,
   FILE: 25 * 1024 * 1024,
 };
-const ATTACHMENT_SIGNING_SECRET =
-  process.env.DISCUSSION_ATTACHMENT_SIGNING_SECRET || process.env.JWT_SECRET || "dev-secret";
+const ATTACHMENT_SIGNING_SECRET = getSigningSecret("DISCUSSION_ATTACHMENT_SIGNING_SECRET");
 const ATTACHMENT_URL_TTL_SECONDS = Number(process.env.DISCUSSION_ATTACHMENT_URL_TTL_SECONDS || 900);
 const VIRUS_SCAN_MODE = String(process.env.DISCUSSION_VIRUS_SCAN_MODE || "off").toLowerCase();
 const ARCHIVE_DIR = "./uploads/discussions-archive";

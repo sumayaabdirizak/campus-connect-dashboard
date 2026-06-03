@@ -52,6 +52,7 @@ import {
   deriveQuestionFields,
 } from "../../features/discussions/discussionMessagePublic.js";
 import { recordDiscussionAuditLog } from "../../features/discussions/auditLog.js";
+import { getSigningSecret } from "../../utils/signingSecret.js";
 
 const router = express.Router();
 
@@ -150,8 +151,7 @@ function slugifyChannelName(name) {
   return base || `channel-${Date.now().toString(36)}`;
 }
 
-const ATTACHMENT_SIGNING_SECRET =
-  process.env.DISCUSSION_ATTACHMENT_SIGNING_SECRET || process.env.JWT_SECRET || "dev-secret";
+const ATTACHMENT_SIGNING_SECRET = getSigningSecret("DISCUSSION_ATTACHMENT_SIGNING_SECRET");
 const ATTACHMENT_URL_TTL_SECONDS = Number(process.env.DISCUSSION_ATTACHMENT_URL_TTL_SECONDS || 900);
 
 function buildAttachmentAccessUrl(req, attachmentId, userId) {

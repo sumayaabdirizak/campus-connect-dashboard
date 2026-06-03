@@ -1,10 +1,10 @@
 import crypto from "crypto";
-import { env } from "../../../config/env.js";
+import { getSigningSecret } from "../../../utils/signingSecret.js";
 
 const TOKEN_TTL_MS = 90 * 24 * 60 * 60 * 1000;
 
 function signingSecret() {
-  return process.env.ANNOUNCEMENT_LINK_REDIRECT_SECRET || env.JWT_SECRET || "";
+  return getSigningSecret("ANNOUNCEMENT_LINK_REDIRECT_SECRET");
 }
 
 /**
