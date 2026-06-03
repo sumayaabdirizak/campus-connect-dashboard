@@ -112,9 +112,13 @@ export default function SignInViewPage() {
           {/* FORM */}
           <form onSubmit={handleLogin} className='space-y-4'>
             <div className='space-y-2'>
-              <Label>Email</Label>
+              <Label htmlFor='email'>Email</Label>
               <Input
+                id='email'
+                name='email'
                 type='email'
+                autoComplete='username'
+                autoFocus
                 placeholder='student@campus.com'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -122,21 +126,32 @@ export default function SignInViewPage() {
             </div>
 
             <div className='space-y-2'>
-              <Label>Password</Label>
+              <Label htmlFor='password'>Password</Label>
               <Input
+                id='password'
+                name='password'
                 type='password'
+                autoComplete='current-password'
                 placeholder='password'
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
 
-            {error && <p className='text-sm text-red-500 text-center'>{error}</p>}
+            {error && (
+              <p role='alert' className='text-destructive text-center text-sm'>
+                {error}
+              </p>
+            )}
 
-            <Button className='w-full' disabled={loading}>
+            <Button type='submit' className='w-full' disabled={loading}>
               {loading ? 'Signing In...' : 'Sign In'}
             </Button>
           </form>
+
+          <p className='text-muted-foreground text-center text-sm'>
+            Forgot your password? Contact your administrator.
+          </p>
         </div>
       </div>
     </div>

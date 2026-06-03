@@ -38,7 +38,7 @@ export default function SignUpViewPage() {
                 <path d='M6 12v5c3.33 3 8.67 3 12 0v-5' />
               </svg>
             </div>
-            <span className='text-2xl font-bold tracking-tight text-slate-800'>Campus Contact</span>
+            <span className='text-2xl font-bold tracking-tight text-slate-800'>Campus Connect</span>
           </div>
         </div>
 
@@ -57,7 +57,7 @@ export default function SignUpViewPage() {
 
         {/* Footer Credit */}
         <div className='relative z-10 p-12 text-sm font-medium text-slate-600'>
-          © 2026 Campus Contact Inc. All rights reserved.
+          © 2026 Campus Connect Inc. All rights reserved.
         </div>
       </div>
 
@@ -81,7 +81,7 @@ export default function SignUpViewPage() {
                 <path d='M6 12v5c3.33 3 8.67 3 12 0v-5' />
               </svg>
             </div>
-            <span className='text-xl font-bold tracking-tight'>Campus Contact</span>
+            <span className='text-xl font-bold tracking-tight'>Campus Connect</span>
           </div>
 
           {/* Header */}
@@ -127,9 +127,12 @@ export default function SignUpViewPage() {
 
           <p className='mt-8 text-center text-sm text-slate-500'>
             Need immediate help?{' '}
-            <Link href='#' className='font-semibold text-[#2563eb] hover:underline'>
+            <a
+              href='mailto:itsupport@jazeerauniversity.edu'
+              className='font-semibold text-[#2563eb] hover:underline'
+            >
               Contact IT Support
-            </Link>
+            </a>
           </p>
         </div>
       </div>
