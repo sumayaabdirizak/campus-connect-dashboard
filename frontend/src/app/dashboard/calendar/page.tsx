@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight, Calendar as CalendarIcon, Download } from 'lucide-react';
 import { addWeeks, subWeeks, format, startOfWeek, endOfWeek, eachDayOfInterval, isSameDay } from 'date-fns';
 import { useQuery } from '@/lib/async-query';
@@ -19,12 +20,23 @@ import { getAnnouncementById } from '@/features/announcements/api/service';
 import type { Announcement } from '@/features/announcements/api/types';
 import { AnnouncementContent } from '@/features/announcements/components/announcement-content';
 
+type DeadlineKind = 'announcement' | 'assignment' | 'quiz';
+
 type DeadlineRow = {
+  kind: DeadlineKind;
   id: number;
   title: string;
   deadlineAt: string | null;
   deadlineAllDay?: boolean;
-  targetType: string;
+  courseCode?: string | null;
+  courseOfferingId?: number | null;
+  targetType?: string | null;
+};
+
+const KIND_LABEL: Record<DeadlineKind, string> = {
+  announcement: 'Announcement',
+  assignment: 'Assignment',
+  quiz: 'Quiz'
 };
 
 const TODAY = new Date();
@@ -65,6 +77,7 @@ export default function CalendarPage() {
   const [selectedDay, setSelectedDay] = useState(TODAY);
   const [detailId, setDetailId] = useState<number | null>(null);
   const [exporting, setExporting] = useState(false);
+  const router = useRouter();
 
   const weekStart = startOfWeek(selectedDay, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(selectedDay, { weekStartsOn: 1 });
@@ -123,6 +136,20 @@ export default function CalendarPage() {
       setExporting(false);
     }
   }, [weekEnd, weekStart]);
+
+  // Announcement deadlines open the detail sheet; assignment/quiz deadlines link
+  // to the relevant tab on their course.
+  const openDeadline = useCallback(
+    (d: DeadlineRow) => {
+      if (d.kind === 'announcement') {
+        setDetailId(d.id);
+      } else if (d.courseOfferingId) {
+        const tab = d.kind === 'quiz' ? 'quizzes' : 'assignments';
+        router.push(`/dashboard/courses/${d.courseOfferingId}?tab=${tab}`);
+      }
+    },
+    [router]
+  );
 
   const sheetAnnouncement: Announcement | undefined = detailAnnouncement;
 
@@ -188,7 +215,7 @@ export default function CalendarPage() {
               </button>
             </div>
           </div>
-          <p className='text-xs text-muted-foreground'>Announcement deadlines</p>
+          <p className='text-xs text-muted-foreground'>Deadlines & due dates</p>
         </div>
 
         <div className='space-y-2 p-4'>
@@ -196,18 +223,20 @@ export default function CalendarPage() {
           {isLoading && <p className='text-xs text-muted-foreground'>Loading deadlines…</p>}
           {!isLoading && selectedDayDeadlines.length === 0 && (
             <p className='rounded-lg border bg-muted/30 px-3 py-2 text-xs text-muted-foreground'>
-              No announcement deadlines for this day.
+              No deadlines for this day.
             </p>
           )}
           {selectedDayDeadlines.map((d) => (
             <button
-              key={d.id}
+              key={`${d.kind}-${d.id}`}
               type='button'
               className='w-full rounded-lg border bg-primary/5 p-3 text-left transition-colors hover:bg-primary/10 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-              onClick={() => setDetailId(d.id)}
+              onClick={() => openDeadline(d)}
             >
               <div className='flex items-start justify-between gap-2'>
-                <p className='text-sm font-medium text-foreground'>{d.title}</p>
+                <p className='text-sm font-medium text-foreground'>
+                  {d.courseCode ? `${d.courseCode} · ${d.title}` : d.title}
+                </p>
                 {isDeadlineWithin24h(d.deadlineAt) ? (
                   <span
                     className='shrink-0 rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-200'
@@ -220,7 +249,9 @@ export default function CalendarPage() {
               <p className='mt-1 text-xs text-muted-foreground'>
                 {formatDeadlineInUserLocale(d.deadlineAt, d.deadlineAllDay)}
               </p>
-              <p className='mt-1 text-[11px] uppercase tracking-wide text-muted-foreground'>{d.targetType}</p>
+              <p className='mt-1 text-[11px] uppercase tracking-wide text-muted-foreground'>
+                {KIND_LABEL[d.kind]}
+              </p>
             </button>
           ))}
         </div>
@@ -290,13 +321,16 @@ export default function CalendarPage() {
                 <div className='space-y-2'>
                   {dayEvents.map((d) => (
                     <button
-                      key={d.id}
+                      key={`${d.kind}-${d.id}`}
                       type='button'
                       className='w-full rounded bg-primary/10 px-2 py-1.5 text-left text-xs text-primary transition-colors hover:bg-primary/20 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-                      onClick={() => setDetailId(d.id)}
+                      onClick={() => openDeadline(d)}
+                      title={`${KIND_LABEL[d.kind]}${d.courseCode ? ` · ${d.courseCode}` : ''}`}
                     >
                       <div className='flex items-start justify-between gap-1'>
-                        <p className='truncate font-medium'>{d.title}</p>
+                        <p className='truncate font-medium'>
+                          {d.courseCode ? `${d.courseCode} · ${d.title}` : d.title}
+                        </p>
                         {isDeadlineWithin24h(d.deadlineAt) ? (
                           <span
                             className='shrink-0 rounded bg-amber-500/20 px-1 py-px text-[9px] font-bold uppercase text-amber-900 dark:text-amber-100'

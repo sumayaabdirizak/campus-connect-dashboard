@@ -75,6 +75,130 @@ export async function loadVisibleCalendarDeadlineRows(prisma, visibilityUser, fr
   return rows;
 }
 
+/**
+ * Prisma `where` on CourseOffering restricting to the offerings a user may see,
+ * by role. Mirrors the app's RBAC scoping so academic deadlines (assignments /
+ * quizzes) on the calendar respect the same boundaries as everything else.
+ *
+ * @param {{ userId: number, role: string, facultyIds?: number[], sectionIds?: number[] }} loaded
+ */
+export function buildVisibleOfferingWhere(loaded) {
+  const role = loaded?.role;
+  if (role === "SUPER_ADMIN") return {};
+  if (role === "TEACHER") return { teacherId: Number(loaded.userId) };
+  if (role === "STUDENT") {
+    return { sectionId: { in: (loaded.sectionIds ?? []).map(Number) } };
+  }
+  if (role === "DEAN" || role === "FACULTY_ADMIN") {
+    return {
+      section: {
+        batch: { program: { department: { facultyId: { in: (loaded.facultyIds ?? []).map(Number) } } } },
+      },
+    };
+  }
+  return { id: -1 }; // unknown role → match nothing
+}
+
+/**
+ * Academic deadlines (published assignment due-dates + quiz close-times) visible
+ * to the caller within [from, to]. Returns unified rows shaped like the
+ * announcement rows so both can share the calendar + ICS pipeline.
+ *
+ * @param {import("@prisma/client").PrismaClient} prisma
+ * @param {{ userId: number, role: string, facultyIds?: number[], sectionIds?: number[] }} loaded
+ * @param {Date} fromRaw
+ * @param {Date} toRaw
+ */
+export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, toRaw) {
+  const courseOffering = buildVisibleOfferingWhere(loaded);
+  const offeringSelect = { course: { select: { code: true } } };
+
+  const [assignments, quizzes] = await Promise.all([
+    prisma.assignment.findMany({
+      where: { is_draft: false, due_date: { gte: fromRaw, lte: toRaw }, courseOffering },
+      select: {
+        id: true,
+        title: true,
+        due_date: true,
+        courseOfferingId: true,
+        courseOffering: { select: offeringSelect },
+      },
+      orderBy: { due_date: "asc" },
+      take: 500,
+    }),
+    prisma.quiz.findMany({
+      where: { is_draft: false, close_at: { not: null, gte: fromRaw, lte: toRaw }, courseOffering },
+      select: {
+        id: true,
+        title: true,
+        close_at: true,
+        courseOfferingId: true,
+        courseOffering: { select: offeringSelect },
+      },
+      orderBy: { close_at: "asc" },
+      take: 500,
+    }),
+  ]);
+
+  return [
+    ...assignments.map((a) => ({
+      kind: "assignment",
+      id: a.id,
+      title: a.title,
+      deadlineAt: a.due_date,
+      courseOfferingId: a.courseOfferingId,
+      courseCode: a.courseOffering?.course?.code ?? null,
+    })),
+    ...quizzes.map((q) => ({
+      kind: "quiz",
+      id: q.id,
+      title: q.title,
+      deadlineAt: q.close_at,
+      courseOfferingId: q.courseOfferingId,
+      courseCode: q.courseOffering?.course?.code ?? null,
+    })),
+  ];
+}
+
+/** Shape an announcement deadline row into the unified calendar-row form. */
+function announcementRowToUnified(r) {
+  return {
+    kind: "announcement",
+    id: r.id,
+    title: r.title,
+    content: r.content,
+    deadlineAt: r.deadlineAt,
+    targetType: r.targetType,
+    targeting: {
+      facultyId: r.facultyId,
+      departmentId: r.departmentId,
+      batchId: r.batchId,
+      sectionId: r.sectionId,
+    },
+  };
+}
+
+/**
+ * All deadlines visible to the caller — announcements + academic — merged and
+ * sorted by deadline. This is the single feed behind the calendar page, the
+ * dashboard widget, and the ICS export.
+ *
+ * @param {import("@prisma/client").PrismaClient} prisma
+ * @param {{ userId: number, role: string }} loaded scope from loadUserAnnouncementScope
+ * @param {unknown} visibilityUser announcement-visibility user
+ * @param {Date} fromRaw
+ * @param {Date} toRaw
+ */
+export async function loadAllVisibleDeadlineRows(prisma, loaded, visibilityUser, fromRaw, toRaw) {
+  const [announcementRows, academicRows] = await Promise.all([
+    loadVisibleCalendarDeadlineRows(prisma, visibilityUser, fromRaw, toRaw),
+    loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, toRaw),
+  ]);
+  return [...announcementRows.map(announcementRowToUnified), ...academicRows]
+    .filter((r) => r.deadlineAt)
+    .sort((a, b) => new Date(a.deadlineAt).getTime() - new Date(b.deadlineAt).getTime());
+}
+
 function escapeIcsText(s) {
   return String(s ?? "")
     .replace(/\\/g, "\\\\")
@@ -114,8 +238,8 @@ function formatIcsDateUtc(dt) {
  * @param {{ prodId?: string; calName?: string; frontendBaseUrl?: string }} [opts]
  */
 export function buildCalendarDeadlinesIcs(rows, opts = {}) {
-  const prodId = opts.prodId || "-//Campus Connect//Announcement Deadlines//EN";
-  const calName = opts.calName || "Campus announcement deadlines";
+  const prodId = opts.prodId || "-//Campus Connect//Deadlines//EN";
+  const calName = opts.calName || "Campus deadlines";
   const baseUrl = String(opts.frontendBaseUrl || process.env.FRONTEND_URL || "http://localhost:3000").replace(
     /\/+$/,
     "",
@@ -133,9 +257,16 @@ export function buildCalendarDeadlinesIcs(rows, opts = {}) {
 
   for (const r of rows) {
     if (!r.deadlineAt) continue;
-    const uid = `announcement-deadline-${r.id}@campus-connect`;
-    const title = escapeIcsText(r.title || "Announcement");
-    const url = `${baseUrl}/dashboard/announcements`;
+    const kind = r.kind || "announcement";
+    const uid = `${kind}-deadline-${r.id}@campus-connect`;
+    const titleText = r.courseCode ? `${r.courseCode} · ${r.title || ""}` : r.title || "Deadline";
+    const title = escapeIcsText(titleText);
+    const url =
+      kind === "assignment"
+        ? `${baseUrl}/dashboard/courses/${r.courseOfferingId}?tab=assignments`
+        : kind === "quiz"
+          ? `${baseUrl}/dashboard/courses/${r.courseOfferingId}?tab=quizzes`
+          : `${baseUrl}/dashboard/announcements`;
     const descPlain = escapeIcsText(String(r.content || "").replace(/\s+/g, " ").trim().slice(0, 1800));
     const allDay = isAnnouncementDeadlineAllDayUtc(r.deadlineAt);
     const dtstamp = formatIcsUtc(new Date());
@@ -144,7 +275,7 @@ export function buildCalendarDeadlinesIcs(rows, opts = {}) {
     lines.push(foldLine(`UID:${uid}`));
     lines.push(`DTSTAMP:${dtstamp}`);
     lines.push(foldLine(`SUMMARY:${title}`));
-    lines.push(foldLine(`URL:${escapeIcsText(url)}#${r.id}`));
+    lines.push(foldLine(`URL:${escapeIcsText(url)}`));
     if (descPlain) lines.push(foldLine(`DESCRIPTION:${descPlain}`));
     if (allDay) {
       const d = formatIcsDateUtc(r.deadlineAt);

@@ -65,7 +65,7 @@ import {
   buildTrackedRedirectUrl,
 } from "./services/announcementLinkRedirect.service.js";
 import {
-  loadVisibleCalendarDeadlineRows,
+  loadAllVisibleDeadlineRows,
   buildCalendarDeadlinesIcs,
   isAnnouncementDeadlineAllDayUtc,
 } from "./services/calendarDeadlines.service.js";
@@ -994,7 +994,7 @@ router.get("/calendar-deadlines.ics", auth, async (req, res) => {
     const loaded = await loadUserAnnouncementScope(prisma, currentUserId);
     if (!loaded) return res.status(404).json({ message: "User not found" });
     const visibilityUser = visibilityUserFromLoaded(loaded);
-    const rows = await loadVisibleCalendarDeadlineRows(prisma, visibilityUser, fromRaw, toRaw);
+    const rows = await loadAllVisibleDeadlineRows(prisma, loaded, visibilityUser, fromRaw, toRaw);
     const ics = buildCalendarDeadlinesIcs(rows, {
       frontendBaseUrl: process.env.FRONTEND_URL,
     });
@@ -1028,20 +1028,18 @@ router.get("/calendar-deadlines", auth, async (req, res) => {
     const loaded = await loadUserAnnouncementScope(prisma, currentUserId);
     if (!loaded) return res.status(404).json({ message: "User not found" });
     const visibilityUser = visibilityUserFromLoaded(loaded);
-    const rows = await loadVisibleCalendarDeadlineRows(prisma, visibilityUser, fromRaw, toRaw);
+    const rows = await loadAllVisibleDeadlineRows(prisma, loaded, visibilityUser, fromRaw, toRaw);
 
     const results = rows.map((r) => ({
+      kind: r.kind,
       id: r.id,
       title: r.title,
-      deadlineAt: r.deadlineAt ? r.deadlineAt.toISOString() : null,
+      deadlineAt: r.deadlineAt ? new Date(r.deadlineAt).toISOString() : null,
       deadlineAllDay: r.deadlineAt ? isAnnouncementDeadlineAllDayUtc(r.deadlineAt) : false,
-      targeting: {
-        facultyId: r.facultyId,
-        departmentId: r.departmentId,
-        batchId: r.batchId,
-        sectionId: r.sectionId,
-      },
-      targetType: r.targetType,
+      courseCode: r.courseCode ?? null,
+      courseOfferingId: r.courseOfferingId ?? null,
+      targetType: r.targetType ?? null,
+      targeting: r.targeting ?? null,
     }));
     res.json({ results });
   } catch (error) {
