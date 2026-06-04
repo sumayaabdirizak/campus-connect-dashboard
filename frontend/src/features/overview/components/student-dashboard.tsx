@@ -15,7 +15,7 @@ import { useAnnouncements } from '@/features/announcements/api/queries';
 import { courseColor } from '@/features/student-courses/lib/course-color';
 import { MoodleCourseCard } from './moodle-course-card';
 import { TimelineBlock, type TimelineItem } from './timeline-block';
-import { StudentWeekCalendar } from './student-week-calendar';
+import { MonthCalendar } from './month-calendar';
 
 type CourseFilter = 'all' | 'inprogress' | 'completed';
 
@@ -217,7 +217,7 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
 
         {/* Sidebar */}
         <div className='flex flex-col gap-6 lg:col-span-4'>
-          <StudentWeekCalendar />
+          <MonthCalendar />
 
           {/* Latest announcements */}
           <Card className='rounded-lg border-border'>
