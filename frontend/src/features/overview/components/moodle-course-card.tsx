@@ -18,9 +18,21 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
       href={`/dashboard/courses/${course.id}`}
       className='group flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
     >
-      {/* Banner */}
-      <div className='relative h-16 w-full' style={{ backgroundColor: color }}>
-        <span className='absolute bottom-2 left-3 text-xs font-semibold tracking-wide text-white/90'>
+      {/* Banner — course thumbnail when available, else the identity color */}
+      <div
+        className='relative h-16 w-full bg-cover bg-center'
+        style={{
+          backgroundColor: color,
+          backgroundImage: course.thumbnail ? `url("${course.thumbnail}")` : undefined
+        }}
+      >
+        {course.thumbnail && (
+          <span
+            className='absolute inset-0 bg-gradient-to-t from-black/50 to-transparent'
+            aria-hidden
+          />
+        )}
+        <span className='absolute bottom-2 left-3 text-xs font-semibold tracking-wide text-white drop-shadow-sm'>
           {course.courseCode}
         </span>
       </div>
