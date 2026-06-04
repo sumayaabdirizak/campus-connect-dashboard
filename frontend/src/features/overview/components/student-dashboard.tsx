@@ -2,15 +2,17 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell } from 'lucide-react';
+import { Bell, Search, LayoutGrid, List as ListIcon, ChevronRight } from 'lucide-react';
 import { useQuery } from '@/lib/async-query';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
+import { courseColor } from '@/features/student-courses/lib/course-color';
 import { MoodleCourseCard } from './moodle-course-card';
 import { TimelineBlock, type TimelineItem } from './timeline-block';
 import { StudentWeekCalendar } from './student-week-calendar';
@@ -19,6 +21,8 @@ type CourseFilter = 'all' | 'inprogress' | 'completed';
 
 export function StudentDashboard({ user }: { user: { full_name?: string } }) {
   const [filter, setFilter] = useState<CourseFilter>('all');
+  const [search, setSearch] = useState('');
+  const [view, setView] = useState<'card' | 'list'>('card');
 
   const { data: coursesData, isLoading: coursesLoading } = useStudentCourses();
   const { data: announcementsData } = useAnnouncements();
@@ -49,15 +53,23 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
           d.deadlineAt &&
           new Date(d.deadlineAt).getTime() >= now
       )
-      .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime())
-      .slice(0, 6);
+      .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime());
   }, [deadlineData]);
 
   const filteredCourses = courses.filter((c) => {
     const p = c.progress || 0;
-    if (filter === 'inprogress') return p > 0 && p < 100;
-    if (filter === 'completed') return p >= 100 || c.status === 'completed';
-    return true;
+    const matchFilter =
+      filter === 'inprogress'
+        ? p > 0 && p < 100
+        : filter === 'completed'
+          ? p >= 100 || c.status === 'completed'
+          : true;
+    const q = search.trim().toLowerCase();
+    const matchSearch =
+      !q ||
+      c.courseName.toLowerCase().includes(q) ||
+      (c.courseCode || '').toLowerCase().includes(q);
+    return matchFilter && matchSearch;
   });
 
   const firstName = user?.full_name?.split(' ')[0];
@@ -77,30 +89,69 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
 
           {/* Course overview */}
           <Card className='rounded-lg border-border'>
-            <CardHeader className='flex flex-row flex-wrap items-center justify-between gap-2 border-b py-3'>
-              <CardTitle className='text-base font-semibold'>Course overview</CardTitle>
-              <div className='flex rounded-md border bg-muted/40 p-0.5 text-xs'>
-                {(
-                  [
-                    ['all', 'All'],
-                    ['inprogress', 'In progress'],
-                    ['completed', 'Completed']
-                  ] as const
-                ).map(([key, label]) => (
+            <CardHeader className='gap-3 border-b py-3'>
+              <div className='flex flex-row flex-wrap items-center justify-between gap-2'>
+                <CardTitle className='text-base font-semibold'>Course overview</CardTitle>
+                <div className='flex rounded-md border bg-muted/40 p-0.5 text-xs'>
+                  {(
+                    [
+                      ['all', 'All'],
+                      ['inprogress', 'In progress'],
+                      ['completed', 'Completed']
+                    ] as const
+                  ).map(([key, label]) => (
+                    <button
+                      key={key}
+                      type='button'
+                      onClick={() => setFilter(key)}
+                      className={cn(
+                        'rounded px-2.5 py-1 font-medium transition-colors',
+                        filter === key
+                          ? 'bg-card text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div className='flex items-center gap-2'>
+                <div className='relative flex-1'>
+                  <Search className='absolute top-1/2 left-2.5 size-4 -translate-y-1/2 text-muted-foreground' />
+                  <Input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder='Search courses...'
+                    className='h-8 pl-8 text-sm'
+                  />
+                </div>
+                <div className='flex rounded-md border p-0.5'>
                   <button
-                    key={key}
                     type='button'
-                    onClick={() => setFilter(key)}
+                    onClick={() => setView('card')}
+                    aria-label='Card view'
+                    aria-pressed={view === 'card'}
                     className={cn(
-                      'rounded px-2.5 py-1 font-medium transition-colors',
-                      filter === key
-                        ? 'bg-card text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
+                      'rounded p-1.5 transition-colors',
+                      view === 'card' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    {label}
+                    <LayoutGrid className='size-4' />
                   </button>
-                ))}
+                  <button
+                    type='button'
+                    onClick={() => setView('list')}
+                    aria-label='List view'
+                    aria-pressed={view === 'list'}
+                    className={cn(
+                      'rounded p-1.5 transition-colors',
+                      view === 'list' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    <ListIcon className='size-4' />
+                  </button>
+                </div>
               </div>
             </CardHeader>
             <CardContent className='pt-4'>
@@ -110,16 +161,55 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
                     <Skeleton key={i} className='h-44 w-full rounded-lg' />
                   ))}
                 </div>
-              ) : filteredCourses.length > 0 ? (
+              ) : filteredCourses.length === 0 ? (
+                <p className='py-10 text-center text-sm text-muted-foreground'>No courses to show.</p>
+              ) : view === 'card' ? (
                 <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3'>
                   {filteredCourses.map((c) => (
                     <MoodleCourseCard key={c.id} course={c} />
                   ))}
                 </div>
               ) : (
-                <p className='py-10 text-center text-sm text-muted-foreground'>
-                  No courses to show.
-                </p>
+                <ul className='divide-y divide-border'>
+                  {filteredCourses.map((c) => {
+                    const color = courseColor(c.courseCode);
+                    return (
+                      <li key={c.id}>
+                        <Link
+                          href={`/dashboard/courses/${c.id}`}
+                          className='group flex items-center gap-3 py-3 transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+                        >
+                          <span
+                            className='flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-bold text-white'
+                            style={{ backgroundColor: color }}
+                          >
+                            {c.courseCode?.slice(0, 2).toUpperCase() || '··'}
+                          </span>
+                          <div className='min-w-0 flex-1'>
+                            <p className='truncate text-sm font-medium text-primary group-hover:underline'>
+                              {c.courseName}
+                            </p>
+                            <p className='truncate text-xs text-muted-foreground'>
+                              {c.courseCode} · {c.instructor?.name ?? 'Unassigned'}
+                            </p>
+                          </div>
+                          <div className='hidden w-28 items-center gap-2 sm:flex'>
+                            <div className='h-1.5 flex-1 overflow-hidden rounded-full bg-muted'>
+                              <div
+                                className='h-full rounded-full'
+                                style={{ width: `${c.progress || 0}%`, backgroundColor: color }}
+                              />
+                            </div>
+                            <span className='w-8 text-right text-xs font-semibold tabular-nums text-muted-foreground'>
+                              {c.progress || 0}%
+                            </span>
+                          </div>
+                          <ChevronRight className='size-4 shrink-0 text-muted-foreground' />
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ul>
               )}
             </CardContent>
           </Card>
