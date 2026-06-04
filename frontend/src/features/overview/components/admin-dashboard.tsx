@@ -1,211 +1,211 @@
 'use client';
 
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import Link from 'next/link';
+import type { LucideIcon } from 'lucide-react';
 import {
   Users,
+  GraduationCap,
+  UserCheck,
   BookOpen,
-  MonitorPlay,
-  MoreHorizontal,
-  Building2,
-  GraduationCap
+  Layers,
+  ClipboardList,
+  UsersRound,
+  Megaphone,
+  Bell,
+  ChevronRight
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { motion } from 'framer-motion';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { cn } from '@/lib/utils';
+import { useDeanUsers, usePendingRegistrations } from '@/features/dean/api/queries';
+import { useAnnouncements } from '@/features/announcements/api/queries';
+import { MonthCalendar } from './month-calendar';
 
-const facultyData = [
-  { name: 'Computer Science', value: 850 },
-  { name: 'Info Systems', value: 620 },
-  { name: 'Mathematics', value: 410 },
-  { name: 'Physics', value: 380 },
-  { name: 'Business Admin', value: 720 },
-  { name: 'Engineering', value: 950 }
+const SHORTCUTS: { icon: LucideIcon; title: string; desc: string; href: string }[] = [
+  { icon: Users, title: 'Users', desc: 'Students, teachers & staff', href: '/dashboard/dean/users' },
+  { icon: BookOpen, title: 'Courses', desc: 'Catalog & offerings', href: '/dashboard/dean/courses' },
+  { icon: Layers, title: 'Batches', desc: 'Batches & sections', href: '/dashboard/dean/batches' },
+  {
+    icon: ClipboardList,
+    title: 'Teacher assigning',
+    desc: 'Assign teachers to sections',
+    href: '/dashboard/dean/Assigning'
+  },
+  { icon: UsersRound, title: 'Clubs', desc: 'Student clubs', href: '/dashboard/dean/clubs' },
+  {
+    icon: Megaphone,
+    title: 'Announcements',
+    desc: 'Publish & schedule',
+    href: '/dashboard/announcements'
+  }
 ];
 
-export function AdminDashboard({ user }: { user: any }) {
-  const containerVariants: any = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const itemVariants: any = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0, transition: { type: 'spring', stiffness: 300, damping: 24 } }
-  };
-
-  const isDean = user?.role === 'DEAN';
-
+function AdminStat({
+  icon: Icon,
+  value,
+  label,
+  href,
+  loading,
+  accent
+}: {
+  icon: LucideIcon;
+  value: number;
+  label: string;
+  href: string;
+  loading?: boolean;
+  accent?: boolean;
+}) {
   return (
-    <motion.div
-      variants={containerVariants}
-      initial='hidden'
-      animate='show'
-      className='flex-1 space-y-6'
+    <Link
+      href={href}
+      className='flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
     >
-      <div className='grid grid-cols-1 lg:grid-cols-12 gap-6'>
-        {/* Welcome Banner */}
-        <motion.div
-          variants={itemVariants}
-          className='lg:col-span-5 xl:col-span-6 bg-muted text-foreground rounded-2xl p-8 relative overflow-hidden shadow-sm border border-border transform transition-transform hover:scale-[1.01] duration-300 min-h-[240px] flex flex-col justify-center'
-        >
-          <div className='absolute top-0 right-0 opacity-40 pointer-events-none'>
-            <svg
-              width='200'
-              height='200'
-              viewBox='0 0 200 200'
-              fill='none'
-              xmlns='http://www.w3.org/2000/svg'
-            >
-              <circle cx='150' cy='50' r='100' fill='#f8fafc' />
-              <circle cx='150' cy='50' r='70' fill='#e2e8f0' />
-            </svg>
-          </div>
-          <div className='relative z-10'>
-            <h2 className='text-3xl font-bold tracking-tight mb-2 text-foreground'>
-              Welcome Back, {user.full_name?.split(' ')[0] || (isDean ? 'Dean' : 'Admin')}!
-            </h2>
-            <p className='text-muted-foreground font-medium mb-8'>
-              Here is your core {isDean ? 'faculty overview' : 'system administrative overview'} for
-              today.
-            </p>
-
-            <div className='flex items-center space-x-4'>
-              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm'>
-                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
-                  <MonitorPlay className='h-5 w-5' />
-                </div>
-                <div>
-                  <p className='text-sm font-bold text-foreground leading-tight'>245</p>
-                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
-                    Active Sessions
-                  </p>
-                </div>
-              </div>
-              <div className='bg-card rounded-xl p-3 flex items-center gap-3 border border-border shadow-sm'>
-                <div className='bg-muted text-muted-foreground p-2.5 rounded-lg border border-border'>
-                  <BookOpen className='h-5 w-5' />
-                </div>
-                <div>
-                  <p className='text-sm font-bold text-foreground leading-tight'>48</p>
-                  <p className='text-[11px] text-muted-foreground font-medium leading-tight'>
-                    Active Courses
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </motion.div>
-
-        {/* Stats Section */}
-        <div className='lg:col-span-7 xl:col-span-6 grid grid-cols-1 md:grid-cols-3 gap-6'>
-          <motion.div variants={itemVariants} className='h-full'>
-            <StatBox
-              title='Total Students'
-              value='3,920'
-              icon={<GraduationCap className='h-5 w-5 text-foreground' />}
-              iconBg='bg-muted border border-border'
-            />
-          </motion.div>
-          <motion.div variants={itemVariants} className='h-full'>
-            <StatBox
-              title='Departments'
-              value='12'
-              icon={<Building2 className='h-5 w-5 text-foreground' />}
-              iconBg='bg-muted border border-border'
-            />
-          </motion.div>
-          <motion.div variants={itemVariants} className='h-full'>
-            <StatBox
-              title='Total Faculty'
-              value='342'
-              icon={<Users className='h-5 w-5 text-foreground' />}
-              iconBg='bg-muted border border-border'
-            />
-          </motion.div>
-        </div>
+      <span
+        className={cn(
+          'flex size-10 shrink-0 items-center justify-center rounded-lg',
+          accent ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
+        )}
+      >
+        <Icon className='size-5' />
+      </span>
+      <div className='min-w-0'>
+        {loading ? (
+          <Skeleton className='h-7 w-10' />
+        ) : (
+          <p className='text-2xl font-bold tabular-nums text-foreground'>{value}</p>
+        )}
+        <p className='text-xs text-muted-foreground'>{label}</p>
       </div>
-
-      {/* Chart Section */}
-      <motion.div variants={itemVariants} className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-        <Card className='lg:col-span-2 border-border shadow-sm hover:shadow-lg transition-shadow duration-300 rounded-2xl overflow-hidden'>
-          <CardHeader className='flex flex-row items-center justify-between pb-6 pt-6'>
-            <CardTitle className='text-lg font-bold text-foreground'>
-              Faculty Enrollment Figures
-            </CardTitle>
-            <div className='text-sm font-medium text-muted-foreground cursor-pointer hover:bg-muted p-2 rounded-md transition-colors'>
-              Current Semester ▾
-            </div>
-          </CardHeader>
-          <CardContent className='h-[300px]'>
-            <ResponsiveContainer width='100%' height='100%'>
-              <BarChart
-                data={facultyData}
-                layout='vertical'
-                margin={{ top: 0, right: 30, left: 30, bottom: 0 }}
-              >
-                <CartesianGrid
-                  strokeDasharray='3 3'
-                  horizontal={true}
-                  vertical={false}
-                  stroke='#E2E8F0'
-                />
-                <XAxis
-                  type='number'
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#94A3B8', fontSize: 12 }}
-                />
-                <YAxis
-                  dataKey='name'
-                  type='category'
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fill: '#64748B', fontSize: 12, fontWeight: 500 }}
-                  width={110}
-                />
-                <Tooltip
-                  cursor={{ fill: 'transparent' }}
-                  contentStyle={{
-                    borderRadius: '8px',
-                    border: 'none',
-                    boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'
-                  }}
-                />
-                <Bar dataKey='value' fill='#475569' radius={[0, 4, 4, 0]} barSize={16} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </motion.div>
-    </motion.div>
+    </Link>
   );
 }
 
-function StatBox({
-  title,
-  value,
-  icon,
-  iconBg
-}: {
-  title: string;
-  value: string;
-  icon: React.ReactNode;
-  iconBg: string;
-}) {
+export function AdminDashboard({ user }: { user: { full_name?: string } }) {
+  const { data: students, isLoading: studentsLoading } = useDeanUsers({
+    role: 'STUDENT',
+    pageSize: '1'
+  });
+  const { data: teachers, isLoading: teachersLoading } = useDeanUsers({
+    role: 'TEACHER',
+    pageSize: '1'
+  });
+  const { data: pending, isLoading: pendingLoading } = usePendingRegistrations();
+  const { data: announcementsData } = useAnnouncements();
+
+  const announcements = announcementsData ?? [];
+  const studentCount = students?.pagination?.total ?? 0;
+  const teacherCount = teachers?.pagination?.total ?? 0;
+  const pendingCount = pending?.registrations?.length ?? 0;
+  const firstName = user?.full_name?.split(' ')[0];
+
   return (
-    <Card className='border-border shadow-sm rounded-2xl flex flex-col justify-center h-full transform transition-transform hover:scale-[1.02] duration-300'>
-      <CardContent className='p-6'>
-        <div className='flex items-center justify-between space-x-4'>
-          <div className={`${iconBg} p-3 rounded-xl`}>{icon}</div>
+    <div className='flex-1 space-y-6'>
+      {/* Header */}
+      <div className='rounded-lg border bg-card p-4 shadow-sm'>
+        <h1 className='text-xl font-semibold tracking-tight text-foreground'>
+          Hi{firstName ? `, ${firstName}` : ''} 👋
+        </h1>
+        <p className='text-sm text-muted-foreground'>Faculty administration overview</p>
+      </div>
+
+      <div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
+        {/* Main */}
+        <div className='flex flex-col gap-6 lg:col-span-8'>
+          {/* Stats */}
+          <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+            <AdminStat
+              icon={Users}
+              value={studentCount}
+              label='Students'
+              href='/dashboard/dean/users'
+              loading={studentsLoading}
+            />
+            <AdminStat
+              icon={GraduationCap}
+              value={teacherCount}
+              label='Teachers'
+              href='/dashboard/dean/users'
+              loading={teachersLoading}
+            />
+            <AdminStat
+              icon={UserCheck}
+              value={pendingCount}
+              label='Pending approvals'
+              href='/dashboard/dean/users'
+              loading={pendingLoading}
+              accent={pendingCount > 0}
+            />
+          </div>
+
+          {/* Management hub */}
+          <Card className='rounded-lg border-border'>
+            <CardHeader className='border-b py-3'>
+              <CardTitle className='text-base font-semibold'>Manage</CardTitle>
+            </CardHeader>
+            <CardContent className='pt-4'>
+              <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                {SHORTCUTS.map((s) => (
+                  <Link
+                    key={s.href}
+                    href={s.href}
+                    className='group flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+                  >
+                    <span className='flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+                      <s.icon className='size-5' />
+                    </span>
+                    <div className='min-w-0 flex-1'>
+                      <p className='text-sm font-semibold text-foreground'>{s.title}</p>
+                      <p className='truncate text-xs text-muted-foreground'>{s.desc}</p>
+                    </div>
+                    <ChevronRight className='size-4 shrink-0 text-muted-foreground transition-colors group-hover:text-foreground' />
+                  </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </div>
-        <div className='mt-4'>
-          <p className='text-sm font-semibold text-muted-foreground'>{title}</p>
-          <h3 className='text-3xl font-bold text-foreground mt-1'>{value}</h3>
+
+        {/* Sidebar */}
+        <div className='flex flex-col gap-6 lg:col-span-4'>
+          <MonthCalendar />
+
+          <Card className='rounded-lg border-border'>
+            <CardHeader className='flex flex-row items-center gap-2 border-b py-3'>
+              <Bell className='size-4 text-muted-foreground' />
+              <CardTitle className='text-base font-semibold'>Latest announcements</CardTitle>
+            </CardHeader>
+            <CardContent className='pt-3'>
+              {announcements.length > 0 ? (
+                <ul className='divide-y divide-border'>
+                  {announcements
+                    .slice(0, 4)
+                    .map((a: { id: string | number; title: string }) => (
+                      <li key={a.id}>
+                        <Link
+                          href='/dashboard/announcements'
+                          className='flex items-start gap-2 py-2.5 transition-colors hover:bg-muted/40'
+                        >
+                          <Badge
+                            variant='secondary'
+                            className='mt-0.5 shrink-0 px-1.5 py-0 text-[10px] uppercase'
+                          >
+                            New
+                          </Badge>
+                          <span className='line-clamp-2 text-sm text-primary hover:underline'>
+                            {a.title}
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                </ul>
+              ) : (
+                <p className='py-4 text-center text-sm text-muted-foreground'>No announcements.</p>
+              )}
+            </CardContent>
+          </Card>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
