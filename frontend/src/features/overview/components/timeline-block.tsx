@@ -24,7 +24,7 @@ const ICON: Record<DeadlineKind, typeof FileText> = {
   quiz: ClipboardCheck,
   announcement: Megaphone
 };
-const ACTION_BY_ROLE: Record<'student' | 'teacher', Record<DeadlineKind, string>> = {
+const ACTION_BY_AUDIENCE: Record<'student' | 'teacher', Record<DeadlineKind, string>> = {
   student: { assignment: 'Add submission', quiz: 'Attempt quiz', announcement: 'View' },
   teacher: { assignment: 'View submissions', quiz: 'View results', announcement: 'View' }
 };
@@ -89,7 +89,7 @@ export function TimelineBlock({
   loading?: boolean;
   audience?: 'student' | 'teacher';
 }) {
-  const action = ACTION_BY_ROLE[audience];
+  const action = ACTION_BY_AUDIENCE[audience];
   const [rangeDays, setRangeDays] = useState<'7' | '30'>('30');
   const [sortBy, setSortBy] = useState<'date' | 'course'>('date');
 

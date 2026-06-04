@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Search, LayoutGrid, List as ListIcon, ChevronRight, Users } from 'lucide-react';
+import {
+  Bell,
+  Search,
+  LayoutGrid,
+  List as ListIcon,
+  ChevronRight,
+  Users,
+  BookOpen,
+  CalendarClock
+} from 'lucide-react';
 import { useQuery } from '@/lib/async-query';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +24,7 @@ import type { Course } from '@/features/teacher-courses/api/types';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { courseColor } from '@/features/student-courses/lib/course-color';
 import { TeacherCourseTile } from './teacher-course-tile';
+import { StatCard } from './stat-card';
 import { TimelineBlock, type TimelineItem } from './timeline-block';
 import { MonthCalendar } from './month-calendar';
 
@@ -73,6 +83,10 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
   });
 
   const totalStudents = courses.reduce((a, c) => a + (c.totalStudents || 0), 0);
+  const activeCourses = courses.filter((c) => c.status === 'active').length;
+  const dueThisWeek = timelineItems.filter(
+    (d) => d.deadlineAt && new Date(d.deadlineAt).getTime() <= Date.now() + 7 * 24 * 60 * 60 * 1000
+  ).length;
   const firstName = user?.full_name?.split(' ')[0];
 
   return (
@@ -89,6 +103,35 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
               : 'Welcome to your teaching dashboard'}
           </p>
         </div>
+      </div>
+
+      {/* Stats */}
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+        {coursesLoading || deadlinesLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className='h-32 w-full rounded-2xl' />
+          ))
+        ) : (
+          <>
+            <StatCard
+              icon={BookOpen}
+              tone='primary'
+              value={courses.length}
+              label='Courses'
+              sublabel={`${activeCourses} active`}
+              ratio={courses.length ? activeCourses / courses.length : 0}
+            />
+            <StatCard icon={Users} tone='info' value={totalStudents} label='Students' sublabel='enrolled' />
+            <StatCard
+              icon={CalendarClock}
+              tone='warning'
+              value={dueThisWeek}
+              label='Due this week'
+              sublabel={`${timelineItems.length} upcoming`}
+              ratio={timelineItems.length ? dueThisWeek / timelineItems.length : 0}
+            />
+          </>
+        )}
       </div>
 
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>

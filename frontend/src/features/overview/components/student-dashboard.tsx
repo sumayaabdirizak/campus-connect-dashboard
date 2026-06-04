@@ -2,7 +2,16 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { Bell, Search, LayoutGrid, List as ListIcon, ChevronRight } from 'lucide-react';
+import {
+  Bell,
+  Search,
+  LayoutGrid,
+  List as ListIcon,
+  ChevronRight,
+  BookOpen,
+  FileText,
+  ClipboardCheck
+} from 'lucide-react';
 import { useQuery } from '@/lib/async-query';
 import { apiClient } from '@/lib/api-client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,6 +23,7 @@ import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { courseColor } from '@/features/student-courses/lib/course-color';
 import { MoodleCourseCard } from './moodle-course-card';
+import { StatCard } from './stat-card';
 import { TimelineBlock, type TimelineItem } from './timeline-block';
 import { MonthCalendar } from './month-calendar';
 
@@ -76,6 +86,13 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
   const lessonsTotal = courses.reduce((a, c) => a + (c.totalLessons || 0), 0);
   const overallPct = lessonsTotal ? Math.round((lessonsDone / lessonsTotal) * 100) : 0;
 
+  const assignments = timelineItems.filter((d) => d.kind === 'assignment');
+  const quizzes = timelineItems.filter((d) => d.kind === 'quiz');
+  const dueThisWeek = (rows: TimelineItem[]) => {
+    const end = Date.now() + 7 * 24 * 60 * 60 * 1000;
+    return rows.filter((d) => d.deadlineAt && new Date(d.deadlineAt).getTime() <= end).length;
+  };
+
   const firstName = user?.full_name?.split(' ')[0];
 
   return (
@@ -98,6 +115,42 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
             </div>
             <span className='text-sm font-bold tabular-nums text-foreground'>{overallPct}%</span>
           </div>
+        )}
+      </div>
+
+      {/* Stats */}
+      <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
+        {coursesLoading || deadlinesLoading ? (
+          Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className='h-32 w-full rounded-2xl' />
+          ))
+        ) : (
+          <>
+            <StatCard
+              icon={BookOpen}
+              tone='warning'
+              value={lessonsDone}
+              label='Lessons'
+              sublabel={`of ${lessonsTotal} completed`}
+              ratio={lessonsTotal ? lessonsDone / lessonsTotal : 0}
+            />
+            <StatCard
+              icon={FileText}
+              tone='info'
+              value={assignments.length}
+              label='Assignments'
+              sublabel={`${dueThisWeek(assignments)} due this week`}
+              ratio={assignments.length ? dueThisWeek(assignments) / assignments.length : 0}
+            />
+            <StatCard
+              icon={ClipboardCheck}
+              tone='success'
+              value={quizzes.length}
+              label='Quizzes'
+              sublabel={`${dueThisWeek(quizzes)} due this week`}
+              ratio={quizzes.length ? dueThisWeek(quizzes) / quizzes.length : 0}
+            />
+          </>
         )}
       </div>
 
