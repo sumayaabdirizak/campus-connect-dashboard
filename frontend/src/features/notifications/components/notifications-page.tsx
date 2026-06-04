@@ -1,30 +1,26 @@
 'use client';
 
+import Link from 'next/link';
 import { Icons } from '@/components/icons';
 import PageContainer from '@/components/layout/page-container';
-import { Button } from '@/components/ui/button';
-import { NotificationCard } from '@/components/ui/notification-card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useRouter } from 'next/navigation';
-import { useNotificationStore } from '../utils/store';
+import { formatDistanceToNow } from 'date-fns';
+import { useAnnouncements } from '@/features/announcements/api/queries';
+import type { Announcement } from '@/features/announcements/api/types';
 
-const actionRoutes: Record<string, string> = {
-  view: '/dashboard/workspaces',
-  'view-product': '/dashboard/product',
-  billing: '/dashboard/billing',
-  open: '/dashboard/kanban',
-  'open-chat': '/dashboard/chat'
-};
+function timeAgo(iso?: string): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? '' : formatDistanceToNow(d, { addSuffix: true });
+}
 
+/** Notifications page — backed by real announcements (replaces the old mock store). */
 export default function NotificationsPage() {
-  const { notifications, markAsRead, markAllAsRead, unreadCount } = useNotificationStore();
-  const router = useRouter();
-  const count = unreadCount();
+  const { data } = useAnnouncements();
+  const announcements = data ?? [];
+  const fresh = announcements.filter((a) => a.isNew);
 
-  const unreadNotifications = notifications.filter((n) => n.status === 'unread');
-  const readNotifications = notifications.filter((n) => n.status === 'read');
-
-  const renderList = (items: typeof notifications) => {
+  const renderList = (items: Announcement[]) => {
     if (items.length === 0) {
       return (
         <div className='flex flex-col items-center justify-center py-16'>
@@ -33,27 +29,28 @@ export default function NotificationsPage() {
         </div>
       );
     }
-
     return (
       <div className='flex flex-col gap-2'>
-        {items.map((notification) => (
-          <NotificationCard
-            key={notification.id}
-            id={notification.id}
-            title={notification.title}
-            body={notification.body}
-            status={notification.status}
-            createdAt={notification.createdAt}
-            actions={notification.actions}
-            onMarkAsRead={markAsRead}
-            onAction={(notifId, actionId) => {
-              const route = actionRoutes[actionId];
-              if (route) {
-                markAsRead(notifId);
-                router.push(route);
-              }
-            }}
-          />
+        {items.map((a) => (
+          <Link
+            key={a.id}
+            href='/dashboard/announcements'
+            className='flex items-start gap-3 rounded-lg border p-3 transition-colors hover:bg-muted/50'
+          >
+            <span className='mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
+              <Icons.notification className='h-4 w-4' />
+            </span>
+            <div className='min-w-0 flex-1'>
+              <div className='flex items-start justify-between gap-2'>
+                <p className='text-sm font-medium text-foreground'>{a.title}</p>
+                {a.isNew && <span className='mt-1.5 size-2 shrink-0 rounded-full bg-primary' />}
+              </div>
+              <p className='text-xs text-muted-foreground'>
+                {a.createdBy?.name ? `${a.createdBy.name} · ` : ''}
+                {timeAgo(a.createdAt)}
+              </p>
+            </div>
+          </Link>
         ))}
       </div>
     );
@@ -63,29 +60,18 @@ export default function NotificationsPage() {
     <PageContainer
       scrollable
       pageTitle='Notifications'
-      pageDescription='View and manage all your notifications.'
-      pageHeaderAction={
-        count > 0 ? (
-          <Button variant='outline' size='sm' onClick={markAllAsRead}>
-            Mark all as read
-          </Button>
-        ) : undefined
-      }
+      pageDescription='Recent announcements for you.'
     >
       <Tabs defaultValue='all'>
         <TabsList>
-          <TabsTrigger value='all'>All ({notifications.length})</TabsTrigger>
-          <TabsTrigger value='unread'>Unread ({unreadNotifications.length})</TabsTrigger>
-          <TabsTrigger value='read'>Read ({readNotifications.length})</TabsTrigger>
+          <TabsTrigger value='all'>All ({announcements.length})</TabsTrigger>
+          <TabsTrigger value='new'>New ({fresh.length})</TabsTrigger>
         </TabsList>
         <TabsContent value='all' className='mt-4'>
-          {renderList(notifications)}
+          {renderList(announcements)}
         </TabsContent>
-        <TabsContent value='unread' className='mt-4'>
-          {renderList(unreadNotifications)}
-        </TabsContent>
-        <TabsContent value='read' className='mt-4'>
-          {renderList(readNotifications)}
+        <TabsContent value='new' className='mt-4'>
+          {renderList(fresh)}
         </TabsContent>
       </Tabs>
     </PageContainer>
