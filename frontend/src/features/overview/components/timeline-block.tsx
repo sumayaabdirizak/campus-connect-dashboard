@@ -24,10 +24,9 @@ const ICON: Record<DeadlineKind, typeof FileText> = {
   quiz: ClipboardCheck,
   announcement: Megaphone
 };
-const ACTION: Record<DeadlineKind, string> = {
-  assignment: 'Add submission',
-  quiz: 'Attempt quiz',
-  announcement: 'View'
+const ACTION_BY_ROLE: Record<'student' | 'teacher', Record<DeadlineKind, string>> = {
+  student: { assignment: 'Add submission', quiz: 'Attempt quiz', announcement: 'View' },
+  teacher: { assignment: 'View submissions', quiz: 'View results', announcement: 'View' }
 };
 
 function hrefFor(d: TimelineItem): string {
@@ -81,7 +80,16 @@ function Segmented<T extends string>({
  * (Today / Tomorrow / weekday). Each row: activity icon, due time, name,
  * course, and an action button.
  */
-export function TimelineBlock({ items, loading }: { items: TimelineItem[]; loading?: boolean }) {
+export function TimelineBlock({
+  items,
+  loading,
+  audience = 'student'
+}: {
+  items: TimelineItem[];
+  loading?: boolean;
+  audience?: 'student' | 'teacher';
+}) {
+  const action = ACTION_BY_ROLE[audience];
   const [rangeDays, setRangeDays] = useState<'7' | '30'>('30');
   const [sortBy, setSortBy] = useState<'date' | 'course'>('date');
 
@@ -176,7 +184,7 @@ export function TimelineBlock({ items, loading }: { items: TimelineItem[]; loadi
                           <p className='truncate text-xs text-muted-foreground'>{d.courseCode ?? ''}</p>
                         </div>
                         <Button asChild variant='outline' size='sm' className='shrink-0'>
-                          <Link href={hrefFor(d)}>{ACTION[d.kind]}</Link>
+                          <Link href={hrefFor(d)}>{action[d.kind]}</Link>
                         </Button>
                       </li>
                     );
