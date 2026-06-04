@@ -102,11 +102,17 @@ export function AdminDashboard({ user }: { user: { full_name?: string } }) {
   return (
     <div className='flex-1 space-y-6'>
       {/* Header */}
-      <div className='rounded-lg border bg-card p-4 shadow-sm'>
-        <h1 className='text-xl font-semibold tracking-tight text-foreground'>
-          Hi{firstName ? `, ${firstName}` : ''} 👋
-        </h1>
-        <p className='text-sm text-muted-foreground'>Faculty administration overview</p>
+      <div className='relative overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-sm'>
+        <div
+          className='pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary-foreground/10 blur-3xl'
+          aria-hidden
+        />
+        <div className='relative'>
+          <h1 className='text-xl font-bold tracking-tight'>
+            Hi{firstName ? `, ${firstName}` : ''} 👋
+          </h1>
+          <p className='text-sm text-primary-foreground/80'>Faculty administration overview</p>
+        </div>
       </div>
 
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>

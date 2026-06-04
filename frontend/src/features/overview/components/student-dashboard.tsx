@@ -97,23 +97,30 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
 
   return (
     <div className='flex-1 space-y-6'>
-      <div className='flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card p-4 shadow-sm'>
-        <div>
-          <h1 className='text-xl font-semibold tracking-tight text-foreground'>
+      <div className='relative flex flex-wrap items-center justify-between gap-4 overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-sm'>
+        <div
+          className='pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary-foreground/10 blur-3xl'
+          aria-hidden
+        />
+        <div className='relative'>
+          <h1 className='text-xl font-bold tracking-tight'>
             Hi{firstName ? `, ${firstName}` : ''} 👋
           </h1>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-sm text-primary-foreground/80'>
             {lessonsTotal > 0
               ? `${lessonsDone} of ${lessonsTotal} lessons completed across your courses`
               : 'Welcome to your dashboard'}
           </p>
         </div>
         {lessonsTotal > 0 && (
-          <div className='flex items-center gap-3'>
-            <div className='h-2 w-40 overflow-hidden rounded-full bg-muted'>
-              <div className='h-full rounded-full bg-primary' style={{ width: `${overallPct}%` }} />
+          <div className='relative flex items-center gap-3'>
+            <div className='h-2 w-40 overflow-hidden rounded-full bg-primary-foreground/20'>
+              <div
+                className='h-full rounded-full bg-primary-foreground'
+                style={{ width: `${overallPct}%` }}
+              />
             </div>
-            <span className='text-sm font-bold tabular-nums text-foreground'>{overallPct}%</span>
+            <span className='text-sm font-bold tabular-nums'>{overallPct}%</span>
           </div>
         )}
       </div>

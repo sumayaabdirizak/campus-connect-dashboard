@@ -92,12 +92,16 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
   return (
     <div className='flex-1 space-y-6'>
       {/* Header summary */}
-      <div className='flex flex-wrap items-center justify-between gap-4 rounded-lg border bg-card p-4 shadow-sm'>
-        <div>
-          <h1 className='text-xl font-semibold tracking-tight text-foreground'>
+      <div className='relative overflow-hidden rounded-xl bg-gradient-to-br from-primary via-primary to-primary/80 p-5 text-primary-foreground shadow-sm'>
+        <div
+          className='pointer-events-none absolute -top-16 -right-12 size-48 rounded-full bg-primary-foreground/10 blur-3xl'
+          aria-hidden
+        />
+        <div className='relative'>
+          <h1 className='text-xl font-bold tracking-tight'>
             Hi{firstName ? `, ${firstName}` : ''} 👋
           </h1>
-          <p className='text-sm text-muted-foreground'>
+          <p className='text-sm text-primary-foreground/80'>
             {courses.length > 0
               ? `Teaching ${courses.length} ${courses.length === 1 ? 'course' : 'courses'} · ${totalStudents} students`
               : 'Welcome to your teaching dashboard'}
