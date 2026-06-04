@@ -1,0 +1,58 @@
+'use client';
+
+import Link from 'next/link';
+import type { StudentCourse } from '@/features/student-courses/api/types';
+import { courseColor } from '@/features/student-courses/lib/course-color';
+
+/**
+ * Moodle-style "course overview" card: a colored header banner, course
+ * meta, and a progress bar pinned along the bottom edge. Utilitarian /
+ * Bootstrap-ish (subtle border, modest radius) to match the Moodle look.
+ */
+export function MoodleCourseCard({ course }: { course: StudentCourse }) {
+  const color = courseColor(course.courseCode);
+  const progress = course.progress || 0;
+
+  return (
+    <Link
+      href={`/dashboard/courses/${course.id}`}
+      className='group flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+    >
+      {/* Banner */}
+      <div className='relative h-16 w-full' style={{ backgroundColor: color }}>
+        <span className='absolute bottom-2 left-3 text-xs font-semibold tracking-wide text-white/90'>
+          {course.courseCode}
+        </span>
+      </div>
+
+      {/* Body */}
+      <div className='flex flex-1 flex-col p-3'>
+        <p className='text-[11px] uppercase tracking-wide text-muted-foreground'>
+          {course.department || 'Course'}
+        </p>
+        <h4 className='line-clamp-2 text-sm font-semibold text-primary group-hover:underline'>
+          {course.courseName}
+        </h4>
+        <p className='mt-1 truncate text-xs text-muted-foreground'>
+          {course.instructor?.name ?? 'Unassigned'}
+        </p>
+      </div>
+
+      {/* Progress (bottom edge) */}
+      <div className='px-3 pb-3'>
+        <div className='mb-1 flex items-center justify-between text-[11px] text-muted-foreground'>
+          <span>{progress}% complete</span>
+          <span>
+            {course.completedLessons}/{course.totalLessons}
+          </span>
+        </div>
+        <div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>
+          <div
+            className='h-full rounded-full'
+            style={{ width: `${progress}%`, backgroundColor: color }}
+          />
+        </div>
+      </div>
+    </Link>
+  );
+}
