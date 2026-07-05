@@ -7,7 +7,7 @@
     "url": "#"
   },
   "scripts": {
-    "dev": "node scripts/postinstall.js && next dev -p 3000",
+    "dev": "kill-port 3000 && node scripts/postinstall.js && next dev -p 3000",
     "build": "next build",
     "start": "next start",
     "lint": "oxlint",
@@ -106,6 +106,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "husky": "^9.1.7",
+    "kill-port": "^2.0.1",
     "lint-staged": "^15.5.2",
     "oxfmt": "^0.42.0",
     "oxlint": "^1.57.0",
