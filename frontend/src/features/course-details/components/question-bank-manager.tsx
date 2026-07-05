@@ -28,11 +28,11 @@ import {
   Pencil,
   Plus,
   Search,
-  Sparkles,
   Trash2,
   Upload,
   X
 } from 'lucide-react';
+import { confirmDelete, showToast } from '@/lib/notifications';
 import { toast } from 'sonner';
 import {
   useBankQuestions,
@@ -51,8 +51,10 @@ import type {
 } from '../api/question-bank-types';
 import type { CourseModule } from '../api/resources-types';
 import type { QuizQuestionType } from '../api/quizzes-types';
-import { AiGenerateDialog } from './ai-generate-dialog';
-import { parseQuestionCsv } from './_shared/question-csv';
+import {
+  QuestionCsvImportPanel,
+  useQuestionCsvParse
+} from './_shared/question-csv-import-panel';
 
 /// Select sentinels — shadcn's Select can't take `""` as a value. We map back
 /// to `undefined` (filters) or `null` (form fields) when serialising.
@@ -99,8 +101,6 @@ export function QuestionBankManager({
 
   // CSV import flow lives in its own dialog so the manager stays focused.
   const [csvOpen, setCsvOpen] = useState(false);
-  // AI generation flow — separate dialog with its own two-phase UX.
-  const [aiOpen, setAiOpen] = useState(false);
 
   const totalCount = questions.length;
 
@@ -127,11 +127,11 @@ export function QuestionBankManager({
     }
   };
 
-  const handleDelete = (q: BankQuestion) => {
-    if (!confirm(`Delete "${q.question_text.slice(0, 60)}…" from the bank?`)) return;
+  const handleDelete = async (q: BankQuestion) => {
+    if (!(await confirmDelete(q.question_text.slice(0, 60)))) return;
     deleteMutation.mutate(q.id, {
-      onSuccess: () => toast.success('Question deleted'),
-      onError: (e: Error) => toast.error(e.message)
+      onSuccess: () => showToast('success', 'Question deleted'),
+      onError: (e: Error) => showToast('error', e.message)
     });
   };
 
@@ -162,14 +162,6 @@ export function QuestionBankManager({
               modules={modules}
             />
             <div className='ml-auto flex gap-2'>
-              <Button
-                variant='outline'
-                size='sm'
-                className='gap-1'
-                onClick={() => setAiOpen(true)}
-              >
-                <Sparkles className='w-3.5 h-3.5' /> Generate with AI
-              </Button>
               <Button
                 variant='outline'
                 size='sm'
@@ -229,13 +221,6 @@ export function QuestionBankManager({
         open={csvOpen}
         onOpenChange={setCsvOpen}
         courseOfferingId={courseOfferingId}
-      />
-
-      <AiGenerateDialog
-        open={aiOpen}
-        onOpenChange={setAiOpen}
-        courseOfferingId={courseOfferingId}
-        destination={{ kind: 'bank' }}
       />
     </>
   );
@@ -767,13 +752,8 @@ function CsvImportDialog({
   const importMutation = useImportBankQuestions(courseOfferingId);
   const [text, setText] = useState('');
 
-  // Use the shared parser. 'bank' mode tells it to ignore the
-  // explanation column even if the file ships one — bank questions don't
-  // carry explanations on the data model, so silently dropping the column
-  // here is more honest than persisting it and never showing it again.
-  const parsed = useMemo(() => parseQuestionCsv(text, 'bank'), [text]);
+  const parsed = useQuestionCsvParse(text, 'bank');
   const validCount = parsed.rows.length;
-  const errorCount = parsed.errors.length;
 
   const handleSubmit = () => {
     if (validCount === 0) {
@@ -795,79 +775,47 @@ function CsvImportDialog({
     importMutation.mutate(questions, {
       onSuccess: (res) => {
         toast.success(`Imported ${res.imported} question${res.imported === 1 ? '' : 's'}`);
-        setText('');
-        onOpenChange(false);
+        handleOpenChange(false);
       },
       onError: (e: Error) => toast.error(e.message)
     });
   };
 
+  const handleOpenChange = (next: boolean) => {
+    if (!next) setText('');
+    onOpenChange(next);
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className='max-w-2xl max-h-[85vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle>Import questions from CSV</DialogTitle>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className='max-w-md gap-5 p-6'>
+        <DialogHeader className='space-y-1.5 text-left'>
+          <DialogTitle>Import CSV</DialogTitle>
           <DialogDescription>
-            Paste rows or upload a .csv file. Expected columns (header row required):{' '}
-            <code className='text-[11px] bg-muted px-1 rounded'>
-              question_text, type, points, topic, difficulty, option_1, option_1_correct,
-              option_2, option_2_correct, …
-            </code>
-            . <code className='text-[11px] bg-muted px-1 rounded'>type</code> is one of{' '}
-            <code className='text-[11px] bg-muted px-1 rounded'>MCQ</code>,{' '}
-            <code className='text-[11px] bg-muted px-1 rounded'>TRUE_FALSE</code>,{' '}
-            <code className='text-[11px] bg-muted px-1 rounded'>SHORT_ANSWER</code>. Up to
-            6 options.
+            Upload a <span className='font-medium text-foreground'>.csv</span> file to add questions
+            to the bank.
           </DialogDescription>
         </DialogHeader>
 
-        <div className='space-y-3'>
-          <div>
-            <Input
-              type='file'
-              accept='.csv,text/csv'
-              onChange={async (e) => {
-                const f = e.target.files?.[0];
-                if (!f) return;
-                const t = await f.text();
-                setText(t);
-              }}
-            />
-          </div>
-          <Textarea
-            placeholder='…or paste CSV rows here'
-            rows={10}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className='font-mono text-xs'
-          />
-          {text.trim() !== '' && (
-            <div className='flex items-center gap-3 text-xs'>
-              <Badge variant={validCount > 0 ? 'default' : 'destructive'}>
-                {validCount} valid
-              </Badge>
-              {errorCount > 0 && (
-                <Badge variant='destructive'>
-                  {errorCount} skipped
-                </Badge>
-              )}
-              {errorCount > 0 && (
-                <span className='text-muted-foreground line-clamp-1'>
-                  e.g. row {parsed.errors[0].rowIndex + 2}: {parsed.errors[0].reason}
-                </span>
-              )}
-            </div>
-          )}
-        </div>
+        <QuestionCsvImportPanel
+          key={open ? 'open' : 'closed'}
+          mode='bank'
+          text={text}
+          onTextChange={setText}
+          uploadOnly
+          disabled={importMutation.isPending}
+        />
 
-        <DialogFooter>
-          <Button variant='outline' onClick={() => onOpenChange(false)}>
+        <DialogFooter className='gap-2 sm:gap-0'>
+          <Button variant='outline' onClick={() => handleOpenChange(false)}>
             Cancel
           </Button>
           <Button
             onClick={handleSubmit}
             disabled={importMutation.isPending || validCount === 0}
+            className='gap-1.5'
           >
+            <Upload className='h-4 w-4' />
             {importMutation.isPending
               ? 'Importing…'
               : validCount > 0

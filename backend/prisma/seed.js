@@ -1,15 +1,20 @@
 import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
+import { hashPassword } from '../src/utils/password.js';
 import { runFullDiscussionSetup } from '../src/features/discussions/discussionSetup.service.js';
 
 const prisma = new PrismaClient();
 
+const SEED_MINIMAL = ["1", "true", "yes"].includes(
+  String(process.env.SEED_MINIMAL ?? "").toLowerCase()
+);
+
 async function main() {
   console.log('--- Starting Seeding Process ---');
+  if (SEED_MINIMAL) {
+    console.log('SEED_MINIMAL=1 — seeding roles, one faculty chain, one teacher/student, and discussion setup only.');
+  }
 
-  // --- Utility: Hashing Password ---
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash('password123', salt);
+  const hashedPassword = await hashPassword('password123');
 
   // --- 1. Roles ---
   console.log('Seeding Roles...');
@@ -43,7 +48,9 @@ async function main() {
 
   // --- 2. Academic Years & Semesters ---
   console.log('Seeding Academic Years & Semesters...');
-  const academicYearData = [
+  const academicYearData = SEED_MINIMAL
+    ? [{ name: '2024/2025', start: '2024-09-01', end: '2025-08-31' }]
+    : [
     { name: '2022/2023', start: '2022-09-01', end: '2023-08-31' },
     { name: '2023/2024', start: '2023-09-01', end: '2024-08-31' },
     { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
@@ -95,7 +102,16 @@ async function main() {
 
   // --- 3. Faculties & Departments & deans ---
   console.log('Seeding Faculties, Departments & Deans...');
-  const facultySpecs = [
+  const facultySpecs = SEED_MINIMAL
+    ? [
+        {
+          name: 'Faculty of Computing',
+          code: 'FC',
+          dean: { name: 'Dr. Alan Turing', email: 'dean.computing@university.edu', number: 'DEAN001' },
+          departments: [{ name: 'Department of Computer Science', code: 'CS' }],
+        },
+      ]
+    : [
     {
       name: 'Faculty of Computing',
       code: 'FC',
@@ -214,8 +230,9 @@ async function main() {
     });
     programs.push(prog);
 
-    // 5 Batches per program (instead of 4)
-    for (let i = 1; i <= 5; i++) {
+    // 5 Batches per program (1 in SEED_MINIMAL)
+    const batchLimit = SEED_MINIMAL ? 1 : 5;
+    for (let i = 1; i <= batchLimit; i++) {
         const ayIndex = (i - 1) % academicYears.length;
         const ay = academicYears[ayIndex];
         const batchName = `${prog.code}-B${i}`;
@@ -238,8 +255,9 @@ async function main() {
         }
         batches.push(batch);
 
-        // 2 Sections per batch
-        for (const secName of ['Section A', 'Section B']) {
+        // 2 Sections per batch (1 in SEED_MINIMAL)
+        const sectionNames = SEED_MINIMAL ? ['Section A'] : ['Section A', 'Section B'];
+        for (const secName of sectionNames) {
             const section = await prisma.batchSection.upsert({
                 where: {
                     batchId_name: {
@@ -264,8 +282,9 @@ async function main() {
   const lecturers = [];
 
   for (const dept of departments) {
-    // Create 2 Lecturers per department
-    for (let i = 1; i <= 2; i++) {
+    // Create 2 Lecturers per department (1 in SEED_MINIMAL)
+    const lecturerLimit = SEED_MINIMAL ? 1 : 2;
+    for (let i = 1; i <= lecturerLimit; i++) {
         const email = `lecturer.${dept.code.toLowerCase()}${i}@university.edu`;
         const lecturerUser = await prisma.user.upsert({
             where: { email },
@@ -313,8 +332,9 @@ async function main() {
         });
     }
 
-    // Create 4 courses per department
-    for (let i = 1; i <= 4; i++) {
+    // Create 4 courses per department (1 in SEED_MINIMAL)
+    const courseLimit = SEED_MINIMAL ? 1 : 4;
+    for (let i = 1; i <= courseLimit; i++) {
         const courseCode = `${dept.code}${100 + i}`;
         const course = await prisma.course.upsert({
             where: { code: courseCode },
@@ -331,8 +351,9 @@ async function main() {
     }
   }
 
-  // --- 6. Students --- 10 per section ---
-  console.log('Seeding Students (10 per section)...');
+  // --- 6. Students --- 10 per section (1 in SEED_MINIMAL) ---
+  console.log(SEED_MINIMAL ? 'Seeding Students (minimal: 1 per section)...' : 'Seeding Students (10 per section)...');
+  const studentsPerSection = SEED_MINIMAL ? 1 : 10;
   for (const batch of batches) {
       const batchSections = sections.filter(s => s.batchId === batch.id);
       const program = programs.find(p => p.id === batch.programId);
@@ -342,8 +363,10 @@ async function main() {
           // e.g. "section-a", "section-b"
           const sectionSlug = section.name.toLowerCase().replace(/\s+/g, '-');
 
-          for (let i = 1; i <= 10; i++) {
-              const email = `student.${batch.name.toLowerCase()}.${sectionSlug}.${i}@university.edu`;
+          for (let i = 1; i <= studentsPerSection; i++) {
+              const email = SEED_MINIMAL && i === 1
+                ? 'student.demo@university.edu'
+                : `student.${batch.name.toLowerCase()}.${sectionSlug}.${i}@university.edu`;
               const studentNum = `STD-${batch.name}-${sectionSlug}-${i.toString().padStart(2, '0')}`;
 
               const student = await prisma.user.upsert({
@@ -425,8 +448,8 @@ async function main() {
       const sem1 = semestersAll.find(s => s.academicYearId === ayId && s.sequence === 1);
       const sem2 = semestersAll.find(s => s.academicYearId === ayId && s.sequence === 2);
 
-      const sem1Courses = deptCourses.slice(0, 2);
-      const sem2Courses = deptCourses.slice(2, 4);
+      const sem1Courses = deptCourses.slice(0, SEED_MINIMAL ? 1 : 2);
+      const sem2Courses = SEED_MINIMAL ? [] : deptCourses.slice(2, 4);
 
       const assignCourses = async (courseList, semId) => {
           for (const course of courseList) {

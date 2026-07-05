@@ -32,7 +32,8 @@ import type {
   ServerDetailResponse,
   ServerListResponse,
   ServerPresenceResponse,
-  UnreadCountResponse
+  UnreadCountResponse,
+  UnreadSocketPayload
 } from './types';
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -408,8 +409,12 @@ export const searchGroupDmCandidates = (q?: string) => {
 // Notifications + unread
 // ────────────────────────────────────────────────────────────────────────────
 
-export const getUnreadCount = () =>
-  apiClient<UnreadCountResponse>('/discussions/me/notifications/unread-count');
+export const getUnreadCount = async (): Promise<UnreadCountResponse> => {
+  const data = await apiClient<UnreadSocketPayload>(
+    '/discussions/me/notifications/unread-count'
+  );
+  return { unreadCount: Number(data.globalUnread ?? 0) };
+};
 
 export const listNotifications = (params: { limit?: number; unreadOnly?: boolean } = {}) => {
   const qs = new URLSearchParams();

@@ -89,7 +89,6 @@ interface ResourceModulesProps {
   onDeleteModule?: (moduleId: number) => void;
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
-  onPreviewResource: (resource: Resource) => void;
   /// Teacher-only: open the watch-analytics panel for an uploaded video/audio
   /// resource. Undefined for students (they never see the Analytics button).
   onAnalytics?: (resource: Resource) => void;
@@ -123,7 +122,6 @@ export function ResourceModules({
   onDeleteModule,
   onEditResource,
   onDeleteResource,
-  onPreviewResource,
   onAnalytics,
   onReorderModules,
   onReorderResources
@@ -165,7 +163,6 @@ export function ResourceModules({
             onDelete={() => onDeleteModule?.(mod.id)}
             onEditResource={onEditResource}
             onDeleteResource={onDeleteResource}
-            onPreviewResource={onPreviewResource}
             onAnalytics={onAnalytics}
             onReorderResources={onReorderResources}
           />
@@ -179,7 +176,6 @@ export function ResourceModules({
           onAdd={() => onAddToModule?.(null)}
           onEditResource={onEditResource}
           onDeleteResource={onDeleteResource}
-          onPreviewResource={onPreviewResource}
           onAnalytics={onAnalytics}
           onReorderResources={onReorderResources}
         />
@@ -280,7 +276,6 @@ function ModuleBucket({
   onDelete,
   onEditResource,
   onDeleteResource,
-  onPreviewResource,
   onAnalytics,
   onReorderResources
 }: {
@@ -292,7 +287,6 @@ function ModuleBucket({
   onDelete?: () => void;
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
-  onPreviewResource: (resource: Resource) => void;
   onAnalytics?: (resource: Resource) => void;
   onReorderResources?: (
     items: { id: number; moduleId: number | null; position: number }[]
@@ -374,7 +368,6 @@ function ModuleBucket({
             isStudent={isStudent}
             onEditResource={onEditResource}
             onDeleteResource={onDeleteResource}
-            onPreviewResource={onPreviewResource}
             onAnalytics={onAnalytics}
             onReorderResources={onReorderResources}
           />
@@ -390,7 +383,6 @@ function UngroupedBucket({
   onAdd,
   onEditResource,
   onDeleteResource,
-  onPreviewResource,
   onAnalytics,
   onReorderResources
 }: {
@@ -399,7 +391,6 @@ function UngroupedBucket({
   onAdd?: () => void;
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
-  onPreviewResource: (resource: Resource) => void;
   onAnalytics?: (resource: Resource) => void;
   onReorderResources?: (
     items: { id: number; moduleId: number | null; position: number }[]
@@ -448,7 +439,6 @@ function UngroupedBucket({
               isStudent={isStudent}
               onEditResource={onEditResource}
               onDeleteResource={onDeleteResource}
-              onPreviewResource={onPreviewResource}
               onAnalytics={onAnalytics}
               onReorderResources={onReorderResources}
             />
@@ -467,7 +457,6 @@ function ResourceList({
   isStudent,
   onEditResource,
   onDeleteResource,
-  onPreviewResource,
   onAnalytics,
   onReorderResources
 }: {
@@ -476,7 +465,6 @@ function ResourceList({
   isStudent?: boolean;
   onEditResource?: (resource: Resource) => void;
   onDeleteResource?: (resourceId: number) => void;
-  onPreviewResource: (resource: Resource) => void;
   onAnalytics?: (resource: Resource) => void;
   onReorderResources?: (
     items: { id: number; moduleId: number | null; position: number }[]
@@ -595,7 +583,6 @@ function ResourceList({
       <ResourceCard
         resource={r}
         isStudent={isStudent}
-        onPreview={onPreviewResource}
         onEdit={onEditResource}
         onDelete={onDeleteResource}
         dragHandle={dragHandle}

@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useRef } from 'react';
+import { showToast } from '@/lib/notifications';
 import { toast } from 'sonner';
 
 interface DeleteWithUndoOptions {
@@ -56,7 +57,7 @@ export function useDeleteWithUndo() {
           // Server rejected — restore and surface the error.
           restore();
           const msg = e instanceof Error ? e.message : 'Delete failed';
-          toast.error(`Couldn't delete · ${msg}`);
+          showToast('error', `Couldn't delete · ${msg}`);
         }
       }, delayMs);
       pending.current.set(key, timer);

@@ -9,7 +9,9 @@ import {
 } from './chat-types';
 import { useAuthStore } from '@/lib/auth-store';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { getSocketUrl } from '@/lib/api-config';
+
+const SOCKET_URL = getSocketUrl();
 
 interface CourseChatState {
   messages: ChatMessage[];
@@ -39,9 +41,16 @@ export function useCourseChat(courseOfferingId: string): CourseChatState {
   const typingStopTimer = useRef<number | null>(null);
 
   useEffect(() => {
+    setMessages([]);
+    setPresence([]);
+    setTyping([]);
+    setLiveDeletedIds(new Set());
+    setLiveUpdated(new Map());
+
     socketRef.current = io(SOCKET_URL, {
       transports: ['websocket'],
-      reconnection: true
+      reconnection: true,
+      withCredentials: true
     });
     const socket = socketRef.current;
 
@@ -69,13 +78,13 @@ export function useCourseChat(courseOfferingId: string): CourseChatState {
       });
     });
 
-    socket.on('chat:presence', (payload: { courseOfferingId: number; users: ChatPresenceUser[] }) => {
+    socket.on('chat:presence', (payload: { courseOfferingId: string; users: ChatPresenceUser[] }) => {
       if (String(payload.courseOfferingId) !== String(courseOfferingId)) return;
       // Exclude self from the displayed presence list — it's about who *else*
       // is here. The empty-state copy depends on this.
       setPresence(payload.users.filter((u) => u.userId !== userId));
     });
-    socket.on('chat:typing', (payload: { courseOfferingId: number; users: ChatTypingUser[] }) => {
+    socket.on('chat:typing', (payload: { courseOfferingId: string; users: ChatTypingUser[] }) => {
       if (String(payload.courseOfferingId) !== String(courseOfferingId)) return;
       setTyping(payload.users.filter((u) => u.userId !== userId));
     });

@@ -16,6 +16,7 @@ import {
   ContextMenuTrigger
 } from '@/components/ui/context-menu';
 import { Icons } from '@/components/icons';
+import { confirmDelete, showToast } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
@@ -224,8 +225,8 @@ function useMessageActions(props: CommonProps) {
     }
   };
 
-  const onDelete = () => {
-    if (!window.confirm('Delete this message? This cannot be undone.')) return;
+  const onDelete = async () => {
+    if (!(await confirmDelete('this message'))) return;
     if (onOptimisticPatch) {
       // Mark deleted locally — row immediately renders the "(deleted)"
       // placeholder. On server failure we revert and toast.
@@ -235,7 +236,7 @@ function useMessageActions(props: CommonProps) {
       deleteMessage.mutate(message.id, {
         onError: () => {
           revert();
-          toast.error('Failed to delete message');
+          showToast('error', 'Failed to delete message');
         }
       });
       return;

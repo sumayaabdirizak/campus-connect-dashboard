@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { EmptyState } from './_shared/empty-state';
 import { ListSkeleton } from './_shared/list-skeleton';
+import { QueryErrorState } from '@/components/query-error-state';
+import { CoursePageShell } from './_shared/course-page-shell';
 import { CoursePostForm } from './course-post-form';
 import type { CoursePostFormValues } from '../schemas/course-post';
 import { useDeleteWithUndo } from './_shared/use-delete-with-undo';
@@ -41,7 +43,10 @@ import {
   PopoverContent,
   PopoverTrigger
 } from '@/components/ui/popover';
+import { confirmDelete } from '@/lib/notifications';
 import { useAuthStore } from '@/lib/auth-store';
+import { SegmentedControl } from '@/components/ui/segmented-control';
+import { cn } from '@/lib/utils';
 import {
   useAddReply,
   useCourseFeed,
@@ -62,7 +67,10 @@ import type {
 
 interface CourseFeedProps {
   courseId: string;
+  isStudent?: boolean;
 }
+
+type FeedFilter = 'all' | 'important' | 'attachments' | 'auto';
 
 const SOURCE_LABEL: Record<CoursePostSource, string> = {
   MANUAL: '',
@@ -231,8 +239,9 @@ function RepliesSection({
                     <button
                       type='button'
                       className='text-xs text-muted-foreground hover:text-destructive'
-                      onClick={() => {
-                        if (confirm('Delete this reply?')) deleteMutation.mutate(r.id);
+                      onClick={async () => {
+                        if (!(await confirmDelete('this reply'))) return;
+                        deleteMutation.mutate(r.id);
                       }}
                     >
                       Delete
@@ -255,7 +264,7 @@ function RepliesSection({
                   </Button>
                 </div>
               ) : (
-                <p className='text-sm whitespace-pre-wrap'>{r.content}</p>
+                <p className='select-text text-sm whitespace-pre-wrap'>{r.content}</p>
               )}
             </div>
           ))}
@@ -287,11 +296,11 @@ function RepliesSection({
   );
 }
 
-export function CourseFeed({ courseId }: CourseFeedProps) {
+export function CourseFeed({ courseId, isStudent }: CourseFeedProps) {
   const { user } = useAuthStore();
   const userId = typeof user?.id === 'number' ? user.id : Number(user?.id ?? 0) || null;
 
-  const { data: posts = [], isLoading, isError } = useCourseFeed(courseId);
+  const { data: posts = [], isLoading, isError, refetch } = useCourseFeed(courseId);
   const createMutation = useCreateCoursePost(courseId);
   const updateMutation = useUpdateCoursePost(courseId);
   const deleteMutation = useDeleteCoursePost(courseId);
@@ -300,12 +309,20 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
   const userName = (user?.full_name ?? user?.name ?? null) as string | null;
   const toggleReactionMutation = useToggleReaction(courseId, userId);
 
-  const [filter, setFilter] = useState<'all' | 'important' | 'attachments' | 'auto'>('all');
+  const [filter, setFilter] = useState<FeedFilter>('all');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  // All create-form field state (title/content/important/files) now lives
-  // inside `CoursePostForm`. The dialog only tracks open/closed here.
   const [editing, setEditing] = useState<CoursePost | null>(null);
+
+  const filterCounts = useMemo(
+    () => ({
+      all: posts.length,
+      important: posts.filter((p) => p.isImportant).length,
+      attachments: posts.filter((p) => p.attachments.length > 0).length,
+      auto: posts.filter((p) => p.source !== 'MANUAL').length
+    }),
+    [posts]
+  );
 
   const filtered = posts.filter((p) => {
     if (filter === 'important' && !p.isImportant) return false;
@@ -315,10 +332,6 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
     return true;
   });
 
-  // Called by CoursePostForm once Zod has accepted the text fields. The
-  // form gives us its own `pendingFiles` array via the second argument so
-  // we can chain the two mutations: create post → upload attachments.
-  // If there are no files, we skip the second call entirely.
   const handleCreate = (values: CoursePostFormValues, pendingFiles: File[]) => {
     createMutation.mutate(
       { title: values.title, content: values.content, isImportant: values.isImportant },
@@ -330,9 +343,7 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
           }
           uploadAttachmentsMutation.mutate(
             { postId: post.id, files: pendingFiles },
-            {
-              onSettled: () => setCreateOpen(false)
-            }
+            { onSettled: () => setCreateOpen(false) }
           );
         }
       }
@@ -382,167 +393,216 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
     toggleReactionMutation.mutate({ postId, emoji });
   };
 
+  const feedDescription =
+    posts.length === 0
+      ? isStudent
+        ? 'Course updates from your lecturer'
+        : 'Course updates for your class'
+      : `${filtered.length === posts.length ? posts.length : `${filtered.length} of ${posts.length}`} post${posts.length === 1 ? '' : 's'}`;
+
+  const newPostAction = !isStudent ? (
+    <Button size='sm' className='gap-1.5' onClick={() => setCreateOpen(true)}>
+      <Plus className='size-4' aria-hidden />
+      New post
+    </Button>
+  ) : undefined;
+
   return (
-    <div className='space-y-4'>
-      <div className='flex gap-2'>
-        <div className='relative flex-1 max-w-xs'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-          <Input
-            placeholder='Search...'
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className='pl-10'
-          />
-        </div>
-        <div className='flex gap-1 p-1 bg-muted/30 rounded-lg'>
-          {(['all', 'important', 'attachments', 'auto'] as const).map((f) => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-3 py-1 text-sm rounded-md ${filter === f ? 'bg-background shadow-sm' : ''}`}
-            >
-              {f}
-            </button>
-          ))}
-        </div>
-        <Button onClick={() => setCreateOpen(true)} size='sm' className='gap-1'>
-          <Plus className='w-4 h-4' /> New Post
-        </Button>
-      </div>
-
-      {isLoading && <ListSkeleton variant='card' count={3} />}
-      {isError && (
-        <p className='text-sm text-destructive'>Failed to load the feed.</p>
-      )}
-
-      {!isLoading && !isError && filtered.length === 0 && (
-        <EmptyState
-          icon={Megaphone}
-          title='No posts yet'
-          description='Share an update, ask a question, or attach a file to start the conversation.'
-          actionLabel='New post'
-          onAction={() => setCreateOpen(true)}
-        />
-      )}
-
-      <div className='space-y-2'>
-        {filtered.map((item) => (
-          <div key={item.id} className='border rounded-lg p-4 hover:bg-muted/10'>
-            <div className='flex items-center justify-between mb-2'>
-              <div className='flex items-center gap-2 flex-wrap'>
-                {item.isPinned && <Pin className='w-3 h-3 text-muted-foreground' />}
-                <span className='font-medium'>{item.title}</span>
-                {item.isImportant && (
-                  <Badge variant='destructive' className='text-[10px]'>
-                    Important
-                  </Badge>
-                )}
-                {item.source && item.source !== 'MANUAL' && (
-                  <Badge variant='outline' className='text-[10px] gap-1'>
-                    <Bot className='w-3 h-3' />
-                    {SOURCE_LABEL[item.source]}
-                  </Badge>
-                )}
-              </div>
-              {item.authorId === userId && (
-                <div className='flex gap-1'>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8'
-                    onClick={() => setEditing(item)}
-                  >
-                    <Edit className='w-4 h-4' />
-                  </Button>
-                  <Button
-                    variant='ghost'
-                    size='icon'
-                    className='h-8 w-8 text-destructive'
-                    onClick={() => handleDelete(item.id)}
-                  >
-                    <Trash2 className='w-4 h-4' />
-                  </Button>
-                </div>
-              )}
-            </div>
-
-            <p className='text-sm text-muted-foreground mb-2 whitespace-pre-wrap'>
-              {item.content}
-            </p>
-
-            <p className='text-xs text-muted-foreground flex items-center gap-2'>
-              <Clock className='w-3 h-3' />
-              <span title={new Date(item.created_at).toLocaleString()}>
-                {format(new Date(item.created_at), 'MMM d, yyyy')}
-              </span>
-              <span>·</span>
-              <span>{item.author?.full_name}</span>
-            </p>
-
-            {item.attachments.length > 0 && (
-              <div className='mt-2 space-y-1'>
-                {item.attachments.map((file) => (
-                  <div
-                    key={file.id}
-                    className='flex items-center justify-between p-2 bg-muted/30 rounded text-sm'
-                  >
-                    <a
-                      href={file.url}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='font-medium truncate flex-1 hover:underline'
-                    >
-                      {file.name}
-                    </a>
-                    {typeof file.size === 'number' && (
-                      <span className='text-xs text-muted-foreground mx-2'>
-                        {(file.size / 1024).toFixed(1)} KB
-                      </span>
-                    )}
-                    <a
-                      href={file.url}
-                      download={file.name}
-                      className='text-muted-foreground hover:text-foreground shrink-0'
-                      title='Download'
-                    >
-                      <Download className='w-3.5 h-3.5' />
-                    </a>
-                    {item.authorId === userId && (
-                      <button
-                        type='button'
-                        onClick={() => {
-                          if (confirm(`Remove ${file.name}?`)) {
-                            deleteAttachmentMutation.mutate(file.id);
-                          }
-                        }}
-                        className='ml-2 text-muted-foreground hover:text-destructive shrink-0'
-                        title='Remove attachment'
-                      >
-                        <XIcon className='w-3.5 h-3.5' />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div className='mt-3'>
-              <ReactionStrip
-                post={item}
-                userId={userId}
-                onToggle={(emoji) => onReact(item.id, emoji)}
+    <>
+      <CoursePageShell title='Feed' description={feedDescription} actions={newPostAction}>
+        <div className='space-y-4'>
+          <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+            <div className='relative max-w-md flex-1'>
+              <Search
+                className='pointer-events-none absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground'
+                aria-hidden
+              />
+              <Input
+                placeholder='Search posts…'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className='h-9 pl-8'
+                aria-label='Search posts'
               />
             </div>
-
-            <RepliesSection
-              post={item}
-              userId={userId}
-              userName={userName}
-              courseId={courseId}
+            <SegmentedControl
+              value={filter}
+              onChange={setFilter}
+              ariaLabel='Filter posts'
+              options={[
+                { value: 'all', label: 'All', count: filterCounts.all },
+                { value: 'important', label: 'Important', count: filterCounts.important },
+                { value: 'attachments', label: 'Files', count: filterCounts.attachments },
+                { value: 'auto', label: 'Updates', count: filterCounts.auto }
+              ]}
+              className='shrink-0'
             />
           </div>
-        ))}
-      </div>
+
+          {isLoading && <ListSkeleton variant='card' count={3} />}
+          {isError && (
+            <QueryErrorState
+              title='Could not load the feed'
+              onRetry={() => void refetch()}
+            />
+          )}
+
+          {!isLoading && !isError && filtered.length === 0 && posts.length === 0 && (
+            <EmptyState
+              icon={Megaphone}
+              title='No posts yet'
+              description={
+                isStudent
+                  ? 'Course updates from your lecturer will appear here.'
+                  : 'Share an update, ask a question, or attach a file to start the conversation.'
+              }
+              actionLabel={isStudent ? undefined : 'New post'}
+              onAction={isStudent ? undefined : () => setCreateOpen(true)}
+            />
+          )}
+
+          {!isLoading && !isError && filtered.length === 0 && posts.length > 0 && (
+            <p className='py-8 text-center text-sm text-muted-foreground'>
+              No posts match your search or filter.
+            </p>
+          )}
+
+          {!isLoading && !isError && filtered.length > 0 && (
+            <div className='space-y-3'>
+              {filtered.map((item) => (
+                <article
+                  key={item.id}
+                  className={cn(
+                    'rounded-lg border border-border/60 bg-background p-4 transition-colors hover:bg-muted/20',
+                    item.isImportant && 'border-l-2 border-l-destructive pl-[calc(1rem-2px)]',
+                    item.isPinned && 'ring-1 ring-primary/15'
+                  )}
+                >
+                  <div className='mb-2 flex items-start justify-between gap-3'>
+                    <div className='min-w-0 flex flex-wrap items-center gap-2'>
+                      {item.isPinned && (
+                        <Pin className='size-3.5 shrink-0 text-primary' aria-label='Pinned' />
+                      )}
+                      <h3 className='font-medium leading-snug'>{item.title}</h3>
+                      {item.isImportant && (
+                        <Badge variant='destructive' className='text-[10px]'>
+                          Important
+                        </Badge>
+                      )}
+                      {item.source && item.source !== 'MANUAL' && (
+                        <Badge variant='outline' className='gap-1 text-[10px]'>
+                          <Bot className='size-3' aria-hidden />
+                          {SOURCE_LABEL[item.source]}
+                        </Badge>
+                      )}
+                    </div>
+                    {item.authorId === userId && (
+                      <div className='flex shrink-0 gap-0.5'>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='size-8'
+                          onClick={() => setEditing(item)}
+                          aria-label='Edit post'
+                        >
+                          <Edit className='size-4' />
+                        </Button>
+                        <Button
+                          variant='ghost'
+                          size='icon'
+                          className='size-8 text-destructive'
+                          onClick={() => handleDelete(item.id)}
+                          aria-label='Delete post'
+                        >
+                          <Trash2 className='size-4' />
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <p className='mb-3 select-text whitespace-pre-wrap text-sm text-muted-foreground'>
+                    {item.content}
+                  </p>
+
+                  <p className='flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground'>
+                    <Clock className='size-3 shrink-0' aria-hidden />
+                    <span title={new Date(item.created_at).toLocaleString()}>
+                      {format(new Date(item.created_at), 'MMM d, yyyy')}
+                    </span>
+                    <span aria-hidden>·</span>
+                    <span>{item.author?.full_name}</span>
+                    <span aria-hidden>·</span>
+                    <span>
+                      {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}
+                    </span>
+                  </p>
+
+                  {item.attachments.length > 0 && (
+                    <div className='mt-3 space-y-1.5'>
+                      {item.attachments.map((file) => (
+                        <div
+                          key={file.id}
+                          className='flex items-center gap-2 rounded-md border border-border/50 bg-muted/20 px-3 py-2 text-sm'
+                        >
+                          <a
+                            href={file.url}
+                            target='_blank'
+                            rel='noreferrer'
+                            className='min-w-0 flex-1 truncate font-medium hover:underline'
+                          >
+                            {file.name}
+                          </a>
+                          {typeof file.size === 'number' && (
+                            <span className='shrink-0 text-xs text-muted-foreground'>
+                              {(file.size / 1024).toFixed(1)} KB
+                            </span>
+                          )}
+                          <a
+                            href={file.url}
+                            download={file.name}
+                            className='shrink-0 text-muted-foreground hover:text-foreground'
+                            title='Download'
+                          >
+                            <Download className='size-3.5' />
+                          </a>
+                          {item.authorId === userId && (
+                            <button
+                              type='button'
+                              onClick={async () => {
+                                if (!(await confirmDelete(file.name))) return;
+                                deleteAttachmentMutation.mutate(file.id);
+                              }}
+                              className='shrink-0 text-muted-foreground hover:text-destructive'
+                              title='Remove attachment'
+                            >
+                              <XIcon className='size-3.5' />
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className='mt-3 border-t border-border/40 pt-3'>
+                    <ReactionStrip
+                      post={item}
+                      userId={userId}
+                      onToggle={(emoji) => onReact(item.id, emoji)}
+                    />
+                  </div>
+
+                  <RepliesSection
+                    post={item}
+                    userId={userId}
+                    userName={userName}
+                    courseId={courseId}
+                  />
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </CoursePageShell>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className='max-w-md'>
@@ -601,6 +661,6 @@ export function CourseFeed({ courseId }: CourseFeedProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   );
 }

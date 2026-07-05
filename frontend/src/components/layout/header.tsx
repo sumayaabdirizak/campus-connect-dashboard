@@ -10,7 +10,7 @@ import { NotificationCenter } from '@/features/notifications/components/notifica
 
 export default function Header() {
   return (
-    <header className='bg-background sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4 lg:px-6'>
+    <header data-dashboard-header className='bg-background sticky top-0 z-20 flex h-16 shrink-0 items-center justify-between gap-2 border-b px-4 lg:px-6'>
       <div className='flex min-w-0 items-center gap-3'>
         <SidebarTrigger className='-ml-1.5' />
         <Separator orientation='vertical' className='h-5' />

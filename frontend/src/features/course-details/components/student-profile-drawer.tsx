@@ -3,10 +3,9 @@
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Mail, Phone, Clock, AlertTriangle, CheckCircle2, BookOpen, ClipboardList } from 'lucide-react';
+import { Mail, Clock, AlertTriangle, CheckCircle2, BookOpen, ClipboardList } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 import type { RosterStudent } from '../api/roster-types';
-import { useAttendanceSummary, useRecords } from '../api/attendance-queries';
 import { useCourseAccessList } from '../api/access-queries';
 import { useStudentWork } from '../api/student-profile-queries';
 
@@ -16,29 +15,18 @@ interface StudentProfileDrawerProps {
   onClose: () => void;
 }
 
-/// Side-drawer profile of a single student. Aggregates everything the teacher
-/// usually has to hunt across tabs for: attendance rate, submissions, quiz
-/// attempts, last seen, "at risk" signals.
 export function StudentProfileDrawer({ courseId, student, onClose }: StudentProfileDrawerProps) {
   const open = !!student;
-  const { data: summary } = useAttendanceSummary(courseId);
   const { data: accessRows = [] } = useCourseAccessList(courseId);
-  const { data: records = [], isLoading: recordsLoading } = useRecords(
-    courseId,
-    student ? { studentId: String(student.id) } : undefined
-  );
   const { data: work, isLoading: workLoading } = useStudentWork(
     courseId,
     student?.id ?? null
   );
 
-  const attendance = summary?.students.find((s) => s.studentId === student?.id);
   const lastSeenAt = accessRows.find((r) => r.userId === student?.id)?.lastSeenAt ?? null;
 
-  // "At risk" heuristic — same logic the roster row uses for its badge.
-  const ratePct = attendance?.ratePct;
   const missingCount = work?.stats.missingCount ?? 0;
-  const isAtRisk = (ratePct != null && ratePct < 60) || missingCount >= 3;
+  const isAtRisk = missingCount >= 3;
 
   return (
     <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
@@ -77,45 +65,6 @@ export function StudentProfileDrawer({ courseId, student, onClose }: StudentProf
               )}
             </div>
 
-            {/* Attendance summary */}
-            <section className='space-y-3'>
-              <h3 className='text-sm font-medium flex items-center gap-2'>
-                <Clock className='w-4 h-4' /> Attendance
-              </h3>
-              {!attendance ? (
-                <p className='text-sm text-muted-foreground'>No attendance data yet.</p>
-              ) : (
-                <div className='grid grid-cols-4 gap-2'>
-                  <Stat label='Rate' value={`${attendance.ratePct}%`} tone={rateTone(attendance.ratePct)} />
-                  <Stat label='Present' value={attendance.present} tone='emerald' />
-                  <Stat label='Late' value={attendance.late} />
-                  <Stat label='Absent' value={attendance.absent} tone='destructive' />
-                </div>
-              )}
-              {recordsLoading ? (
-                <Skeleton className='h-16 w-full' />
-              ) : records.length === 0 ? (
-                <p className='text-xs text-muted-foreground italic'>No records yet.</p>
-              ) : (
-                <ul className='space-y-1 max-h-40 overflow-y-auto'>
-                  {records.slice(0, 10).map((r) => (
-                    <li key={r.id} className='flex items-center justify-between text-xs'>
-                      <span className='truncate'>
-                        {r.schedule?.location ?? '—'}{' '}
-                        <span className='text-muted-foreground'>
-                          {r.schedule?.start_time && `· ${r.schedule.start_time}`}
-                        </span>
-                      </span>
-                      <Badge variant='outline' className='text-[10px]'>
-                        {r.status}
-                      </Badge>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-
-            {/* Assignment work */}
             <section className='space-y-3'>
               <h3 className='text-sm font-medium flex items-center gap-2'>
                 <ClipboardList className='w-4 h-4' /> Assignments
@@ -180,7 +129,6 @@ export function StudentProfileDrawer({ courseId, student, onClose }: StudentProf
               )}
             </section>
 
-            {/* Quiz attempts */}
             <section className='space-y-3'>
               <h3 className='text-sm font-medium flex items-center gap-2'>
                 <BookOpen className='w-4 h-4' /> Quizzes

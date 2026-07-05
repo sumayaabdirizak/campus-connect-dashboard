@@ -12,9 +12,8 @@ import {
   MyResourceProgress,
   ResourceAnalytics
 } from './resources-types';
-import { apiClient, ensureCsrfToken } from '@/lib/api-client';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { apiClient } from '@/lib/api-client';
+import { uploadJson } from '@/lib/upload-client';
 
 async function fetchWithAuth<T>(endpoint: string, options?: RequestInit): Promise<T> {
   return apiClient<T>(endpoint, options);
@@ -66,18 +65,7 @@ export async function deleteResource(resourceId: string): Promise<{ success: boo
 export async function uploadResourceFile(file: File): Promise<UploadResourceFileResult> {
   const formData = new FormData();
   formData.append('file', file);
-  const csrfToken = await ensureCsrfToken();
-  const res = await fetch(`${API_BASE_URL}/resources/upload`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
-    body: formData
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Upload failed: ${res.status} ${res.statusText}`);
-  }
-  return res.json();
+  return uploadJson<UploadResourceFileResult>('/resources/upload', formData);
 }
 
 // ─── Watch tracking (video / audio analytics) ───────────────────────────────

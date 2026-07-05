@@ -4,7 +4,6 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { AlertTriangle, Clock, GraduationCap } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
-import { useAttendanceSummary } from '../../api/attendance-queries';
 import { useCourseAccessList } from '../../api/access-queries';
 import { useStudentWork } from '../../api/student-profile-queries';
 
@@ -14,30 +13,13 @@ interface StudentContextRailProps {
   studentName: string;
 }
 
-/**
- * Compact side panel for the grading drawer (and other surfaces that focus on
- * a single student). Surfaces the things a teacher would otherwise open the
- * full profile drawer for:
- *
- *   - last seen (relative + absolute on hover)
- *   - attendance rate badge
- *   - average grade + missing/late counts
- *   - last 3 grades, newest first
- *
- * Hidden on mobile (`hidden lg:block`) — when the parent surface is
- * full-screen on a phone, this side panel would compete with the main
- * content. Use the full profile drawer there instead.
- */
 export function StudentContextRail({ courseId, studentId, studentName }: StudentContextRailProps) {
-  const { data: summary } = useAttendanceSummary(courseId);
   const { data: accessRows = [] } = useCourseAccessList(courseId);
   const { data: work, isLoading } = useStudentWork(courseId, studentId);
 
-  const attendance = summary?.students.find((s) => s.studentId === studentId);
   const lastSeen = accessRows.find((r) => r.userId === studentId)?.lastSeenAt ?? null;
-  const rate = attendance?.ratePct ?? null;
   const missingCount = work?.stats.missingCount ?? 0;
-  const isAtRisk = (rate != null && rate < 60) || missingCount >= 3;
+  const isAtRisk = missingCount >= 3;
 
   const recent = (work?.submissions ?? [])
     .filter((s) => typeof s.grade === 'number')
@@ -69,11 +51,6 @@ export function StudentContextRail({ courseId, studentId, studentName }: Student
       </div>
 
       <div className='grid grid-cols-2 gap-2'>
-        <Stat
-          label='Attendance'
-          value={rate != null ? `${rate}%` : '—'}
-          tone={rate == null ? undefined : rate >= 80 ? 'good' : rate < 60 ? 'bad' : undefined}
-        />
         <Stat
           label='Avg grade'
           value={work?.stats.avgGrade != null ? `${work.stats.avgGrade}%` : '—'}

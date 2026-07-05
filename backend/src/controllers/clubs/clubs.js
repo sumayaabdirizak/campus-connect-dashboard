@@ -262,6 +262,57 @@ router.get('/recommended', async (req, res, next) => {
 });
 
 // ═════════════════════════════════════════════════════════════════════════════
+// GET /api/clubs/dean/stats — faculty club counts grouped by status
+// ═════════════════════════════════════════════════════════════════════════════
+
+router.get('/dean/stats', requireDeanOrSuperAdmin, async (req, res, next) => {
+  try {
+    const facultyFilter = req.user.role !== 'SUPER_ADMIN' && req.facultyId
+      ? { facultyId: req.facultyId }
+      : {};
+
+    const [approved, pending, suspended, rejected] = await Promise.all([
+      prisma.club.count({ where: { ...facultyFilter, status: 'APPROVED' } }),
+      prisma.club.count({ where: { ...facultyFilter, status: 'PENDING' } }),
+      prisma.club.count({ where: { ...facultyFilter, status: 'SUSPENDED' } }),
+      prisma.club.count({ where: { ...facultyFilter, status: 'REJECTED' } }),
+    ]);
+
+    res.json({ approved, pending, suspended, rejected, total: approved + pending + suspended + rejected });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
+// GET /api/clubs/dean/all — all faculty clubs (any status), optional ?status=
+// ═════════════════════════════════════════════════════════════════════════════
+
+router.get('/dean/all', requireDeanOrSuperAdmin, async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    const facultyFilter = req.user.role !== 'SUPER_ADMIN' && req.facultyId
+      ? { facultyId: req.facultyId } : {};
+    const statusFilter = status ? { status: String(status).toUpperCase() } : {};
+
+    const clubs = await prisma.club.findMany({
+      where: { ...facultyFilter, ...statusFilter },
+      orderBy: { createdAt: 'desc' },
+      include: {
+        owner: { select: { id: true, full_name: true, email: true } },
+        faculty: { select: { id: true, name: true } },
+        interests: { include: { tag: { select: { slug: true, label: true } } } },
+        _count: { select: { members: true } },
+      },
+    });
+
+    res.json({ clubs });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ═════════════════════════════════════════════════════════════════════════════
 // GET /api/clubs/dean/pending — dean approval queue
 // ═════════════════════════════════════════════════════════════════════════════
 

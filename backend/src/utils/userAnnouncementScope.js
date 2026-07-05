@@ -4,7 +4,7 @@
  *
  * @param {import("@prisma/client").PrismaClient} prisma
  * @param {number} userId
- * @returns {Promise<{ userId: number, role: string, status: string, facultyIds: number[], departmentIds: number[], batchIds: number[], sectionIds: number[] } | null>}
+ * @returns {Promise<{ userId: number, full_name: string, role: string, status: string, facultyIds: number[], departmentIds: number[], batchIds: number[], sectionIds: number[] } | null>}
  */
 export async function loadUserAnnouncementScope(prisma, userId) {
   const user = await prisma.user.findUnique({
@@ -75,6 +75,7 @@ export async function loadUserAnnouncementScope(prisma, userId) {
 
     return {
       userId: user.id,
+      full_name: user.full_name,
       role: user.role.name,
       status: user.status,
       facultyIds: Array.from(facultyIds),
@@ -103,6 +104,7 @@ export async function loadUserAnnouncementScope(prisma, userId) {
 
   return {
     userId: user.id,
+    full_name: user.full_name,
     role: user.role.name,
     status: user.status,
     facultyIds: Array.from(facultyIds),

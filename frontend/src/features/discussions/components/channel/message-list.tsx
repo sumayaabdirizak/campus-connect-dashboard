@@ -17,18 +17,7 @@ import { DaySeparator, isSameLocalDay } from './day-separator';
 import { MessageRow } from './message-row';
 
 const SCROLL_BOTTOM_THRESHOLD = 120;
-const SAME_AUTHOR_GROUP_WINDOW_MS = 5 * 60 * 1000;
 const ESTIMATED_ROW_HEIGHT = 64;
-
-function shouldShowHeader(prev: DiscussionMessage | null, curr: DiscussionMessage): boolean {
-  if (!prev) return true;
-  if (prev.senderId !== curr.senderId) return true;
-  if (Boolean(prev.isAnonymous) !== Boolean(curr.isAnonymous)) return true;
-  const prevMs = new Date(prev.createdAt).getTime();
-  const currMs = new Date(curr.createdAt).getTime();
-  if (currMs - prevMs > SAME_AUTHOR_GROUP_WINDOW_MS) return true;
-  return false;
-}
 
 type ListItem =
   | {
@@ -55,7 +44,8 @@ function buildItems(messages: DiscussionMessage[]): ListItem[] {
       kind: 'message',
       key: `msg-${m.id}`,
       message: m,
-      showHeader: showDay || shouldShowHeader(prev, m)
+      // Grouping disabled — every message shows its own avatar / name / time.
+      showHeader: true
     });
     prev = m;
   }
@@ -193,7 +183,15 @@ export function MessageList({
   const virtualItems = virtualizer.getVirtualItems();
 
   return (
-    <div ref={scrollRef} className='relative flex-1 overflow-y-auto'>
+    <div
+      ref={scrollRef}
+      className='relative flex-1 overflow-y-auto bg-muted/40'
+      style={{
+        backgroundImage:
+          'radial-gradient(rgba(130,130,130,0.07) 1px, transparent 1px)',
+        backgroundSize: '22px 22px'
+      }}
+    >
       {isLoading && items.length === 0 ? (
         <div className='space-y-4 px-6 py-6'>
           {[0, 1, 2, 3].map((i) => (
@@ -222,10 +220,16 @@ export function MessageList({
           </p>
         </div>
       ) : items.length === 0 ? (
-        <div className={cn('flex h-full min-h-[200px] flex-col items-center justify-center gap-2 text-muted-foreground')}>
-          <Icons.hash className='h-10 w-10 opacity-60' />
-          <p className='text-sm font-medium'>No messages yet</p>
-          <p className='text-xs'>Be the first to say hi.</p>
+        <div className={cn('flex h-full min-h-[200px] flex-col items-center justify-center gap-3 px-6 text-center')}>
+          <span className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
+            <Icons.hash className='h-8 w-8' />
+          </span>
+          <div>
+            <p className='text-sm font-semibold text-foreground'>No messages yet</p>
+            <p className='mt-1 text-xs text-muted-foreground'>
+              Be the first to say hi{channelName ? ` in #${channelName}` : ''}.
+            </p>
+          </div>
         </div>
       ) : (
         <>

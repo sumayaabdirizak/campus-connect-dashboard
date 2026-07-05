@@ -1,2 +1,2 @@
-﻿-- AlterTable
+-- AlterTable
 ALTER TABLE "Assignment" ADD COLUMN IF NOT EXISTS "maxMarks" INTEGER NOT NULL DEFAULT 100;

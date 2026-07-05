@@ -1,0 +1,108 @@
+'use client';
+
+import * as React from 'react';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger
+} from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList
+} from '@/components/ui/command';
+
+export interface SearchSelectOption {
+  value: string;
+  label: string;
+  sub?: string;
+}
+
+interface SearchSelectProps {
+  options: SearchSelectOption[];
+  value: string;
+  onValueChange: (value: string) => void;
+  placeholder?: string;
+  searchPlaceholder?: string;
+  emptyText?: string;
+  loading?: boolean;
+  disabled?: boolean;
+  className?: string;
+}
+
+export function SearchSelect({
+  options,
+  value,
+  onValueChange,
+  placeholder = 'Select...',
+  searchPlaceholder = 'Search...',
+  emptyText = 'No results found.',
+  loading = false,
+  disabled = false,
+  className
+}: SearchSelectProps) {
+  const [open, setOpen] = React.useState(false);
+  const selected = options.find((o) => o.value === value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant='outline'
+          role='combobox'
+          aria-expanded={open}
+          disabled={disabled || loading}
+          className={cn('w-full justify-between font-normal', className)}
+        >
+          {loading ? (
+            <span className='text-muted-foreground'>Loading...</span>
+          ) : selected ? (
+            <span className='truncate'>{selected.label}</span>
+          ) : (
+            <span className='text-muted-foreground'>{placeholder}</span>
+          )}
+          <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className='w-[--radix-popover-trigger-width] p-0' align='start'>
+        <Command>
+          <CommandInput placeholder={searchPlaceholder} />
+          <CommandList>
+            <CommandEmpty>{emptyText}</CommandEmpty>
+            <CommandGroup>
+              {options.map((option) => (
+                <CommandItem
+                  key={option.value}
+                  value={option.label}
+                  onSelect={() => {
+                    onValueChange(option.value === value ? '' : option.value);
+                    setOpen(false);
+                  }}
+                >
+                  <Check
+                    className={cn(
+                      'mr-2 h-4 w-4 shrink-0',
+                      value === option.value ? 'opacity-100' : 'opacity-0'
+                    )}
+                  />
+                  <div className='min-w-0 flex-1'>
+                    <p className='truncate text-sm'>{option.label}</p>
+                    {option.sub && (
+                      <p className='text-muted-foreground truncate text-xs'>{option.sub}</p>
+                    )}
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

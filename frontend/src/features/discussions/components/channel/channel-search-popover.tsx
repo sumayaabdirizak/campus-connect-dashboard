@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { Input } from '@/components/ui/input';
+import { avatarGradient } from '../../utils/avatar-color';
 import {
   Popover,
   PopoverContent,
@@ -151,7 +152,10 @@ function SearchResultRow({
       className='flex w-full items-start gap-2 px-3 py-2 text-left transition-colors hover:bg-muted/60'
     >
       <Avatar className='h-7 w-7 shrink-0'>
-        <AvatarFallback className='text-[10px]'>
+        <AvatarFallback
+          className='text-[10px] font-semibold text-white'
+          style={{ background: avatarGradient(senderName, message.isAnonymous) }}
+        >
           {initialsFor(senderName)}
         </AvatarFallback>
       </Avatar>
@@ -240,6 +244,7 @@ export function ChannelSearchPopover({
     !!(filters.from || filters.has || filters.before || filters.after);
   const tooShort =
     query.length > 0 && textForApi.length < MIN_QUERY && !hasFilters;
+  const canRunSearch = textForApi.length >= MIN_QUERY || hasFilters;
 
   const handleSelect = (message: DiscussionMessage) => {
     setOpen(false);
@@ -327,7 +332,7 @@ export function ChannelSearchPopover({
           )}
         </div>
         <ScrollArea className='max-h-[420px]'>
-          {!query && (
+          {!query && !hasFilters && (
             <div className='space-y-1 px-6 py-8 text-center text-xs text-muted-foreground'>
               <p>Find messages by content.</p>
               <p>
@@ -338,16 +343,22 @@ export function ChannelSearchPopover({
               </p>
             </div>
           )}
-          {query.length >= MIN_QUERY && isLoading && results.length === 0 && (
+          {canRunSearch && isLoading && results.length === 0 && (
             <div className='flex items-center justify-center gap-1 py-8 text-xs text-muted-foreground'>
               <Icons.spinner className='h-3 w-3 animate-spin' />
               Searching…
             </div>
           )}
-          {query.length >= MIN_QUERY && !isLoading && results.length === 0 && (
+          {canRunSearch && !isLoading && results.length === 0 && (
             <div className='px-6 py-8 text-center text-xs text-muted-foreground'>
-              No matches for{' '}
-              <span className='font-medium text-foreground'>“{query}”</span>.
+              No matches
+              {textForApi ? (
+                <>
+                  {' '}
+                  for <span className='font-medium text-foreground'>“{textForApi}”</span>
+                </>
+              ) : null}
+              .
             </div>
           )}
           {results.length > 0 && (

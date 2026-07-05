@@ -1,6 +1,19 @@
 import { useAuthStore } from '@/lib/auth-store';
+import { getApiBaseUrl } from '@/lib/api-config';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+export class ApiError extends Error {
+  status: number;
+  data?: Record<string, unknown>;
+
+  constructor(message: string, status: number, data?: Record<string, unknown>) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.data = data;
+  }
+}
+
+const API_BASE_URL = getApiBaseUrl();
 let refreshPromise: Promise<boolean> | null = null;
 let csrfTokenInMemory: string | null = null;
 let hasHandledAuthFailure = false;
@@ -94,12 +107,14 @@ export async function apiClient<T>(
         return retryResponse.json();
       }
       const retryError = await retryResponse.json().catch(() => ({}));
-      throw new Error(
-        retryError.message || `API error: ${retryResponse.status} ${retryResponse.statusText}`
+      throw new ApiError(
+        retryError.message || `API error: ${retryResponse.status} ${retryResponse.statusText}`,
+        retryResponse.status,
+        retryError
       );
     }
     handleAuthFailure();
-    throw new Error('Session expired. Please sign in again.');
+    throw new ApiError('Session expired. Please sign in again.', 401);
   }
 
   if (!response.ok) {
@@ -107,7 +122,11 @@ export async function apiClient<T>(
       csrfTokenInMemory = null;
     }
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API error: ${response.status} ${response.statusText}`);
+    throw new ApiError(
+      errorData.message || `API error: ${response.status} ${response.statusText}`,
+      response.status,
+      errorData
+    );
   }
 
   if (endpoint === '/auth/login' || endpoint === '/auth/csrf') {

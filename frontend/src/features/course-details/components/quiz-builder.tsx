@@ -33,6 +33,7 @@ import {
 } from '@/components/ui/select';
 import {
   ArrowLeft,
+  AlertTriangle,
   Check,
   FileSpreadsheet,
   GripVertical,
@@ -42,6 +43,7 @@ import {
   Trash2,
   X as XIcon
 } from 'lucide-react';
+import { confirmDelete, showToast } from '@/lib/notifications';
 import { toast } from 'sonner';
 import { useQueryClient } from '@/lib/async-query';
 import {
@@ -141,6 +143,9 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
     [quiz.questions]
   );
   const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
+  const canAddQuestions = quiz.is_draft;
+  const addLockedTitle =
+    'This quiz is published. Switch it back to draft on the Quizzes list before adding questions.';
 
   // dnd-kit sensors: pointer for mouse/touch, keyboard for accessibility.
   const sensors = useSensors(
@@ -186,7 +191,13 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
     );
   };
 
-  const startNew = () => setDraft(emptyDraft());
+  const startNew = () => {
+    if (!canAddQuestions) {
+      toast.error(addLockedTitle);
+      return;
+    }
+    setDraft(emptyDraft());
+  };
   const startEdit = (q: QuizQuestion) => setDraft(emptyDraft(q));
   const cancel = () => setDraft(null);
 
@@ -292,6 +303,10 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
               .map((o, idx) => ({ ...o, order_index: idx }))
     };
 
+    if (draft.id == null && !canAddQuestions) {
+      toast.error(addLockedTitle);
+      return;
+    }
     if (draft.id == null) {
       createMutation.mutate(payload, {
         onSuccess: () => {
@@ -314,11 +329,11 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
     }
   };
 
-  const handleDelete = (q: QuizQuestion) => {
-    if (!confirm(`Delete question "${q.question_text.slice(0, 40)}…"?`)) return;
+  const handleDelete = async (q: QuizQuestion) => {
+    if (!(await confirmDelete(q.question_text.slice(0, 40)))) return;
     deleteMutation.mutate(q.id, {
-      onSuccess: () => toast.success('Deleted'),
-      onError: (e: Error) => toast.error(e.message)
+      onSuccess: () => showToast('success', 'Deleted'),
+      onError: (e: Error) => showToast('error', e.message)
     });
   };
 
@@ -333,6 +348,7 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
           <div className='flex items-center gap-2 flex-wrap'>
             <h2 className='text-xl font-bold truncate'>{quiz.title}</h2>
             {quiz.is_draft && <Badge variant='secondary'>Draft</Badge>}
+            {!quiz.is_draft && <Badge variant='outline'>Published</Badge>}
           </div>
           <p className='text-sm text-muted-foreground mt-1 tabular-nums'>
             {questions.length} question{questions.length === 1 ? '' : 's'} ·{' '}
@@ -346,7 +362,7 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
             onClick={() => setCsvOpen(true)}
             disabled={draft != null}
             aria-label='Import / export CSV'
-            title='Import / export CSV'
+            title={canAddQuestions ? 'Import / export CSV' : 'Download CSV (upload disabled while published)'}
           >
             <FileSpreadsheet className='w-4 h-4' />
           </Button>
@@ -354,7 +370,8 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
             variant='outline'
             onClick={() => setAiOpen(true)}
             className='gap-1'
-            disabled={draft != null}
+            disabled={draft != null || !canAddQuestions}
+            title={canAddQuestions ? undefined : addLockedTitle}
           >
             <Sparkles className='w-4 h-4' /> Generate with AI
           </Button>
@@ -362,15 +379,32 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
             variant='outline'
             onClick={() => setBankPickerOpen(true)}
             className='gap-1'
-            disabled={draft != null}
+            disabled={draft != null || !canAddQuestions}
+            title={canAddQuestions ? undefined : addLockedTitle}
           >
             <Library className='w-4 h-4' /> Add from Bank
           </Button>
-          <Button onClick={startNew} className='gap-1' disabled={draft != null}>
+          <Button
+            onClick={startNew}
+            className='gap-1'
+            disabled={draft != null || !canAddQuestions}
+            title={canAddQuestions ? undefined : addLockedTitle}
+          >
             <Plus className='w-4 h-4' /> Add question
           </Button>
         </div>
       </div>
+
+      {!canAddQuestions && (
+        <div className='flex items-start gap-2 rounded-lg border border-amber-300/40 bg-amber-50 p-3 text-sm dark:bg-amber-950/30'>
+          <AlertTriangle className='mt-0.5 h-4 w-4 shrink-0 text-amber-600' />
+          <p className='text-amber-900 dark:text-amber-200'>
+            This quiz is <strong>published</strong> and visible to students. You can review
+            questions here, but you cannot add, upload, or import new ones until you switch
+            it back to <strong>draft</strong>.
+          </p>
+        </div>
+      )}
 
       {/* Existing question list — DnD-reorderable. While a draft editor is
           open we still let drags happen on already-saved questions; the
@@ -379,7 +413,9 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
       <div className='space-y-2'>
         {questions.length === 0 && draft == null && (
           <div className='border border-dashed rounded-lg p-8 text-center text-sm text-muted-foreground'>
-            No questions yet. Click "Add question" to start.
+            {canAddQuestions
+              ? 'No questions yet. Click "Add question" to start.'
+              : 'No questions on this published quiz.'}
           </div>
         )}
         <DndContext
@@ -555,6 +591,7 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
         courseOfferingId={courseId}
         quizId={quiz.id}
         quizTitle={quiz.title}
+        canUpload={canAddQuestions}
       />
     </div>
   );

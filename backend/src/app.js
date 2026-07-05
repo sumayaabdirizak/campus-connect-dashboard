@@ -9,39 +9,38 @@ import { errorHandler } from "./middleware/errorHandler.js";
 const app = express();
 import { auth } from "./middleware/auth.js";
 import { csrfProtection } from "./middleware/csrf.js";
+import { getCorsAllowlist } from "./config/env.js";
 
 import authRouter from "./controllers/auth/auth.js";
 import usersRouter from "./controllers/auth/users.js";
-import { studentProfilesRouter } from "./controllers/auth/studentProfiles.js";
-import { lecturerProfilesRouter } from "./controllers/auth/lecturerProfiles.js";
-import facultyAdminProfilesRouter from "./controllers/auth/facultyAdminProfiles.js";
 
 import facultiesRouter from "./controllers/academic/faculties.js";
-import departmentsRouter from "./controllers/academic/department.js";
+import departmentsRouter from "./controllers/academic/departments.js";
 import programsRouter from "./controllers/academic/programs.js";
 import academicYearRouter from "./controllers/academic/academicYear.js";
 import batchesRouter from "./controllers/academic/batches.js";
 import batchSectionsRouter from "./controllers/academic/batchSections.js";
-import { enrollmentsRouter } from "./controllers/academic/enrollments.js";
+import coursesRouter from "./controllers/academic/courses.js";
 
 import deanRouter from "./controllers/dean/dean.js";
+import adminRouter from "./controllers/admin/admin.js";
 
 import studentPortalRouter from "./controllers/portals/studentPortal.js";
 import lecturerPortalRouter from "./controllers/portals/lecturerPortal.js";
 
-import chatRouter from "./controllers/courseDetails/chat.js";
-import groupsRouter from "./controllers/courseDetails/groups.js";
-import rosterRouter from "./controllers/courseDetails/roster.js";
-import quizzesRouter from "./controllers/courseDetails/quizzes.js";
-import resourcesRouter from "./controllers/courseDetails/resources.js";
-import attendanceRouter from "./controllers/courseDetails/attendance.js";
-import courseOfferingsRouter from "./controllers/courseDetails/course-offerings.js";
-import quizTakingRouter from "./controllers/courseDetails/quiz-taking.js";
-import questionBankRouter from "./controllers/courseDetails/question-bank.js";
-import courseFeedRouter from "./controllers/courseDetails/course-feed.js";
-import courseAccessRouter from "./controllers/courseDetails/course-access.js";
+import chatRouter from "./controllers/courses/chat.js";
+import groupsRouter from "./controllers/courses/groups.js";
+import rosterRouter from "./controllers/courses/roster.js";
+import quizzesRouter from "./controllers/courses/quizzes.js";
+import resourcesRouter from "./controllers/courses/resources.js";
+import courseOfferingsRouter from "./controllers/courses/course-offerings.js";
+import quizTakingRouter from "./controllers/courses/quiz-taking.js";
+import questionBankRouter from "./controllers/courses/question-bank.js";
+import courseFeedRouter from "./controllers/courses/course-feed.js";
+import courseAccessRouter from "./controllers/courses/course-access.js";
+import gradebookRouter from "./controllers/courses/gradebook.js";
 
-import announcementsRouter from "./controllers/announcements/announcements.js";
+import announcementsRouter from "./features/announcements/routes.announcements.js";
 import pushRouter from "./features/announcements/routes.push.js";
 import {
   announcementLinkRedirectLimiter,
@@ -50,6 +49,7 @@ import {
 import debugRouter from "./controllers/debug/announcement-test-users.js";
 import discussionsRouter from "./controllers/discussions/discussions.js";
 import clubsRouter from "./controllers/clubs/clubs.js";
+import calendarRouter from "./controllers/calendar/calendar.js";
 import rateLimit from "express-rate-limit";
 
 // ─── Security headers (Helmet) ──────────────────────────────────────────────
@@ -79,8 +79,17 @@ app.use(requestLogger());
 // an image. The MIME / extension allowlist on the upload endpoint is the
 // primary defence; this is the second layer.
 app.use("/uploads", (req, res, next) => {
-  res.setHeader("Content-Disposition", "attachment");
+  // Raster images are safe to render inline (no script execution); serve them
+  // inline so <img>, CSS backgrounds, direct links and Next's image optimizer
+  // all work. Everything else (notably .svg / .html / .pdf) keeps `attachment`
+  // as the defence-in-depth against stored-XSS via a masquerading upload.
+  const inlineSafe = /\.(png|jpe?g|webp|gif)$/i.test(req.path);
+  res.setHeader("Content-Disposition", inlineSafe ? "inline" : "attachment");
   res.setHeader("X-Content-Type-Options", "nosniff");
+  // Helmet's default CORP is `same-origin`, which blocks the frontend origin
+  // (a different port) from embedding these images as <img>/CSS backgrounds.
+  // Relax it to `cross-origin` for uploads only so course covers/avatars load.
+  res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
   next();
 }, express.static("uploads"));
 
@@ -89,14 +98,7 @@ app.use("/uploads", (req, res, next) => {
 // `FRONTEND_URL` (used by the socket layer too) or to localhost defaults
 // for dev. Credentialed requests require an exact origin match — wildcards
 // would let a malicious site read authenticated responses.
-const corsAllowlist = (
-  process.env.CORS_ORIGINS ||
-  process.env.FRONTEND_URL ||
-  "http://localhost:3000,http://127.0.0.1:3000,http://localhost:3001,http://127.0.0.1:3001"
-)
-  .split(",")
-  .map((x) => x.trim())
-  .filter(Boolean);
+const corsAllowlist = getCorsAllowlist();
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -137,9 +139,6 @@ app.use("/api", csrfProtection);
 // ═══════════════════════════════════════════════════════════════════════════════════
 app.use("/api/auth", authRouter);
 app.use("/api/users", usersRouter);
-app.use("/api/student-profiles", studentProfilesRouter);
-app.use("/api/lecturer-profiles", lecturerProfilesRouter);
-app.use("/api/faculty-admin-profiles", facultyAdminProfilesRouter);
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // CATEGORY 2: Academic Structure
@@ -150,12 +149,13 @@ app.use("/api/programs", programsRouter);
 app.use("/api/academic-years", academicYearRouter);
 app.use("/api/batches", batchesRouter);
 app.use("/api/batch-sections", batchSectionsRouter);
-app.use("/api/enrollments", enrollmentsRouter);
+app.use("/api/courses", coursesRouter);
 
 // ══════════════════════════════════════════════════════════════════════════════��════
 // CATEGORY 3: Dean Functions (all-in-one for faculty management)
 // ═══════════════════════════════════════════════════════════════════════════════════
 app.use("/api/dean", deanRouter);
+app.use("/api/admin", adminRouter);
 
 // ═══════════════════════════════════════════════════════════════════════════════════
 // CATEGORY 4: Portal (Student & Lecturer views)
@@ -173,16 +173,17 @@ app.use("/api/quizzes", quizzesRouter);
 app.use("/api/quiz-taking", quizTakingRouter);
 app.use("/api/question-bank", questionBankRouter);
 app.use("/api/resources", resourcesRouter);
-app.use("/api/attendance", attendanceRouter);
 app.use("/api/course-offerings", courseOfferingsRouter);
 app.use("/api/course-feed", courseFeedRouter);
 app.use("/api/course-access", courseAccessRouter);
+app.use("/api/gradebook", gradebookRouter);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // CATEGORY 6: General Commms
 // ═══════════════════════════════════════════════════════════════════════════
 app.use("/api/announcements", announcementsRouter);
 app.use("/api/push", pushRouter);
+app.use("/api/calendar", calendarRouter);
 const discussionsRateLimit = rateLimit({
   windowMs: 60 * 1000,
   max: Number(process.env.DISCUSSIONS_RATE_LIMIT_PER_MIN ?? 180),

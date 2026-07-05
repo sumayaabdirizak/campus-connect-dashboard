@@ -11,21 +11,6 @@ import { DaySeparator, isSameLocalDay } from '../channel/day-separator';
 import { MessageComposer } from '../composer/message-composer';
 import type { DiscussionPermissions } from '../../hooks/use-discussion-permissions';
 
-const SAME_AUTHOR_GROUP_WINDOW_MS = 5 * 60 * 1000;
-
-function shouldShowHeader(
-  prev: { senderId: number | null; createdAt: string; isAnonymous?: boolean } | null,
-  curr: { senderId: number | null; createdAt: string; isAnonymous?: boolean }
-): boolean {
-  if (!prev) return true;
-  if (prev.senderId !== curr.senderId) return true;
-  if (Boolean(prev.isAnonymous) !== Boolean(curr.isAnonymous)) return true;
-  const prevMs = new Date(prev.createdAt).getTime();
-  const currMs = new Date(curr.createdAt).getTime();
-  if (currMs - prevMs > SAME_AUTHOR_GROUP_WINDOW_MS) return true;
-  return false;
-}
-
 export function ThreadPanel({
   channelId,
   threadRootId,
@@ -128,7 +113,15 @@ export function ThreadPanel({
         </Button>
       </header>
 
-      <div ref={scrollRef} className='relative flex-1 overflow-y-auto'>
+      <div
+        ref={scrollRef}
+        className='relative flex-1 overflow-y-auto bg-muted/40'
+        style={{
+          backgroundImage:
+            'radial-gradient(rgba(130,130,130,0.07) 1px, transparent 1px)',
+          backgroundSize: '22px 22px'
+        }}
+      >
         {isLoading && !root ? (
           <div className='space-y-4 px-4 py-4'>
             <Skeleton className='h-12 w-3/4' />
@@ -175,7 +168,7 @@ export function ThreadPanel({
                     myUserId={myUserId}
                     perms={perms}
                     isPinned={pinnedSet?.has(m.id) ?? false}
-                    showHeader={showDay || shouldShowHeader(prev, m)}
+                    showHeader
                     inThread
                   />
                 );

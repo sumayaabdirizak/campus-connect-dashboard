@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000';
+import { getSocketUrl } from '@/lib/api-config';
+
+const SOCKET_URL = getSocketUrl();
 
 /// One row per in-flight student attempt. The reducer below builds these
 /// from the streamed `quiz:progress` events. Once an attempt receives a

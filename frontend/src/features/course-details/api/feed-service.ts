@@ -1,4 +1,5 @@
-import { apiClient, ensureCsrfToken } from '@/lib/api-client';
+import { apiClient } from '@/lib/api-client';
+import { uploadJson } from '@/lib/upload-client';
 import type {
   CoursePost,
   CoursePostAttachment,
@@ -6,8 +7,6 @@ import type {
   CreateCoursePostInput,
   UpdateCoursePostInput
 } from './feed-types';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export async function getCourseFeed(courseOfferingId: string): Promise<CoursePost[]> {
   return apiClient<CoursePost[]>(`/course-feed/${courseOfferingId}`);
@@ -45,18 +44,10 @@ export async function uploadCoursePostAttachments(
 ): Promise<{ count: number; attachments: CoursePostAttachment[] }> {
   const fd = new FormData();
   for (const f of files) fd.append('files', f);
-  const csrfToken = await ensureCsrfToken();
-  const res = await fetch(`${API_BASE_URL}/course-feed/post/${postId}/attachments`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
-    body: fd
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Upload failed: ${res.status}`);
-  }
-  return res.json();
+  return uploadJson<{ count: number; attachments: CoursePostAttachment[] }>(
+    `/course-feed/post/${postId}/attachments`,
+    fd
+  );
 }
 
 export async function deleteCoursePostAttachment(

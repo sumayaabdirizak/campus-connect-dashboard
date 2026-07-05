@@ -3,6 +3,7 @@ import {
   buildVisibleAnnouncementsWhereLegacy,
   isPrismaAnnouncementSchemaDriftError,
 } from "./announcementVisibility.service.js";
+import { NOTIF_KIND } from "../../../../../shared/notifications.js";
 
 /**
  * **All-day rule (API + iCal):** `deadlineAt` stored in UTC. If the instant is exactly
@@ -111,7 +112,6 @@ export function buildVisibleOfferingWhere(loaded) {
  */
 export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, toRaw) {
   const courseOffering = buildVisibleOfferingWhere(loaded);
-  const offeringSelect = { course: { select: { code: true } } };
 
   const [assignments, quizzes] = await Promise.all([
     prisma.assignment.findMany({
@@ -121,7 +121,7 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
         title: true,
         due_date: true,
         courseOfferingId: true,
-        courseOffering: { select: offeringSelect },
+        courseOffering: { select: { publicId: true, course: { select: { code: true } } } },
       },
       orderBy: { due_date: "asc" },
       take: 500,
@@ -133,7 +133,7 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
         title: true,
         close_at: true,
         courseOfferingId: true,
-        courseOffering: { select: offeringSelect },
+        courseOffering: { select: { publicId: true, course: { select: { code: true } } } },
       },
       orderBy: { close_at: "asc" },
       take: 500,
@@ -142,19 +142,19 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
 
   return [
     ...assignments.map((a) => ({
-      kind: "assignment",
+      kind: NOTIF_KIND.ASSIGNMENT,
       id: a.id,
       title: a.title,
       deadlineAt: a.due_date,
-      courseOfferingId: a.courseOfferingId,
+      courseOfferingId: a.courseOffering?.publicId ?? null,
       courseCode: a.courseOffering?.course?.code ?? null,
     })),
     ...quizzes.map((q) => ({
-      kind: "quiz",
+      kind: NOTIF_KIND.QUIZ,
       id: q.id,
       title: q.title,
       deadlineAt: q.close_at,
-      courseOfferingId: q.courseOfferingId,
+      courseOfferingId: q.courseOffering?.publicId ?? null,
       courseCode: q.courseOffering?.course?.code ?? null,
     })),
   ];
@@ -163,7 +163,7 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
 /** Shape an announcement deadline row into the unified calendar-row form. */
 function announcementRowToUnified(r) {
   return {
-    kind: "announcement",
+    kind: NOTIF_KIND.ANNOUNCEMENT,
     id: r.id,
     title: r.title,
     content: r.content,
@@ -257,14 +257,14 @@ export function buildCalendarDeadlinesIcs(rows, opts = {}) {
 
   for (const r of rows) {
     if (!r.deadlineAt) continue;
-    const kind = r.kind || "announcement";
+    const kind = r.kind || NOTIF_KIND.ANNOUNCEMENT;
     const uid = `${kind}-deadline-${r.id}@campus-connect`;
     const titleText = r.courseCode ? `${r.courseCode} · ${r.title || ""}` : r.title || "Deadline";
     const title = escapeIcsText(titleText);
     const url =
-      kind === "assignment"
+      kind === NOTIF_KIND.ASSIGNMENT
         ? `${baseUrl}/dashboard/courses/${r.courseOfferingId}?tab=assignments`
-        : kind === "quiz"
+        : kind === NOTIF_KIND.QUIZ
           ? `${baseUrl}/dashboard/courses/${r.courseOfferingId}?tab=quizzes`
           : `${baseUrl}/dashboard/announcements`;
     const descPlain = escapeIcsText(String(r.content || "").replace(/\s+/g, " ").trim().slice(0, 1800));

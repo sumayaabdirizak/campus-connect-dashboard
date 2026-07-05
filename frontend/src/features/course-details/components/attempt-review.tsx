@@ -213,7 +213,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
               {/* SHORT_ANSWER: show what they typed + a "pending review" note */}
               {q.question_type === 'SHORT_ANSWER' ? (
                 <div className='space-y-2 pl-6'>
-                  <div className='border rounded p-2 text-sm bg-muted/30 whitespace-pre-wrap'>
+                  <div className='select-text border rounded p-2 text-sm bg-muted/30 whitespace-pre-wrap'>
                     {ans?.text_answer?.trim() || (
                       <span className='italic text-muted-foreground'>
                         — no answer —
@@ -283,7 +283,7 @@ export function AttemptReview({ attempt, onBack }: AttemptReviewProps) {
                     <p className='text-[11px] font-medium text-warning-foreground uppercase tracking-wide mb-1'>
                       Why?
                     </p>
-                    <p className='text-xs text-warning-foreground whitespace-pre-wrap'>
+                    <p className='select-text text-xs text-warning-foreground whitespace-pre-wrap'>
                       {q.explanation}
                     </p>
                   </div>

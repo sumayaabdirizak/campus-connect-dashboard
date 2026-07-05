@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/sheet';
 import { departmentSchema, type DepartmentFormValues } from '../schemas/department';
 import { Icons } from '@/components/icons';
-import { toast } from 'sonner';
+import { handleApiError, showToast } from '@/lib/notifications';
 
 // You'd populate this from API in production
 const FACULTY_OPTIONS = [
@@ -61,13 +61,14 @@ export function DepartmentFormSheet({ department, open, onOpenChange }: Props) {
     onSubmit: async ({ value }) => {
       try {
         console.log(value); // Connect to API here in real use!
-        toast.success(
+        showToast(
+          'success',
           isEdit ? 'Department updated successfully' : 'Department created successfully'
         );
         onOpenChange(false);
         form.reset();
-      } catch {
-        toast.error('Something went wrong');
+      } catch (error) {
+        handleApiError(error, 'Something went wrong');
       }
     }
   });

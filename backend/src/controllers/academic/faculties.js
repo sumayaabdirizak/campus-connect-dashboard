@@ -1,4 +1,3 @@
-// src/routes/faculty.routes.js
 import express from "express";
 import {
   getAllFaculties,
@@ -7,19 +6,18 @@ import {
   updateFaculty,
   deleteFaculty,
   assignDean
-} from "./faculty.controller.js";
-import { auth } from "../../middleware/auth.js";
+} from "./faculties.controller.js";
 import { requireRole } from "../../middleware/requireRole.js";
 
 const router = express.Router();
 
 // Only authenticated users can read faculties
-router.get("/", auth, getAllFaculties);
-router.get("/:id", auth, getFacultyById);
+router.get("/", getAllFaculties);
+router.get("/:id", getFacultyById);
 
 // Only SUPER_ADMIN can change faculties
-router.post("/", auth, requireRole("SUPER_ADMIN"), createFaculty);
-router.put("/:id", auth, requireRole("SUPER_ADMIN"), updateFaculty);
-router.delete("/:id", auth, requireRole("SUPER_ADMIN"), deleteFaculty);
-router.patch("/:facultyId/assign-dean", auth, requireRole("SUPER_ADMIN"), assignDean);
+router.post("/", requireRole("SUPER_ADMIN"), createFaculty);
+router.put("/:id", requireRole("SUPER_ADMIN"), updateFaculty);
+router.delete("/:id", requireRole("SUPER_ADMIN"), deleteFaculty);
+router.patch("/:facultyId/assign-dean", requireRole("SUPER_ADMIN"), assignDean);
 export default router;

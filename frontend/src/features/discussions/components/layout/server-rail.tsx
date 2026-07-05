@@ -9,6 +9,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { useServers, useUnreadSummary } from '../../api/queries';
 import type { DiscussionServer } from '../../api/types';
+import { avatarGradient } from '../../utils/avatar-color';
 
 function ServerInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
@@ -36,13 +37,14 @@ function ServerRailItem({
         <Link
           href={hrefBuilder(server.id)}
           aria-current={isActive ? 'page' : undefined}
+          style={{ background: server.iconUrl ? undefined : avatarGradient(server.name) }}
           className={cn(
             'group relative flex items-center justify-center',
-            'h-12 w-12 rounded-2xl bg-muted text-sm font-semibold',
-            'text-muted-foreground transition-all',
-            'hover:rounded-xl hover:bg-primary hover:text-primary-foreground',
-            isActive &&
-              'rounded-xl bg-primary text-primary-foreground shadow-sm'
+            'h-12 w-12 rounded-2xl text-sm font-semibold text-white transition-all',
+            'hover:rounded-xl',
+            isActive
+              ? 'rounded-xl shadow-md ring-2 ring-primary/50'
+              : 'opacity-90 hover:opacity-100'
           )}
         >
           {server.iconUrl ? (
@@ -140,9 +142,9 @@ export function ServerRail({
                 href='/dashboard/clubs'
                 className={cn(
                   'group relative flex items-center justify-center',
-                  'h-12 w-12 rounded-2xl bg-muted text-sm font-semibold',
-                  'text-muted-foreground transition-all',
-                  'hover:rounded-xl hover:bg-primary hover:text-primary-foreground'
+                  'h-12 w-12 rounded-2xl bg-secondary/10 text-sm font-semibold',
+                  'text-secondary transition-all',
+                  'hover:rounded-xl hover:bg-secondary hover:text-secondary-foreground'
                 )}
               >
                 <Icons.teams className='h-5 w-5' />

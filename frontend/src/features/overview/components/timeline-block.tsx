@@ -8,6 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { AddToCalendarButton } from '@/components/add-to-calendar-button';
+import { deadlineRowToCalendarInput } from '@/features/calendar/deadline-calendar';
 
 type DeadlineKind = 'announcement' | 'assignment' | 'quiz';
 export interface TimelineItem {
@@ -16,7 +18,7 @@ export interface TimelineItem {
   title: string;
   deadlineAt: string | null;
   courseCode?: string | null;
-  courseOfferingId?: number | null;
+  courseOfferingId?: string | null;
 }
 
 const ICON: Record<DeadlineKind, typeof FileText> = {
@@ -183,9 +185,20 @@ export function TimelineBlock({
                           </Link>
                           <p className='truncate text-xs text-muted-foreground'>{d.courseCode ?? ''}</p>
                         </div>
-                        <Button asChild variant='outline' size='sm' className='shrink-0'>
-                          <Link href={hrefFor(d)}>{action[d.kind]}</Link>
-                        </Button>
+                        <div className='flex shrink-0 flex-col items-end gap-1.5'>
+                          {(() => {
+                            const deadline = deadlineRowToCalendarInput(d);
+                            return deadline ? (
+                              <AddToCalendarButton
+                                deadline={deadline}
+                                className='text-[11px] text-muted-foreground'
+                              />
+                            ) : null;
+                          })()}
+                          <Button asChild variant='outline' size='sm'>
+                            <Link href={hrefFor(d)}>{action[d.kind]}</Link>
+                          </Button>
+                        </div>
                       </li>
                     );
                   })}

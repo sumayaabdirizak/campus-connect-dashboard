@@ -12,6 +12,7 @@ import { AnnouncementEmpty } from './empty';
 import { AnnouncementError } from './announcement-error';
 import { AnnouncementListSkeleton } from './skeleton';
 import { isAnnouncementTimelyPinned } from '../utils/announcementPin';
+import { useBookmarks } from '../utils/bookmark-store';
 
 interface AnnouncementFeedProps {
   announcements: Announcement[];
@@ -28,10 +29,6 @@ interface AnnouncementFeedProps {
   onEditAnnouncement?: (announcement: Announcement) => void;
   onDeleteAnnouncement?: (announcement: Announcement) => void;
   onTogglePinAnnouncement?: (announcement: Announcement) => void;
-  /** Cancel a future-dated scheduled post (moves to DRAFT). */
-  onCancelSchedule?: (announcement: Announcement) => void | Promise<void>;
-  /** PATCH `publishedAt` for an existing SCHEDULED post (quick reschedule from the card). */
-  onReschedulePublishAt?: (announcement: Announcement, publishedAtIso: string) => void | Promise<void>;
   onMarkAsRead?: (id: number) => Promise<unknown>;
   /** Draft tab: fetch full announcement then open composer (GET /announcements/:id). */
   onResumeDraft?: (id: number) => void | Promise<void>;
@@ -107,8 +104,6 @@ export function AnnouncementFeed({
   onEditAnnouncement,
   onDeleteAnnouncement,
   onTogglePinAnnouncement,
-  onCancelSchedule,
-  onReschedulePublishAt,
   onMarkAsRead,
   onResumeDraft,
   onOpenAnalytics,
@@ -128,13 +123,14 @@ export function AnnouncementFeed({
     [searchParams]
   );
 
-  const [currentFilter, setCurrentFilter] = useState<'all' | 'pinned' | 'scheduled' | 'drafts'>(() => {
+  const [currentFilter, setCurrentFilter] = useState<'all' | 'pinned' | 'saved' | 'drafts'>(() => {
     const tab = getParam('tab', 'all');
     if (tab === 'pinned') return 'pinned';
-    if (tab === 'scheduled' && canManage) return 'scheduled';
+    if (tab === 'saved') return 'saved';
     if (tab === 'drafts' && canManage) return 'drafts';
     return 'all';
   });
+  const savedIds = useBookmarks();
   const [searchQuery, setSearchQuery] = useState(() => getParam('q', ''));
   const [roleFilter, setRoleFilter] = useState(() => getParam('role', 'ALL'));
   const [readFilter, setReadFilter] = useState<'ALL' | 'READ' | 'UNREAD'>(() => {
@@ -199,7 +195,7 @@ export function AnnouncementFeed({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentFilter, searchQuery, readFilter, dateFilter, sortMode]);
   useEffect(() => {
-    if (!canManage && (currentFilter === 'scheduled' || currentFilter === 'drafts')) {
+    if (!canManage && currentFilter === 'drafts') {
       setCurrentFilter('all');
     }
   }, [canManage, currentFilter]);
@@ -230,7 +226,7 @@ export function AnnouncementFeed({
       ? {
           all: 'الكل',
           pinned: 'نشِط',
-          scheduled: 'مجدول',
+          saved: 'المحفوظة',
           drafts: 'مسودات',
           search: 'بحث',
           create: 'إنشاء',
@@ -261,7 +257,7 @@ export function AnnouncementFeed({
       : {
           all: 'All',
           pinned: 'Active',
-          scheduled: 'Scheduled',
+          saved: 'Saved',
           drafts: 'Drafts',
           search: 'Search',
           create: 'Create',
@@ -301,9 +297,7 @@ export function AnnouncementFeed({
   const filteredAnnouncements = useMemo(() => {
     const filtered = announcements.filter((announcement) => {
       if (currentFilter === 'pinned' && !isAnnouncementTimelyPinned(announcement)) return false;
-      if (currentFilter === 'scheduled') {
-        if (String(announcement.status ?? '').toUpperCase() !== 'SCHEDULED') return false;
-      }
+      if (currentFilter === 'saved' && !savedIds.has(String(announcement.id))) return false;
       if (currentFilter === 'drafts') {
         if (String(announcement.status ?? '').toUpperCase() !== 'DRAFT') return false;
       }
@@ -323,14 +317,6 @@ export function AnnouncementFeed({
       }
       return true;
     });
-
-    const compareScheduled = (a: Announcement, b: Announcement) =>
-      new Date(a.publishedAt || a.createdAt || 0).getTime() -
-      new Date(b.publishedAt || b.createdAt || 0).getTime();
-
-    if (currentFilter === 'scheduled') {
-      return filtered.sort(compareScheduled);
-    }
 
     // Pinned posts always float to the top regardless of sort. Inside each
     // group (pinned / unpinned) we apply the selected sort.
@@ -361,7 +347,8 @@ export function AnnouncementFeed({
     readFilter,
     dateFilter,
     sortMode,
-    pinSortTick
+    pinSortTick,
+    savedIds
   ]);
 
   // Detect "new posts arrived while the user is scrolled away from top" (feed list scroll container).
@@ -371,7 +358,7 @@ export function AnnouncementFeed({
   const [newPostsCount, setNewPostsCount] = useState(0);
   useEffect(() => {
     const currentIds = new Set(announcements.map((a) => a.id));
-    if (currentFilter === 'drafts' || currentFilter === 'scheduled') {
+    if (currentFilter === 'drafts') {
       previousIdsRef.current = currentIds;
       return;
     }
@@ -414,7 +401,7 @@ export function AnnouncementFeed({
     (currentFilter !== 'all' ? 1 : 0) +
     (sortMode !== 'NEWEST' ? 1 : 0);
 
-  /** Search / chips / sort only — excludes All | Active | Scheduled tab (for empty-state copy). */
+  /** Search / chips / sort only — excludes All | Active | Drafts tab (for empty-state copy). */
   const contentFilterCount =
     (searchQuery.trim() ? 1 : 0) +
     (roleFilter !== 'ALL' ? 1 : 0) +
@@ -506,20 +493,18 @@ export function AnnouncementFeed({
                 <span aria-hidden className='absolute bottom-0 left-1/2 h-0.5 w-14 -translate-x-1/2 rounded-full bg-neutral-900 dark:bg-white' />
               )}
             </button>
-            {canManage && (
-              <button
-                type='button'
-                role='tab'
-                aria-selected={currentFilter === 'scheduled'}
-                className={tabClass(currentFilter === 'scheduled')}
-                onClick={() => setCurrentFilter('scheduled')}
-              >
-                {i18n.scheduled}
-                {currentFilter === 'scheduled' && (
-                  <span aria-hidden className='absolute bottom-0 left-1/2 h-0.5 w-14 -translate-x-1/2 rounded-full bg-neutral-900 dark:bg-white' />
-                )}
-              </button>
-            )}
+            <button
+              type='button'
+              role='tab'
+              aria-selected={currentFilter === 'saved'}
+              className={tabClass(currentFilter === 'saved')}
+              onClick={() => setCurrentFilter('saved')}
+            >
+              {i18n.saved}
+              {currentFilter === 'saved' && (
+                <span aria-hidden className='absolute bottom-0 left-1/2 h-0.5 w-14 -translate-x-1/2 rounded-full bg-neutral-900 dark:bg-white' />
+              )}
+            </button>
             {canManage && (
               <button
                 type='button'
@@ -549,7 +534,7 @@ export function AnnouncementFeed({
                 aria-label={i18n.search}
               />
             </div>
-            {canManage && (
+            {(
               <div className='-mx-1 flex max-w-full flex-wrap items-center gap-2 overflow-x-auto px-1 pb-1 pt-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
                 <ChipGroup
                   label={i18n.readState}
@@ -571,21 +556,23 @@ export function AnnouncementFeed({
                     { value: '30D', label: i18n.last30d }
                   ]}
                 />
-                <select
-                  value={roleFilter}
-                  onChange={(e) => setRoleFilter(e.target.value)}
-                  className='h-8 rounded-full border border-border bg-background px-3 text-xs font-medium text-muted-foreground shadow-xs hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-                  aria-label={i18n.role}
-                >
-                  <option value='ALL'>
-                    {i18n.role}: {i18n.all}
-                  </option>
-                  {roleFilterOptions.map((r) => (
-                    <option key={r} value={r}>
-                      {r === 'TEACHER' ? 'LECTURER' : r}
+                {canManage && (
+                  <select
+                    value={roleFilter}
+                    onChange={(e) => setRoleFilter(e.target.value)}
+                    className='h-8 rounded-full border border-border bg-background px-3 text-xs font-medium text-muted-foreground shadow-xs hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
+                    aria-label={i18n.role}
+                  >
+                    <option value='ALL'>
+                      {i18n.role}: {i18n.all}
                     </option>
-                  ))}
-                </select>
+                    {roleFilterOptions.map((r) => (
+                      <option key={r} value={r}>
+                        {r === 'TEACHER' ? 'LECTURER' : r}
+                      </option>
+                    ))}
+                  </select>
+                )}
                 <select
                   value={sortMode}
                   onChange={(e) => setSortMode(e.target.value as SortMode)}
@@ -664,8 +651,6 @@ export function AnnouncementFeed({
                     onEdit={onEditAnnouncement}
                     onDelete={onDeleteAnnouncement}
                     onTogglePin={onTogglePinAnnouncement}
-                    onCancelSchedule={onCancelSchedule}
-                    onReschedulePublishAt={onReschedulePublishAt}
                     onResumeDraft={onResumeDraft}
                     onOpenAnalytics={onOpenAnalytics}
                     onMarkAsRead={onMarkAsRead}
@@ -694,7 +679,6 @@ export function AnnouncementFeed({
             <div className='p-4'>
               <AnnouncementEmpty
                 hasFilters={contentFilterCount > 0}
-                scheduledTabEmpty={currentFilter === 'scheduled' && contentFilterCount === 0}
                 draftsTabEmpty={currentFilter === 'drafts' && contentFilterCount === 0}
                 onClearFilters={handleClearAllFilters}
               />

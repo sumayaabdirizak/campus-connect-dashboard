@@ -34,7 +34,9 @@ import type {
   MessageAttachment,
   PresenceState
 } from '../../api/types';
+import { confirmAction } from '@/lib/notifications';
 import { PresenceDot } from './presence-dot';
+import { avatarGradient } from '../../utils/avatar-color';
 
 function initialsFor(name: string | null | undefined): string {
   const source = name?.trim() ?? '';
@@ -83,7 +85,10 @@ function MemberRow({
     <div className='group/member flex items-center gap-2 px-1 py-1.5'>
       <div className='relative'>
         <Avatar className='h-7 w-7'>
-          <AvatarFallback className='text-[10px]'>
+          <AvatarFallback
+            className='text-[10px] font-semibold text-white'
+            style={{ background: avatarGradient(name) }}
+          >
             {initialsFor(name)}
           </AvatarFallback>
         </Avatar>
@@ -179,11 +184,14 @@ export function DetailsPanel({
   const removeMemberMut = useRemoveServerMember(serverId ?? 0);
   const { data: presenceData } = useServerPresence(serverId);
 
-  const handleRemoveMember = (userId: number, name: string) => {
+  const handleRemoveMember = async (userId: number, name: string) => {
     if (
-      !window.confirm(
-        `Remove ${name} from the server? They'll lose access until re-invited. Their messages stay.`
-      )
+      !(await confirmAction(
+        `Remove ${name}?`,
+        "They'll lose access until re-invited. Their messages will stay in the channel.",
+        'Remove member',
+        { danger: true, icon: 'warning' }
+      ))
     ) {
       return;
     }

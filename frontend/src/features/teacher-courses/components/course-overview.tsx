@@ -2,16 +2,17 @@
 
 import { useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
-  Calendar,
-  MapPin,
-  Users,
-  Clock,
-  ChevronRight,
   FileText,
-  Download
+  FolderOpen,
+  ClipboardList,
+  Newspaper,
+  ClipboardCheck
 } from 'lucide-react';
+import { StudentGradesCard } from '@/features/course-details/components/student-grades-card';
+import { CoursePageShell } from '@/features/course-details/components/_shared/course-page-shell';
+import { courseColor } from '@/features/student-courses/lib/course-color';
+import type { CourseTabId } from '@/features/course-details/config/course-tabs';
 
 interface ScheduleRow {
   id: number;
@@ -28,162 +29,170 @@ interface ToReviewItem {
   title: string;
   pendingCount: number;
   status: string;
+  dueAt?: string | null;
+  openAt?: string | null;
 }
 
 interface OverviewData {
   schedules?: ScheduleRow[];
   toReview?: ToReviewItem[];
   section?: { name: string; _count?: { studentRegistrations: number } };
+  quickLinks?: {
+    syllabus?: {
+      id: number;
+      title: string;
+      url: string;
+      type: string;
+    } | null;
+    resourcesCount?: number;
+  };
+  course?: { code: string };
 }
 
 interface CourseOverviewProps {
   data: OverviewData | null;
   isStudent?: boolean;
+  onOpenTab?: (tab: CourseTabId) => void;
+  courseCode?: string;
+  courseId?: string;
 }
 
-const DAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-function pickNextSchedule(schedules: ScheduleRow[]): ScheduleRow | null {
-  if (!schedules || schedules.length === 0) return null;
-  const today = new Date().getDay();
-  const todaysRow = schedules.find((s) => s.day_of_week === today);
-  if (todaysRow) return todaysRow;
-  const upcoming = [...schedules].sort((a, b) => a.day_of_week - b.day_of_week);
-  const future = upcoming.find((s) => s.day_of_week > today);
-  return future ?? upcoming[0];
+const QUICK_LINKS: {
+  tab: CourseTabId;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+}[] = [
+  { tab: 'feed', label: 'Feed', icon: Newspaper },
+  { tab: 'assignments', label: 'Assignments', icon: FileText },
+  { tab: 'quizzes', label: 'Quizzes', icon: ClipboardCheck },
+  { tab: 'resources', label: 'Resources', icon: FolderOpen }
+];
+
+function formatTime(value: string | null | undefined): string {
+  if (!value) return '—';
+  return value.slice(0, 5);
 }
 
-export function CourseOverview({ data, isStudent }: CourseOverviewProps) {
+export function CourseOverview({
+  data,
+  isStudent,
+  onOpenTab,
+  courseCode,
+  courseId
+}: CourseOverviewProps) {
   const schedules = data?.schedules ?? [];
   const toReview = data?.toReview ?? [];
-  const studentCount = data?.section?._count?.studentRegistrations ?? 0;
+  const syllabus = data?.quickLinks?.syllabus ?? null;
+  const resourcesCount = data?.quickLinks?.resourcesCount ?? 0;
 
-  const next = useMemo(() => pickNextSchedule(schedules), [schedules]);
-  const upcoming = useMemo(
-    () => toReview.filter((t) => t.type === 'assignment').slice(0, 3),
+  const pendingTotal = useMemo(
+    () =>
+      toReview
+        .filter((t) => t.status !== 'Draft')
+        .reduce((sum, i) => sum + i.pendingCount, 0),
     [toReview]
   );
 
-  return (
-    <div className='space-y-6'>
-      {/* Info Cards */}
-      <div className='grid grid-cols-2 md:grid-cols-4 gap-3'>
-        <div className='border rounded-lg p-3'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <Calendar className='w-4 h-4' />
-            <span className='text-xs'>Next Class</span>
-          </div>
-          <p className='font-medium'>{next ? DAY_NAMES[next.day_of_week] : '—'}</p>
-        </div>
-        <div className='border rounded-lg p-3'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <MapPin className='w-4 h-4' />
-            <span className='text-xs'>Location</span>
-          </div>
-          <p className='font-medium'>{next?.location ?? '—'}</p>
-        </div>
-        <div className='border rounded-lg p-3'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <Clock className='w-4 h-4' />
-            <span className='text-xs'>Time</span>
-          </div>
-          <p className='font-medium'>{next?.start_time ?? '—'}</p>
-        </div>
-        <div className='border rounded-lg p-3'>
-          <div className='flex items-center gap-2 text-muted-foreground mb-1'>
-            <Users className='w-4 h-4' />
-            <span className='text-xs'>Students</span>
-          </div>
-          <p className='font-medium'>{studentCount}</p>
-        </div>
-      </div>
+  const accentColor = courseCode ? courseColor(courseCode) : 'hsl(var(--primary))';
 
-      {/* Upcoming */}
-      <div>
-        <h2 className='text-lg font-semibold mb-3'>Upcoming</h2>
-        {upcoming.length === 0 ? (
-          <p className='text-sm text-muted-foreground'>No assignments waiting.</p>
-        ) : (
-          <div className='space-y-2'>
-            {upcoming.map((item) => (
-              <div
-                key={`${item.type}-${item.id}`}
-                className='flex items-center justify-between p-3 border rounded-lg hover:bg-muted/20'
-              >
-                <div className='flex items-center gap-3'>
-                  <div className='w-1 h-8 rounded-full bg-blue-500' />
-                  <div>
-                    <p className='font-medium'>{item.title}</p>
+  return (
+    <div className='flex min-w-0 max-w-full flex-col gap-4 sm:gap-5'>
+      <div className='grid min-w-0 grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-3'>
+        <CoursePageShell
+          title='Weekly schedule'
+          description='Class times and locations for this offering.'
+          className='lg:col-span-1'
+          flush
+        >
+          {schedules.length === 0 ? (
+            <p className='px-4 py-8 text-center text-sm text-muted-foreground sm:px-6'>
+              No classes scheduled yet.
+            </p>
+          ) : (
+            <ul className='divide-y divide-border/60' role='list'>
+              {schedules.map((s) => (
+                <li
+                  key={s.id}
+                  className='flex items-center gap-3 px-4 py-3 sm:px-6'
+                >
+                  <span
+                    className='flex size-9 shrink-0 items-center justify-center rounded-lg text-xs font-semibold'
+                    style={{ backgroundColor: `${accentColor}18`, color: accentColor }}
+                  >
+                    {DAY_NAMES[s.day_of_week]}
+                  </span>
+                  <div className='min-w-0 flex-1'>
+                    <p className='text-sm font-medium'>
+                      {formatTime(s.start_time)} – {formatTime(s.end_time)}
+                    </p>
                     <p className='text-xs text-muted-foreground'>
-                      {item.pendingCount} pending · {item.status}
+                      {s.location || 'Location TBD'}
+                      {s.topic ? ` · ${s.topic}` : ''}
                     </p>
                   </div>
-                </div>
-                <ChevronRight className='w-4 h-4 text-muted-foreground' />
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </CoursePageShell>
 
-      {/* Quick Links */}
-      <div>
-        <h2 className='text-lg font-semibold mb-3'>Quick Links</h2>
-        <div className='flex gap-2'>
-          <Button variant='outline' size='sm' className='gap-1'>
-            <FileText className='w-4 h-4' />
-            Syllabus
-          </Button>
-          <Button variant='outline' size='sm' className='gap-1'>
-            <Download className='w-4 h-4' />
-            Resources
-          </Button>
-        </div>
-      </div>
+        <div className='flex flex-col gap-5 lg:col-span-2'>
+          <CoursePageShell
+            title={isStudent ? 'Action needed' : 'Review queue'}
+            description={
+              pendingTotal > 0
+                ? `${pendingTotal} item${pendingTotal !== 1 ? 's' : ''} need${pendingTotal === 1 ? 's' : ''} your attention.`
+                : isStudent
+                  ? 'You are up to date on assignments and quizzes.'
+                  : 'No submissions waiting for grading.'
+            }
+            actions={
+              !isStudent ? (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='gap-1.5'
+                  onClick={() => onOpenTab?.('reviews')}
+                >
+                  <ClipboardList className='size-4' />
+                  View all
+                </Button>
+              ) : undefined
+            }
+          >
+            <div className='flex min-w-0 flex-wrap gap-2'>
+              {QUICK_LINKS.map(({ tab, label, icon: Icon }) => (
+                <Button
+                  key={tab}
+                  variant='secondary'
+                  size='sm'
+                  className='h-8 shrink-0 gap-1.5 px-2.5 text-xs sm:h-9 sm:gap-2 sm:px-3 sm:text-sm'
+                  onClick={() => onOpenTab?.(tab)}
+                >
+                  <Icon className='size-4' />
+                  {label}
+                  {tab === 'resources' && resourcesCount > 0 && (
+                    <span className='text-muted-foreground'>({resourcesCount})</span>
+                  )}
+                </Button>
+              ))}
+              {syllabus?.url && (
+                <Button
+                  variant='outline'
+                  size='sm'
+                  className='h-9 gap-2'
+                  onClick={() => window.open(syllabus.url, '_blank', 'noopener,noreferrer')}
+                >
+                  <FileText className='size-4' />
+                  Syllabus
+                </Button>
+              )}
+            </div>
+          </CoursePageShell>
 
-      {/* Sidebar */}
-      <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-        <div className='lg:col-span-2 space-y-4'>
-          <div className='border rounded-lg p-4'>
-            <h3 className='font-medium mb-3'>{isStudent ? 'Pending Tasks' : 'To Review'}</h3>
-            {toReview.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>No items</p>
-            ) : (
-              <div className='space-y-2'>
-                {toReview.map((item) => (
-                  <div
-                    key={`${item.type}-${item.id}`}
-                    className='flex items-center justify-between text-sm'
-                  >
-                    <div className='flex items-center gap-2 min-w-0'>
-                      <Badge variant='outline' className='text-[10px] uppercase'>
-                        {item.type}
-                      </Badge>
-                      <span className='truncate'>{item.title}</span>
-                    </div>
-                    <span className='text-xs text-muted-foreground shrink-0'>
-                      {item.pendingCount} pending
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-        <div className='space-y-4'>
-          <div className='border rounded-lg p-4'>
-            <h3 className='font-medium mb-3'>This Week</h3>
-            {schedules.length === 0 ? (
-              <p className='text-sm text-muted-foreground'>No classes</p>
-            ) : (
-              schedules.map((s) => (
-                <div key={s.id} className='flex justify-between text-sm mb-2'>
-                  <span className='text-muted-foreground'>{s.start_time}</span>
-                  <span>{s.location}</span>
-                </div>
-              ))
-            )}
-          </div>
+          {isStudent && courseId && <StudentGradesCard courseId={courseId} />}
         </div>
       </div>
     </div>

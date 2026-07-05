@@ -10,16 +10,6 @@ import { DaySeparator, isSameLocalDay } from '../channel/day-separator';
 import { DmMessageRow } from './dm-message-row';
 
 const SCROLL_BOTTOM_THRESHOLD = 120;
-const SAME_AUTHOR_GROUP_WINDOW_MS = 5 * 60 * 1000;
-
-function shouldShowHeader(prev: DiscussionMessage | null, curr: DiscussionMessage): boolean {
-  if (!prev) return true;
-  if (prev.senderId !== curr.senderId) return true;
-  const prevMs = new Date(prev.createdAt).getTime();
-  const currMs = new Date(curr.createdAt).getTime();
-  if (currMs - prevMs > SAME_AUTHOR_GROUP_WINDOW_MS) return true;
-  return false;
-}
 
 export function DmMessageList({
   groupDmId,
@@ -157,7 +147,7 @@ export function DmMessageList({
           myUserId={myUserId}
           myDisplayName={myDisplayName}
           isOwner={isOwner}
-          showHeader={showDay || shouldShowHeader(prev, m)}
+          showHeader
           onOptimisticPatch={optimisticPatchMessage}
           onOptimisticReactionToggle={optimisticToggleReaction}
           tickStatus={tick}
@@ -178,7 +168,15 @@ export function DmMessageList({
   ]);
 
   return (
-    <div ref={scrollRef} className='relative flex-1 overflow-y-auto'>
+    <div
+      ref={scrollRef}
+      className='relative flex-1 overflow-y-auto bg-muted/40'
+      style={{
+        backgroundImage:
+          'radial-gradient(rgba(130,130,130,0.07) 1px, transparent 1px)',
+        backgroundSize: '22px 22px'
+      }}
+    >
       <div ref={sentinelRef} className='h-1' aria-hidden />
 
       {isLoadingOlder && (

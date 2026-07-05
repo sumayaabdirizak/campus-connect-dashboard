@@ -1,11 +1,12 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
+import { ChevronRight } from 'lucide-react';
 import { useAuthStore } from '@/lib/auth-store';
 import { apiClient } from '@/lib/api-client';
 import type { User } from '@/lib/auth-store';
 import PageContainer from '@/components/layout/page-container';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -20,18 +21,57 @@ import {
   AlertDialogHeader,
   AlertDialogTitle
 } from '@/components/ui/alert-dialog';
+import { NotificationToggle } from '@/features/notifications/notification-toggle';
 import { roleBadgeVariant } from '@/lib/role-badge';
 import { cn } from '@/lib/utils';
 
-/**
- * "Your Profile" surface. Wraps `PageContainer` directly because the route
- * (`/dashboard/profile`) doesn't impose one — this page owns its own title.
- *
- * Roles render through `roleBadgeVariant()` so the colours match every
- * other place that shows roles (e.g. the users table) and dark mode works
- * automatically — replaces the previous hand-rolled `bg-blue-100` / `bg-
- * green-100` map that ignored the theme.
- */
+function ProfileRow({
+  label,
+  value,
+  mono
+}: {
+  label: string;
+  value: string;
+  mono?: boolean;
+}) {
+  return (
+    <div className='flex items-center justify-between gap-4 px-4 py-3'>
+      <span className='text-sm text-muted-foreground'>{label}</span>
+      <span className={cn('truncate text-sm font-medium', mono && 'font-mono tabular-nums')}>
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function SettingRow({
+  id,
+  title,
+  description,
+  control
+}: {
+  id?: string;
+  title: string;
+  description: string;
+  control: React.ReactNode;
+}) {
+  return (
+    <div className='flex items-start justify-between gap-4 px-4 py-3'>
+      <div className='min-w-0 space-y-0.5'>
+        {id ? (
+          <Label htmlFor={id} className='text-sm font-medium'>
+            {title}
+          </Label>
+        ) : (
+          <p className='text-sm font-medium'>{title}</p>
+        )}
+        <p className='text-xs text-muted-foreground'>{description}</p>
+      </div>
+      <div className='shrink-0 pt-0.5'>{control}</div>
+    </div>
+  );
+}
+
 export default function ProfileViewPage() {
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
@@ -51,7 +91,6 @@ export default function ProfileViewPage() {
     .toUpperCase();
 
   const role = roleBadgeVariant(user.role);
-
   const smsOn = user.smsOptIn === true;
 
   async function patchSmsOptIn(next: boolean) {
@@ -73,47 +112,57 @@ export default function ProfileViewPage() {
   }
 
   return (
-    <PageContainer pageTitle='Your Profile' pageDescription='Account details and notification preferences.'>
-      <div className='space-y-6'>
-        <Card className='max-w-2xl'>
-          <CardHeader className='flex flex-row items-center gap-4'>
-            <Avatar className='h-20 w-20'>
-              <AvatarFallback className='bg-primary/10 text-primary text-2xl font-bold'>
+    <PageContainer pageTitle='Profile' pageDescription='Your account and notification settings.'>
+      <div className='mx-auto w-full max-w-xl space-y-4'>
+        <div className='overflow-hidden rounded-xl border bg-card shadow-sm'>
+          <div className='flex items-center gap-3 px-4 py-4'>
+            <Avatar className='size-12'>
+              <AvatarFallback className='bg-primary/10 text-primary text-sm font-semibold'>
                 {initials}
               </AvatarFallback>
             </Avatar>
-            <div className='space-y-2'>
-              <CardTitle className='text-2xl'>{displayName}</CardTitle>
-              {/* Role badge via the shared helper — same visual as the users
-                  table, same Badge primitive, theme- and dark-mode-safe. */}
-              <Badge variant={role.variant} className={cn(role.className)}>
-                {role.label}
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent className='space-y-4'>
-            <div className='grid grid-cols-2 gap-4'>
-              <div>
-                <p className='text-muted-foreground text-sm font-medium'>Email</p>
-                <p className='text-base'>{user.email}</p>
-              </div>
-              <div>
-                <p className='text-muted-foreground text-sm font-medium'>User ID</p>
-                <p className='font-mono text-base'>#{user.id}</p>
+            <div className='min-w-0'>
+              <p className='truncate text-base font-semibold'>{displayName}</p>
+              <div className='mt-1 flex flex-wrap items-center gap-2'>
+                <Badge variant={role.variant} className={cn('h-5 text-[10px]', role.className)}>
+                  {role.label}
+                </Badge>
+                <span className='truncate text-xs text-muted-foreground'>{user.email}</span>
               </div>
             </div>
+          </div>
 
-            <div className='border-border space-y-3 rounded-lg border p-4'>
-              <div className='flex items-center justify-between gap-4'>
-                <div className='space-y-1'>
-                  <Label htmlFor='sms-opt-in' className='text-base font-medium'>
-                    SMS for urgent campus announcements
-                  </Label>
-                  <p className='text-muted-foreground text-sm'>
-                    When enabled, we may send short SMS about time-sensitive announcements to the phone number on your
-                    account. Message and data rates may apply. You can turn this off anytime.
-                  </p>
-                </div>
+          <div className='divide-y border-t'>
+            <ProfileRow label='Email' value={user.email} />
+            <ProfileRow label='User ID' value={`#${user.id}`} mono />
+          </div>
+        </div>
+
+        <div className='overflow-hidden rounded-xl border bg-card shadow-sm'>
+          <div className='flex items-center justify-between border-b px-4 py-2.5'>
+            <p className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>
+              Notifications
+            </p>
+            <Link
+              href='/dashboard/notifications'
+              className='inline-flex items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground'
+            >
+              View all
+              <ChevronRight className='size-3' aria-hidden />
+            </Link>
+          </div>
+
+          <div className='divide-y'>
+            <SettingRow
+              title='Browser notifications'
+              description='Alerts for grades, assignments, and announcements.'
+              control={<NotificationToggle />}
+            />
+            <SettingRow
+              id='sms-opt-in'
+              title='SMS announcements'
+              description='Urgent campus alerts to your phone. Rates may apply.'
+              control={
                 <Switch
                   id='sms-opt-in'
                   checked={smsOn}
@@ -127,48 +176,52 @@ export default function ProfileViewPage() {
                     }
                   }}
                 />
-              </div>
-              {smsError ? <p className='text-destructive text-sm'>{smsError}</p> : null}
-            </div>
-          </CardContent>
-        </Card>
+              }
+            />
+          </div>
 
-        <AlertDialog
-          open={consentOpen}
-          onOpenChange={(open) => {
-            setConsentOpen(open);
-            if (!open) setPendingEnable(false);
-          }}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Confirm SMS opt-in</AlertDialogTitle>
-              <AlertDialogDescription className='space-y-2 text-left'>
-                <span>
-                  You agree to receive automated text messages from Campus Connect about important campus announcements
-                  at the phone number we have on file. This is optional and not required to use the platform.
-                </span>
-                <span className='text-muted-foreground block'>
-                  Reply STOP to opt out of future texts where supported by your carrier; you can also disable this here at
-                  any time.
-                </span>
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                disabled={busy || !pendingEnable}
-                onClick={(e) => {
-                  e.preventDefault();
-                  void patchSmsOptIn(true);
-                }}
-              >
-                {busy ? 'Saving…' : 'I agree — enable SMS'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+          {smsError ? (
+            <p className='border-t px-4 py-2 text-xs text-destructive'>{smsError}</p>
+          ) : null}
+        </div>
       </div>
+
+      <AlertDialog
+        open={consentOpen}
+        onOpenChange={(open) => {
+          setConsentOpen(open);
+          if (!open) setPendingEnable(false);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirm SMS opt-in</AlertDialogTitle>
+            <AlertDialogDescription className='space-y-2 text-left'>
+              <span>
+                You agree to receive automated text messages from Campus Connect about important
+                campus announcements at the phone number we have on file. This is optional and not
+                required to use the platform.
+              </span>
+              <span className='text-muted-foreground block'>
+                Reply STOP to opt out of future texts where supported by your carrier; you can also
+                disable this here at any time.
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              disabled={busy || !pendingEnable}
+              onClick={(e) => {
+                e.preventDefault();
+                void patchSmsOptIn(true);
+              }}
+            >
+              {busy ? 'Saving…' : 'I agree — enable SMS'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 }

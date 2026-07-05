@@ -10,6 +10,7 @@ import Link from 'next/link';
 import { InteractiveGridPattern } from './interactive-grid';
 import { useAuthStore } from '@/lib/auth-store';
 import { apiClient } from '@/lib/api-client';
+import { handleApiError, showToast } from '@/lib/notifications';
 
 export default function SignInViewPage() {
   const [email, setEmail] = useState('');
@@ -25,7 +26,7 @@ export default function SignInViewPage() {
     setLoading(true);
 
     if (!email || !password) {
-      setError('Please enter both email and password.');
+      showToast('warning', 'Please enter both email and password.');
       setLoading(false);
       return;
     }
@@ -37,9 +38,13 @@ export default function SignInViewPage() {
       });
 
       setUser(data.user);
+      showToast('success', 'Welcome back!');
       router.push('/dashboard');
-    } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+    } catch (err: unknown) {
+      handleApiError(err, 'Login failed. Please check your credentials.');
+      setError(
+        err instanceof Error ? err.message : 'Login failed. Please check your credentials.'
+      );
     } finally {
       setLoading(false);
     }

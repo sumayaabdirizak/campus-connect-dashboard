@@ -294,18 +294,19 @@ export function ChannelSidebar({
   return (
     <aside
       aria-label='Channels'
-      className='flex h-full w-60 shrink-0 flex-col border-r bg-background'
+      className='flex h-full min-h-0 w-60 shrink-0 flex-col overflow-hidden border-r bg-background'
     >
       {/* Clubs section — above Faculty header, completely separate */}
-      <div className='shrink-0 border-b py-2'>
+      <div className='max-h-40 shrink-0 overflow-y-auto border-b py-2'>
         <ClubsSidebarSection activeServerId={serverId} />
       </div>
 
       {/* Faculty server header */}
       <SidebarServerHeader server={serverDetail?.server ?? null} isLoading={isLoadingServer} />
 
-      <ScrollArea className='flex-1'>
-        <div className='flex flex-col gap-1 py-2'>
+      <div className='min-h-0 flex-1 overflow-hidden'>
+        <ScrollArea className='h-full'>
+          <div className='flex flex-col gap-1 py-2'>
           {isLoadingServer && groups.length === 0 ? (
             <div className='space-y-1 px-2'>
               <Skeleton className='h-7 w-full' />
@@ -321,14 +322,17 @@ export function ChannelSidebar({
                 onClick={() =>
                   setChannelDialog({ open: true, categoryId: null })
                 }
-                className='mx-2 flex items-center gap-2 rounded-md px-2 py-1.5 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'
+                className='mx-2 flex flex-col items-center gap-1.5 rounded-lg border border-dashed px-3 py-4 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground'
               >
-                <Icons.add className='h-3 w-3' />
+                <span className='flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+                  <Icons.add className='h-4 w-4' />
+                </span>
                 Create your first channel
               </button>
             ) : (
-              <div className='mx-2 rounded-md border border-dashed px-2 py-3 text-center text-[11px] text-muted-foreground'>
-                No channels yet.
+              <div className='mx-2 rounded-lg border border-dashed px-3 py-4 text-center'>
+                <Icons.hash className='mx-auto h-5 w-5 text-muted-foreground/50' />
+                <p className='mt-1 text-[11px] text-muted-foreground'>No channels yet.</p>
               </div>
             )
           ) : (
@@ -380,8 +384,9 @@ export function ChannelSidebar({
               );
             })
           )}
-        </div>
-      </ScrollArea>
+          </div>
+        </ScrollArea>
+      </div>
 
       <SidebarUserFooter />
 

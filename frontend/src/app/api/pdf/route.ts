@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getBackendOrigin } from '@/lib/api-config';
 
 /**
  * Universal server-side PDF proxy.
@@ -25,14 +26,7 @@ import { NextRequest, NextResponse } from 'next/server';
  *   - No cookies are forwarded to external servers.
  */
 
-const API_ORIGIN = (() => {
-  const base = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-  try {
-    return new URL(base).origin;
-  } catch {
-    return 'http://localhost:4000';
-  }
-})();
+const API_ORIGIN = getBackendOrigin();
 
 // localhost is never reachable over https so we allow http for dev only.
 const DEV = process.env.NODE_ENV !== 'production';

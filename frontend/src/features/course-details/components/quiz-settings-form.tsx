@@ -64,10 +64,10 @@ interface FormState {
   close_at_local: string;
   shuffle_questions: boolean;
   shuffle_answers: boolean;
-  max_attempts: number;
   passing_score: number;
   timing_mode: 'flexible' | 'fixed';
   scheduled_duration: number | null;
+  confidence_scoring: boolean;
   /// Numeric module id as a string for the Select, or `NO_MODULE` for the
   /// Ungrouped bucket. Kept as a string to play nicely with shadcn Select
   /// (which only accepts string values).
@@ -78,15 +78,15 @@ const BLANK: FormState = {
   title: '',
   description: '',
   duration_minutes: 30,
-  is_draft: false,
+  is_draft: true,
   open_at_local: '',
   close_at_local: '',
   shuffle_questions: false,
   shuffle_answers: false,
-  max_attempts: 1,
   passing_score: 50,
   timing_mode: 'flexible',
   scheduled_duration: null,
+  confidence_scoring: false,
   moduleSelect: NO_MODULE,
 };
 
@@ -100,10 +100,10 @@ function fromQuiz(q: Quiz): FormState {
     close_at_local: isoToLocalInput(q.close_at),
     shuffle_questions: q.shuffle_questions,
     shuffle_answers: q.shuffle_answers,
-    max_attempts: q.max_attempts,
     passing_score: q.passing_score,
     timing_mode: q.timing_mode ?? 'flexible',
     scheduled_duration: q.scheduled_duration ?? null,
+    confidence_scoring: !!q.confidence_scoring,
     moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId),
   };
 }
@@ -118,10 +118,10 @@ function toPayload(s: FormState): CreateQuizInput {
     close_at: localInputToIso(s.close_at_local),
     shuffle_questions: s.shuffle_questions,
     shuffle_answers: s.shuffle_answers,
-    max_attempts: s.max_attempts,
     passing_score: s.passing_score,
     timing_mode: s.timing_mode,
     scheduled_duration: s.scheduled_duration,
+    confidence_scoring: s.confidence_scoring,
     // Always emit `moduleId` (including `null`) so a teacher can move a quiz
     // out of a module via the Settings dialog. The PATCH route distinguishes
     // null (set to Ungrouped) from undefined (leave alone) on its own.
@@ -153,7 +153,7 @@ interface QuizSettingsDialogProps {
  *
  *   Basics    — title, description, draft toggle
  *   Schedule  — open/close window, timing mode, scheduled duration
- *   Behavior  — duration, attempts, shuffle questions / answers
+ *   Behavior  — duration, shuffle questions / answers
  *   Grading   — pass threshold
  *
  * The form state is local; we only `onSubmit` the cleaned-up payload. Date
@@ -186,7 +186,6 @@ export function QuizSettingsDialog({
     if (!s.title.trim()) return 'Title is required';
     if (s.duration_minutes < 1) return 'Duration must be at least 1 minute';
     if (s.passing_score < 0 || s.passing_score > 100) return 'Passing score must be 0-100';
-    if (s.max_attempts < 1) return 'Allowed attempts must be at least 1';
     if (s.open_at_local && s.close_at_local) {
       if (new Date(s.open_at_local) >= new Date(s.close_at_local)) {
         return 'Open time must be before close time';
@@ -197,6 +196,12 @@ export function QuizSettingsDialog({
       if (s.scheduled_duration != null && s.scheduled_duration < 1) {
         return 'Scheduled duration must be at least 1 minute';
       }
+    }
+    if (!s.is_draft && editing && (editing.questions?.length ?? 0) === 0) {
+      return 'Add at least one question before publishing';
+    }
+    if (!s.is_draft && !editing) {
+      return 'Save as a draft first, then publish after adding questions';
     }
     return null;
   };
@@ -399,7 +404,8 @@ export function QuizSettingsDialog({
                   placeholder={`Defaults to ${form.duration_minutes} min`}
                 />
                 <p className='text-[11px] text-muted-foreground'>
-                  Optional override. If set, this is the per-student time budget in fixed mode.
+                  Per-student time budget in fixed mode. Leave blank to use the Duration from the
+                  Behavior tab ({form.duration_minutes} min).
                 </p>
               </div>
             )}
@@ -407,35 +413,25 @@ export function QuizSettingsDialog({
 
           {/* ── Behavior ───────────────────────────────────────────────── */}
           <TabsContent value='behavior' className='space-y-3 mt-4'>
-            <div className='grid grid-cols-2 gap-3'>
-              <div className='space-y-1.5'>
-                <Label htmlFor='quiz-dur' className='flex items-center gap-1'>
-                  <Clock className='w-3.5 h-3.5' /> Duration (min)
-                </Label>
-                <Input
-                  id='quiz-dur'
-                  type='number'
-                  min={1}
-                  max={480}
-                  value={form.duration_minutes}
-                  onChange={(e) =>
-                    setForm({ ...form, duration_minutes: Math.max(1, Number(e.target.value) || 1) })
-                  }
-                />
-              </div>
-              <div className='space-y-1.5'>
-                <Label htmlFor='quiz-attempts'>Allowed attempts</Label>
-                <Input
-                  id='quiz-attempts'
-                  type='number'
-                  min={1}
-                  max={100}
-                  value={form.max_attempts}
-                  onChange={(e) =>
-                    setForm({ ...form, max_attempts: Math.max(1, Number(e.target.value) || 1) })
-                  }
-                />
-              </div>
+            <div className='space-y-1.5'>
+              <Label htmlFor='quiz-dur' className='flex items-center gap-1'>
+                <Clock className='w-3.5 h-3.5' /> Duration (min)
+              </Label>
+              <Input
+                id='quiz-dur'
+                type='number'
+                min={1}
+                max={480}
+                value={form.duration_minutes}
+                onChange={(e) =>
+                  setForm({ ...form, duration_minutes: Math.max(1, Number(e.target.value) || 1) })
+                }
+              />
+              <p className='text-[11px] text-muted-foreground'>
+                {form.timing_mode === 'flexible'
+                  ? 'Each student gets this many minutes once they start the quiz.'
+                  : 'Fallback time limit in fixed mode when no Scheduled duration is set on the Schedule tab.'}
+              </p>
             </div>
 
             <div className='flex items-center justify-between rounded-md border p-3'>
@@ -506,6 +502,20 @@ export function QuizSettingsDialog({
                 </div>
               </div>
             )}
+
+            <div className='flex items-center justify-between rounded-md border p-3'>
+              <div className='space-y-0.5'>
+                <p className='text-sm font-medium'>Confidence-based scoring</p>
+                <p className='text-[11px] text-muted-foreground'>
+                  Students rate LOW / MED / HIGH on each MCQ or True/False. Correct high-confidence
+                  answers earn full credit; wrong high-confidence answers lose partial credit.
+                </p>
+              </div>
+              <Switch
+                checked={form.confidence_scoring}
+                onCheckedChange={(v) => setForm({ ...form, confidence_scoring: v })}
+              />
+            </div>
           </TabsContent>
         </Tabs>
 

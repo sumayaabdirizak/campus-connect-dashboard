@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Crown, Pencil, Plus, Trash2, UserMinus, UserPlus, Users } from 'lucide-react';
 import { EmptyState } from './_shared/empty-state';
 import { ListSkeleton } from './_shared/list-skeleton';
+import { QueryErrorState } from '@/components/query-error-state';
 import { StudyGroupForm } from './study-group-form';
 import type { StudyGroupFormValues } from '../schemas/study-group';
 import { toast } from 'sonner';
@@ -50,7 +51,7 @@ interface CourseGroupsProps {
 }
 
 export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
-  const { data: groups = [], isLoading, isError } = useGroups(courseId);
+  const { data: groups = [], isLoading, isError, refetch } = useGroups(courseId);
   const { data: roster = [] } = useRoster(courseId);
   const createMutation = useCreateGroup(courseId);
   const deleteMutation = useDeleteGroup(courseId);
@@ -182,7 +183,9 @@ export function CourseGroups({ courseId, isStudent }: CourseGroupsProps) {
       </div>
 
       {isLoading && <ListSkeleton variant='card' count={2} />}
-      {isError && <p className='text-sm text-destructive'>Failed to load groups.</p>}
+      {isError && (
+        <QueryErrorState title='Could not load groups' onRetry={() => void refetch()} />
+      )}
       {!isLoading && !isError && filtered.length === 0 && (
         <EmptyState
           icon={Users}

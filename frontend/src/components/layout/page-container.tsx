@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import { Heading } from '../ui/heading';
 import type { InfobarContent } from '@/components/ui/infobar';
 
@@ -21,6 +21,7 @@ function PageSkeleton() {
 export default function PageContainer({
   children,
   scrollable = false,
+  fill = false,
   isLoading = false,
   access = true,
   accessFallback,
@@ -38,6 +39,8 @@ export default function PageContainer({
   pageDescription?: string;
   infoContent?: InfobarContent;
   pageHeaderAction?: React.ReactNode;
+  /** Fill available dashboard main height without extra padding (audit, reports, etc.). */
+  fill?: boolean;
 }) {
   if (!access) {
     return (
@@ -55,7 +58,9 @@ export default function PageContainer({
 
   const hasHeader = pageTitle || pageHeaderAction;
 
-  const inner = (
+  const inner = fill ? (
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{content}</div>
+  ) : (
     <div className='flex flex-1 flex-col p-4 md:px-6'>
       {hasHeader && (
         <div className='bg-background sticky top-0 z-10 mb-4 flex items-start justify-between gap-4 pb-4'>
@@ -71,8 +76,13 @@ export default function PageContainer({
     </div>
   );
 
-  if (scrollable) {
-    return <ScrollArea className='h-[calc(100dvh-var(--header-height))]'>{inner}</ScrollArea>;
+  if (scrollable && !fill) {
+    return (
+      <ScrollArea className='h-[calc(100dvh-var(--header-height)-2rem)]'>
+        {inner}
+        <ScrollBar orientation='vertical' />
+      </ScrollArea>
+    );
   }
 
   return inner;

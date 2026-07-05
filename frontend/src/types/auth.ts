@@ -1,7 +1,2 @@
-export const ROLES = ['TEACHER', 'STUDENT', 'SUPER_ADMIN', 'DEAN'] as const;
-
-export type Role = (typeof ROLES)[number];
-
-export function isRole(value: unknown): value is Role {
-  return typeof value === 'string' && (ROLES as readonly string[]).includes(value);
-}
+export { ROLES, isRole } from '@shared/roles';
+export type { Role } from '@shared/roles';

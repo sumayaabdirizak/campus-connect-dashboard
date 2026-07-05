@@ -28,6 +28,7 @@ import { UserAvatarProfile } from '@/components/user-avatar-profile';
 import { navGroups } from '@/config/nav-config';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { useAuthStore } from '@/lib/auth-store';
+import { confirmLogout, showToast } from '@/lib/notifications';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 import { useAnnouncementUnreadCount } from '@/features/announcements/api/queries';
 import Link from 'next/link';
@@ -49,13 +50,15 @@ export default function AppSidebar() {
     // Side effects based on sidebar state changes
   }, [isOpen]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    if (!(await confirmLogout())) return;
     logout();
+    showToast('success', 'Signed out successfully');
     router.push('/auth/sign-in');
   };
 
   return (
-    <Sidebar collapsible='icon'>
+    <Sidebar collapsible='icon' data-sidebar='root'>
       <SidebarHeader className='border-b border-sidebar-border/60 group-data-[collapsible=icon]:pt-4'>
         <div className='flex items-center gap-3 px-2 py-2'>
           <div className='flex aspect-square size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground shadow-sm'>

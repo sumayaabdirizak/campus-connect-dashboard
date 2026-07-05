@@ -1,4 +1,48 @@
 import { prisma } from "../../db/prisma.js";
+import { resolveCourseThumbnail } from "../../utils/publicAssetUrl.js";
+
+function buildQuickLinks(resources = []) {
+  const visible = resources.filter((r) => !r.is_draft && r.status === "APPROVED");
+  const syllabus = visible.find((r) => r.type === "SYLLABUS") ?? null;
+  return {
+    syllabus: syllabus
+      ? {
+          id: syllabus.id,
+          title: syllabus.title,
+          url: syllabus.url,
+          type: syllabus.type,
+        }
+      : null,
+    resourcesCount: visible.length,
+  };
+}
+
+function computeOfferingProgress(offering) {
+  const resources = offering.resources ?? [];
+  const assignments = offering.assignments ?? [];
+  const quizzes = offering.quizzes ?? [];
+
+  const resourceDone = resources.filter((r) =>
+    (r.views ?? []).some((v) => v.completed)
+  ).length;
+  const assignmentDone = assignments.filter((a) => (a._count?.submissions ?? 0) > 0).length;
+  const quizDone = quizzes.filter((q) => (q._count?.attempts ?? 0) > 0).length;
+
+  const totalLessons = resources.length + assignments.length + quizzes.length;
+  const completedLessons = resourceDone + assignmentDone + quizDone;
+  const progress =
+    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
+
+  return {
+    totalLessons,
+    completedLessons,
+    progress,
+    status: totalLessons > 0 && completedLessons >= totalLessons ? 'completed' : 'active',
+    pendingItems:
+      assignments.filter((a) => (a._count?.submissions ?? 0) === 0).length +
+      quizzes.filter((q) => (q._count?.attempts ?? 0) === 0).length,
+  };
+}
 
 /**
  * GET /api/student-portal/my-courses
@@ -7,9 +51,7 @@ import { prisma } from "../../db/prisma.js";
 export const getMyCourses = async (req, res) => {
   try {
     const userId = Number(req.user.sub);
-    console.log('getMyCourses: userId extracted:', userId);
     if (!userId) {
-      console.log('getMyCourses: 401 returned - Invalid user context');
       return res.status(401).json({ message: 'Invalid user context' });
     }
 
@@ -43,47 +85,62 @@ export const getMyCourses = async (req, res) => {
         course: {
           include: {
             department: true,
-            _count: { select: { resources: { where: { is_draft: false } } } }
           }
         },
         teacher: {
           select: { id: true, full_name: true, email: true }
         },
-        assignments: {
-          include: {
-            _count: { 
-              select: { 
-                submissions: { where: { studentId: userId } } 
-              } 
+        resources: {
+          where: { is_draft: false, status: 'APPROVED' },
+          select: {
+            id: true,
+            views: {
+              where: { studentId: userId },
+              select: { completed: true }
             }
           }
         },
-        schedules: {
-          take: 1,
-          orderBy: { day_of_week: 'asc' }
+        assignments: {
+          where: { is_draft: false },
+          include: {
+            _count: {
+              select: {
+                submissions: { where: { studentId: userId } }
+              }
+            }
+          }
+        },
+        quizzes: {
+          where: { is_draft: false },
+          include: {
+            _count: {
+              select: {
+                attempts: { where: { studentId: userId } }
+              }
+            }
+          }
         }
       }
     });
 
-    // 3. Transform for premium UI
-    const transformed = offerings.map(o => {
-      const pendingAssignments = o.assignments.filter(a => a._count.submissions === 0).length;
-      
+    const transformed = offerings.map((o) => {
+      const metrics = computeOfferingProgress(o);
+
       return {
-        id: o.id,
+        id: o.publicId,
         courseCode: o.course.code,
         courseName: o.course.name,
         instructor: o.teacher?.full_name || 'TBA',
         department: o.course.department.name,
         section: registration.batchSection.name,
-        thumbnail: `https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800`, // Placeholder
-        pendingItems: pendingAssignments,
-        nextClass: o.schedules[0] ? {
-          day: o.schedules[0].day_of_week,
-          time: o.schedules[0].start_time,
-          location: o.schedules[0].location
-        } : null,
-        progress: 0 // Track progression logic could go here
+        thumbnail: resolveCourseThumbnail(o.course.thumbnail, o.course.code),
+        pendingItems: metrics.pendingItems,
+        schedule: [],
+        nextClass: null,
+        totalLessons: metrics.totalLessons,
+        completedLessons: metrics.completedLessons,
+        progress: metrics.progress,
+        status: metrics.status,
       };
     });
 
@@ -111,18 +168,43 @@ export const getCourseDetail = async (req, res) => {
     const userId = Number(req.user.sub);
 
     const offering = await prisma.courseOffering.findFirst({
-      where: { 
-        id: parseInt(offeringId)
+      where: {
+        publicId: offeringId,
+        section: {
+          studentRegistrations: {
+            some: { studentId: userId }
+          }
+        }
       },
       include: {
         course: {
           include: { department: true }
         },
         section: {
-          include: { batch: true }
+          include: {
+            batch: true,
+            _count: { select: { studentRegistrations: true } }
+          }
         },
-        schedules: true,
+        resources: {
+          where: {
+            is_draft: false,
+            status: 'APPROVED'
+          },
+          orderBy: [{ type: 'asc' }, { created_at: 'desc' }],
+          select: {
+            id: true,
+            title: true,
+            type: true,
+            url: true,
+            is_draft: true,
+            status: true,
+            created_at: true
+          }
+        },
         assignments: {
+          where: { is_draft: false },
+          orderBy: { due_date: 'asc' },
           include: {
             _count: {
               select: { submissions: { where: { studentId: userId } } }
@@ -130,7 +212,13 @@ export const getCourseDetail = async (req, res) => {
           }
         },
         quizzes: {
-          include: {}
+          where: { is_draft: false },
+          orderBy: [{ close_at: 'asc' }, { created_at: 'desc' }],
+          include: {
+            _count: {
+              select: { attempts: { where: { studentId: userId } } }
+            }
+          }
         }
       }
     });
@@ -146,17 +234,40 @@ export const getCourseDetail = async (req, res) => {
         type: 'assignment',
         title: a.title,
         pendingCount: a._count.submissions === 0 ? 1 : 0, // 1 means not submitted
-        status: 'Active'
-      }))
-    ];
+        status: 'Active',
+        dueAt: a.due_date,
+        openAt: a.open_at
+      })),
+      ...offering.quizzes
+        .map(q => ({
+          id: q.id,
+          type: 'quiz',
+          title: q.title,
+          pendingCount: q._count.attempts === 0 ? 1 : 0,
+          status: 'Active',
+          dueAt: q.close_at,
+          openAt: q.open_at
+        }))
+    ].sort((a, b) => {
+      const at = a.dueAt ? new Date(a.dueAt).getTime() : Number.MAX_SAFE_INTEGER;
+      const bt = b.dueAt ? new Date(b.dueAt).getTime() : Number.MAX_SAFE_INTEGER;
+      return at - bt;
+    });
 
     res.json({
-      id: offering.id,
-      course: offering.course,
+      id: offering.publicId,
+      course: {
+        ...offering.course,
+        thumbnail: resolveCourseThumbnail(
+          offering.course.thumbnail,
+          offering.course.code
+        ),
+      },
       section: offering.section,
       batch: offering.section.batch,
-      schedules: offering.schedules,
-      toReview
+      schedules: [],
+      toReview,
+      quickLinks: buildQuickLinks(offering.resources)
     });
 
   } catch (e) {

@@ -138,7 +138,26 @@ export async function userMayAccessDiscussionChannelScope({
     return false;
   }
 
-  return true;
+  return false;
+}
+
+/**
+ * Filters server membership rows to users allowed in a channel's academic scope.
+ * Common channels (no scope) pass through unchanged.
+ *
+ * @param {Array<{ userId: number }>} rows
+ * @param {{ scopeType?: string | null, scopeId?: number | null } | null | undefined} channel
+ * @param {object} [prismaClient]
+ */
+export async function filterMembershipRowsByChannelScope(rows, channel, prismaClient = prisma) {
+  if (!channel?.scopeType || channel?.scopeId == null || rows.length === 0) return rows;
+  const allowed = await usersMayAccessDiscussionChannelScope({
+    userIds: rows.map((row) => row.userId),
+    scopeType: channel.scopeType,
+    scopeId: channel.scopeId,
+    prismaClient,
+  });
+  return rows.filter((row) => allowed.has(row.userId));
 }
 
 /**
@@ -274,8 +293,8 @@ export async function usersMayAccessDiscussionChannelScope({
     ) {
       ok = studentMatch.has(u.id) || teacherMatch.has(u.id) || staffCoversScope;
     } else {
-      // Unknown scope type — mirror the per-user function's permissive default.
-      ok = true;
+      // Unknown scope type — deny by default (fail closed).
+      ok = false;
     }
     if (ok) allowed.add(u.id);
   }

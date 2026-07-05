@@ -39,14 +39,6 @@ const TOPIC_MAX = 1024;
 const NAME_MAX = 64;
 const UNCATEGORIZED = '__uncategorized__';
 
-const SLOW_CUSTOM = 'custom';
-/** Seconds — must stay in sync with backend `patchChannelSchema` max (21600). */
-const SLOW_PRESET_SECS = [0, 5, 10, 30, 60, 300, 900] as const;
-
-function isPresetSlowSeconds(s: number): boolean {
-  return (SLOW_PRESET_SECS as readonly number[]).includes(s);
-}
-
 /** Bits denied on @everyone when the channel is locked (read-only). */
 const LOCK_DENY_BITS =
   PERMISSION_BITS.SEND_MESSAGES |
@@ -131,16 +123,6 @@ export function OverviewTab({
   const [kind, setKind] = useState<DiscussionChannelKind>(initialKind);
   const [isPrivate, setIsPrivate] = useState<boolean>(!!channel.isPrivate);
 
-  const initialSlowSeconds = Number(channel.slowModeSeconds ?? 0) || 0;
-  const [slowModePreset, setSlowModePreset] = useState<string>(() =>
-    isPresetSlowSeconds(initialSlowSeconds) ? String(initialSlowSeconds) : SLOW_CUSTOM
-  );
-  const [slowModeCustom, setSlowModeCustom] = useState<string>(() =>
-    isPresetSlowSeconds(initialSlowSeconds)
-      ? '60'
-      : String(Math.max(1, initialSlowSeconds))
-  );
-
   // Re-sync when the dialog flips between channels, or after a server update
   // refreshes the cached row.
   useEffect(() => {
@@ -155,19 +137,13 @@ export function OverviewTab({
         : 'TEXT'
     );
     setIsPrivate(!!channel.isPrivate);
-    const s0 = Number(channel.slowModeSeconds ?? 0) || 0;
-    setSlowModePreset(isPresetSlowSeconds(s0) ? String(s0) : SLOW_CUSTOM);
-    setSlowModeCustom(
-      isPresetSlowSeconds(s0) ? '60' : String(Math.max(1, s0))
-    );
   }, [
     channel.id,
     channel.name,
     channel.topic,
     channel.categoryId,
     channel.kind,
-    channel.isPrivate,
-    channel.slowModeSeconds
+    channel.isPrivate
   ]);
 
   const sortedCategories = useMemo(() => {
@@ -204,21 +180,6 @@ export function OverviewTab({
   const lockBusy =
     putOverwriteMut.isPending || deleteOverwriteMut.isPending;
 
-  const resolvedSlowSeconds = useMemo(() => {
-    if (slowModePreset === SLOW_CUSTOM) {
-      const n = parseInt(slowModeCustom, 10);
-      if (!Number.isFinite(n) || n < 1 || n > 21600) return null;
-      return n;
-    }
-    return Number(slowModePreset) || 0;
-  }, [slowModePreset, slowModeCustom]);
-
-  const slowInvalid =
-    slowModePreset === SLOW_CUSTOM && resolvedSlowSeconds === null;
-  const slowDirty =
-    resolvedSlowSeconds !== null &&
-    resolvedSlowSeconds !== initialSlowSeconds;
-
   const isArchived = !!channel.archivedAt;
   const trimmedName = name.trim();
   const trimmedTopic = topic.trim();
@@ -236,16 +197,14 @@ export function OverviewTab({
     topicChanged ||
     categoryChanged ||
     kindChanged ||
-    isPrivateChanged ||
-    slowDirty;
+    isPrivateChanged;
   const nameValid = trimmedName.length > 0 && trimmedName.length <= NAME_MAX;
   const canSave =
     dirty &&
     nameValid &&
     !updateMut.isPending &&
     !isArchived &&
-    !blockedByDefault &&
-    !slowInvalid;
+    !blockedByDefault;
 
   const handleSave = () => {
     if (!canSave) return;
@@ -255,7 +214,6 @@ export function OverviewTab({
       categoryId?: number | null;
       kind?: DiscussionChannelKind;
       isPrivate?: boolean;
-      slowModeSeconds?: number;
     } = {};
     if (nameChanged) body.name = trimmedName;
     if (topicChanged) body.topic = trimmedTopic.length === 0 ? null : trimmedTopic;
@@ -269,9 +227,6 @@ export function OverviewTab({
     }
     if (kindChanged) body.kind = kind;
     if (isPrivateChanged) body.isPrivate = isPrivate;
-    if (slowDirty && resolvedSlowSeconds !== null) {
-      body.slowModeSeconds = resolvedSlowSeconds;
-    }
     updateMut.mutate(body, {
       onSuccess: () => onSaved()
     });
@@ -538,91 +493,6 @@ export function OverviewTab({
             moment.
           </p>
         )}
-      </div>
-
-      <div className='space-y-2 rounded-md border p-3'>
-        <div className='space-y-2'>
-          <div className='flex items-center gap-1.5'>
-            <Label htmlFor='channel-slow-mode' className='text-xs'>
-              Slow mode
-            </Label>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <button
-                  type='button'
-                  className='text-muted-foreground transition-colors hover:text-foreground'
-                  aria-label='About slow mode'
-                >
-                  <Icons.info className='h-3 w-3' />
-                </button>
-              </TooltipTrigger>
-              <TooltipContent side='top' className='max-w-xs text-xs'>
-                Members wait this long between their own messages in this channel.
-                Moderators who can manage messages are not rate-limited.
-              </TooltipContent>
-            </Tooltip>
-          </div>
-          <Select
-            value={slowModePreset}
-            onValueChange={(v) => {
-              setSlowModePreset(v);
-              if (v === SLOW_CUSTOM) {
-                const prev =
-                  slowModePreset === SLOW_CUSTOM
-                    ? parseInt(slowModeCustom, 10)
-                    : Number(slowModePreset);
-                setSlowModeCustom(
-                  String(
-                    Number.isFinite(prev) && prev > 0 && prev <= 21600
-                      ? prev
-                      : 60
-                  )
-                );
-              }
-            }}
-            disabled={isArchived}
-          >
-            <SelectTrigger id='channel-slow-mode' className='w-full'>
-              <SelectValue placeholder='Rate limit' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='0'>Off</SelectItem>
-              <SelectItem value='5'>5 seconds</SelectItem>
-              <SelectItem value='10'>10 seconds</SelectItem>
-              <SelectItem value='30'>30 seconds</SelectItem>
-              <SelectItem value='60'>1 minute</SelectItem>
-              <SelectItem value='300'>5 minutes</SelectItem>
-              <SelectItem value='900'>15 minutes</SelectItem>
-              <SelectItem value={SLOW_CUSTOM}>Custom…</SelectItem>
-            </SelectContent>
-          </Select>
-          {slowModePreset === SLOW_CUSTOM && (
-            <div className='space-y-1'>
-              <Label
-                htmlFor='channel-slow-custom'
-                className='text-[10px] text-muted-foreground'
-              >
-                Seconds (1–21600)
-              </Label>
-              <Input
-                id='channel-slow-custom'
-                type='number'
-                inputMode='numeric'
-                min={1}
-                max={21600}
-                value={slowModeCustom}
-                onChange={(e) => setSlowModeCustom(e.target.value)}
-                disabled={isArchived}
-                className='h-8'
-              />
-              {slowInvalid && (
-                <p className='text-[11px] text-destructive'>
-                  Enter a whole number from 1 to 21600.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
       </div>
 
       <div className='flex items-center justify-end gap-2 pt-2'>

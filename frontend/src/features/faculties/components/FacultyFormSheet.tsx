@@ -14,7 +14,7 @@ import {
 import * as z from 'zod';
 import { facultySchema, type FacultyFormValues } from '../schemas/faculty';
 import { Icons } from '@/components/icons';
-import { toast } from 'sonner';
+import { handleApiError, showToast } from '@/lib/notifications';
 
 const STATUS_OPTIONS = [
   { value: 'active', label: 'Active' },
@@ -56,12 +56,12 @@ export function FacultyFormSheet({ faculty, open, onOpenChange }: Props) {
       try {
         console.log(value); // 🔥 connect API later
 
-        toast.success(isEdit ? 'Faculty updated successfully' : 'Faculty created successfully');
+        showToast('success', isEdit ? 'Faculty updated successfully' : 'Faculty created successfully');
 
         onOpenChange(false);
         form.reset();
-      } catch {
-        toast.error('Something went wrong');
+      } catch (error) {
+        handleApiError(error, 'Something went wrong');
       }
     }
   });

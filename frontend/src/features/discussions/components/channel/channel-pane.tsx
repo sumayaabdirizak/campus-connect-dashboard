@@ -150,9 +150,16 @@ export function ChannelPane({ channelId }: { channelId: number | null }) {
 
   if (channelId == null) {
     return (
-      <div className='flex h-full flex-1 flex-col items-center justify-center gap-2 text-muted-foreground'>
-        <Icons.chat className='h-8 w-8 opacity-60' />
-        <p className='text-sm'>Select a channel to start reading</p>
+      <div className='flex h-full flex-1 flex-col items-center justify-center gap-3 px-6 text-center'>
+        <span className='flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary'>
+          <Icons.chat className='h-8 w-8' />
+        </span>
+        <div>
+          <p className='text-sm font-semibold text-foreground'>Pick a channel</p>
+          <p className='mt-1 max-w-xs text-xs text-muted-foreground'>
+            Choose a channel from the sidebar to jump into the conversation.
+          </p>
+        </div>
       </div>
     );
   }
@@ -164,8 +171,10 @@ export function ChannelPane({ channelId }: { channelId: number | null }) {
   return (
     <div className='flex h-full flex-1'>
       <div className='flex min-w-0 flex-1 flex-col bg-background'>
-        <header className='flex h-12 shrink-0 items-center gap-3 border-b px-4'>
-          <Icons.hash className='h-4 w-4 text-muted-foreground' />
+        <header className='flex h-14 shrink-0 items-center gap-3 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/80'>
+          <span className='flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
+            <Icons.hash className='h-4 w-4' />
+          </span>
           <div className='min-w-0 flex-1'>
             <div className='truncate text-sm font-semibold'>
               {isLoading ? <Skeleton className='h-4 w-32' /> : channel?.name}
@@ -175,7 +184,7 @@ export function ChannelPane({ channelId }: { channelId: number | null }) {
             ) : null}
           </div>
           {memberCount > 0 && (
-            <div className='flex items-center gap-1 text-xs text-muted-foreground'>
+            <div className='flex items-center gap-1 rounded-full bg-muted px-2 py-1 text-xs font-medium text-muted-foreground'>
               <Icons.teams className='h-3 w-3' />
               {memberCount}
             </div>

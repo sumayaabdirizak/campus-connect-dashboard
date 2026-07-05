@@ -1,6 +1,54 @@
 import { prisma } from "../db/prisma.js";
 import { getAuthFacultyId } from "./facultyAccess.js";
 
+const COURSE_OFFERING_PUBLIC_ID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+/** @param {unknown} value */
+export function isCourseOfferingPublicId(value) {
+  return typeof value === "string" && COURSE_OFFERING_PUBLIC_ID_RE.test(value);
+}
+
+/** @param {unknown} identifier Route param or socket payload (UUID or legacy numeric id). */
+export function courseOfferingWhereFromParam(identifier) {
+  if (isCourseOfferingPublicId(identifier)) {
+    return { publicId: identifier };
+  }
+  const id = Number(identifier);
+  if (Number.isFinite(id) && id > 0) {
+    return { id };
+  }
+  return null;
+}
+
+/** Client-facing course URL path segment (UUID). */
+export function courseOfferingDashboardPath(publicId, tab) {
+  const base = `/dashboard/courses/${publicId}`;
+  return tab ? `${base}?tab=${tab}` : base;
+}
+
+/** Socket.IO room name for a course offering (uses public UUID). */
+export function courseOfferingRoomName(offeringOrPublicId) {
+  const publicId =
+    typeof offeringOrPublicId === "string"
+      ? offeringOrPublicId
+      : offeringOrPublicId?.publicId;
+  return publicId ? `course_${publicId}` : null;
+}
+
+const OFFERING_SCOPE_INCLUDE = {
+  section: {
+    include: {
+      batch: {
+        include: {
+          program: { include: { department: true } },
+        },
+      },
+    },
+  },
+  course: { include: { department: true } },
+};
+
 /**
  * @param {import("@prisma/client").CourseOffering & {
  *   section?: import("@prisma/client").BatchSection & {
@@ -14,40 +62,18 @@ export function offeringFacultyId(offering) {
   return offering?.section?.batch?.program?.department?.facultyId ?? null;
 }
 
-export async function fetchOfferingWithScope(courseOfferingId) {
-  const id = Number(courseOfferingId);
-  if (!Number.isFinite(id)) return null;
+export async function fetchOfferingWithScope(identifier) {
+  const where = courseOfferingWhereFromParam(identifier);
+  if (!where) return null;
   return prisma.courseOffering.findUnique({
-    where: { id },
-    include: {
-      section: {
-        include: {
-          batch: {
-            include: {
-              program: { include: { department: true } },
-            },
-          },
-        },
-      },
-      course: { include: { department: true } },
-    },
+    where,
+    include: OFFERING_SCOPE_INCLUDE,
   });
 }
 
 /// Shared offering-include shape so quiz/attempt/question lookups all return
 /// the same faculty-scoped data the canAccess* helpers expect.
-const OFFERING_INCLUDE = {
-  section: {
-    include: {
-      batch: {
-        include: {
-          program: { include: { department: true } },
-        },
-      },
-    },
-  },
-  course: { include: { department: true } },
-};
+const OFFERING_INCLUDE = OFFERING_SCOPE_INCLUDE;
 
 export async function fetchQuizWithOffering(quizId) {
   const id = Number(quizId);

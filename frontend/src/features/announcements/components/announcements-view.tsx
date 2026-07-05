@@ -23,6 +23,7 @@ import { AnnouncementFeed } from './announcement-feed';
 import { AnnouncementAnalyticsSheet } from './announcement-analytics-sheet';
 import type { Announcement, CreateAnnouncementDTO } from '../api/types';
 import { getAnnouncementById } from '../api/service';
+import { confirmDelete, handleApiError } from '@/lib/notifications';
 import { toast } from 'sonner';
 
 export function AnnouncementsView() {
@@ -31,8 +32,6 @@ export function AnnouncementsView() {
   const diagnosticEnabled = useMemo(() => isAnnouncementDiagnosticsEnabled(), []);
   const canManageAnnouncements = user?.role === 'DEAN' || user?.role === 'SUPER_ADMIN';
   const listTab = searchParams?.get('tab') ?? '';
-  const scheduledTab =
-    Boolean(canManageAnnouncements) && listTab === 'scheduled';
   const draftsTab = Boolean(canManageAnnouncements) && listTab === 'drafts';
   const audienceRoleFromUrl = useMemo(() => {
     const raw = (searchParams?.get('role') ?? 'ALL').trim().toUpperCase();
@@ -41,7 +40,6 @@ export function AnnouncementsView() {
     return allowed.has(raw) ? raw : 'ALL';
   }, [searchParams]);
   const { data: announcements = [], isLoading, error, refetch } = useAnnouncements({
-    scheduled: scheduledTab,
     drafts: draftsTab,
     audienceRole: audienceRoleFromUrl
   });
@@ -98,7 +96,7 @@ export function AnnouncementsView() {
   }, []);
 
   const handleDeleteAnnouncement = async (announcement: Announcement) => {
-    if (!window.confirm('Delete this announcement?')) return;
+    if (!(await confirmDelete(announcement.title || 'this announcement'))) return;
     try {
       await deleteMutation.mutateAsync(Number(announcement.id));
     } catch {
@@ -109,31 +107,6 @@ export function AnnouncementsView() {
   const handleTogglePinAnnouncement = async (announcement: Announcement) => {
     try {
       await togglePinMutation.mutateAsync(Number(announcement.id));
-    } catch {
-      // Error toast is already handled in mutation onError.
-    }
-  };
-
-  const handleCancelSchedule = async (announcement: Announcement) => {
-    try {
-      /** Product choice: cancel = return to draft (not ARCHIVED) so the composer can reuse content. */
-      await updateMutation.mutateAsync({
-        id: Number(announcement.id),
-        data: { status: 'DRAFT', publishedAt: null },
-        successToast: 'Schedule cancelled'
-      });
-    } catch {
-      // Error toast is already handled in mutation onError.
-    }
-  };
-
-  const handleReschedulePublishAt = async (announcement: Announcement, publishedAtIso: string) => {
-    try {
-      await updateMutation.mutateAsync({
-        id: Number(announcement.id),
-        data: { publishedAt: publishedAtIso },
-        successToast: 'Publish time updated'
-      });
     } catch {
       // Error toast is already handled in mutation onError.
     }
@@ -180,10 +153,6 @@ export function AnnouncementsView() {
           onOpenAnalytics={canManageAnnouncements ? (a) => setAnalyticsAnnouncement(a) : undefined}
           onDeleteAnnouncement={handleDeleteAnnouncement}
           onTogglePinAnnouncement={handleTogglePinAnnouncement}
-          onCancelSchedule={canManageAnnouncements ? handleCancelSchedule : undefined}
-          onReschedulePublishAt={
-            canManageAnnouncements ? handleReschedulePublishAt : undefined
-          }
           onMarkAsRead={markAsReadMutation.mutateAsync}
           readTrigger={diagnosticEnabled ? 'click' : 'viewport'}
           onSnapshotUnreadBeforeRead={

@@ -5,6 +5,7 @@ import { NavGroup } from '@/types';
  * Navigation configuration with RBAC support
  */
 export const navGroups: NavGroup[] = [
+  // ── OVERVIEW (Super Admin, Teacher, Student only) ──────────────────────────
   {
     label: 'Overview',
     items: [
@@ -19,7 +20,56 @@ export const navGroups: NavGroup[] = [
     ]
   },
 
-  // 🏛️ UNIVERSITY STRUCTURE
+  // ── DEAN — SETUP ──────────────────────────────────────────────────────────
+  {
+    label: 'Setup',
+    items: [
+      {
+        title: 'Departments',
+        url: '/dashboard/departments',
+        icon: 'forms',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      },
+      {
+        title: 'Programs',
+        url: '/dashboard/programs',
+        icon: 'forms',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      },
+      {
+        title: 'Batches',
+        url: '/dashboard/dean/batches',
+        icon: 'kanban',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      },
+      {
+        title: 'Users',
+        url: '/dashboard/dean/users',
+        icon: 'userCog',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      },
+      {
+        title: 'Courses',
+        url: '/dashboard/dean/courses',
+        icon: 'fileCheck',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      },
+      {
+        title: 'Course offerings',
+        url: '/dashboard/dean/Assigning',
+        icon: 'calendar',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      }
+    ]
+  },
+
+  // ── UNIVERSITY STRUCTURE (Super Admin only) ────────────────────────────────
   {
     label: 'University Structure',
     items: [
@@ -35,54 +85,19 @@ export const navGroups: NavGroup[] = [
         url: '/dashboard/departments',
         icon: 'userTie',
         isActive: false,
-        access: { roles: ['SUPER_ADMIN', 'DEAN'] }
+        access: { roles: ['SUPER_ADMIN'] }
       },
       {
         title: 'Programs',
         url: '/dashboard/programs',
         icon: 'forms',
         isActive: false,
-        access: { roles: ['SUPER_ADMIN', 'DEAN'] }
+        access: { roles: ['SUPER_ADMIN'] }
       }
     ]
   },
 
-  // 🎓 DEAN PORTAL
-  {
-    label: 'Dean Portal',
-    items: [
-      {
-        title: 'Faculty Users',
-        url: '/dashboard/dean/users',
-        icon: 'userCog',
-        isActive: false,
-        access: { roles: ['DEAN'] }
-      },
-      {
-        title: 'Batches & Sections',
-        url: '/dashboard/dean/batches',
-        icon: 'kanban',
-        isActive: false,
-        access: { roles: ['DEAN'] }
-      },
-      {
-        title: 'Course Management',
-        url: '/dashboard/dean/courses',
-        icon: 'billing',
-        isActive: false,
-        access: { roles: ['DEAN'] }
-      },
-      {
-        title: 'Offerings & Assigning',
-        url: '/dashboard/dean/Assigning',
-        icon: 'userTie',
-        isActive: false,
-        access: { roles: ['DEAN'] }
-      }
-    ]
-  },
-
-  // SUPER ADMIN–SPECIFIC
+  // ── SUPER ADMIN ONLY ───────────────────────────────────────────────────────
   {
     label: 'User Management',
     items: [
@@ -96,34 +111,15 @@ export const navGroups: NavGroup[] = [
     ]
   },
   {
-    label: 'System Settings',
-    items: [
-      {
-        title: 'General',
-        url: '/dashboard/settings/general',
-        icon: 'settings',
-        isActive: false,
-        access: { roles: ['SUPER_ADMIN'] }
-      },
-      {
-        title: 'Security',
-        url: '/dashboard/settings/security',
-        icon: 'lock',
-        isActive: false,
-        access: { roles: ['SUPER_ADMIN'] }
-      },
-      {
-        title: 'Integrations',
-        url: '/dashboard/settings/integrations',
-        icon: 'integration',
-        isActive: false,
-        access: { roles: ['SUPER_ADMIN'] }
-      }
-    ]
-  },
-  {
     label: 'Admin',
     items: [
+      {
+        title: 'Reports',
+        url: '/dashboard/admin/report',
+        icon: 'barChart',
+        isActive: false,
+        access: { roles: ['SUPER_ADMIN'] }
+      },
       {
         title: 'Audit Logs',
         url: '/dashboard/audit-logs',
@@ -134,7 +130,7 @@ export const navGroups: NavGroup[] = [
     ]
   },
 
-  // 👨‍🏫 TEACHER PORTAL
+  // ── TEACHER PORTAL ─────────────────────────────────────────────────────────
   {
     label: 'Teacher Portal',
     items: [
@@ -144,19 +140,11 @@ export const navGroups: NavGroup[] = [
         icon: 'billing',
         isActive: false,
         access: { roles: ['TEACHER'] }
-      },
-
-      {
-        title: 'Notifications',
-        url: '/dashboard/notifications',
-        icon: 'notification',
-        isActive: false,
-        access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] }
       }
     ]
   },
 
-  // STUDENT PORTAL
+  // ── STUDENT PORTAL ─────────────────────────────────────────────────────────
   {
     label: 'Student Portal',
     items: [
@@ -170,6 +158,7 @@ export const navGroups: NavGroup[] = [
     ]
   },
 
+  // ── COMMUNICATION (all roles) ──────────────────────────────────────────────
   {
     label: 'Communication',
     items: [
@@ -181,7 +170,7 @@ export const navGroups: NavGroup[] = [
         access: { roles: ['SUPER_ADMIN', 'DEAN', 'STUDENT', 'TEACHER'] }
       },
       {
-        title: 'Chat',
+        title: 'Discussions',
         url: '/dashboard/chat',
         icon: 'chat',
         isActive: false,
@@ -190,12 +179,35 @@ export const navGroups: NavGroup[] = [
       {
         title: 'Calendar',
         url: '/dashboard/calendar',
-        icon: 'media',
+        icon: 'calendar',
+        isActive: false,
+        access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] }
+      },
+      {
+        title: 'Notifications',
+        url: '/dashboard/notifications',
+        icon: 'notification',
         isActive: false,
         access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] }
       }
     ]
   },
+
+  // ── DEAN — REPORTS ─────────────────────────────────────────────────────────
+  {
+    label: 'Reports',
+    items: [
+      {
+        title: 'Reports & Analytics',
+        url: '/dashboard/faculty-dean/reports',
+        icon: 'barChart',
+        isActive: false,
+        access: { roles: ['DEAN'] }
+      }
+    ]
+  },
+
+  // ── ACCOUNT ────────────────────────────────────────────────────────────────
   {
     label: 'Account',
     items: [
@@ -205,14 +217,6 @@ export const navGroups: NavGroup[] = [
         icon: 'profile',
         isActive: false,
         access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] }
-      },
-
-      {
-        title: 'Settings',
-        url: '/dashboard/settings',
-        icon: 'settings',
-        isActive: false,
-        access: { roles: ['TEACHER'] }
       }
     ]
   }

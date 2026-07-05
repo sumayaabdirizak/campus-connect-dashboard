@@ -14,7 +14,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -22,42 +21,30 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { ArrowUpDown, ChevronDown, ChevronUp, Download, Search } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 interface SimpleDataTableProps<TData> {
   data: TData[];
   columns: ColumnDef<TData, unknown>[];
-  /// Hint for the search box ("Search students…"). Search is global across
-  /// every leaf field — works without per-column filter config.
   searchPlaceholder?: string;
-  /// When set, a Download icon button exports the CURRENT FILTERED ROWS as
-  /// CSV. Provide a stable file name (no extension).
   csvFileName?: string;
-  /// Initial sort spec, e.g. `[{ id: 'full_name', desc: false }]`.
   initialSorting?: SortingState;
-  /// Items per page. Defaults to 25 — fits a typical class roster on screen.
   pageSize?: number;
-  /// Click handler for an entire row (e.g. open a profile drawer).
   onRowClick?: (row: TData) => void;
-  /// Optional extra UI rendered next to the search box.
   toolbarRight?: React.ReactNode;
-  /// Column id used as the bold title in the mobile card view. Defaults to
-  /// the first leaf column. Pass `false` to disable the responsive cards
-  /// (falls back to a horizontal-scroll table on every breakpoint).
   mobilePrimaryColumn?: string | false;
+  /** Hide built-in search/export toolbar (e.g. when parent shell provides it). */
+  hideToolbar?: boolean;
+  globalFilter?: string;
+  onGlobalFilterChange?: (value: string) => void;
+  /** Sticky column headers while the table body scrolls. Default true. */
+  stickyHeader?: boolean;
+  /** Classes for the scrollable table region. */
+  scrollContainerClassName?: string;
+  /** Tighter layout when nested inside CoursePageShell. */
+  embedded?: boolean;
 }
 
-/**
- * In-memory data table for the course-details tabs.
- *
- * Sort, global filter, pagination, and CSV export — all client-side. No URL
- * sync, no faceted filters, no manual pagination. Use this when the data set
- * is small enough to live in React state (rosters, sessions, submissions,
- * attempts) and you want a consistent look without wiring 50 lines of
- * `useReactTable` boilerplate per tab.
- *
- * For larger paginated data sets, use the dashboard's `useDataTable` + the
- * full `<DataTable>` from `components/ui/table/data-table.tsx` instead.
- */
 export function SimpleDataTable<TData>({
   data,
   columns,
@@ -67,10 +54,18 @@ export function SimpleDataTable<TData>({
   pageSize = 25,
   onRowClick,
   toolbarRight,
-  mobilePrimaryColumn
+  mobilePrimaryColumn,
+  hideToolbar = false,
+  globalFilter: globalFilterProp,
+  onGlobalFilterChange,
+  stickyHeader = true,
+  scrollContainerClassName,
+  embedded = false
 }: SimpleDataTableProps<TData>) {
   const [sorting, setSorting] = useState<SortingState>(initialSorting);
-  const [globalFilter, setGlobalFilter] = useState('');
+  const [internalFilter, setInternalFilter] = useState('');
+  const globalFilter = globalFilterProp ?? internalFilter;
+  const setGlobalFilter = onGlobalFilterChange ?? setInternalFilter;
 
   const table = useReactTable({
     data,
@@ -89,10 +84,6 @@ export function SimpleDataTable<TData>({
   const headerGroups = table.getHeaderGroups();
   const visibleRows = table.getRowModel().rows;
 
-  // Build a flat CSV from the leaf columns + the rendered cell values. We
-  // serialise primitives directly; everything else (JSX cells, dates) is
-  // coerced via String() so the export at least lines up — callers wanting
-  // richer CSV output should override per-column.
   const handleExport = useMemo(() => {
     if (!csvFileName) return null;
     return () => {
@@ -104,13 +95,15 @@ export function SimpleDataTable<TData>({
         cols.map((c) => {
           const v = r.getValue(c.id);
           if (v == null) return '';
-          if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return v;
+          if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') {
+            return v;
+          }
           return String(v);
         })
       );
       const escape = (val: unknown) => `"${String(val).replace(/"/g, '""')}"`;
       const csv = [header, ...rows].map((row) => row.map(escape).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
@@ -120,33 +113,46 @@ export function SimpleDataTable<TData>({
     };
   }, [csvFileName, filteredRows, table]);
 
-  return (
-    <div className='space-y-3'>
-      <div className='flex flex-wrap items-center gap-2'>
-        <div className='relative flex-1 min-w-[180px] max-w-xs'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-          <Input
-            placeholder={searchPlaceholder}
-            value={globalFilter}
-            onChange={(e) => setGlobalFilter(e.target.value)}
-            className='pl-10'
-          />
-        </div>
-        {toolbarRight}
-        {handleExport && (
-          <Button variant='outline' size='sm' className='gap-1 ml-auto' onClick={handleExport}>
-            <Download className='w-4 h-4' /> Export CSV
-          </Button>
-        )}
-      </div>
+  const stickyHeadClass = stickyHeader
+    ? 'sticky top-0 z-30 bg-card shadow-[inset_0_-1px_0_0_hsl(var(--border))]'
+    : undefined;
 
-      {/* Mobile: each row becomes a card with primary column as the title and
-          every other column as label/value pairs underneath. Tap to fire
-          onRowClick. */}
+  return (
+    <div className={cn(!embedded && 'space-y-3')}>
+      {!hideToolbar && (
+        <div className='flex flex-wrap items-center gap-2'>
+          <div className='relative min-w-[180px] max-w-xs flex-1'>
+            <Search
+              className='absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground'
+              aria-hidden
+            />
+            <Input
+              placeholder={searchPlaceholder}
+              value={globalFilter}
+              onChange={(e) => setGlobalFilter(e.target.value)}
+              className='h-9 pl-9'
+              aria-label={searchPlaceholder}
+            />
+          </div>
+          {toolbarRight}
+          {handleExport && (
+            <Button
+              variant='outline'
+              size='sm'
+              className='ml-auto gap-1.5'
+              onClick={handleExport}
+            >
+              <Download className='size-4' aria-hidden />
+              Export CSV
+            </Button>
+          )}
+        </div>
+      )}
+
       {mobilePrimaryColumn !== false && (
-        <div className='md:hidden space-y-2'>
+        <div className='space-y-2 md:hidden'>
           {visibleRows.length === 0 ? (
-            <div className='border border-dashed rounded-lg p-8 text-center text-sm text-muted-foreground'>
+            <div className='rounded-lg border border-dashed p-8 text-center text-sm text-muted-foreground'>
               No results.
             </div>
           ) : (
@@ -157,43 +163,51 @@ export function SimpleDataTable<TData>({
               const primaryCell = row
                 .getVisibleCells()
                 .find((c) => c.column.id === primaryId);
-              const rest = row
-                .getVisibleCells()
-                .filter((c) => c.column.id !== primaryId);
+              const rest = row.getVisibleCells().filter((c) => c.column.id !== primaryId);
               return (
-                <button
+                <div
                   key={row.id}
-                  type='button'
+                  role={onRowClick ? 'button' : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  onKeyDown={
+                    onRowClick
+                      ? (e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            e.preventDefault();
+                            onRowClick(row.original);
+                          }
+                        }
+                      : undefined
+                  }
                   onClick={() => onRowClick?.(row.original)}
-                  className='w-full text-left rounded-lg border p-3 space-y-1 active:bg-muted/40'
+                  className='w-full rounded-lg border p-3 text-left'
                 >
                   {primaryCell && (
                     <div className='text-sm font-medium'>
-                      {flexRender(
-                        primaryCell.column.columnDef.cell,
-                        primaryCell.getContext()
-                      )}
+                      {flexRender(primaryCell.column.columnDef.cell, primaryCell.getContext())}
                     </div>
                   )}
-                  {rest.map((cell) => {
-                    const header = cell.column.columnDef.header;
-                    const headerText =
-                      typeof header === 'string' ? header : cell.column.id;
-                    return (
-                      <div
-                        key={cell.id}
-                        className='flex items-center justify-between gap-2 text-xs'
-                      >
-                        <span className='text-muted-foreground uppercase tracking-wide'>
-                          {headerText}
-                        </span>
-                        <span className='text-right min-w-0 truncate'>
-                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </button>
+                  <div className='mt-2 space-y-1'>
+                    {rest.map((cell) => {
+                      const header = cell.column.columnDef.header;
+                      const headerText =
+                        typeof header === 'string' ? header : cell.column.id;
+                      return (
+                        <div
+                          key={cell.id}
+                          className='flex items-center justify-between gap-2 text-xs'
+                        >
+                          <span className='uppercase tracking-wide text-muted-foreground'>
+                            {headerText}
+                          </span>
+                          <span className='min-w-0 truncate text-right'>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             })
           )}
@@ -201,16 +215,18 @@ export function SimpleDataTable<TData>({
       )}
 
       <div
-        className={
-          mobilePrimaryColumn === false
-            ? 'rounded-lg border overflow-hidden'
-            : 'rounded-lg border overflow-hidden hidden md:block'
-        }
+        className={cn(
+          'hidden overscroll-contain md:block',
+          embedded
+            ? 'min-h-0 overflow-auto rounded-none border-0'
+            : 'overflow-auto rounded-lg border',
+          scrollContainerClassName ?? 'max-h-[min(640px,calc(100dvh-14rem))]'
+        )}
       >
-        <Table>
-          <TableHeader className='bg-muted/30'>
+        <table className='w-full caption-bottom border-separate border-spacing-0 text-sm'>
+          <TableHeader>
             {headerGroups.map((hg) => (
-              <TableRow key={hg.id}>
+              <TableRow key={hg.id} className='hover:bg-transparent'>
                 {hg.headers.map((header) => {
                   const isSortable = header.column.getCanSort();
                   const dir = header.column.getIsSorted();
@@ -220,7 +236,11 @@ export function SimpleDataTable<TData>({
                       onClick={
                         isSortable ? header.column.getToggleSortingHandler() : undefined
                       }
-                      className={isSortable ? 'cursor-pointer select-none' : undefined}
+                      className={cn(
+                        'h-11 whitespace-nowrap px-4 text-xs font-semibold uppercase tracking-wide text-muted-foreground',
+                        isSortable && 'cursor-pointer select-none hover:text-foreground',
+                        stickyHeadClass
+                      )}
                     >
                       <span className='inline-flex items-center gap-1'>
                         {header.isPlaceholder
@@ -229,11 +249,11 @@ export function SimpleDataTable<TData>({
                         {isSortable && (
                           <span className='text-muted-foreground'>
                             {dir === 'asc' ? (
-                              <ChevronUp className='w-3 h-3' />
+                              <ChevronUp className='size-3.5' />
                             ) : dir === 'desc' ? (
-                              <ChevronDown className='w-3 h-3' />
+                              <ChevronDown className='size-3.5' />
                             ) : (
-                              <ArrowUpDown className='w-3 h-3 opacity-40' />
+                              <ArrowUpDown className='size-3.5 opacity-40' />
                             )}
                           </span>
                         )}
@@ -246,23 +266,23 @@ export function SimpleDataTable<TData>({
           </TableHeader>
           <TableBody>
             {visibleRows.length === 0 ? (
-              <TableRow>
+              <TableRow className='hover:bg-transparent'>
                 <TableCell
                   colSpan={table.getAllColumns().length}
-                  className='h-24 text-center text-sm text-muted-foreground'
+                  className='h-24 px-4 text-center text-sm text-muted-foreground'
                 >
                   No results.
                 </TableCell>
               </TableRow>
             ) : (
-              visibleRows.map((row) => (
+              visibleRows.map((row, index) => (
                 <TableRow
                   key={row.id}
-                  className={onRowClick ? 'cursor-pointer hover:bg-muted/30' : undefined}
+                  className={cn(index % 2 === 1 && 'bg-muted/20')}
                   onClick={() => onRowClick?.(row.original)}
                 >
                   {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
+                    <TableCell key={cell.id} className='whitespace-nowrap px-4 py-3'>
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
                     </TableCell>
                   ))}
@@ -270,11 +290,11 @@ export function SimpleDataTable<TData>({
               ))
             )}
           </TableBody>
-        </Table>
+        </table>
       </div>
 
       {table.getPageCount() > 1 && (
-        <div className='flex items-center justify-between text-xs text-muted-foreground'>
+        <div className='flex items-center justify-between px-1 text-xs text-muted-foreground'>
           <span>
             Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()} ·{' '}
             {filteredRows.length} rows

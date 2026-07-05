@@ -28,8 +28,14 @@ function prefixMatch(filterPrefix: QueryKey, candidateKey: QueryKey): boolean {
 const dataCache = new Map<string, unknown>();
 const exactListeners = new Map<string, Set<() => void>>();
 
-/** Last successful fetch timestamp per serialized key. Drives staleTime. */
+/** Last fetch timestamp per serialized key, set on success AND failure.
+ *  Drives the staleTime gate so a failed query (e.g. a 410 on a dead invite
+ *  token) doesn't re-hit the network on every remount. */
 const lastFetchedAt = new Map<string, number>();
+
+/** Last error per serialized key, paired with `lastFetchedAt`. Lets the
+ *  staleTime gate replay a recent failure instead of refetching it. */
+const errorCache = new Map<string, Error>();
 
 /** In-flight fetch promise per serialized key. Lets multiple subscribers
  *  share one network call instead of each issuing their own.
@@ -77,6 +83,7 @@ export function invalidateQueries(opts: { queryKey: QueryKey }) {
     }
     if (parsed && Array.isArray(parsed) && prefixMatch(filter, parsed as QueryKey)) {
       lastFetchedAt.delete(serialized);
+      errorCache.delete(serialized);
     }
   }
   for (const sub of invalidateSubs) {
@@ -98,6 +105,7 @@ export function setQueryData<T>(key: QueryKey, updater: T | ((old: T | undefined
   dataCache.set(serialized, next);
   // Treat directly written data as fresh — socket handlers and optimistic
   // mutations push real data here and shouldn't be re-fetched immediately.
+  errorCache.delete(serialized);
   lastFetchedAt.set(serialized, Date.now());
   notifyExactSerialized(serialized);
 }
@@ -121,6 +129,7 @@ export function updateQueriesDataByPrefix<T>(
     const prev = dataCache.get(serialized) as T | undefined;
     const next = updater(prev, key);
     dataCache.set(serialized, next);
+    errorCache.delete(serialized);
     lastFetchedAt.set(serialized, Date.now());
     notifyExactSerialized(serialized);
   }
@@ -148,9 +157,12 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
 
   const [data, setData] = useState<T | undefined>(() => dataCache.get(serialized) as T | undefined);
   const [isLoading, setIsLoading] = useState(
-    () => enabled && dataCache.get(serialized) === undefined
+    () =>
+      enabled &&
+      dataCache.get(serialized) === undefined &&
+      !errorCache.has(serialized)
   );
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<Error | null>(() => errorCache.get(serialized) ?? null);
   const [fetchVersion, setFetchVersion] = useState(0);
 
   const queryFnRef = useRef(opts.queryFn);
@@ -166,16 +178,30 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
       return null as T | null;
     }
 
-    // Honor staleTime — skip the network call if we have a recent successful
-    // fetch. This is the primary fix for the "every component remounts =
+    // Honor staleTime — skip the network call if we have a recent result for
+    // this key. We stamp `lastFetchedAt` on success AND failure, so a recently
+    // FAILED query (e.g. a 410 on a dead invite token) is suppressed here too
+    // instead of re-hitting the network on every remount. Without this, a
+    // failing query embedded in a frequently re-rendering list (virtualized
+    // chat + socket events) floods the network with thousands of identical
+    // requests. This is the primary fix for the "every component remounts =
     // every component refetches" stampede that hit us with channel rows.
     if (staleTime > 0) {
       const cachedAt = lastFetchedAt.get(serialized);
-      const cached = dataCache.get(serialized) as T | undefined;
-      if (cachedAt != null && cached !== undefined && Date.now() - cachedAt < staleTime) {
-        setData(cached);
-        setIsLoading(false);
-        return cached;
+      if (cachedAt != null && Date.now() - cachedAt < staleTime) {
+        const cached = dataCache.get(serialized) as T | undefined;
+        if (cached !== undefined) {
+          setData(cached);
+          setError(null);
+          setIsLoading(false);
+          return cached;
+        }
+        const cachedError = errorCache.get(serialized);
+        if (cachedError) {
+          setError(cachedError);
+          setIsLoading(false);
+          return null;
+        }
       }
     }
 
@@ -189,9 +215,19 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
             queryKey: queryKeyRef.current
           });
           dataCache.set(serialized, result);
+          errorCache.delete(serialized);
           lastFetchedAt.set(serialized, Date.now());
           notifyExactSerialized(serialized);
           return result;
+        } catch (err) {
+          // Remember the failure and stamp the attempt time so the staleTime
+          // gate above suppresses immediate refetches of a known-bad key.
+          errorCache.set(
+            serialized,
+            err instanceof Error ? err : new Error(String(err))
+          );
+          lastFetchedAt.set(serialized, Date.now());
+          throw err;
         } finally {
           inFlightFetches.delete(serialized);
         }

@@ -5,6 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @import './theme.css';
+@import './sweetalert-theme.css';
 
 /* ─── Semantic status colours exposed as Tailwind utilities ────────────
  * `bg-warning`, `text-warning-foreground`, `border-warning`, `bg-warning-muted`
@@ -29,7 +30,32 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground select-none;
+  }
+
+  /* Copyable / editable regions opt back in to text selection. */
+  :is(
+    input,
+    textarea,
+    select,
+    option,
+    [contenteditable='true'],
+    [data-slot='input'],
+    [data-slot='textarea'],
+    [role='textbox'],
+    .select-text,
+    [data-selectable='text'],
+    pre,
+    code,
+    .tiptap,
+    .ProseMirror,
+    .textLayer,
+    .react-pdf__Page__textContent,
+    .announcement-html,
+    [data-message-id],
+    .prose
+  ) {
+    user-select: text;
   }
 
   /* Global scrollbar styling to match ScrollArea */

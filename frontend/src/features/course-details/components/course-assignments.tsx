@@ -33,7 +33,6 @@ import {
   Paperclip,
   X as XIcon,
   ClipboardCheck,
-  Sparkles,
   Loader2,
   AlertTriangle,
   CheckCircle2,
@@ -50,6 +49,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { EmptyState } from './_shared/empty-state';
 import { ListSkeleton } from './_shared/list-skeleton';
+import { cn } from '@/lib/utils';
+import { AddToCalendarButton } from '@/components/add-to-calendar-button';
 import { useDeleteWithUndo } from './_shared/use-delete-with-undo';
 import { useQueryClient } from '@/lib/async-query';
 import { deleteAssignment as deleteAssignmentCall } from '../api/assignments-service';
@@ -73,7 +74,7 @@ import {
   TableHeader,
   TableRow
 } from '@/components/ui/table';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet';
 import {
   Select,
   SelectContent,
@@ -101,7 +102,6 @@ import {
   useMySubmission,
   useSubmissions,
   useSubmitWork,
-  useSuggestGradeWithAi,
   useUpdateAssignment,
   useUploadAttachments,
   useUploadSubmissionFile
@@ -148,6 +148,32 @@ type GroupRow = {
   submission: Submission | null;
 };
 
+function SubmissionFileCell({
+  submission,
+  label
+}: {
+  submission: Submission | null | undefined;
+  label: string;
+}) {
+  if (!submission?.content_url) {
+    return <span className='text-xs text-muted-foreground'>—</span>;
+  }
+
+  return (
+    <a
+      href={submission.content_url}
+      target='_blank'
+      rel='noreferrer'
+      download
+      className='inline-flex size-8 items-center justify-center rounded-md border border-border/60 text-muted-foreground transition-colors hover:bg-muted/40 hover:text-foreground'
+      title={`Download ${label}`}
+      aria-label={`Download ${label}`}
+    >
+      <Download className='size-4' aria-hidden />
+    </a>
+  );
+}
+
 /**
  * Effective due date for a given submission = max(Assignment.due_date, any
  * matching extension's newDueAt). Status badges (submitted / late / missing)
@@ -190,6 +216,9 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
 
   const [view, setView] = useState<'list' | 'submissions'>('list');
   const [search, setSearch] = useState('');
+  const [assignmentListFilter, setAssignmentListFilter] = useState<
+    'all' | 'live' | 'draft' | 'grading' | 'overdue'
+  >('all');
   /// Submission filter pills. Status-based (submitted / late / missing) and
   /// review-based (ungraded / graded) live in the same dimension because
   /// the teacher only ever wants one filter active at a time — combining
@@ -212,15 +241,8 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   const [outcome, setOutcome] = useState<Outcome>('grade');
   const [grade, setGrade] = useState('');
   const [feedback, setFeedback] = useState('');
-  const [aiSuggestion, setAiSuggestion] = useState<{
-    reasoning: string;
-    confidence: 'low' | 'medium' | 'high';
-    model: string;
-  } | null>(null);
   const [extensionDate, setExtensionDate] = useState('');
   const [extensionReason, setExtensionReason] = useState('');
-  const [alsoApplyTo, setAlsoApplyTo] = useState<Set<number>>(new Set());
-  const [submitUrl, setSubmitUrl] = useState('');
 
   // ── Per-member grading state for GROUP + INDIVIDUAL assignments ──────
   // When grading a group with gradingScope=INDIVIDUAL, the drawer shows
@@ -245,12 +267,27 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   // Student-side submission state — kept separate from the teacher's
   // grading state so the same component can render either view cleanly.
   // `submitMode` controls whether the student types a link or uploads a file.
-  const [submitMode, setSubmitMode] = useState<'link' | 'file'>('link');
-  const [pendingSubmissionFile, setPendingSubmissionFile] = useState<File | null>(null);
+  const [submitModes, setSubmitModes] = useState<Record<number, 'link' | 'file'>>({});
+  const [submitUrls, setSubmitUrls] = useState<Record<number, string>>({});
+  const [pendingSubmissionFiles, setPendingSubmissionFiles] = useState<Record<number, File | null>>({});
   const submissionFileInputRef = useRef<HTMLInputElement | null>(null);
   // `submittingFor` tracks which assignment the student is currently
   // submitting to so the loading spinner sits on the right card.
   const [submittingFor, setSubmittingFor] = useState<number | null>(null);
+
+  const submitModeFor = (assignmentId: number) => submitModes[assignmentId] ?? 'link';
+  const submitUrlFor = (assignmentId: number) => submitUrls[assignmentId] ?? '';
+  const pendingSubmissionFileFor = (assignmentId: number) =>
+    pendingSubmissionFiles[assignmentId] ?? null;
+  const setSubmitModeFor = (assignmentId: number, mode: 'link' | 'file') => {
+    setSubmitModes((prev) => ({ ...prev, [assignmentId]: mode }));
+  };
+  const setSubmitUrlFor = (assignmentId: number, value: string) => {
+    setSubmitUrls((prev) => ({ ...prev, [assignmentId]: value }));
+  };
+  const setPendingSubmissionFileFor = (assignmentId: number, file: File | null) => {
+    setPendingSubmissionFiles((prev) => ({ ...prev, [assignmentId]: file }));
+  };
 
   // Bulk-selection state for the teacher assignment list. Separate from
   // `selectedRows` (which targets submissions within a single assignment).
@@ -332,7 +369,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   const gradeMutation = useGradeSubmission();
   const extensionMutation = useGrantExtension();
   const extensionBatchMutation = useGrantExtensionBatch();
-  const aiSuggestMutation = useSuggestGradeWithAi();
   const submitMutation = useSubmitWork();
   const updateAssignmentMutation = useUpdateAssignment(courseId);
   const uploadSubmissionFileMutation = useUploadSubmissionFile();
@@ -344,10 +380,22 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   const { data: extensions = [] } = useExtensions(selectedAssignment?.id ?? null);
   const { data: roster = [] } = useRoster(courseId);
 
-  const filteredAssignments = useMemo(
-    () => assignments.filter((a) => a.title.toLowerCase().includes(search.toLowerCase())),
-    [assignments, search]
-  );
+  const filteredAssignments = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    const now = new Date();
+    return assignments.filter((a) => {
+      const matchesSearch =
+        !needle ||
+        a.title.toLowerCase().includes(needle) ||
+        (a.description ?? '').toLowerCase().includes(needle);
+      if (!matchesSearch) return false;
+      if (assignmentListFilter === 'live') return !a.is_draft;
+      if (assignmentListFilter === 'draft') return a.is_draft;
+      if (assignmentListFilter === 'grading') return (a.pendingGradingCount ?? 0) > 0;
+      if (assignmentListFilter === 'overdue') return !a.is_draft && new Date(a.due_date) < now;
+      return true;
+    });
+  }, [assignments, assignmentListFilter, search]);
 
   const submissionsByStudent = useMemo(() => {
     const m = new Map<number, Submission>();
@@ -391,23 +439,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
       submission: submissionsByGroup.get(g.id) ?? null,
     }));
   }, [groups, submissionsByGroup]);
-
-  // Grade statistics for the current assignment — only computed from students
-  // who have a numeric grade assigned.
-  const gradeStats = useMemo(() => {
-    if (!selectedAssignment) return null;
-    const grades = isGroupMode
-      ? allGroupRows.map((r) => r.submission?.grade).filter((g): g is number => g != null)
-      : allStudentRows.map((r) => r.submission?.grade).filter((g): g is number => g != null);
-    if (grades.length === 0) return null;
-    const avg = grades.reduce((a, b) => a + b, 0) / grades.length;
-    return {
-      avg: Math.round(avg * 10) / 10,
-      min: Math.min(...grades),
-      max: Math.max(...grades),
-      count: grades.length,
-    };
-  }, [allStudentRows, allGroupRows, isGroupMode, selectedAssignment]);
 
   const downloadGradeCsv = () => {
     if (!selectedAssignment) return;
@@ -641,8 +672,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     setFeedback(sub.feedback ?? '');
     setExtensionDate('');
     setExtensionReason('');
-    setAlsoApplyTo(new Set());
-    setAiSuggestion(null);
 
     // For GROUP + INDIVIDUAL: populate per-member grades from existing submissions
     if (
@@ -665,27 +694,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     }
 
     setDrawerOpen(true);
-  };
-
-  const handleAiSuggest = () => {
-    if (!selectedAssignment || !selectedSubmission) return;
-    aiSuggestMutation.mutate(
-      { assignmentId: selectedAssignment.id, submissionId: selectedSubmission.id },
-      {
-        onSuccess: (s) => {
-          setGrade(String(s.suggestedGrade));
-          setFeedback(s.suggestedFeedback);
-          setOutcome('grade');
-          setAiSuggestion({
-            reasoning: s.reasoningSummary,
-            confidence: s.confidence,
-            model: s.model
-          });
-          toast.success(`AI suggestion: ${s.suggestedGrade}% (${s.confidence} confidence)`);
-        },
-        onError: (e: Error) => toast.error(e.message)
-      }
-    );
   };
 
   /// Save the grade. When `andNext` is true, advance to the next submission
@@ -839,14 +847,11 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
       return;
     }
 
-    // Individual grading: one or many students at once.
-    const studentIds = Array.from(
-      new Set<number>([selectedSubmission.studentId, ...alsoApplyTo])
-    );
+    // Individual grading: extend for the current student only.
     extensionBatchMutation.mutate(
       {
         assignmentId: selectedAssignment.id,
-        input: { studentIds, newDueAt, reason }
+        input: { studentIds: [selectedSubmission.studentId], newDueAt, reason }
       },
       {
         onSuccess: ({ count }) => {
@@ -973,6 +978,10 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   ///   - 'link' mode: pass `link: submitUrl` directly
   ///   - 'file' mode: upload the file first, then submit with the returned URL
   const handleStudentSubmit = async (a: Assignment) => {
+    const submitMode = submitModeFor(a.id);
+    const submitUrl = submitUrlFor(a.id);
+    const pendingSubmissionFile = pendingSubmissionFileFor(a.id);
+
     if (submitMode === 'link' && !submitUrl.trim()) {
       toast.error('Paste a link to your work first');
       return;
@@ -996,8 +1005,8 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         input: { link: urlToSubmit },
       });
       toast.success('Submitted');
-      setSubmitUrl('');
-      setPendingSubmissionFile(null);
+      setSubmitUrlFor(a.id, '');
+      setPendingSubmissionFileFor(a.id, null);
       if (submissionFileInputRef.current) submissionFileInputRef.current.value = '';
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Submit failed');
@@ -1054,8 +1063,8 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     const publishedAssignments = filteredAssignments.filter((a) => !a.is_draft);
     return (
       <div className='space-y-4'>
-        <StudentSummaryCard courseId={courseId} />
-        {publishedAssignments.length > 0 && (
+        {isLoading ? <AssignmentsLoadingState isStudent /> : <StudentSummaryCard courseId={courseId} />}
+        {!isLoading && publishedAssignments.length > 0 && (
           <div className='flex justify-end'>
             <a
               href={courseAssignmentsIcsUrl(courseId)}
@@ -1065,24 +1074,20 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
             </a>
           </div>
         )}
-        {isLoading && <ListSkeleton variant='card' count={3} />}
         {!isLoading && publishedAssignments.length === 0 && (
-          <EmptyState
-            icon={ClipboardCheck}
-            title='No assignments yet'
-            description="Your teacher hasn't posted any work for this course."
-          />
+          <AssignmentsEmptyState isStudent hasItems={filteredAssignments.length > 0} />
         )}
-        {publishedAssignments.map((a) => (
+        {!isLoading && publishedAssignments.map((a) => (
           <StudentAssignmentCard
             key={a.id}
+            courseOfferingPublicId={courseId}
             assignment={a}
-            submitMode={submitMode}
-            onSubmitModeChange={setSubmitMode}
-            submitUrl={submitUrl}
-            onSubmitUrlChange={setSubmitUrl}
-            pendingFile={pendingSubmissionFile}
-            onPendingFileChange={setPendingSubmissionFile}
+            submitMode={submitModeFor(a.id)}
+            onSubmitModeChange={(mode) => setSubmitModeFor(a.id, mode)}
+            submitUrl={submitUrlFor(a.id)}
+            onSubmitUrlChange={(value) => setSubmitUrlFor(a.id, value)}
+            pendingFile={pendingSubmissionFileFor(a.id)}
+            onPendingFileChange={(file) => setPendingSubmissionFileFor(a.id, file)}
             fileInputRef={submissionFileInputRef}
             isSubmitting={submittingFor === a.id}
             onSubmit={() => handleStudentSubmit(a)}
@@ -1186,10 +1191,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
           })
       : [];
 
-    // For extensions: all other enrolled students, not just those who submitted.
-    const otherStudentsForExtension = allStudentRows.filter(
-      (r) => r.studentId !== selectedSubmission?.studentId
-    );
 
     // Prev/Next navigation skips rows without a submission — can only open
     // the grading drawer for students who actually submitted something.
@@ -1199,7 +1200,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     const currentSubIdx = selectedSubmission
       ? gradableRows.findIndex((r) => r.submission?.id === selectedSubmission.id)
       : -1;
-    const prevSubmission = currentSubIdx > 0 ? gradableRows[currentSubIdx - 1].submission! : null;
     const nextSubmission =
       currentSubIdx >= 0 && currentSubIdx < gradableRows.length - 1
         ? gradableRows[currentSubIdx + 1].submission!
@@ -1241,18 +1241,18 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     };
 
     return (
-      <div className='space-y-4'>
-        <div className='flex items-center justify-between flex-wrap gap-2'>
-          <Button variant='ghost' onClick={() => setView('list')} className='gap-1'>
-            <ArrowLeft className='w-4 h-4' /> Back
+      <div className='space-y-5'>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <Button variant='ghost' onClick={() => setView('list')} className='gap-1 pl-0 hover:bg-transparent'>
+            <ArrowLeft className='w-4 h-4' /> Back to table
           </Button>
-          <div className='flex gap-2 flex-wrap items-center'>
+          <div className='flex flex-wrap items-center gap-2'>
             {selectedRows.size > 0 && (
               <>
                 <Button
                   variant='outline'
                   size='sm'
-                  className='gap-1'
+                  className='gap-1.5'
                   onClick={() => setBulkGradeOpen(true)}
                 >
                   <ClipboardCheck className='w-4 h-4' /> Grade {selectedRows.size}
@@ -1260,14 +1260,14 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                 <Button
                   variant='outline'
                   size='sm'
-                  className='gap-1'
+                  className='gap-1.5'
                   onClick={() => setBulkOpen(true)}
                 >
                   <CalendarClock className='w-4 h-4' /> Extend {selectedRows.size}
                 </Button>
               </>
             )}
-            <Button variant='outline' size='sm' className='gap-1' onClick={downloadGradeCsv}>
+            <Button variant='outline' size='sm' className='gap-1.5' onClick={downloadGradeCsv}>
               <Download className='w-4 h-4' /> Export CSV
             </Button>
           </div>
@@ -1277,108 +1277,39 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
             assignment's grading view. Same pattern as the Quiz attempt
             guard. Backend PATCH is last-writer-wins, so warn explicitly. */}
         {multiTabGradingConflict && (
-          <div className='rounded-lg border border-warning bg-warning-muted text-warning-foreground px-3 py-2 text-sm flex items-start gap-2'>
-            <AlertTriangle className='w-4 h-4 shrink-0 mt-0.5' />
-            <div>
-              <p className='font-medium'>This assignment is open in another tab.</p>
-              <p className='text-xs'>
-                Grading in both tabs at once will overwrite — close one to be safe.
-              </p>
+          <div className='rounded-2xl border border-warning/30 bg-warning-muted px-4 py-3 text-sm text-warning-foreground shadow-sm'>
+            <div className='flex items-start gap-2'>
+              <AlertTriangle className='mt-0.5 h-4 w-4 shrink-0' />
+              <div>
+                <p className='font-medium'>This assignment is open in another tab.</p>
+                <p className='text-xs'>
+                  Grading in both tabs at once can overwrite changes. Close one tab before saving.
+                </p>
+              </div>
             </div>
           </div>
         )}
 
-        <div className='mb-4 space-y-2'>
-          <h2 className='text-xl font-bold'>{selectedAssignment.title}</h2>
-          <p className='text-sm text-muted-foreground'>
-            Due: {format(new Date(selectedAssignment.due_date), 'MMMM d, yyyy h:mm a')} ·{' '}
-            <Badge variant='outline' className='ml-1'>
-              {selectedAssignment.workMode === 'GROUP' ? 'Group work' : 'Individual work'}
-            </Badge>{' '}
-            <Badge variant='outline'>
-              {selectedAssignment.gradingScope === 'GROUP' ? 'Group grade' : 'Individual grade'}
-            </Badge>
+        <div className='rounded-xl border bg-card px-4 py-3 shadow-sm sm:px-6'>
+          <h2 className='truncate text-lg font-semibold'>{selectedAssignment.title}</h2>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Due {format(new Date(selectedAssignment.due_date), 'MMM d, yyyy h:mm a')}
+            {' · '}
+            {selectedAssignment.workMode === 'GROUP' ? 'Group work' : 'Individual work'}
+            {' · '}
+            {selectedAssignment.gradingScope === 'GROUP' ? 'Group grade' : 'Individual grade'}
             {selectedAssignment.lateWindowMinutes > 0 &&
-              ` · late window ${selectedAssignment.lateWindowMinutes}m`}
+              ` · ${selectedAssignment.lateWindowMinutes}m late window`}
           </p>
-          {/* Grading progress bar — denominator is total enrolled students
-              so the teacher sees "reviewed 8 of 30" not "8 of 10 who submitted".
-              This makes it obvious that 20 students haven't submitted yet. */}
-          {(isGroupMode ? allGroupRows.length : allStudentRows.length) > 0 && (() => {
-            const rows = isGroupMode ? allGroupRows : allStudentRows;
-            const submitted = rows.filter((r) => r.submission !== null).length;
-            const graded = rows.filter((r) => r.submission?.is_reviewed).length;
-            const total = rows.length;
-            const unitLabel = isGroupMode ? 'groups' : 'enrolled';
-            const subPct = total > 0 ? Math.round((submitted / total) * 100) : 0;
-            const gradePct = total > 0 ? Math.round((graded / total) * 100) : 0;
-            return (
-              <div className='space-y-2 max-w-md pt-1'>
-                <div className='space-y-1'>
-                  <div className='flex items-center justify-between text-[11px] tabular-nums'>
-                    <span className='text-muted-foreground'>
-                      Submitted · {submitted} of {total} {unitLabel}
-                    </span>
-                    <span className='text-muted-foreground'>{subPct}%</span>
-                  </div>
-                  <div className='h-1.5 rounded-full overflow-hidden bg-muted'>
-                    <div
-                      className='h-full bg-info transition-all duration-300'
-                      style={{ width: `${subPct}%` }}
-                      aria-hidden
-                    />
-                  </div>
-                </div>
-                <div className='space-y-1'>
-                  <div className='flex items-center justify-between text-[11px] tabular-nums'>
-                    <span className='text-muted-foreground'>
-                      Grading progress · {graded} of {total} reviewed
-                    </span>
-                    <span
-                      className={
-                        gradePct === 100
-                          ? 'text-success font-medium'
-                          : 'text-muted-foreground'
-                      }
-                    >
-                      {gradePct}%
-                    </span>
-                  </div>
-                  <div className='h-1.5 rounded-full overflow-hidden bg-muted'>
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        gradePct === 100 ? 'bg-success' : 'bg-primary'
-                      }`}
-                      style={{ width: `${gradePct}%` }}
-                      aria-hidden
-                    />
-                  </div>
-                </div>
-                {gradeStats && (
-                  <div className='flex gap-3 text-[11px] tabular-nums text-muted-foreground pt-0.5'>
-                    <span>Avg <span className='font-medium text-foreground'>{gradeStats.avg}%</span></span>
-                    <span>Min <span className='font-medium text-foreground'>{gradeStats.min}%</span></span>
-                    <span>Max <span className='font-medium text-foreground'>{gradeStats.max}%</span></span>
-                    <span>Graded <span className='font-medium text-foreground'>{gradeStats.count}</span></span>
-                  </div>
-                )}
-              </div>
-            );
-          })()}
           {selectedAssignment.attachments && selectedAssignment.attachments.length > 0 && (
-            <div className='flex flex-wrap gap-2'>
+            <div className='mt-3 flex flex-wrap gap-2'>
               {selectedAssignment.attachments.map((att) => (
                 <div
                   key={att.id}
-                  className='flex items-center gap-2 text-xs border rounded px-2 py-1'
+                  className='flex items-center gap-2 rounded-md border px-2 py-1 text-xs'
                 >
-                  <Paperclip className='w-3 h-3 text-muted-foreground' />
-                  <a
-                    href={att.url}
-                    target='_blank'
-                    rel='noreferrer'
-                    className='hover:underline'
-                  >
+                  <Paperclip className='h-3 w-3 text-muted-foreground' />
+                  <a href={att.url} target='_blank' rel='noreferrer' className='hover:underline'>
                     {att.name}
                   </a>
                   <a
@@ -1386,7 +1317,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                     className='text-muted-foreground hover:text-foreground'
                     title='Download'
                   >
-                    <Download className='w-3 h-3' />
+                    <Download className='h-3 w-3' />
                   </a>
                   <button
                     type='button'
@@ -1395,12 +1326,12 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                       setAttachmentToDelete({
                         assignmentId: selectedAssignment.id,
                         attachmentId: att.id,
-                        name: att.name,
+                        name: att.name
                       })
                     }
                     aria-label='Delete attachment'
                   >
-                    <XIcon className='w-3 h-3' />
+                    <XIcon className='h-3 w-3' />
                   </button>
                 </div>
               ))}
@@ -1408,7 +1339,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
           )}
         </div>
 
-        <div className='flex gap-2 mb-4 flex-wrap items-center'>
+        <div className='flex flex-col gap-3 rounded-lg border bg-card p-3 shadow-sm xl:flex-row xl:items-center xl:justify-between'>
           {/* Filter pills — split into 2 segmented controls so the status
               dimension (submitted/late/missing) is visually separate from
               the review dimension (ungraded/graded). Only one can be
@@ -1450,7 +1381,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
             }))}
           />
           {/* Search by name / id / email */}
-          <div className='relative flex-1 max-w-xs'>
+          <div className='relative w-full xl:max-w-sm'>
             <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
             <Input
               placeholder='Search students…'
@@ -1463,15 +1394,15 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
 
         {subsLoading && <ListSkeleton variant='row' count={4} />}
 
-        <div className='border rounded-lg overflow-hidden'>
-          <Table>
-            <TableHeader className='bg-muted/30'>
-              <TableRow>
-                <TableHead className='w-8'></TableHead>
+        <div className='overflow-hidden rounded-lg border bg-card shadow-sm'>
+          <div className='max-h-[64vh] overflow-auto'>
+          <Table className='min-w-[980px]'>
+            <TableHeader className='sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85'>
+              <TableRow className='hover:bg-transparent border-b [&>th]:h-10 [&>th]:text-[11px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-muted-foreground'>
+                <TableHead className='w-10'></TableHead>
                 <TableHead>
                   <SortHeader label={isGroupMode ? 'Group' : 'Student'} sortKey='name' />
                 </TableHead>
-                {!isGroupMode && <TableHead>ID</TableHead>}
                 {isGroupMode && <TableHead>Members</TableHead>}
                 <TableHead>
                   <SortHeader label='Submitted' sortKey='submitted_at' />
@@ -1483,14 +1414,15 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                 <TableHead>
                   <SortHeader label='Grade' sortKey='grade' />
                 </TableHead>
-                <TableHead></TableHead>
+                <TableHead className='w-14'>File</TableHead>
+                <TableHead className='w-32'></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {/* ── Group-mode table body ─────────────────────────────── */}
               {isGroupMode && filteredGroupSubs.length === 0 && !subsLoading && (
                 <TableRow>
-                  <TableCell colSpan={7} className='text-center py-8 text-sm text-muted-foreground'>
+                  <TableCell colSpan={8} className='text-center py-8 text-sm text-muted-foreground'>
                     {subSearch.trim() || filter !== 'all'
                       ? 'No groups match your filters.'
                       : groups.length === 0
@@ -1506,8 +1438,8 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                   : 'missing';
                 const isChecked = selectedRows.has(groupId);
                 return (
-                  <TableRow key={groupId} className={!sub ? 'opacity-60' : ''}>
-                    <TableCell>
+                  <TableRow key={groupId} className={`transition-colors hover:bg-muted/35 [&>td]:py-3 ${!sub ? 'bg-muted/15 text-muted-foreground' : ''}`}>
+                    <TableCell className='align-top'>
                       <Checkbox
                         checked={isChecked}
                         onCheckedChange={(v) => {
@@ -1520,13 +1452,13 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         }}
                       />
                     </TableCell>
-                    <TableCell className='font-medium'>
+                    <TableCell className='align-top font-medium text-foreground'>
                       <div className='flex items-center gap-2'>
                         <Users className='w-4 h-4 text-muted-foreground shrink-0' />
                         {groupName}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
                       <div className='flex flex-wrap gap-1'>
                         {members.map((m) => (
                           <span
@@ -1542,12 +1474,12 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top whitespace-nowrap'>
                       {sub?.submitted_at
                         ? format(new Date(sub.submitted_at), 'MMM d, h:mm a')
                         : <span className='text-muted-foreground text-xs'>—</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
                       <Badge
                         variant='outline'
                         className={`gap-1 capitalize ${
@@ -1564,7 +1496,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         {status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
                       {sub?.grade != null ? (
                         <span className='tabular-nums font-medium'>{sub.grade}%</span>
                       ) : sub?.is_reviewed ? (
@@ -1573,9 +1505,12 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         <span className='text-xs text-muted-foreground'>—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
+                      <SubmissionFileCell submission={sub} label={`${groupName} submission`} />
+                    </TableCell>
+                    <TableCell className='align-top text-right'>
                       {sub ? (
-                        <Button variant='ghost' size='sm' onClick={() => openGrading(sub)}>
+                        <Button variant='outline' size='sm' onClick={() => openGrading(sub)}>
                           Grade
                         </Button>
                       ) : (
@@ -1609,8 +1544,8 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                   : false;
                 const isChecked = selectedRows.has(studentId);
                 return (
-                  <TableRow key={studentId} className={!sub ? 'opacity-60' : ''}>
-                    <TableCell>
+                  <TableRow key={studentId} className={`transition-colors hover:bg-muted/35 [&>td]:py-3 ${!sub ? 'bg-muted/15 text-muted-foreground' : ''}`}>
+                    <TableCell className='align-top'>
                       <Checkbox
                         checked={isChecked}
                         onCheckedChange={(v) => {
@@ -1623,19 +1558,23 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         }}
                       />
                     </TableCell>
-                    <TableCell className='font-medium'>{student.full_name}</TableCell>
-                    <TableCell className='text-muted-foreground'>{student.number}</TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
+                      <div className='min-w-0'>
+                        <p className='truncate font-medium text-foreground'>{student.full_name}</p>
+                        <p className='truncate text-xs text-muted-foreground'>{student.email}</p>
+                      </div>
+                    </TableCell>
+                    <TableCell className='align-top whitespace-nowrap'>
                       {sub?.submitted_at
                         ? format(new Date(sub.submitted_at), 'MMM d, h:mm a')
                         : <span className='text-muted-foreground text-xs'>—</span>}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top whitespace-nowrap'>
                       <span className={isOverridden ? 'font-medium text-warning' : ''}>
                         {format(eff, 'MMM d, h:mm a')}
                       </span>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
                       <Badge
                         variant='outline'
                         className={`gap-1 capitalize ${
@@ -1652,7 +1591,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         {status}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
                       {sub?.grade != null ? (
                         <span className='tabular-nums font-medium'>{sub.grade}%</span>
                       ) : sub?.is_reviewed ? (
@@ -1661,9 +1600,15 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         <span className='text-xs text-muted-foreground'>—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
+                      <SubmissionFileCell
+                        submission={sub}
+                        label={`${student.full_name}'s submission`}
+                      />
+                    </TableCell>
+                    <TableCell className='align-top text-right'>
                       {sub ? (
-                        <Button variant='ghost' size='sm' onClick={() => openGrading(sub)}>
+                        <Button variant='outline' size='sm' onClick={() => openGrading(sub)}>
                           Grade
                         </Button>
                       ) : (
@@ -1675,54 +1620,17 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
               })}
             </TableBody>
           </Table>
+          </div>
         </div>
 
         {/* Grading drawer */}
         <Sheet open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <SheetContent className='w-full sm:max-w-4xl overflow-y-auto'>
-            <SheetHeader>
-              <div className='flex items-center justify-between gap-2 pr-8'>
-                <div className='flex flex-col items-start gap-0.5'>
-                  <SheetTitle>Review submission</SheetTitle>
-                  {currentSubIdx >= 0 && (
-                    <p className='text-[11px] text-muted-foreground tabular-nums'>
-                      {currentSubIdx + 1} of {gradableRows.length} submitted
-                    </p>
-                  )}
-                </div>
-                {/* Prev/Next nav — jumps to the adjacent submission in the
-                    current sort/filter order. Disabled at ends so the
-                    teacher always knows where they are in the list. */}
-                <div className='flex items-center gap-1'>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='gap-1'
-                    disabled={!prevSubmission}
-                    onClick={() => prevSubmission && openGrading(prevSubmission)}
-                    aria-label='Previous submission'
-                  >
-                    <ArrowLeft className='w-3.5 h-3.5' />
-                    Prev
-                  </Button>
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='gap-1'
-                    disabled={!nextSubmission}
-                    onClick={() => nextSubmission && openGrading(nextSubmission)}
-                    aria-label='Next submission'
-                  >
-                    Next
-                    <ArrowRight className='w-3.5 h-3.5' />
-                  </Button>
-                </div>
-              </div>
-            </SheetHeader>
+          <SheetContent className='w-full overflow-y-auto bg-background/95 sm:max-w-5xl'>
+            <SheetTitle className='sr-only'>Review submission</SheetTitle>
             {selectedSubmission && (
-              <div className='flex gap-4 py-4'>
-                <div className='flex-1 min-w-0 space-y-4'>
-                <div className='p-3 bg-muted/30 rounded'>
+              <div className='grid gap-4 py-4 lg:grid-cols-[minmax(0,1fr)_320px]'>
+                <div className='min-w-0 space-y-4'>
+                <div className='rounded-3xl border bg-muted/20 p-4 shadow-sm'>
                   {selectedAssignment.workMode === 'GROUP' && selectedSubmission.groupId != null ? (() => {
                     const groupRow = allGroupRows.find((r) => r.groupId === selectedSubmission.groupId);
                     return (
@@ -1731,14 +1639,14 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                           <Users className='w-4 h-4 text-muted-foreground' />
                           <p className='font-medium'>{groupRow?.groupName ?? 'Group'}</p>
                         </div>
-                        <div className='flex flex-wrap gap-1 mt-1'>
+                        <div className='mt-2 flex flex-wrap gap-1.5'>
                           {groupRow?.members.map((m) => (
-                            <span key={m.id} className='text-xs bg-muted/50 rounded px-1.5 py-0.5'>
+                            <span key={m.id} className='rounded-full bg-background px-2 py-1 text-xs shadow-sm'>
                               {m.full_name}
                             </span>
                           ))}
                         </div>
-                        <Badge variant='outline' className='mt-2'>
+                        <Badge variant='outline' className='mt-3'>
                           {selectedAssignment.gradingScope === 'GROUP'
                             ? 'Group grade · fans out to all members'
                             : 'Individual grade · each member graded separately'}
@@ -1757,72 +1665,15 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
 
                 {selectedSubmission.content_url ? (
                   isPdfUrl(selectedSubmission.content_url) ? (
-                    <PdfViewer url={selectedSubmission.content_url} />
-                  ) : (
-                    <a
-                      href={selectedSubmission.content_url}
-                      target='_blank'
-                      rel='noreferrer'
-                      className='inline-flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 hover:bg-muted/30'
-                    >
-                      <Download className='w-4 h-4' /> Open submission
-                    </a>
-                  )
+                    <div className='overflow-hidden rounded-3xl border bg-card shadow-sm'>
+                      <PdfViewer url={selectedSubmission.content_url} />
+                    </div>
+                  ) : null
                 ) : (
                   <p className='text-xs text-muted-foreground italic'>No file attached.</p>
                 )}
 
-                <div className='flex items-center justify-between gap-2 rounded-lg border border-dashed p-3'>
-                  <div className='flex items-center gap-2 text-sm'>
-                    <Sparkles className='w-4 h-4 text-primary' />
-                    <span className='text-muted-foreground'>
-                      Let AI draft a grade + feedback — you decide whether to keep, edit,
-                      or discard it.
-                    </span>
-                  </div>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    size='sm'
-                    className='gap-1 shrink-0'
-                    onClick={handleAiSuggest}
-                    disabled={aiSuggestMutation.isPending}
-                  >
-                    {aiSuggestMutation.isPending ? (
-                      <Loader2 className='w-3.5 h-3.5 animate-spin' />
-                    ) : (
-                      <Sparkles className='w-3.5 h-3.5' />
-                    )}
-                    {aiSuggestMutation.isPending ? 'Thinking…' : 'Suggest with AI'}
-                  </Button>
-                </div>
-
-                {aiSuggestion && (
-                  <div className='border rounded-lg p-3 bg-primary/5 space-y-2'>
-                    <div className='flex items-center justify-between gap-2'>
-                      <Badge variant='outline' className='gap-1'>
-                        <Sparkles className='w-3 h-3 text-primary' />
-                        AI-assisted draft · {aiSuggestion.confidence} confidence
-                      </Badge>
-                      <button
-                        type='button'
-                        className='text-xs text-muted-foreground hover:text-foreground'
-                        onClick={() => setAiSuggestion(null)}
-                        aria-label='Dismiss AI banner'
-                      >
-                        Dismiss
-                      </button>
-                    </div>
-                    <p className='text-xs text-muted-foreground italic'>
-                      {aiSuggestion.reasoning}
-                    </p>
-                    <p className='text-[10px] text-muted-foreground'>
-                      Model: {aiSuggestion.model} · Edit the grade or feedback to override.
-                    </p>
-                  </div>
-                )}
-
-                <div className='space-y-2'>
+                <div className='space-y-3 rounded-3xl border bg-card p-4 shadow-sm'>
                   <div className='flex items-center justify-between gap-2'>
                     <Label>Feedback</Label>
                     {/* "Manage templates" toggle reveals the add-form. Keeps
@@ -1851,7 +1702,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                       {templates.map((t, i) => (
                         <div
                           key={`${t}-${i}`}
-                          className='group inline-flex items-center gap-1 border rounded-full pl-2.5 py-0.5 text-xs bg-muted/40 hover:bg-muted/70 transition-colors'
+                          className='group inline-flex items-center gap-1 rounded-full border bg-muted/40 pl-2.5 py-0.5 text-xs transition-colors hover:bg-muted/70'
                         >
                           <button
                             type='button'
@@ -1878,7 +1729,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                     </div>
                   )}
                   {templatesMenuOpen && (
-                    <div className='flex gap-2 items-center pt-1'>
+                    <div className='flex items-center gap-2 pt-1'>
                       <Input
                         value={newTemplate}
                         onChange={(e) => setNewTemplate(e.target.value)}
@@ -1913,7 +1764,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                     state from the parent scope (grade/feedback/extensionDate
                     etc.). The Save action lives inside each panel so the
                     teacher can't accidentally submit the wrong outcome. */}
-                <div className='border rounded-lg p-3 space-y-3'>
+                <div className='rounded-3xl border bg-card p-4 space-y-4 shadow-sm'>
                   <div className='flex items-center justify-between gap-2'>
                     <Label className='text-sm font-medium'>Outcome</Label>
                     <SegmentedControl
@@ -1948,10 +1799,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         return groupRow.members.map((member) => {
                           const sub = subsByStudent.get(member.id);
                           return (
-                            <div
-                              key={member.id}
-                              className='border rounded-md p-2.5 space-y-1.5'
-                            >
+                            <div key={member.id} className='rounded-2xl border bg-muted/20 p-3 space-y-2'>
                               <div className='flex items-center gap-2'>
                                 <p className='text-sm font-medium'>
                                   {member.full_name}
@@ -2007,7 +1855,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                       </Button>
                     </div>
                   ) : outcome === 'grade' ? (
-                    <div className='flex gap-2 items-center flex-wrap'>
+                    <div className='flex flex-wrap items-center gap-2'>
                       <Input
                         type='number'
                         min={0}
@@ -2052,33 +1900,6 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         value={extensionReason}
                         onChange={(e) => setExtensionReason(e.target.value)}
                       />
-                      {selectedAssignment.gradingScope === 'INDIVIDUAL' &&
-                        otherStudentsForExtension.length > 0 && (
-                          <div className='border rounded p-2 max-h-40 overflow-y-auto'>
-                            <p className='text-xs font-medium mb-1 text-muted-foreground'>
-                              Also apply to:
-                            </p>
-                            {otherStudentsForExtension.map((r) => (
-                              <label
-                                key={r.studentId}
-                                className='flex items-center gap-2 text-sm py-0.5'
-                              >
-                                <Checkbox
-                                  checked={alsoApplyTo.has(r.studentId)}
-                                  onCheckedChange={(v) => {
-                                    setAlsoApplyTo((prev) => {
-                                      const next = new Set(prev);
-                                      if (v) next.add(r.studentId);
-                                      else next.delete(r.studentId);
-                                      return next;
-                                    });
-                                  }}
-                                />
-                                {r.student.full_name}
-                              </label>
-                            ))}
-                          </div>
-                        )}
                       <Button
                         size='sm'
                         variant='outline'
@@ -2089,7 +1910,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                       >
                         {selectedAssignment.gradingScope === 'GROUP'
                           ? 'Grant to group'
-                          : `Grant another chance${alsoApplyTo.size > 0 ? ` (${alsoApplyTo.size + 1})` : ''}`}
+                          : 'Grant another chance'}
                       </Button>
                     </div>
                   )}
@@ -2112,13 +1933,15 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                   )}
                 </div>
                 </div>
-                {selectedSubmission.student && (
-                  <StudentContextRail
-                    courseId={courseId}
-                    studentId={selectedSubmission.student.id}
-                    studentName={selectedSubmission.student.full_name}
-                  />
-                )}
+                <div className='space-y-4 lg:sticky lg:top-4'>
+                  {selectedSubmission.student && (
+                    <StudentContextRail
+                      courseId={courseId}
+                      studentId={selectedSubmission.student.id}
+                      studentName={selectedSubmission.student.full_name}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </SheetContent>
@@ -2209,40 +2032,69 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
   }
 
   // ── Teacher list view ──────────────────────────────────────────────────
-  return (
-    <div className='space-y-4'>
-      <div className='flex gap-2'>
-        <div className='relative flex-1 max-w-xs'>
-          <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-          <Input
-            placeholder='Search...'
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className='pl-10'
-          />
-        </div>
-        <Button onClick={() => setCreateOpen(true)} className='gap-1'>
-          <Plus className='w-4 h-4' /> Create Assignment
-        </Button>
-      </div>
+  const listStats = {
+    total: assignments.length,
+    published: assignments.filter((a) => !a.is_draft).length,
+    drafts: assignments.filter((a) => a.is_draft).length,
+    overdue: assignments.filter((a) => !a.is_draft && new Date(a.due_date) < new Date()).length,
+    pendingGrading: assignments.reduce((n, a) => n + (a.pendingGradingCount ?? 0), 0)
+  };
+  const listFilterOptions = [
+    { value: 'all' as const, label: 'All', count: listStats.total },
+    { value: 'live' as const, label: 'Live', count: listStats.published },
+    { value: 'draft' as const, label: 'Drafts', count: listStats.drafts },
+    { value: 'grading' as const, label: 'To grade', count: listStats.pendingGrading },
+    { value: 'overdue' as const, label: 'Overdue', count: listStats.overdue }
+  ];
 
-      {isLoading && <ListSkeleton variant='card' count={3} />}
-      {!isLoading && filteredAssignments.length === 0 && (
-        <EmptyState
-          icon={ClipboardCheck}
-          title='No assignments yet'
-          description='Create your first assignment to share with this section.'
-          actionLabel='Create assignment'
-          onAction={() => setCreateOpen(true)}
-        />
-      )}
+  return (
+    <div className='space-y-5'>
+      <div className='overflow-hidden rounded-xl border bg-card shadow-sm'>
+        <div className='flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3 sm:px-6'>
+          <h2 className='text-lg font-semibold tracking-tight'>Assignments</h2>
+          <div className='flex flex-wrap items-center gap-2'>
+            <Button onClick={() => setCreateOpen(true)} size='sm' className='gap-1.5'>
+              <Plus className='w-4 h-4' /> Create assignment
+            </Button>
+          </div>
+        </div>
+
+        <div className='space-y-4 p-4 sm:p-6'>
+          <div className='grid gap-3 lg:grid-cols-[1fr_360px] lg:items-center'>
+            <div className='overflow-x-auto rounded-2xl border bg-muted/20 p-2'>
+              <SegmentedControl
+                value={assignmentListFilter}
+                onChange={setAssignmentListFilter}
+                options={listFilterOptions}
+                ariaLabel='Filter assignments'
+                width='auto'
+              />
+            </div>
+            <div className='relative w-full'>
+              <Search className='pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+              <Input
+                placeholder='Search title, instructions, attachments'
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className='h-10 rounded-2xl pl-10'
+              />
+            </div>
+          </div>
+
+          {isLoading && <AssignmentsLoadingState />}
+          {!isLoading && filteredAssignments.length === 0 && (
+            <AssignmentsEmptyState
+              hasItems={assignments.length > 0}
+              onCreate={assignments.length === 0 ? () => setCreateOpen(true) : undefined}
+            />
+          )}
 
       {/* Bulk action bar — appears when at least one assignment is selected.
           Sticky so it stays accessible while scrolling. Same shape as the
           Quiz bulk bar to keep the cross-tab UX consistent. */}
       {selectedAssignmentIds.size > 0 && (
         <div className='sticky top-0 z-10 -mx-1 px-1 pb-2 pt-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70'>
-          <div className='border rounded-xl p-2.5 shadow-sm bg-card flex items-center justify-between gap-3 flex-wrap'>
+          <div className='flex items-center justify-between gap-3 flex-wrap rounded-2xl border bg-card p-3 shadow-sm'>
             <div className='flex items-center gap-3 min-w-0'>
               <Button
                 variant='ghost'
@@ -2297,32 +2149,39 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
         </div>
       )}
 
-      {filteredAssignments.length > 0 && (
-        <div className='border rounded-lg overflow-auto max-h-[65vh]'>
-          <Table className='w-full table-fixed min-w-[860px]'>
-            <TableHeader className='sticky top-0 z-10 bg-muted/40 backdrop-blur supports-[backdrop-filter]:bg-muted/60'>
-              <TableRow className='hover:bg-transparent border-b [&>th]:h-8 [&>th]:px-2 [&>th]:text-[10px] [&>th]:font-medium [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-muted-foreground'>
-                <TableHead className='w-7'></TableHead>
+          {filteredAssignments.length > 0 && (
+        <div className='overflow-hidden rounded-lg border'>
+          <div className='max-h-[65vh] overflow-auto'>
+            <Table className='w-full table-fixed min-w-[940px]'>
+            <TableHeader className='sticky top-0 z-10 bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/85'>
+              <TableRow className='hover:bg-transparent border-b [&>th]:h-9 [&>th]:px-3 [&>th]:text-[10px] [&>th]:font-semibold [&>th]:uppercase [&>th]:tracking-wide [&>th]:text-muted-foreground'>
+                <TableHead className='w-9'></TableHead>
                 <TableHead className='min-w-0'>Title</TableHead>
-                <TableHead className='w-20'>Work</TableHead>
-                <TableHead className='w-20'>Grading</TableHead>
-                <TableHead className='w-24'>Opens</TableHead>
-                <TableHead className='w-24'>Due</TableHead>
-                <TableHead className='w-20 text-right'>Submissions</TableHead>
-                <TableHead className='w-16'>Status</TableHead>
-                <TableHead className='w-24'></TableHead>
+                <TableHead className='w-24'>Work</TableHead>
+                <TableHead className='w-28'>Grading</TableHead>
+                <TableHead className='w-32'>Opens</TableHead>
+                <TableHead className='w-32'>Due</TableHead>
+                <TableHead className='w-28 text-right'>Submissions</TableHead>
+                <TableHead className='w-20'>Status</TableHead>
+                <TableHead className='w-28'></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredAssignments.map((a) => {
                 const attCount = a.attachments?.length ?? 0;
                 const isSelected = selectedAssignmentIds.has(a.id);
+                const dueAt = new Date(a.due_date);
+                const isOverdue = !a.is_draft && dueAt < new Date();
+                const submissionCount = a._count?.submissions ?? a.submissions?.length ?? 0;
+                const pendingCount = a.pendingGradingCount ?? 0;
+                const workLabel = a.workMode === 'GROUP' ? 'Group' : 'Individual';
+                const gradingLabel = a.gradingScope === 'GROUP' ? 'Group grade' : 'Per student';
                 return (
                   <TableRow
                     key={a.id}
-                    className={`group transition-colors hover:bg-muted/40 [&>td]:px-2 [&>td]:py-1.5 ${
+                    className={`group transition-colors hover:bg-muted/40 [&>td]:px-3 [&>td]:py-2.5 ${
                       isSelected ? 'bg-primary/[0.04]' : ''
-                    } ${a.is_draft ? 'opacity-70' : ''}`}
+                    } ${a.is_draft ? 'bg-muted/15' : ''}`}
                   >
                     <TableCell>
                       {/* Selection checkbox — same hover/visibility behaviour
@@ -2346,45 +2205,74 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         )}
                       </button>
                     </TableCell>
-                    <TableCell className='font-medium'>
-                      <div className='flex min-w-0 items-center gap-2'>
-                        <span className='truncate'>{a.title}</span>
-                        {attCount > 0 && (
-                          <span
-                            className='inline-flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground'
-                            title={`${attCount} attachment${attCount === 1 ? '' : 's'}`}
-                          >
-                            <Paperclip className='w-3 h-3' />
-                            {attCount}
+                    <TableCell className='align-top'>
+                      <div className='min-w-0 space-y-1'>
+                        <div className='flex min-w-0 items-center gap-2'>
+                          <span className='truncate font-medium'>{a.title}</span>
+                          {attCount > 0 && (
+                            <span
+                              className='inline-flex shrink-0 items-center gap-0.5 rounded-md bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground'
+                              title={`${attCount} attachment${attCount === 1 ? '' : 's'}`}
+                            >
+                              <Paperclip className='w-3 h-3' />
+                              {attCount}
+                            </span>
+                          )}
+                        </div>
+                        {a.description && (
+                          <p className='line-clamp-1 text-xs font-normal text-muted-foreground'>
+                            {a.description}
+                          </p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className='align-top'>
+                      <Badge variant='outline' className='px-2 py-0.5 text-[10px] font-medium'>
+                        {workLabel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className='align-top'>
+                      <Badge variant='outline' className='px-2 py-0.5 text-[10px] font-medium'>
+                        {gradingLabel}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className='align-top whitespace-nowrap text-xs text-muted-foreground'>
+                      {a.open_at ? format(new Date(a.open_at), 'MMM d, h:mm a') : '—'}
+                    </TableCell>
+                    <TableCell
+                      className={`align-top whitespace-nowrap text-xs ${
+                        isOverdue ? 'font-medium text-rose-600 dark:text-rose-400' : ''
+                      }`}
+                    >
+                      <div className='flex flex-col gap-0.5'>
+                        <span>{format(dueAt, 'MMM d, h:mm a')}</span>
+                        {isOverdue && (
+                          <span className='text-[10px] uppercase tracking-wide'>Overdue</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className='align-top text-right'>
+                      <div className='inline-flex flex-col items-end gap-0.5'>
+                        <span className='text-sm font-semibold tabular-nums text-foreground'>
+                          {submissionCount}
+                        </span>
+                        {pendingCount > 0 && (
+                          <span className='rounded-md bg-amber-500/10 px-1.5 py-0.5 text-[10px] font-medium text-amber-700 dark:text-amber-300'>
+                            {pendingCount} to grade
                           </span>
                         )}
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant='outline' className='px-1.5 py-0 text-[10px] font-normal'>
-                        {a.workMode}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant='outline' className='px-1.5 py-0 text-[10px] font-normal'>
-                        {a.gradingScope}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className='whitespace-nowrap text-xs text-muted-foreground'>
-                      {a.open_at ? format(new Date(a.open_at), 'MMM d, h:mm a') : '—'}
-                    </TableCell>
-                    <TableCell className='whitespace-nowrap text-xs'>
-                      {format(new Date(a.due_date), 'MMM d, h:mm a')}
-                    </TableCell>
-                    <TableCell className='text-right text-sm font-medium text-success tabular-nums'>
-                      {a._count?.submissions ?? a.submissions?.length ?? 0}
-                    </TableCell>
-                    <TableCell>
                       {/* Read-only publish state. The toggle action moved to
                           the ⋯ menu (Publish / Unpublish). */}
                       <Badge
-                        variant={a.is_draft ? 'outline' : 'secondary'}
-                        className='px-1.5 py-0 text-[10px] font-normal'
+                        variant='outline'
+                        className={`px-1.5 py-0 text-[10px] font-medium ${
+                          a.is_draft
+                            ? 'border-muted-foreground/20 text-muted-foreground'
+                            : 'border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                        }`}
                         title={
                           a.is_draft
                             ? 'Draft — students cannot see this assignment'
@@ -2394,10 +2282,10 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                         {a.is_draft ? 'Draft' : 'Live'}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className='align-top'>
                       <div className='flex gap-1 justify-end'>
                         <Button
-                          variant='ghost'
+                          variant='outline'
                           size='sm'
                           onClick={() => openSubmissions(a)}
                           aria-label={
@@ -2405,7 +2293,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
                               ? `View ${a.title} — ${a.pendingGradingCount} need grading`
                               : `View ${a.title}`
                           }
-                          className='relative h-7 px-2 text-xs'
+                          className='relative h-7 px-2 text-xs shadow-sm'
                         >
                           <Eye className='w-3.5 h-3.5 mr-1' /> View
                           {(a.pendingGradingCount ?? 0) > 0 && (
@@ -2479,8 +2367,12 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
               })}
             </TableBody>
           </Table>
+          </div>
         </div>
-      )}
+          )}
+
+        </div>
+      </div>
 
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className='max-w-md max-h-[90vh] overflow-y-auto'>
@@ -2623,6 +2515,7 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
 /// uploads first and uses the returned URL.
 function StudentAssignmentCard({
   assignment: a,
+  courseOfferingPublicId,
   submitMode,
   onSubmitModeChange,
   submitUrl,
@@ -2634,6 +2527,7 @@ function StudentAssignmentCard({
   onSubmit,
 }: {
   assignment: Assignment;
+  courseOfferingPublicId: string;
   submitMode: 'link' | 'file';
   onSubmitModeChange: (mode: 'link' | 'file') => void;
   submitUrl: string;
@@ -2702,8 +2596,23 @@ function StudentAssignmentCard({
     e.target.value = '';
   };
 
+  // Left accent bar colored by the student's standing on this assignment.
+  const statusAccent = isGraded
+    ? passed
+      ? 'border-l-emerald-500'
+      : 'border-l-rose-500'
+    : hasSubmitted
+      ? 'border-l-emerald-500'
+      : closed
+        ? 'border-l-rose-500'
+        : dueSoon
+          ? 'border-l-amber-500'
+          : 'border-l-indigo-500';
+
   return (
-    <div className='border rounded-lg p-4'>
+    <div
+      className={`rounded-lg border border-l-4 ${statusAccent} p-4 transition-shadow hover:shadow-sm`}
+    >
       <div className='flex items-center justify-between mb-2 gap-2 flex-wrap'>
         <span className='font-medium truncate'>{a.title}</span>
         <div className='flex gap-1 flex-wrap'>
@@ -2757,12 +2666,17 @@ function StudentAssignmentCard({
             Extended from {format(baseDue, 'MMM d')}
           </Badge>
         )}
-        <a
-          href={assignmentIcsUrl(a.id)}
-          className='inline-flex items-center gap-1 hover:underline'
-        >
-          <CalendarPlus className='w-3 h-3' /> Add to calendar
-        </a>
+        <AddToCalendarButton
+          deadline={{
+            kind: 'assignment',
+            id: a.id,
+            title: a.title,
+            description: a.description,
+            due,
+            courseOfferingPublicId,
+          }}
+          className='text-xs text-muted-foreground'
+        />
       </div>
       {a.attachments && a.attachments.length > 0 && (
         <div className='mt-2 space-y-1'>
@@ -2867,7 +2781,7 @@ function StudentAssignmentCard({
               <p className='text-[11px] font-medium text-muted-foreground mb-0.5'>
                 Teacher feedback
               </p>
-              <p className='text-xs whitespace-pre-wrap'>{mySubmission.feedback}</p>
+              <p className='select-text text-xs whitespace-pre-wrap'>{mySubmission.feedback}</p>
             </div>
           )}
         </div>
@@ -3005,95 +2919,153 @@ function StudentAssignmentCard({
 ///   - missing count (past due + never submitted)
 /// Renders nothing when there are no assignments yet — saves an empty card
 /// taking up space on an otherwise-empty tab.
+function AssignmentsLoadingState({ isStudent }: { isStudent?: boolean }) {
+  return isStudent ? (
+    <div className='space-y-4'>
+      <div className='rounded-xl border bg-card p-4 shadow-sm'>
+        <div className='mb-3 h-4 w-28 animate-pulse rounded bg-muted/70' />
+        <div className='grid grid-cols-2 gap-3 sm:grid-cols-5'>
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className='h-10 animate-pulse rounded bg-muted/50' />
+          ))}
+        </div>
+      </div>
+      {Array.from({ length: 3 }).map((_, i) => (
+        <div key={i} className='overflow-hidden rounded-2xl border bg-card p-4 shadow-sm'>
+          <div className='flex items-start justify-between gap-3'>
+            <div className='h-4 w-1/2 animate-pulse rounded bg-muted/70' />
+            <div className='h-6 w-20 animate-pulse rounded-full bg-muted/70' />
+          </div>
+          <div className='mt-3 h-3 w-5/6 animate-pulse rounded bg-muted/50' />
+          <div className='mt-4 grid gap-2 sm:grid-cols-3'>
+            <div className='h-10 animate-pulse rounded-xl bg-muted/50' />
+            <div className='h-10 animate-pulse rounded-xl bg-muted/50' />
+            <div className='h-10 animate-pulse rounded-xl bg-muted/50' />
+          </div>
+        </div>
+      ))}
+    </div>
+  ) : (
+    <div className='space-y-4'>
+      <div className='overflow-hidden rounded-3xl border bg-card shadow-sm'>
+        <div className='h-44 animate-pulse bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800' />
+        <div className='grid gap-3 p-4 sm:grid-cols-2 xl:grid-cols-4'>
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className='h-20 animate-pulse rounded-2xl bg-muted/70' />
+          ))}
+        </div>
+        <div className='border-t p-4 sm:p-6'>
+          <div className='grid gap-3 lg:grid-cols-[1fr_360px]'>
+            <div className='h-12 animate-pulse rounded-2xl bg-muted/60' />
+            <div className='h-12 animate-pulse rounded-2xl bg-muted/60' />
+          </div>
+          <div className='mt-4 overflow-hidden rounded-3xl border bg-background'>
+            <div className='h-12 animate-pulse border-b bg-muted/40' />
+            <div className='space-y-2 p-4'>
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className='h-12 animate-pulse rounded-2xl bg-muted/40' />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function AssignmentsEmptyState({
+  isStudent,
+  hasItems,
+  onCreate
+}: {
+  isStudent?: boolean;
+  hasItems: boolean;
+  onCreate?: () => void;
+}) {
+  return (
+    <div className='overflow-hidden rounded-3xl border bg-card shadow-sm'>
+      <div className='bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-4 py-5 text-white sm:px-6'>
+        <div className='flex items-center gap-2'>
+          <ClipboardCheck className='size-4' />
+          <p className='text-sm font-semibold'>Assignments</p>
+        </div>
+        <p className='mt-2 max-w-2xl text-sm text-white/75'>
+          {isStudent
+            ? 'When your instructor publishes work, the assignment workspace will show it here.'
+            : 'Use the assignment workspace to publish, filter, and grade coursework for this section.'}
+        </p>
+      </div>
+      <div className='flex flex-col items-center justify-center px-6 py-12 text-center'>
+        <div className='mb-4 flex size-14 items-center justify-center rounded-2xl bg-muted/50 text-muted-foreground'>
+          <ClipboardCheck className='size-6' />
+        </div>
+        <h3 className='text-lg font-semibold tracking-tight'>
+          {hasItems ? 'No matching assignments' : 'No assignments yet'}
+        </h3>
+        <p className='mt-2 max-w-md text-sm text-muted-foreground'>
+          {hasItems
+            ? 'Try a different filter or search term to surface more work.'
+            : isStudent
+              ? "Your teacher hasn't posted any work for this course yet."
+              : 'Create the first assignment to start tracking submissions and grades.'}
+        </p>
+        {!isStudent && !hasItems && onCreate && (
+          <Button className='mt-5 gap-1.5' onClick={onCreate}>
+            <Plus className='size-4' /> Create assignment
+          </Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function StudentSummaryCard({ courseId }: { courseId: string }) {
   const { data } = useMyAssignmentSummary(courseId);
   if (!data || data.totalPublished === 0) return null;
 
-  const avgColor =
+  const avgText =
     data.avgGrade == null
       ? 'text-muted-foreground'
       : data.avgGrade >= 80
-        ? 'text-success'
+        ? 'text-emerald-600 dark:text-emerald-400'
         : data.avgGrade >= 60
-          ? 'text-warning'
-          : 'text-destructive';
+          ? 'text-amber-600 dark:text-amber-400'
+          : 'text-rose-600 dark:text-rose-400';
 
   return (
-    <div className='border rounded-xl p-4 bg-card'>
-      <div className='flex items-center justify-between mb-3'>
-        <p className='text-xs font-semibold uppercase tracking-wide text-muted-foreground'>
-          Your progress
-        </p>
-        {data.missingCount > 0 && (
-          <Badge variant='destructive' className='gap-1'>
-            <AlertTriangle className='w-3 h-3' />
-            {data.missingCount} overdue
-          </Badge>
-        )}
+    <div className='rounded-xl border bg-card p-4 shadow-sm'>
+      <div className='mb-3 flex items-center justify-between gap-2'>
+        <h3 className='text-sm font-medium'>Your progress</h3>
+        {data.missingCount > 0 ? (
+          <span className='text-xs text-muted-foreground'>{data.missingCount} overdue</span>
+        ) : null}
       </div>
-      <div className='grid grid-cols-2 sm:grid-cols-5 gap-3'>
+
+      <div className='grid grid-cols-2 gap-3 text-sm sm:grid-cols-5'>
         <div>
-          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
-            Avg grade
-          </p>
-          <p className={`text-2xl font-semibold tabular-nums ${avgColor}`}>
+          <p className='text-xs text-muted-foreground'>Avg grade</p>
+          <p className={cn('font-semibold tabular-nums', avgText)}>
             {data.avgGrade != null ? `${data.avgGrade}%` : '—'}
           </p>
         </div>
         <div>
-          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
-            Submitted
-          </p>
-          <p className='text-2xl font-semibold tabular-nums'>
+          <p className='text-xs text-muted-foreground'>Submitted</p>
+          <p className='font-semibold tabular-nums'>
             {data.submittedCount}
-            <span className='text-sm text-muted-foreground'> / {data.totalPublished}</span>
+            <span className='font-normal text-muted-foreground'> / {data.totalPublished}</span>
           </p>
         </div>
         <div>
-          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
-            Graded
-          </p>
-          <p className='text-2xl font-semibold tabular-nums'>{data.gradedCount}</p>
+          <p className='text-xs text-muted-foreground'>Graded</p>
+          <p className='font-semibold tabular-nums'>{data.gradedCount}</p>
         </div>
         <div>
-          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
-            Late
-          </p>
-          <p
-            className={`text-2xl font-semibold tabular-nums ${
-              data.lateCount > 0 ? 'text-warning' : ''
-            }`}
-          >
-            {data.lateCount}
-          </p>
+          <p className='text-xs text-muted-foreground'>Late</p>
+          <p className='font-semibold tabular-nums'>{data.lateCount}</p>
         </div>
         <div>
-          <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
-            Missing
-          </p>
-          <p
-            className={`text-2xl font-semibold tabular-nums ${
-              data.missingCount > 0 ? 'text-destructive' : ''
-            }`}
-          >
-            {data.missingCount}
-          </p>
-        </div>
-      </div>
-      {/* Submission progress bar — visual cue of "X of Y submitted". */}
-      <div className='mt-3 space-y-1'>
-        <div className='h-1.5 rounded-full overflow-hidden bg-muted'>
-          <div
-            className='h-full bg-primary transition-all duration-300'
-            style={{
-              width: `${
-                data.totalPublished > 0
-                  ? (data.submittedCount / data.totalPublished) * 100
-                  : 0
-              }%`,
-            }}
-            aria-hidden
-          />
+          <p className='text-xs text-muted-foreground'>Missing</p>
+          <p className='font-semibold tabular-nums'>{data.missingCount}</p>
         </div>
       </div>
     </div>

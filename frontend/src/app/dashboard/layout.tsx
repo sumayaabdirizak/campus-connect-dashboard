@@ -13,7 +13,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname();
   const isChatRoute = pathname?.startsWith('/dashboard/chat');
   const isAnnouncementsRoute = pathname?.startsWith('/dashboard/announcements');
-  const isFixedScrollShell = isChatRoute || isAnnouncementsRoute;
+  const isCourseDetailRoute = Boolean(pathname?.match(/^\/dashboard\/courses\/[^/]+$/));
+  const isAuditLogsRoute = pathname === '/dashboard/audit-logs';
+  const isDeanUsersRoute = pathname === '/dashboard/dean/users';
+  const isViewportFitRoute =
+    isChatRoute ||
+    isAnnouncementsRoute ||
+    isCourseDetailRoute ||
+    isAuditLogsRoute ||
+    isDeanUsersRoute;
 
   useAnnouncementSocket({ enabled: true, playSound: false });
 
@@ -22,19 +30,33 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <RoleGuard>
         <SidebarProvider defaultOpen={true}>
           <AppSidebar />
-          <SidebarInset className={isFixedScrollShell ? 'h-dvh max-h-dvh min-h-0 overflow-hidden' : undefined}>
+          <SidebarInset
+            className={
+              isViewportFitRoute
+                ? 'h-dvh max-h-dvh min-h-0 min-w-0 overflow-hidden'
+                : 'min-w-0'
+            }
+          >
             <Header />
             <main
               className={
                 isChatRoute
-                  ? 'flex min-h-0 flex-1 overflow-hidden p-2 md:p-3'
-                  : isAnnouncementsRoute
-                    ? 'flex min-h-0 flex-1 flex-col overflow-hidden p-4 md:p-6'
-                    : 'overflow-auto p-4 md:p-6'
+                  ? 'flex min-h-0 min-w-0 flex-1 overflow-hidden p-2 md:p-3'
+                  : isAuditLogsRoute
+                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-1 md:p-1.5'
+                  : isViewportFitRoute
+                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-6'
+                    : 'min-w-0 overflow-x-hidden overflow-y-auto p-4 md:p-6'
               }
             >
               <InfobarProvider
-                className={isAnnouncementsRoute ? 'flex h-full min-h-0 flex-1 flex-col' : undefined}
+                className={
+                  isAuditLogsRoute
+                    ? 'flex h-full min-h-0 w-full flex-col overflow-hidden !min-h-0'
+                    : isViewportFitRoute && !isChatRoute
+                      ? 'flex h-0 min-h-0 w-full flex-1 basis-0 flex-col overflow-hidden !min-h-0'
+                      : undefined
+                }
               >
                 {children}
               </InfobarProvider>

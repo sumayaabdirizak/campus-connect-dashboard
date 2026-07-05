@@ -2,66 +2,87 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { BookOpen, Users, Calendar } from 'lucide-react';
+import { BookOpen, Calendar, Users } from 'lucide-react';
+
+export interface TeacherCourseCardData {
+  id: string;
+  courseCode: string;
+  courseName: string;
+  department: string;
+  section: string;
+  thumbnail: string | null;
+  totalStudents: number;
+  totalLessons: number;
+  schedule?: { day: string; time: string; location: string };
+  status: string;
+}
 
 interface CourseCardProps {
-  course: {
-    id: number;
-    courseCode: string;
-    courseName: string;
-    department: string;
-    section: string;
-    thumbnail: string | null;
-    totalStudents: number;
-    totalLessons: number;
-    schedule?: { day: string; time: string; location: string };
-    status: string;
-  };
+  course: TeacherCourseCardData;
   index: number;
 }
 
-const defaultImages = [
-  'https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=400&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1501504905252-473c47e087f8?w=400&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1522202176988-66273c2fd55f?w=400&h=200&fit=crop',
-  'https://images.unsplash.com/photo-1523580494863-6f3031224c94?w=400&h=200&fit=crop'
+const GRADIENTS = [
+  'from-indigo-500 via-violet-500 to-fuchsia-500',
+  'from-sky-500 via-blue-500 to-indigo-500',
+  'from-emerald-500 via-teal-500 to-cyan-500',
+  'from-amber-500 via-orange-500 to-rose-500',
+  'from-rose-500 via-pink-500 to-purple-500'
 ];
 
-export function CourseCard({ course, index }: CourseCardProps) {
-  const imageUrl = course.thumbnail || defaultImages[index % defaultImages.length];
+function gradientFor(seed: string): string {
+  let hash = 0;
+  for (let i = 0; i < seed.length; i++) hash = (hash << 5) - hash + seed.charCodeAt(i);
+  return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
+}
+
+export function CourseCard({ course }: CourseCardProps) {
+  const cover = course.thumbnail?.trim();
+  const initials = (course.courseCode || course.courseName || 'C').slice(0, 2).toUpperCase();
 
   return (
     <Link href={`/dashboard/courses/${course.id}`}>
-      <div className='border rounded-lg overflow-hidden hover:bg-muted/30 transition-colors'>
+      <div className='overflow-hidden rounded-lg border transition-colors hover:bg-muted/30'>
         <div className='relative h-28 overflow-hidden'>
-          <Image src={imageUrl} alt={course.courseName} fill className='object-cover' />
+          {cover ? (
+            <Image src={cover} alt={course.courseName} fill unoptimized className='object-cover' />
+          ) : (
+            <div
+              className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradientFor(
+                course.courseCode || course.courseName || ''
+              )}`}
+            >
+              <span className='text-3xl font-bold text-white/90'>{initials}</span>
+            </div>
+          )}
           <div className='absolute inset-0 bg-gradient-to-t from-black/60 to-transparent' />
           <span
-            className={`absolute top-2 right-2 px-2 py-0.5 rounded-full text-[10px] font-medium ${
+            className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${
               course.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted'
             }`}
           >
             {course.status}
           </span>
         </div>
+
         <div className='p-3'>
           <span className='text-xs font-medium text-primary'>{course.courseCode}</span>
-          <h3 className='font-medium text-sm mb-1 line-clamp-1'>{course.courseName}</h3>
-          <p className='text-xs text-muted-foreground mb-2'>
-            {course.section} · {course.department}
+          <h3 className='mb-1 line-clamp-1 text-sm font-medium'>{course.courseName}</h3>
+          <p className='mb-2 text-xs text-muted-foreground'>
+            {course.section} / {course.department}
           </p>
           <div className='flex items-center gap-3 text-xs text-muted-foreground'>
             <span className='flex items-center gap-1'>
-              <Users className='w-3 h-3' />
+              <Users className='size-3' />
               {course.totalStudents}
             </span>
             <span className='flex items-center gap-1'>
-              <BookOpen className='w-3 h-3' />
+              <BookOpen className='size-3' />
               {course.totalLessons}
             </span>
             {course.schedule && (
               <span className='flex items-center gap-1'>
-                <Calendar className='w-3 h-3' />
+                <Calendar className='size-3' />
                 {course.schedule.day}
               </span>
             )}

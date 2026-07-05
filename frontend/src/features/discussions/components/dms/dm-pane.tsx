@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
+import { confirmAction, handleApiError, showToast } from '@/lib/notifications';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import {
@@ -64,18 +64,28 @@ export function DmPane({ groupDmId }: { groupDmId: number | null }) {
 
   // B2 — self-leave. Owner-aware confirm copy, navigate away on success.
   const leaveMut = useLeaveGroupDm(groupDmId ?? 0);
-  const handleLeave = () => {
+  const handleLeave = async () => {
     if (groupDmId == null || leaveMut.isPending) return;
     const willArchive = memberCountForLeave <= 1;
     const message = willArchive
-      ? 'You are the last member. Leaving will archive this conversation. Continue?'
+      ? 'You are the last member. Leaving will archive this conversation.'
       : isOwner
         ? 'Leave this conversation? Ownership will pass to the oldest remaining member.'
         : 'Leave this conversation? You will no longer see new messages here.';
-    if (!window.confirm(message)) return;
+    if (
+      !(await confirmAction(
+        willArchive ? 'Archive conversation?' : 'Leave conversation?',
+        message,
+        willArchive ? 'Archive & leave' : 'Leave',
+        { icon: 'warning', danger: willArchive }
+      ))
+    ) {
+      return;
+    }
     leaveMut.mutate(undefined, {
       onSuccess: (res) => {
-        toast.success(
+        showToast(
+          'success',
           res.archived
             ? 'Conversation archived'
             : res.newOwnerId
@@ -85,9 +95,7 @@ export function DmPane({ groupDmId }: { groupDmId: number | null }) {
         router.push('/dashboard/chat/dm');
       },
       onError: (err: unknown) => {
-        const msg =
-          err instanceof Error ? err.message : 'Failed to leave conversation';
-        toast.error(msg);
+        handleApiError(err, 'Failed to leave conversation');
       }
     });
   };

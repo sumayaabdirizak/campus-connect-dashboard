@@ -36,10 +36,7 @@ import type {
   UnreadSocketPayload
 } from './types';
 
-function getSocketUrl(): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-  return apiUrl.endsWith('/api') ? apiUrl.slice(0, -4) : apiUrl;
-}
+import { getSocketUrl } from '@/lib/api-config';
 
 type RoomKey =
   | `channel:${number}`

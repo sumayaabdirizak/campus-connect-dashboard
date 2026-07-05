@@ -1,5 +1,3 @@
-import { getAuthFacultyId } from "./facultyAccess.js";
-
 /**
  * Prisma `where` fragment: users tied to a faculty (students, lecturers by affiliation or
  * home department, deans, faculty admins, and the user set as Faculty.dean).
@@ -42,13 +40,4 @@ export function whereBatchSectionsInFaculty(facultyId) {
       },
     },
   };
-}
-
-/**
- * Returns faculty id for scoped roles; null for SUPER_ADMIN (caller should skip filter).
- * @param {import("express").Request["user"]} user
- */
-export function scopeFacultyIdOrNull(user) {
-  if (!user || user.role === "SUPER_ADMIN") return null;
-  return getAuthFacultyId(user);
 }

@@ -8,7 +8,7 @@ import {
   TooltipTrigger
 } from '@/components/ui/tooltip';
 import { Bell, BellOff, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { handleApiError, showToast } from '@/lib/notifications';
 import { usePushSubscription } from './use-push-subscription';
 
 interface NotificationToggleProps {
@@ -30,26 +30,26 @@ export function NotificationToggle({ compact }: NotificationToggleProps) {
   const handleClick = async () => {
     if (loading) return;
     if (denied) {
-      toast.error('Notifications are blocked — change browser permission to enable.');
+      showToast('warning', 'Notifications are blocked — change browser permission to enable.');
       return;
     }
     try {
       if (subscribed) {
         await disable();
-        toast.success('Notifications turned off');
+        showToast('success', 'Notifications turned off');
       } else {
         const ok = await enable();
         if (Notification.permission === 'granted') {
           // `enable` returns false when push is not available on the server.
           if (ok === false) {
-            toast.error('Push notifications are not available on this server.');
+            showToast('error', 'Push notifications are not available on this server.');
           } else {
-            toast.success('Notifications enabled');
+            showToast('success', 'Notifications enabled');
           }
         }
       }
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Could not change notification setting');
+      handleApiError(err, 'Could not change notification setting');
     }
   };
 

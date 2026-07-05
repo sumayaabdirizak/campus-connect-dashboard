@@ -1,5 +1,7 @@
 # Charts & Analytics Guide
 
+> **Campus Connect note:** The template `/dashboard/overview` parallel-route demo was removed. Role dashboards live at `/dashboard` (`features/overview/components/main-dashboard/` and role-specific views). Use Recharts in feature components with `useQuery` — patterns below remain useful for adding new chart sections elsewhere.
+
 ## Table of Contents
 
 1. [Overview Architecture](#overview-architecture)

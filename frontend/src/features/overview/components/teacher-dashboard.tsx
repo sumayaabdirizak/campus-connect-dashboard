@@ -25,8 +25,9 @@ import { useAnnouncements } from '@/features/announcements/api/queries';
 import { courseColor } from '@/features/student-courses/lib/course-color';
 import { TeacherCourseTile } from './teacher-course-tile';
 import { StatCard } from './stat-card';
-import { TimelineBlock, type TimelineItem } from './timeline-block';
 import { MonthCalendar } from './month-calendar';
+import { filterUpcomingDeadlines } from '@/features/calendar/deadline-calendar';
+import type { DeadlineRow } from '@/features/calendar/lib';
 
 type CourseFilter = 'all' | 'active' | 'completed';
 
@@ -50,22 +51,15 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
   const { data: deadlineData, isLoading: deadlinesLoading } = useQuery({
     queryKey: ['calendar', 'deadlines', 'teacher-dashboard', fromIso],
     queryFn: () =>
-      apiClient<{ results: TimelineItem[] }>(
+      apiClient<{ results: DeadlineRow[] }>(
         `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
       )
   });
 
-  const timelineItems = useMemo(() => {
-    const now = Date.now();
-    return (deadlineData?.results ?? [])
-      .filter(
-        (d) =>
-          (d.kind === 'assignment' || d.kind === 'quiz') &&
-          d.deadlineAt &&
-          new Date(d.deadlineAt).getTime() >= now
-      )
-      .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime());
-  }, [deadlineData]);
+  const timelineItems = useMemo(
+    () => filterUpcomingDeadlines(deadlineData?.results),
+    [deadlineData]
+  );
 
   const filteredCourses = courses.filter((c) => {
     const matchFilter =
@@ -141,8 +135,6 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
         {/* Main */}
         <div className='flex flex-col gap-6 lg:col-span-8'>
-          <TimelineBlock items={timelineItems} loading={deadlinesLoading} audience='teacher' />
-
           {/* My courses */}
           <Card className='rounded-lg border-border'>
             <CardHeader className='gap-3 border-b py-3'>

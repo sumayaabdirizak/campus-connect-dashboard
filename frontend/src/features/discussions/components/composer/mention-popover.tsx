@@ -5,6 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 import type { ChannelMember } from '../../api/types';
+import { avatarGradient } from '../../utils/avatar-color';
 
 const MAX_RESULTS = 7;
 
@@ -117,7 +118,10 @@ export function MentionPopover({
                 )}
               >
                 <Avatar className='h-6 w-6 shrink-0'>
-                  <AvatarFallback className='text-[10px]'>
+                  <AvatarFallback
+                    className='text-[10px] font-semibold text-white'
+                    style={{ background: avatarGradient(name) }}
+                  >
                     {initialsFor(name)}
                   </AvatarFallback>
                 </Avatar>

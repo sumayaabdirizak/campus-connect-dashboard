@@ -1,73 +1,50 @@
 import { Router } from 'express';
-import { auth } from "../../middleware/auth.js";
 import { requireDean } from "../../middleware/requireDean.js";
 import {
-  getFacultyUsers, getFacultyUserById, updateFacultyUser, removeFacultyUser,
-  getPendingRegistrations, approveRegistration, rejectRegistration,
-  assignStudentToSection, getStudentRegistrations
+  getFacultyUsers, getFacultyUserById
 } from './userManagement.controller.js';
 import {
-  getFacultyBatches, getFacultyBatchById, createFacultyBatch, updateFacultyBatch,
-  deleteFacultyBatch, getBatchSections, getSectionById, createBatchSection,
-  updateBatchSection, deleteBatchSection
+  getFacultyBatches, getFacultyBatchById,
+  getBatchSections, getSectionById
 } from './batchManagement.controller.js';
 import {
   getFacultyTeachers, getFacultyTeacherById
 } from './teacherAssigning.controller.js';
 import {
-  getFacultyCourses, getCourseById, createCourse, updateCourse, deleteCourse,
-  assignTeacherToCourse, removeTeacherFromCourse,
-  getCourseOfferings, createCourseOffering, deleteCourseOffering
+  getFacultyCourses, getCourseById,
+  getCourseOfferings
 } from './courseManagement.controller.js';
+import { getDeanAnalytics } from './deanAnalytics.controller.js';
+import { getDeanReports } from './deanReports.controller.js';
 
 const router = Router();
-router.use(auth, requireDean);
+router.use(requireDean);
 
-// ── User Management ──────────────────────────────────────
+// ── Users (read-only) ────────────────────────────────────
 router.get('/users', getFacultyUsers);
 router.get('/users/:id', getFacultyUserById);
-router.put('/users/:id', updateFacultyUser);
-router.delete('/users/:id', removeFacultyUser);
-router.get('/users/:id/registrations', getStudentRegistrations);
-router.post('/users/:id/assign-section', assignStudentToSection);
 
-// ── Registrations ────────────────────────────────────────
-router.get('/registrations/pending', getPendingRegistrations);
-router.put('/registrations/:id/approve', approveRegistration);
-router.put('/registrations/:id/reject', rejectRegistration);
-
-// ── Batch Management ─────────────────────────────────────
+// ── Batches (read-only) ──────────────────────────────────
 router.get('/batches', getFacultyBatches);
 router.get('/batches/:id', getFacultyBatchById);
-router.post('/batches', createFacultyBatch);
-router.put('/batches/:id', updateFacultyBatch);
-router.delete('/batches/:id', deleteFacultyBatch);
 
-// ── Section Management ───────────────────────────────────
+// ── Sections (read-only) ─────────────────────────────────
 router.get('/batches/:id/sections', getBatchSections);
-router.post('/batches/:id/sections', createBatchSection);
 router.get('/sections/:id', getSectionById);
-router.put('/sections/:id', updateBatchSection);
-router.delete('/sections/:id', deleteBatchSection);
 
-// ── Teachers (read-only — assignment is via courses now) ─
+// ── Teachers (read-only) ─────────────────────────────────
 router.get('/teachers', getFacultyTeachers);
 router.get('/teachers/:id', getFacultyTeacherById);
 
-// ── Courses ──────────────────────────────────────────────
+// ── Courses (read-only) ──────────────────────────────────
 router.get('/courses', getFacultyCourses);
 router.get('/courses/:id', getCourseById);
-router.post('/courses', createCourse);
-router.put('/courses/:id', updateCourse);
-router.delete('/courses/:id', deleteCourse);
 
-// ── Teacher ↔ Course Assignments ─────────────────────────
-router.post('/courses/:id/teachers', assignTeacherToCourse);
-router.delete('/courses/:id/teachers/:teacherId', removeTeacherFromCourse);
-
-// ── Course Offerings (Course → Section + Semester) ───────
+// ── Offerings (read-only) ────────────────────────────────
 router.get('/offerings', getCourseOfferings);
-router.post('/offerings', createCourseOffering);
-router.delete('/offerings/:id', deleteCourseOffering);
+
+// ── Analytics ────────────────────────────────────────────────
+router.get('/analytics', getDeanAnalytics);
+router.get('/reports', getDeanReports);
 
 export default router;

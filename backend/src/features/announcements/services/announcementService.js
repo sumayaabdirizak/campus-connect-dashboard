@@ -7,6 +7,7 @@ import {
 import { loadUserAnnouncementScope } from "../../../utils/userAnnouncementScope.js";
 import {
   canUserSeeAnnouncement,
+  isPrismaAnnouncementSchemaDriftError,
 } from "./announcementVisibility.service.js";
 import { sanitizeAnnouncementHtml } from "./announcementHtml.js";
 import { mergeAnnouncementTargetRows, replaceAnnouncementTargets } from "./announcementTargets.service.js";
@@ -181,8 +182,6 @@ export function toPrismaPriority(p) {
  */
 export function deriveInitialStatus(parsed) {
   if (parsed.status === "DRAFT") return "DRAFT";
-  const pub = normalizePublishedAt(parsed.publishedAt);
-  if (pub && pub.getTime() > Date.now()) return "SCHEDULED";
   return "PUBLISHED";
 }
 
@@ -328,7 +327,13 @@ export async function prepareCreateAnnouncementData(user, parsed) {
   const pinWindowActive = Boolean(expiresAt && expiresAt.getTime() > Date.now());
   const isPinned = pinWindowActive;
   const status = deriveInitialStatus(parsed);
-  const publishedAtForRow = status === "DRAFT" ? null : normalizePublishedAt(parsed.publishedAt);
+  let publishedAtForRow = status === "DRAFT" ? null : normalizePublishedAt(parsed.publishedAt);
+  // Immediate publish: stamp now so recipients see it and metadata is unambiguous.
+  if (status === "PUBLISHED") {
+    if (publishedAtForRow == null || publishedAtForRow.getTime() > Date.now()) {
+      publishedAtForRow = new Date();
+    }
+  }
   const bodyMarkdown =
     typeof parsed.bodyMarkdown === "string" && parsed.bodyMarkdown.trim()
       ? parsed.bodyMarkdown.trim()
@@ -510,6 +515,71 @@ export async function createAnnouncement(user, parsed) {
 }
 
 /**
+ * Soft-deletes (archives) an announcement. SUPER_ADMIN may delete any
+ * announcement; DEAN may only delete announcements anchored to their own
+ * faculty — mirrors the same defence-in-depth check in `updateAnnouncement`
+ * and `togglePin`, which the route previously skipped (cross-faculty DEAN
+ * delete was possible via role check alone).
+ * @param {number} announcementId
+ * @param {import("jsonwebtoken").JwtPayload & { sub: string; role: string }} jwtUser
+ */
+export async function deleteAnnouncement(announcementId, jwtUser) {
+  const userId = Number(jwtUser.sub);
+  const role = String(jwtUser.role).toUpperCase();
+
+  const announcement = await prisma.announcement.findUnique({
+    where: { id: announcementId },
+    include: { targets: { select: { scopeType: true, scopeId: true } } },
+  });
+  if (!announcement) {
+    return { ok: false, status: 404, message: "Announcement not found" };
+  }
+
+  if (role === "DEAN") {
+    const deanProfile = await prisma.deanProfile.findUnique({
+      where: { userId },
+      select: { facultyId: true },
+    });
+    if (!deanProfile) {
+      return { ok: false, status: 403, message: DEAN_SCOPE_FORBIDDEN };
+    }
+    const announcementFacultyIds = new Set();
+    if (announcement.facultyId != null) announcementFacultyIds.add(announcement.facultyId);
+    for (const t of announcement.targets ?? []) {
+      if (String(t.scopeType).toUpperCase() === "FACULTY") {
+        announcementFacultyIds.add(Number(t.scopeId));
+      }
+    }
+    for (const fid of announcementFacultyIds) {
+      if (fid !== deanProfile.facultyId) {
+        announcementLog("warn", "announcement.dean_cross_faculty_delete_blocked", {
+          announcementId,
+          deanUserId: userId,
+          deanFacultyId: deanProfile.facultyId,
+          announcementFacultyId: fid,
+        });
+        return { ok: false, status: 403, message: DEAN_SCOPE_FORBIDDEN };
+      }
+    }
+  }
+
+  const beforeSnap = previewAnnouncementSnapshot(announcement);
+  try {
+    await prisma.announcement.update({
+      where: { id: announcementId },
+      data: { isActive: false, status: "ARCHIVED" },
+    });
+  } catch (err) {
+    if (!isPrismaAnnouncementSchemaDriftError(err)) throw err;
+    await prisma.announcement.update({
+      where: { id: announcementId },
+      data: { isActive: false },
+    });
+  }
+  return { ok: true, beforeSnap };
+}
+
+/**
  * @param {number} announcementId
  * @param {import("jsonwebtoken").JwtPayload & { sub: string; role: string }} jwtUser
  * @param {object} parsed
@@ -601,8 +671,9 @@ export async function updateAnnouncement(announcementId, jwtUser, parsed) {
 
   if (parsed.publishedAt !== undefined) {
     const st = prevStatus;
+    const publishingNow = explicitNextStatus === "PUBLISHED";
     if (st === "SCHEDULED") {
-      if (publishedAt != null) {
+      if (publishedAt != null && !publishingNow) {
         const chk = validatePublishedAtForScheduleUpsert({
           status: explicitNextStatus ?? announcement.status,
           publishedAt,
@@ -633,13 +704,26 @@ export async function updateAnnouncement(announcementId, jwtUser, parsed) {
   if (prevStatus === "PUBLISHED" && explicitNextStatus === "SCHEDULED") {
     return { ok: false, status: 400, message: "Cannot move a published announcement to scheduled" };
   }
-  if (explicitNextStatus === "PUBLISHED" && publishedAt && publishedAt.getTime() > Date.now()) {
+  if (
+    explicitNextStatus === "PUBLISHED" &&
+    publishedAt &&
+    publishedAt.getTime() > Date.now() &&
+    parsed.publishedAt === undefined
+  ) {
     return {
       ok: false,
       status: 400,
       message:
         "Cannot mark as published before the scheduled publish time; reschedule, wait for publish, or cancel schedule",
     };
+  }
+  if (explicitNextStatus === "PUBLISHED" && parsed.publishedAt !== undefined) {
+    const pubMs = publishedAt?.getTime();
+    if (pubMs != null && !Number.isNaN(pubMs) && pubMs <= Date.now()) {
+      publishedAt = new Date();
+    } else if (publishedAt == null) {
+      publishedAt = new Date();
+    }
   }
   if (
     prevStatus === "SCHEDULED" &&
@@ -741,12 +825,14 @@ export async function updateAnnouncement(announcementId, jwtUser, parsed) {
     nextStatus = "DRAFT";
   } else if (parsed.status != null) {
     const allowed = new Set(["DRAFT", "SCHEDULED", "PUBLISHED", "EXPIRED", "ARCHIVED"]);
-    if (allowed.has(String(parsed.status))) {
-      nextStatus = String(parsed.status);
+    const requested = String(parsed.status);
+    if (allowed.has(requested)) {
+      nextStatus = requested === "SCHEDULED" ? "PUBLISHED" : requested;
     }
   } else if (publishedAt && publishedAt.getTime() > Date.now()) {
-    nextStatus = "SCHEDULED";
-  } else if (publishedAt && publishedAt.getTime() <= Date.now() && announcement.status === "SCHEDULED") {
+    publishedAt = new Date();
+    nextStatus = announcement.status === "DRAFT" ? "DRAFT" : "PUBLISHED";
+  } else if (announcement.status === "SCHEDULED") {
     nextStatus = "PUBLISHED";
   }
 

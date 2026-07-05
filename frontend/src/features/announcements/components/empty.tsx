@@ -6,8 +6,6 @@ import { motion } from 'framer-motion';
 interface AnnouncementEmptyProps {
   hasFilters?: boolean;
   onClearFilters?: () => void;
-  /** Creator-only Scheduled tab: no upcoming scheduled posts. */
-  scheduledTabEmpty?: boolean;
   /** Creator-only Drafts tab: no saved drafts. */
   draftsTabEmpty?: boolean;
 }
@@ -15,23 +13,18 @@ interface AnnouncementEmptyProps {
 export function AnnouncementEmpty({
   hasFilters,
   onClearFilters,
-  scheduledTabEmpty,
   draftsTabEmpty
 }: AnnouncementEmptyProps) {
   const title = hasFilters
     ? 'No matches'
-    : scheduledTabEmpty
-      ? 'No scheduled announcements'
-      : draftsTabEmpty
-        ? 'No drafts yet'
-        : 'No announcements yet';
+    : draftsTabEmpty
+      ? 'No drafts yet'
+      : 'No announcements yet';
   const description = hasFilters
     ? 'Try widening your filters or clearing the search to see more posts.'
-    : scheduledTabEmpty
-      ? 'When you use "Schedule for later" in the composer, those posts show up here until they go live. Nothing is queued right now.'
-      : draftsTabEmpty
-        ? 'Save a post as a draft from the composer to resume it here. Drafts are only visible to you.'
-        : 'When your department posts a notice, it will appear here in your feed.';
+    : draftsTabEmpty
+      ? 'Save a post as a draft from the composer to resume it here. Drafts are only visible to you.'
+      : 'When your department posts a notice, it will appear here in your feed.';
 
   return (
     <motion.div

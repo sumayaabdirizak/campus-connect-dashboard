@@ -25,9 +25,11 @@ import {
 import {
   ArrowLeft,
   CheckCircle2,
+  FileText,
   Loader2,
   Sparkles,
   Wand2,
+  X,
   XCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -42,6 +44,12 @@ import type {
   GenerateQuestionsInput
 } from '../api/question-bank-types';
 import type { CreateQuizInput, Quiz, QuizQuestionType } from '../api/quizzes-types';
+import {
+  AI_SOURCE_ACCEPT,
+  AI_SOURCE_MAX_CHARS,
+  clampSourceMaterial,
+  extractSourceTextFromFile
+} from './_shared/extract-source-text';
 
 /// Three destinations the teacher can target with the generated questions:
 ///   - 'bank'     → save into the offering's Question Bank (no quizId needed)
@@ -118,6 +126,8 @@ export function AiGenerateDialog({
   const [quizTitle, setQuizTitle] = useState('');
   const [prompt, setPrompt] = useState('');
   const [sourceMaterial, setSourceMaterial] = useState('');
+  const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+  const [isExtractingSource, setIsExtractingSource] = useState(false);
   const [count, setCount] = useState(10);
   const [questionTypes, setQuestionTypes] = useState<QuizQuestionType[]>([
     'MCQ'
@@ -140,6 +150,8 @@ export function AiGenerateDialog({
       setQuizTitle('');
       setPrompt('');
       setSourceMaterial('');
+      setSourceFileName(null);
+      setIsExtractingSource(false);
       setCount(10);
       setQuestionTypes(['MCQ']);
       setDifficulty('mixed');
@@ -153,6 +165,38 @@ export function AiGenerateDialog({
     setQuestionTypes((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
+  };
+
+  const handleSourceFile = async (file: File | undefined) => {
+    if (!file) return;
+    setIsExtractingSource(true);
+    try {
+      const extracted = await extractSourceTextFromFile(file);
+      if (!extracted.trim()) {
+        toast.error('No readable text found in that file');
+        return;
+      }
+
+      const header = `--- ${file.name} ---`;
+      const merged = sourceMaterial.trim()
+        ? `${sourceMaterial.trim()}\n\n${header}\n\n${extracted.trim()}`
+        : `${header}\n\n${extracted.trim()}`;
+
+      const clamped = clampSourceMaterial(merged);
+      if (clamped.length < merged.length) {
+        toast.warning(
+          `Source text was trimmed to ${AI_SOURCE_MAX_CHARS.toLocaleString()} characters`
+        );
+      }
+
+      setSourceMaterial(clamped);
+      setSourceFileName(file.name);
+      toast.success(`Loaded text from ${file.name}`);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not read that file');
+    } finally {
+      setIsExtractingSource(false);
+    }
   };
 
   const handleGenerate = () => {
@@ -358,17 +402,60 @@ export function AiGenerateDialog({
                   (optional — chapter text, lecture notes, etc.)
                 </span>
               </Label>
+
+              <div className='flex flex-wrap items-center gap-2'>
+                <Input
+                  id='ai-source-file'
+                  type='file'
+                  accept={AI_SOURCE_ACCEPT}
+                  disabled={isGenerating || isExtractingSource}
+                  className='max-w-xs text-xs file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs'
+                  onChange={(e) => {
+                    void handleSourceFile(e.target.files?.[0]);
+                    e.target.value = '';
+                  }}
+                />
+                {sourceFileName ? (
+                  <Badge variant='secondary' className='gap-1 text-[11px] font-normal'>
+                    <FileText className='w-3 h-3' />
+                    {sourceFileName}
+                    <button
+                      type='button'
+                      className='ml-0.5 rounded-sm hover:bg-muted'
+                      aria-label='Clear loaded file label'
+                      onClick={() => setSourceFileName(null)}
+                    >
+                      <X className='w-3 h-3' />
+                    </button>
+                  </Badge>
+                ) : null}
+                {isExtractingSource ? (
+                  <span className='inline-flex items-center gap-1 text-[11px] text-muted-foreground'>
+                    <Loader2 className='w-3 h-3 animate-spin' />
+                    Reading file…
+                  </span>
+                ) : null}
+              </div>
+              <p className='text-[11px] text-muted-foreground'>
+                Upload PDF, DOCX, or plain text (.txt, .md, .csv) — extracted text appears below.
+                You can still paste or edit manually.
+              </p>
+
               <Textarea
                 id='ai-source'
                 rows={6}
-                placeholder='Paste reference material here. When provided, the AI grounds every question in this content instead of guessing.'
+                placeholder='Paste reference material here, or upload a file above. When provided, the AI grounds every question in this content instead of guessing.'
                 value={sourceMaterial}
-                onChange={(e) => setSourceMaterial(e.target.value)}
-                disabled={isGenerating}
-                className='font-mono text-xs'
+                onChange={(e) => {
+                  setSourceMaterial(e.target.value.slice(0, AI_SOURCE_MAX_CHARS));
+                  if (!e.target.value.trim()) setSourceFileName(null);
+                }}
+                disabled={isGenerating || isExtractingSource}
+                className='font-mono text-xs select-text'
               />
               <p className='text-[11px] text-muted-foreground tabular-nums'>
-                {sourceMaterial.length.toLocaleString()} / 30,000 characters
+                {sourceMaterial.length.toLocaleString()} / {AI_SOURCE_MAX_CHARS.toLocaleString()}{' '}
+                characters
               </p>
             </div>
 
@@ -498,6 +585,7 @@ export function AiGenerateDialog({
               onClick={handleGenerate}
               disabled={
                 isGenerating ||
+                isExtractingSource ||
                 !prompt.trim() ||
                 (isNewQuiz && !quizTitle.trim())
               }

@@ -214,7 +214,7 @@ export function AnnouncementContent({
     }
     if (kind === 'md' && announcement.bodyMarkdown) {
       return (
-        <div className={cn('min-w-0', clampClass)}>
+        <div className={cn('select-text min-w-0', clampClass)}>
           <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
             {announcement.bodyMarkdown}
           </ReactMarkdown>
@@ -223,7 +223,11 @@ export function AnnouncementContent({
     }
     const preview =
       !expanded && needsTruncate && plainBody.length > 150 ? `${plainBody.slice(0, 150)}…` : plainBody;
-    return <p className={cn('text-[15px] leading-relaxed text-muted-foreground', clampClass)}>{preview}</p>;
+    return (
+      <p className={cn('select-text text-[15px] leading-relaxed text-muted-foreground', clampClass)}>
+        {preview}
+      </p>
+    );
   };
 
   return (

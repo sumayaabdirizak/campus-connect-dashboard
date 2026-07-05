@@ -18,7 +18,7 @@ const META_THEME_COLORS = {
 export const metadata: Metadata = {
   title: 'Campus Connect — Jazeera University',
   description:
-    'Campus Connect — the Jazeera University student portal for courses, assignments, quizzes, attendance, discussions, and announcements.'
+    'Campus Connect — the Jazeera University student portal for courses, assignments, quizzes, discussions, and announcements.'
 };
 
 export const viewport: Viewport = {
@@ -34,6 +34,15 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
       <head>
+        {/* Modern, consistent color emoji on every OS (Windows otherwise
+            renders the flat Segoe set). Wired into --font-sans in the theme
+            files so all emoji — reactions, messages, pickers — use it. */}
+        <link rel='preconnect' href='https://fonts.googleapis.com' />
+        <link rel='preconnect' href='https://fonts.gstatic.com' crossOrigin='anonymous' />
+        <link
+          rel='stylesheet'
+          href='https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap'
+        />
         <script
           dangerouslySetInnerHTML={{
             __html: `

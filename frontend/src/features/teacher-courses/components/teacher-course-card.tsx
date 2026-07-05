@@ -33,17 +33,25 @@ export function TeacherCourseCard({ offering }: TeacherCourseCardProps) {
     <Link href={`/dashboard/courses/${offering.id}`}>
       <Card className='overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-border bg-card rounded-2xl flex flex-col h-full'>
         <div className='relative h-48 w-full overflow-hidden shrink-0'>
-          <Image
-            src={
-              offering.thumbnail ||
-              `https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&q=80&w=800`
-            }
-            alt={offering.courseName}
-            fill
-            sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
-            priority
-            className='object-cover group-hover:scale-105 transition-transform duration-700'
-          />
+          {offering.thumbnail?.trim() ? (
+            // `unoptimized` bypasses the Next image optimizer, which in dev
+            // refuses to fetch uploads served from localhost (a private IP).
+            <Image
+              src={offering.thumbnail}
+              alt={offering.courseName}
+              fill
+              unoptimized
+              sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+              priority
+              className='object-cover group-hover:scale-105 transition-transform duration-700'
+            />
+          ) : (
+            <div className='flex h-full w-full items-center justify-center bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500'>
+              <span className='text-5xl font-bold text-white/90'>
+                {(offering.courseCode || offering.courseName || 'C').slice(0, 2).toUpperCase()}
+              </span>
+            </div>
+          )}
           <div className='absolute top-3 right-3'>
             <Button variant='secondary' size='icon' className='h-8 w-8 bg-background/90 backdrop-blur-md hover:bg-background shadow-sm'>
               <MoreVertical className='h-5 w-5' />

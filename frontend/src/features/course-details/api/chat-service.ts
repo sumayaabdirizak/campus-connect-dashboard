@@ -1,7 +1,6 @@
 import { ChatAttachment, ChatMessage, ChatRoom } from './chat-types';
-import { apiClient, ensureCsrfToken } from '@/lib/api-client';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { apiClient } from '@/lib/api-client';
+import { uploadJson } from '@/lib/upload-client';
 
 export async function getChatRoom(
   courseOfferingId: string,
@@ -41,16 +40,8 @@ export async function uploadChatAttachments(
 ): Promise<{ count: number; attachments: ChatAttachment[] }> {
   const fd = new FormData();
   for (const f of files) fd.append('files', f);
-  const csrfToken = await ensureCsrfToken();
-  const res = await fetch(`${API_BASE_URL}/chat/messages/${messageId}/attachments`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
-    body: fd
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Upload failed: ${res.status}`);
-  }
-  return res.json();
+  return uploadJson<{ count: number; attachments: ChatAttachment[] }>(
+    `/chat/messages/${messageId}/attachments`,
+    fd
+  );
 }

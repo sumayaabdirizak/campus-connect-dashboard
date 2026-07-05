@@ -29,6 +29,7 @@ import {
   listInterestTags,
   listInvites,
   listMyClubs,
+  listAllFacultyClubs,
   listPendingClubs,
   listRecommendedClubs,
   promoteMember,
@@ -66,6 +67,7 @@ export const clubKeys = {
 
   // Dean
   pending: () => [...clubKeys.all, 'pending'] as const,
+  allFaculty: (status?: string) => [...clubKeys.all, 'dean-all', status ?? 'ALL'] as const,
 
   // Members & requests
   members: (clubId: number) => [...clubKeys.all, 'members', clubId] as const,
@@ -121,6 +123,14 @@ export function usePendingClubs() {
   return useQuery({
     queryKey: clubKeys.pending(),
     queryFn: listPendingClubs,
+    staleTime: 15_000,
+  })
+}
+
+export function useAllFacultyClubs(status?: string) {
+  return useQuery({
+    queryKey: clubKeys.allFaculty(status),
+    queryFn: () => listAllFacultyClubs(status),
     staleTime: 15_000,
   })
 }

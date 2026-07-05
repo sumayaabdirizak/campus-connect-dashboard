@@ -84,6 +84,11 @@ export const createClubAsDean = (body: CreateClubPayload) =>
 export const listPendingClubs = () =>
   apiClient<{ clubs: ClubCreateResponse['club'][] }>('/clubs/dean/pending')
 
+export const listAllFacultyClubs = (status?: string) =>
+  apiClient<{ clubs: ClubCreateResponse['club'][] }>(
+    `/clubs/dean/all${status ? `?status=${status}` : ''}`
+  )
+
 export const approveClub = (clubId: number) =>
   apiClient<ClubCreateResponse>(`/clubs/${clubId}/approve`, { method: 'POST' })
 

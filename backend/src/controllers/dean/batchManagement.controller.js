@@ -65,7 +65,7 @@ export const getFacultyBatches = async (req, res) => {
         academicYear: true,
         sections: {
           include: {
-            _count: { select: { studentRegistrations: true, offerings: true } }
+            _count: { select: { studentRegistrations: true, courseOfferings: true } }
           }
         },
         _count: { select: { sections: true } }
@@ -107,7 +107,7 @@ export const getFacultyBatchById = async (req, res) => {
                 student: { select: { id: true, full_name: true, number: true, email: true } }
               }
             },
-            offerings: {
+            courseOfferings: {
               include: {
                 course: { select: { name: true, code: true } }
               }
@@ -290,8 +290,8 @@ export const getBatchSections = async (req, res) => {
     const sections = await prisma.batchSection.findMany({
       where: { batchId: Number(batchId) },
       include: {
-        _count: { select: { studentRegistrations: true, offerings: true } },
-        offerings: {
+        _count: { select: { studentRegistrations: true, courseOfferings: true } },
+        courseOfferings: {
           include: {
             course: { select: { id: true, name: true, code: true } }
           }
@@ -328,7 +328,7 @@ export const getSectionById = async (req, res) => {
             currentSemester: true
           }
         },
-        offerings: {
+        courseOfferings: {
           include: {
             course: { select: { id: true, name: true, code: true } }
           }

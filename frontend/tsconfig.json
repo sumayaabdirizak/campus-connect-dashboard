@@ -14,7 +14,8 @@
     "jsx": "react-jsx",
     "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@shared/*": ["../shared/*"]
     },
     "incremental": true,
     "plugins": [
@@ -28,7 +29,9 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts",
-    ".next/dev/types/**/*.ts"
+    ".next/dev/types/**/*.ts",
+    "../shared/**/*.ts",
+    "../shared/**/*.d.ts"
   ],
   "exclude": ["node_modules"]
 }

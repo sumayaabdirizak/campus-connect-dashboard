@@ -1,4 +1,4 @@
-﻿-- CreateEnum
+-- CreateEnum
 CREATE TYPE "GroupMemberRole" AS ENUM ('LEADER', 'MEMBER');
 
 -- AlterTable

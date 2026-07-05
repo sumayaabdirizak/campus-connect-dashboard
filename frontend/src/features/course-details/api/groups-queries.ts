@@ -60,8 +60,17 @@ export function useAddGroupMember(courseOfferingId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ groupId, memberId, role }: { groupId: string; memberId: number; role?: GroupMemberRole }) =>
-      addGroupMember(groupId, memberId, role),
+    mutationFn: ({
+      groupId,
+      memberId,
+      role,
+      transfer
+    }: {
+      groupId: string;
+      memberId: number;
+      role?: GroupMemberRole;
+      transfer?: boolean;
+    }) => addGroupMember(groupId, memberId, role, transfer),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groupKeys.list(courseOfferingId) });
     }

@@ -23,6 +23,7 @@ import {
 import { ImagePicker } from './image-picker';
 import { Icons } from '@/components/icons';
 import { useAuthStore } from '@/lib/auth-store';
+import { resolvePublicAssetUrl } from '@/lib/resolve-public-asset-url';
 import { toast } from 'sonner';
 import { useQuery, useQueryClient } from '@/lib/async-query';
 import { apiClient } from '@/lib/api-client';
@@ -71,13 +72,6 @@ function toDatetimeLocalValue(iso: string | null | undefined): string {
 
 type ActiveDaysPreset = 'off' | '1' | '3' | '5' | '7';
 
-/** Anchor for N-day presets: scheduled publish time when set, otherwise "now". */
-function resolvePinPresetAnchor(scheduleForLater: boolean, publishedAtLocal: string): Date | undefined {
-  if (!scheduleForLater || !publishedAtLocal.trim()) return undefined;
-  const d = new Date(publishedAtLocal);
-  return Number.isNaN(d.getTime()) ? undefined : d;
-}
-
 function computeExpiresIsoFromPreset(preset: ActiveDaysPreset, anchor?: Date): string | null {
   if (preset === 'off') return null;
   const days = Number(preset);
@@ -89,21 +83,13 @@ function computeExpiresIsoFromPreset(preset: ActiveDaysPreset, anchor?: Date): s
   return d.toISOString();
 }
 
-function resolvePublicAssetUrl(url: string): string {
-  if (!url) return url;
-  if (url.startsWith('http://') || url.startsWith('https://')) return url;
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
-  const origin = api.replace(/\/api\/?$/, '');
-  return url.startsWith('/') ? `${origin}${url}` : `${origin}/${url}`;
-}
-
 function attachmentsToHydratedImages(attachments: Attachment[] | undefined): ImageFile[] {
   if (!Array.isArray(attachments)) return [];
   return attachments
     .filter((a) => String(a.fileType).toLowerCase() === 'image' && (a.fileUrl || a.thumbnailUrl))
     .map((a) => ({
       id: `server-${a.id}`,
-      preview: resolvePublicAssetUrl(String(a.thumbnailUrl || a.fileUrl || '')),
+      preview: resolvePublicAssetUrl(String(a.thumbnailUrl || a.fileUrl || '')) ?? '',
       altText: a.altText ?? undefined
     }));
 }
@@ -114,7 +100,7 @@ function imageUrlsToHydratedImages(urls: string[] | undefined): ImageFile[] {
     .filter((u) => typeof u === 'string' && u.trim().length > 0)
     .map((u, i) => ({
       id: `url-${i}-${u.slice(0, 24)}`,
-      preview: resolvePublicAssetUrl(u.trim())
+      preview: resolvePublicAssetUrl(u.trim()) ?? '',
     }));
 }
 
@@ -197,8 +183,6 @@ export function CreateDialog({
   const [expiresAtCustom, setExpiresAtCustom] = useState('');
   const [deadlineAtLocal, setDeadlineAtLocal] = useState('');
   const [notifySms, setNotifySms] = useState(false);
-  const [scheduleForLater, setScheduleForLater] = useState(false);
-  const [publishedAtLocal, setPublishedAtLocal] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -212,9 +196,11 @@ export function CreateDialog({
   // section list of every selected batch via parallel fetches.
   const selectedBatchesKey = selectedBatches.slice().sort().join(',');
   const { data: batchesPayload } = useQuery({
-    queryKey: ['announcements', 'batches'],
+    queryKey: ['announcements', 'batches', isDean ? 'dean' : 'all'],
     queryFn: () =>
-      apiClient<any[] | { batches?: any[]; results?: any[]; data?: any[] }>('/batches'),
+      isDean
+        ? apiClient<any[] | { batches?: any[]; results?: any[]; data?: any[] }>('/dean/batches')
+        : apiClient<any[] | { batches?: any[]; results?: any[]; data?: any[] }>('/batches'),
     enabled: open
   });
   const { data: sectionsPayload } = useQuery({
@@ -255,12 +241,6 @@ export function CreateDialog({
     const labels = { 1: 'Compose', 2: 'Audience', 3: 'Review' } as const;
     setStepLive(`Step ${step} of 3: ${labels[step]}`);
   }, [step]);
-
-  const minPublishAtLocal = useMemo(() => {
-    const d = new Date(Date.now() + 3 * 60 * 1000);
-    d.setSeconds(0, 0);
-    return toDatetimeLocalValue(d.toISOString());
-  }, [open]);
 
   const deanBatchesRaw: any = batchesPayload as any;
   const deanBatches: DeanBatchLite[] = Array.isArray(deanBatchesRaw)
@@ -486,13 +466,12 @@ export function CreateDialog({
     const plain = htmlToPlain(content);
     const { primary, targets } = buildTargetingPayload();
     const targetRoles = targetRolesFromFlags(includeStudents, includeTeachers);
-    const pinAnchor = resolvePinPresetAnchor(scheduleForLater, publishedAtLocal);
     let expiresAtIso: string | null = null;
     if (expiresAtCustom.trim()) {
       const d = new Date(expiresAtCustom);
       expiresAtIso = Number.isNaN(d.getTime()) ? null : d.toISOString();
     } else if (activeDaysPreset !== 'off') {
-      expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset, pinAnchor);
+      expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset);
     }
     let deadlineAtIso: string | null = null;
     if (deadlineAtLocal.trim()) {
@@ -507,12 +486,11 @@ export function CreateDialog({
       priority,
       targetType,
       targetRoles,
-      expiresAt: expiresAtIso,
-      deadlineAt: deadlineAtIso,
       status: 'DRAFT',
-      publishedAt: null,
       ...primary,
-      ...(targets.length > 1 ? { targets } : {})
+      ...(targets.length > 1 ? { targets } : {}),
+      ...(expiresAtIso ? { expiresAt: expiresAtIso } : {}),
+      ...(deadlineAtIso ? { deadlineAt: deadlineAtIso } : {})
     };
   }, [
     content,
@@ -524,22 +502,19 @@ export function CreateDialog({
     targetType,
     expiresAtCustom,
     activeDaysPreset,
-    deadlineAtLocal,
-    scheduleForLater,
-    publishedAtLocal
+    deadlineAtLocal
   ]);
 
   const buildDraftFormData = useCallback((): FormData => {
     const plain = htmlToPlain(content);
     const { primary, targets } = buildTargetingPayload();
     const targetRoles = targetRolesFromFlags(includeStudents, includeTeachers);
-    const pinAnchor = resolvePinPresetAnchor(scheduleForLater, publishedAtLocal);
     let expiresAtIso: string | null = null;
     if (expiresAtCustom.trim()) {
       const d = new Date(expiresAtCustom);
       expiresAtIso = Number.isNaN(d.getTime()) ? null : d.toISOString();
     } else if (activeDaysPreset !== 'off') {
-      expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset, pinAnchor);
+      expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset);
     }
     let deadlineAtIso: string | null = null;
     if (deadlineAtLocal.trim()) {
@@ -580,9 +555,7 @@ export function CreateDialog({
     expiresAtCustom,
     activeDaysPreset,
     deadlineAtLocal,
-    images,
-    scheduleForLater,
-    publishedAtLocal
+    images
   ]);
 
   const getRemoteDraftId = useCallback((): number | null => {
@@ -713,8 +686,11 @@ export function CreateDialog({
     if (autosaveDebounceRef.current) clearTimeout(autosaveDebounceRef.current);
     autosaveDebounceRef.current = setTimeout(() => {
       autosaveDebounceRef.current = null;
-      void persistDraftNow({ silent: true }).catch(() => {
+      void persistDraftNow({ silent: true }).catch((err: unknown) => {
+        const description =
+          err instanceof Error && err.message ? err.message : undefined;
         toast.error('Autosave failed', {
+          description,
           action: {
             label: 'Retry',
             onClick: () => void persistDraftNow({ silent: false })
@@ -758,30 +734,17 @@ export function CreateDialog({
 
     setIsSubmitting(true);
     try {
-      if (scheduleForLater) {
-        if (!publishedAtLocal.trim()) {
-          toast.error('Choose a date and time to schedule this announcement');
-          setIsSubmitting(false);
-          return;
-        }
-        const t = new Date(publishedAtLocal).getTime();
-        if (!Number.isFinite(t) || t < Date.now() + 120_000) {
-          toast.error('Publish time must be at least 2 minutes from now');
-          setIsSubmitting(false);
-          return;
-        }
-      }
       const plain = htmlToPlain(content);
       const { primary, targets } = buildTargetingPayload();
       const targetRoles = targetRolesFromFlags(includeStudents, includeTeachers);
-      const pinAnchor = resolvePinPresetAnchor(scheduleForLater, publishedAtLocal);
+      const publishNowIso = new Date().toISOString();
 
       let expiresAtIso: string | null = null;
       if (expiresAtCustom.trim()) {
         const d = new Date(expiresAtCustom);
         expiresAtIso = Number.isNaN(d.getTime()) ? null : d.toISOString();
       } else if (activeDaysPreset !== 'off') {
-        expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset, pinAnchor);
+        expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset);
       }
 
       let deadlineAtIso: string | null = null;
@@ -802,14 +765,10 @@ export function CreateDialog({
           expiresAt: expiresAtIso,
           deadlineAt: deadlineAtIso,
           ...primary,
-          ...(targets.length > 1 ? { targets } : {})
+          ...(targets.length > 1 ? { targets } : {}),
+          status: 'PUBLISHED',
+          publishedAt: publishNowIso
         };
-        if (isEditMode && editingAnnouncement?.status === 'SCHEDULED' && !scheduleForLater) {
-          dto.status = 'DRAFT';
-          dto.publishedAt = null;
-        } else if (scheduleForLater && publishedAtLocal.trim()) {
-          dto.publishedAt = new Date(publishedAtLocal).toISOString();
-        }
         await onSubmit(dto);
       } else {
         const cid = composerRemoteIdRef.current;
@@ -826,14 +785,10 @@ export function CreateDialog({
             expiresAt: expiresAtIso,
             deadlineAt: deadlineAtIso,
             ...primary,
-            ...(targets.length > 1 ? { targets } : {})
+            ...(targets.length > 1 ? { targets } : {}),
+            status: 'PUBLISHED',
+            publishedAt: publishNowIso
           };
-          if (scheduleForLater && publishedAtLocal.trim()) {
-            publishDto.status = 'SCHEDULED';
-            publishDto.publishedAt = new Date(publishedAtLocal).toISOString();
-          } else {
-            publishDto.status = 'PUBLISHED';
-          }
           await updateAnnouncement(cid, publishDto);
           void queryClient.invalidateQueries({ queryKey: ['announcements'] });
         } else {
@@ -857,9 +812,8 @@ export function CreateDialog({
           if (targets.length > 1) payload.append('targets', JSON.stringify(targets));
           if (expiresAtIso) payload.append('expiresAt', expiresAtIso);
           if (deadlineAtIso) payload.append('deadlineAt', deadlineAtIso);
-          if (scheduleForLater && publishedAtLocal.trim()) {
-            payload.append('publishedAt', new Date(publishedAtLocal).toISOString());
-          }
+          payload.append('status', 'PUBLISHED');
+          payload.append('publishedAt', publishNowIso);
           if (notifySms) payload.append('notifySms', 'true');
 
           images.forEach((img) => {
@@ -900,8 +854,6 @@ export function CreateDialog({
     setExpiresAtCustom('');
     setDeadlineAtLocal('');
     setNotifySms(false);
-    setScheduleForLater(false);
-    setPublishedAtLocal('');
     setFormError(null);
     setErrors({});
     images.forEach((img) => {
@@ -941,14 +893,6 @@ export function CreateDialog({
     setExpiresAtCustom(toDatetimeLocalValue(editingAnnouncement.expiresAt));
     setDeadlineAtLocal(toDatetimeLocalValue(editingAnnouncement.deadlineAt));
     setNotifySms(false);
-    const pubAt = editingAnnouncement.publishedAt;
-    const isSched =
-      editingAnnouncement.status === 'SCHEDULED' &&
-      Boolean(pubAt) &&
-      !Number.isNaN(new Date(String(pubAt)).getTime()) &&
-      new Date(String(pubAt)).getTime() > Date.now();
-    setScheduleForLater(Boolean(isSched));
-    setPublishedAtLocal(isSched ? toDatetimeLocalValue(pubAt) : '');
 
     // Hydrate multi-target arrays. Each level is the union of:
     //   1. the primary FK (if set), and
@@ -1404,48 +1348,11 @@ export function CreateDialog({
               </fieldset>
 
               <fieldset className='space-y-2'>
-                <legend className='text-xs font-medium text-foreground'>Publish</legend>
-                <label className='flex cursor-pointer items-start gap-3 rounded-xl border border-input bg-muted/30 px-4 py-3 text-sm'>
-                  <Checkbox
-                    checked={scheduleForLater}
-                    onCheckedChange={(v) => {
-                      setScheduleForLater(v === true);
-                      if (v !== true) setPublishedAtLocal('');
-                    }}
-                    className='mt-0.5'
-                    aria-label='Schedule for later'
-                  />
-                  <span>
-                    Schedule for later
-                    <span className='mt-1 block text-[11px] font-normal text-muted-foreground'>
-                      Recipients will not see this until the publish time. You can manage scheduled posts
-                      from the Scheduled tab.
-                    </span>
-                  </span>
-                </label>
-                {scheduleForLater && (
-                  <div className='space-y-1.5 ps-1'>
-                    <Label htmlFor='publish-at-local' className='text-[11px] text-muted-foreground'>
-                      Publish date and time
-                    </Label>
-                    <Input
-                      id='publish-at-local'
-                      type='datetime-local'
-                      min={minPublishAtLocal}
-                      value={publishedAtLocal}
-                      onChange={(e) => setPublishedAtLocal(e.target.value)}
-                      className='rounded-lg'
-                    />
-                  </div>
-                )}
-              </fieldset>
-
-              <fieldset className='space-y-2'>
                 <legend className='text-xs font-medium text-foreground'>Active days</legend>
                 <p className='text-[11px] text-muted-foreground'>
                   Active posts sort to the top for the selected number of days, then return to normal order (they
-                  stay visible as regular announcements). Day presets count from the scheduled publish time when
-                  you use Schedule for later; otherwise from when you post. Custom end overrides presets.
+                  stay visible as regular announcements). Day presets count from when you post. Custom end
+                  overrides presets.
                 </p>
                 <div className='flex flex-wrap gap-1 rounded-xl border border-input bg-muted/50 p-1'>
                   {(
@@ -1597,14 +1504,6 @@ export function CreateDialog({
                     <dt className='text-muted-foreground'>Priority</dt>
                     <dd className='font-medium capitalize text-foreground'>{priority}</dd>
                   </div>
-                  {scheduleForLater && publishedAtLocal && (
-                    <div className='flex items-center justify-between gap-3'>
-                      <dt className='text-muted-foreground'>Publish</dt>
-                      <dd className='font-medium text-foreground'>
-                        {new Date(publishedAtLocal).toLocaleString()}
-                      </dd>
-                    </div>
-                  )}
                   <div className='flex items-center justify-between gap-3'>
                     <dt className='text-muted-foreground'>Active until</dt>
                     <dd className='font-medium text-foreground'>
@@ -1613,8 +1512,7 @@ export function CreateDialog({
                           return new Date(expiresAtCustom).toLocaleString();
                         }
                         if (activeDaysPreset === 'off') return 'No active-days limit';
-                        const anchor = resolvePinPresetAnchor(scheduleForLater, publishedAtLocal);
-                        const iso = computeExpiresIsoFromPreset(activeDaysPreset, anchor);
+                        const iso = computeExpiresIsoFromPreset(activeDaysPreset);
                         return iso ? new Date(iso).toLocaleString() : '—';
                       })()}
                     </dd>

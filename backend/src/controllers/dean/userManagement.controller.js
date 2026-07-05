@@ -1,5 +1,4 @@
 import { prisma } from "../../db/prisma.js";
-import bcrypt from 'bcrypt';
 import { whereUsersInFaculty as inFacultyWhere } from "../../utils/scopeWhere.js";
 import { paginatedPayload } from "../../utils/pagination.js";
 import {
@@ -222,111 +221,7 @@ export const removeFacultyUser = async (req, res) => {
   }
 };
 
-// ─── 5. PENDING REGISTRATIONS ────────────────────────────────────────────────
-/**
- * GET /api/dean/registrations/pending
- * Returns users with status INACTIVE in this faculty (awaiting approval)
- */
-export const getPendingRegistrations = async (req, res) => {
-  try {
-    const { facultyId } = req;
-
-    const pending = await prisma.user.findMany({
-      where: inFacultyWhere(facultyId, { status: 'INACTIVE' }),
-      select: {
-        id: true, full_name: true, email: true, number: true, created_at: true,
-        role: { select: { name: true } },
-        studentProfile: { select: { student_number: true, admission_year: true } },
-        lecturerProfile: { select: { specialty: true } }
-      },
-      orderBy: { created_at: 'asc' }
-    });
-
-    res.json({
-      message: 'Pending registrations fetched',
-      count: pending.length,
-      registrations: pending.map(u => ({ ...u, role: u.role.name }))
-    });
-  } catch (e) {
-    res.status(500).json({ message: 'Failed to fetch pending registrations', error: e.message });
-  }
-};
-
-// ─── 6. APPROVE REGISTRATION ─────────────────────────────────────────────────
-/**
- * PUT /api/dean/registrations/:id/approve
- */
-export const approveRegistration = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { facultyId } = req;
-
-    const existing = await assertInFaculty(Number(id), facultyId, res);
-    if (!existing) return;
-
-    if (existing.status !== 'INACTIVE') {
-      return res.status(400).json({ message: `User is already ${existing.status}.` });
-    }
-
-    const approved = await prisma.user.update({
-      where: { id: Number(id) },
-      data: { status: 'ACTIVE' },
-      select: { id: true, full_name: true, email: true, status: true }
-    });
-
-    try {
-      await syncDiscussionMembershipsForUser(approved.id);
-    } catch (error) {
-      console.error("Failed to sync memberships after approve registration", {
-        userId: approved.id,
-        error: error?.message,
-      });
-    }
-
-    res.json({ message: 'Registration approved. User is now ACTIVE.', user: approved });
-  } catch (e) {
-    res.status(500).json({ message: 'Failed to approve registration', error: e.message });
-  }
-};
-
-// ─── 7. REJECT REGISTRATION ──────────────────────────────────────────────────
-/**
- * PUT /api/dean/registrations/:id/reject
- */
-export const rejectRegistration = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { facultyId } = req;
-
-    const existing = await assertInFaculty(Number(id), facultyId, res);
-    if (!existing) return;
-
-    if (existing.status !== 'INACTIVE') {
-      return res.status(400).json({ message: `User is already ${existing.status}.` });
-    }
-
-    const rejected = await prisma.user.update({
-      where: { id: Number(id) },
-      data: { status: 'SUSPENDED' },
-      select: { id: true, full_name: true, email: true, status: true }
-    });
-
-    try {
-      await syncDiscussionMembershipsForUser(rejected.id);
-    } catch (error) {
-      console.error("Failed to sync memberships after reject registration", {
-        userId: rejected.id,
-        error: error?.message,
-      });
-    }
-
-    res.json({ message: 'Registration rejected. User has been SUSPENDED.', user: rejected });
-  } catch (e) {
-    res.status(500).json({ message: 'Failed to reject registration', error: e.message });
-  }
-};
-
-// ─── 8. ASSIGN STUDENT TO BATCH SECTION ──────────────────────────────────────
+// ─── 5. ASSIGN STUDENT TO BATCH SECTION ──────────────────────────────────────
 /**
  * POST /api/dean/users/:id/assign-section
  * Body: { batchSectionId, academicYearId, semesterId }

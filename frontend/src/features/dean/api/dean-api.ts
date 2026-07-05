@@ -41,7 +41,7 @@ export interface DeanSection {
   id: number;
   name: string;
   batchId: number;
-  _count?: { studentRegistrations: number; offerings: number };
+  _count?: { studentRegistrations: number; courseOfferings: number };
 }
 
 export interface TeacherAssigning {
@@ -69,9 +69,8 @@ export interface Course {
   _count?: { offerings: number; teacherAssignings: number };
 }
 
-// ── User Management ────────────────────────────────────────────────────────
+// ── User Management (read-only) ────────────────────────────────────────────
 
-/** Backend `paginatedPayload` for GET /dean/users */
 type DeanUsersPaginatedApi = {
   results: DeanUser[];
   total: number;
@@ -85,55 +84,24 @@ export type DeanUsersListResponse = {
 };
 
 export const deanApi = {
-  // Users — API returns `results` + pagination fields; normalize for the UI.
   getUsers: async (params?: Record<string, string>): Promise<DeanUsersListResponse> => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     const raw = await apiClient<DeanUsersPaginatedApi>(`${BASE}/users${query}`);
     return {
       users: raw.results ?? [],
-      pagination: {
-        total: raw.total ?? 0,
-        page: raw.page ?? 1,
-        pageSize: raw.pageSize ?? 20,
-      },
+      pagination: { total: raw.total ?? 0, page: raw.page ?? 1, pageSize: raw.pageSize ?? 20 }
     };
   },
 
   getUserById: (id: number) => apiClient<{ user: DeanUser }>(`${BASE}/users/${id}`),
 
-  updateUser: (id: number, data: Partial<Pick<DeanUser, 'full_name' | 'phone' | 'status'>>) =>
-    apiClient<{ user: DeanUser }>(`${BASE}/users/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    }),
+  // Club Stats (faculty-scoped)
+  getClubStats: () =>
+    apiClient<{ approved: number; pending: number; suspended: number; rejected: number; total: number }>(
+      '/clubs/dean/stats'
+    ),
 
-  removeUser: (id: number) =>
-    apiClient<{ message: string }>(`${BASE}/users/${id}`, { method: 'DELETE' }),
-
-  // Registrations
-  getPendingRegistrations: () =>
-    apiClient<{ registrations: DeanUser[] }>(`${BASE}/registrations/pending`),
-
-  approveRegistration: (id: number) =>
-    apiClient<{ user: DeanUser }>(`${BASE}/registrations/${id}/approve`, { method: 'PUT' }),
-
-  rejectRegistration: (id: number) =>
-    apiClient<{ user: DeanUser }>(`${BASE}/registrations/${id}/reject`, { method: 'PUT' }),
-
-  // Student Section Assignment
-  getStudentRegistrations: (studentId: number) =>
-    apiClient<{ registrations: any[] }>(`${BASE}/users/${studentId}/registrations`),
-
-  assignStudentToSection: (
-    studentId: number,
-    data: { batchSectionId: number; academicYearId: number; semesterId: number }
-  ) =>
-    apiClient<{ registration: any }>(`${BASE}/users/${studentId}/assign-section`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-
-  // Batches
+  // Batches (read-only)
   getBatches: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiClient<{ batches: DeanBatch[] }>(`${BASE}/batches${query}`);
@@ -141,62 +109,18 @@ export const deanApi = {
 
   getBatchById: (id: number) => apiClient<{ batch: DeanBatch }>(`${BASE}/batches/${id}`),
 
-  createBatch: (data: {
-    name: string;
-    programId: number;
-    academicYearId: number;
-    semester_number?: number;
-  }) =>
-    apiClient<{ batch: DeanBatch }>(`${BASE}/batches`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-
-  updateBatch: (
-    id: number,
-    data: Partial<{ name: string; semester_number: number; academicYearId: number }>
-  ) =>
-    apiClient<{ batch: DeanBatch }>(`${BASE}/batches/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    }),
-
-  deleteBatch: (id: number) =>
-    apiClient<{ message: string }>(`${BASE}/batches/${id}`, { method: 'DELETE' }),
-
-  // Sections
   getBatchSections: (batchId: number) =>
     apiClient<{ sections: DeanSection[] }>(`${BASE}/batches/${batchId}/sections`),
 
-  getSectionById: (id: number) => apiClient<{ section: any }>(`${BASE}/sections/${id}`),
+  getSectionById: (id: number) => apiClient<{ section: DeanSection }>(`${BASE}/sections/${id}`),
 
-  createSection: (batchId: number, data: { name: string }) =>
-    apiClient<{ section: DeanSection }>(`${BASE}/batches/${batchId}/sections`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-
-  updateSection: (id: number, data: { name: string }) =>
-    apiClient<{ section: DeanSection }>(`${BASE}/sections/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    }),
-
-  deleteSection: (id: number) =>
-    apiClient<{ message: string }>(`${BASE}/sections/${id}`, { method: 'DELETE' }),
-
-  // Teachers
+  // Teachers (read-only)
   getTeachers: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiClient<{ teachers: DeanUser[] }>(`${BASE}/teachers${query}`);
   },
 
-  getUnassignedTeachers: () => apiClient<{ teachers: DeanUser[] }>(`${BASE}/teachers/unassigned`),
-
-  getUnassignedSections: () =>
-    apiClient<{ sections: DeanSection[] }>(`${BASE}/sections/unassigned`),
-
-  // Courses
+  // Courses (read-only)
   getCourses: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiClient<{ courses: Course[] }>(`${BASE}/courses${query}`);
@@ -204,56 +128,181 @@ export const deanApi = {
 
   getCourseById: (id: number) => apiClient<{ course: Course }>(`${BASE}/courses/${id}`),
 
-  createCourse: (data: {
-    name: string;
-    code: string;
-    departmentId: number;
-    description?: string;
-    credits?: number;
-  }) =>
-    apiClient<{ course: Course }>(`${BASE}/courses`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
-
-  updateCourse: (id: number, data: Partial<Course>) =>
-    apiClient<{ course: Course }>(`${BASE}/courses/${id}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    }),
-
-  deleteCourse: (id: number) =>
-    apiClient<{ message: string }>(`${BASE}/courses/${id}`, { method: 'DELETE' }),
-
-  // Teacher ↔ Course Assignments
-  assignTeacherToCourse: (courseId: number, teacherId: number) =>
-    apiClient<{ assignment: TeacherAssigning }>(`${BASE}/courses/${courseId}/teachers`, {
-      method: 'POST',
-      body: JSON.stringify({ teacherId })
-    }),
-
-  removeTeacherFromCourse: (courseId: number, teacherId: number) =>
-    apiClient<{ message: string }>(`${BASE}/courses/${courseId}/teachers/${teacherId}`, {
-      method: 'DELETE'
-    }),
-
-  // Course Offerings (Course → Section + Semester)
+  // Offerings (read-only)
   getOfferings: (params?: Record<string, string>) => {
     const query = params ? '?' + new URLSearchParams(params).toString() : '';
     return apiClient<{ offerings: CourseOffering[] }>(`${BASE}/offerings${query}`);
   },
 
-  createOffering: (data: {
-    courseId: number;
-    sectionId: number;
-    semesterId: number;
-    academicYearId: number;
-  }) =>
-    apiClient<{ offering: CourseOffering }>(`${BASE}/offerings`, {
-      method: 'POST',
-      body: JSON.stringify(data)
-    }),
+  // Analytics
+  getAnalytics: () => apiClient<DeanAnalytics>(`${BASE}/analytics`),
 
-  deleteOffering: (id: number) =>
-    apiClient<{ message: string }>(`${BASE}/offerings/${id}`, { method: 'DELETE' })
+  getReports: (params?: Record<string, string>) => {
+    const query = params ? '?' + new URLSearchParams(params).toString() : '';
+    return apiClient<DeanReports>(`${BASE}/reports${query}`);
+  },
 };
+
+export interface DeanAnalytics {
+  kpis: {
+    activeUsers: number;
+    messagesExchanged: number;
+    assignmentsSubmitted: number;
+    avgCourseCompletion: number;
+    announcementReach: number;
+    onTimeSubmissions: number;
+    quizPassRate: number;
+    resourceViews: number;
+  };
+  charts: {
+    communicationActivity: { month: string; messages: number }[];
+    learningProgress: { month: string; completion: number | null }[];
+    submissionsByCourse: { course: string; onTime: number; late: number }[];
+    quizScoreDistribution: { range: string; count: number }[];
+    gradeDistribution: { grade: string; count: number }[];
+    courseCompletion: { course: string; name: string; completion: number }[];
+  };
+}
+
+export interface DeanReports {
+  scope: {
+    facultyId: number;
+    facultyName: string;
+    facultyCode: string;
+    periodLabel: string;
+    generatedAt: string;
+  };
+  kpis: {
+    totalDepartments: number;
+    totalStudents: number;
+    totalInstructors: number;
+    totalCourses: number;
+    activeCourses: number;
+    assignmentsSubmitted: number;
+    quizAttempts: number;
+    averageGpa: number;
+    attendanceRate: number;
+    courseCompletionRate: number;
+    trends: Record<string, number>;
+  };
+  charts: {
+    enrollmentTrends: { month: string; enrollments: number; withdrawals: number; graduations: number }[];
+    departmentPerformance: { department: string; gpa: number; passRate: number; completionRate: number }[];
+    topCourses: { course: string; name: string; department: string; avgScore: number; completion: number; engagement: number }[];
+    bottomCourses: { course: string; name: string; department: string; avgScore: number; completion: number; engagement: number }[];
+    performanceDistribution: { band: string; count: number }[];
+    attendance: {
+      daily: { day: string; rate: number }[];
+      monthly: { month: string; rate: number }[];
+      byDepartment: { department: string; rate: number }[];
+    };
+    instructorPerformance: { name: string; feedback: number; completion: number; engagement: number; turnaround: number }[];
+  };
+  tables: {
+    academic: {
+      deansList: DeanStudentReportRow[];
+      probation: DeanStudentReportRow[];
+      passFail: { band: string; count: number }[];
+    };
+    students: DeanStudentReportRow[];
+    instructors: DeanInstructorReportRow[];
+    courses: DeanCourseReportRow[];
+    departments: DeanDepartmentReportRow[];
+  };
+  assessment: {
+    assignments: DeanAssessmentMetrics;
+    quizzes: DeanAssessmentMetrics;
+    examinations: DeanAssessmentMetrics;
+  };
+  risks: {
+    students: DeanRiskStudent[];
+    courses: DeanRiskCourse[];
+    departments: DeanRiskDepartment[];
+  };
+  insights: string[];
+  recentActivity: DeanActivityItem[];
+  filterOptions: {
+    departments: { id: number; name: string; code: string }[];
+  };
+}
+
+export interface DeanStudentReportRow {
+  id: number;
+  student: string;
+  department: string;
+  level: string;
+  gpa: number;
+  attendance: number;
+  status: string;
+}
+
+export interface DeanInstructorReportRow {
+  id: number;
+  instructor: string;
+  department: string;
+  courses: number;
+  rating: number;
+  completion: number;
+}
+
+export interface DeanCourseReportRow {
+  course: string;
+  name: string;
+  department: string;
+  students: number;
+  completion: number;
+  avgScore: number;
+}
+
+export interface DeanDepartmentReportRow {
+  department: string;
+  code: string;
+  gpa: number;
+  passRate: number;
+  completionRate: number;
+  students: number;
+  instructors: number;
+  courses: number;
+  rank?: number;
+}
+
+export interface DeanAssessmentMetrics {
+  submissionRate: number;
+  passRate: number;
+  avgScore: number;
+}
+
+export interface DeanRiskStudent {
+  id: number;
+  name: string;
+  department: string;
+  gpa: number;
+  attendance: number;
+  reason: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface DeanRiskCourse {
+  course: string;
+  name: string;
+  failureRate: number;
+  completion: number;
+  engagement: number;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface DeanRiskDepartment {
+  department: string;
+  gpa: number;
+  passRate: number;
+  trend: string;
+  priority: 'high' | 'medium' | 'low';
+}
+
+export interface DeanActivityItem {
+  id: string;
+  type: 'report' | 'alert' | 'event';
+  title: string;
+  description: string;
+  timestamp: string;
+}

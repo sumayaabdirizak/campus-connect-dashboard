@@ -1,6 +1,5 @@
 import { ensureCsrfToken } from '@/lib/api-client';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { buildApiUrl } from '@/lib/api-config';
 
 export type DiscussionUploadResult = {
   id: number;
@@ -54,7 +53,7 @@ export function uploadDiscussionFile(args: {
     }
 
     return new Promise((resolve, reject) => {
-      xhr.open('POST', `${API_BASE}/discussions/uploads`);
+      xhr.open('POST', buildApiUrl('/discussions/uploads'));
       xhr.withCredentials = true;
 
       xhr.upload.onprogress = (ev) => {

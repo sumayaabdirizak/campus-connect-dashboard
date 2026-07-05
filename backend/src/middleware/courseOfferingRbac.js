@@ -176,7 +176,9 @@ export function requireQuizAttemptAccess() {
     const attempt = await loadAttempt(req);
     if (!attempt) return res.status(404).json({ message: "Attempt not found" });
     const offering = attempt.quiz.courseOffering;
-    const isOwner = req.user?.role === "STUDENT" && attempt.studentId === req.user.sub;
+    const isOwner =
+      req.user?.role === "STUDENT" &&
+      Number(attempt.studentId) === Number(req.user.id ?? req.user.sub);
     if (isOwner) return next();
     if (await canManageOfferingContent(req.user, offering)) return next();
     return res.status(403).json({ message: "Forbidden" });

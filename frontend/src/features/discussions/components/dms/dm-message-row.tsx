@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import { Textarea } from '@/components/ui/textarea';
@@ -15,15 +14,11 @@ import {
   useEditMessage,
   useRemoveReaction
 } from '../../api/queries';
+import { confirmDelete } from '@/lib/notifications';
 import type { DiscussionMessage } from '../../api/types';
+import { avatarSolid } from '../../utils/avatar-color';
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥'];
-
-function initialsFor(name: string): string {
-  const words = name.trim().split(/\s+/).filter(Boolean);
-  if (words.length === 0) return '?';
-  return words.slice(0, 2).map((w) => w[0]?.toUpperCase() ?? '').join('');
-}
 
 function formatTime(iso: string): string {
   try {
@@ -34,14 +29,17 @@ function formatTime(iso: string): string {
 }
 
 /**
- * DM equivalent of MessageRow — slimmer (no thread / no pin / no Q&A).
+ * DM message row — WhatsApp-style chat bubble.
  *
- * Shares the channel-version's edit/delete/react mutations because backend
- * routes for those (PATCH/DELETE /messages/:id, /messages/:id/reactions)
- * don't care whether the message lives in a channel or a DM. We pass a
- * dummy channelId={0} to those hooks so their cache invalidation no-ops
- * cleanly — the DM cache is updated via the socket handler in
- * useGroupDmMessages.
+ * Your messages sit on the right in a green bubble; everyone else's on the
+ * left in a neutral bubble (with their name, colored per-person, for group
+ * DMs). Time + read-ticks live inside the bubble bottom-right.
+ *
+ * Shares the channel-version's edit/delete/react mutations because the backend
+ * routes for those (PATCH/DELETE /messages/:id, /messages/:id/reactions) don't
+ * care whether the message lives in a channel or a DM. We pass a dummy
+ * channelId={0} so their cache invalidation no-ops cleanly — the DM cache is
+ * updated via the socket handler in useGroupDmMessages.
  */
 export function DmMessageRow({
   message,
@@ -158,8 +156,8 @@ export function DmMessageRow({
     );
   };
 
-  const handleDelete = () => {
-    if (!window.confirm('Delete this message?')) return;
+  const handleDelete = async () => {
+    if (!(await confirmDelete('this message'))) return;
     if (onOptimisticPatch) {
       const revert = onOptimisticPatch(message.id, {
         deletedAt: new Date().toISOString()
@@ -172,174 +170,186 @@ export function DmMessageRow({
     deleteMutation.mutate(message.id);
   };
 
+  // ── Editing takes over the row with a plain (non-bubble) editor ───────────
+  if (isEditing) {
+    return (
+      <div className={cn('flex px-4 py-0.5', isAuthor ? 'justify-end' : 'justify-start')}>
+        <div className='w-full max-w-[75%] space-y-2 rounded-lg border bg-background p-2'>
+          <Textarea
+            ref={editTextareaRef}
+            value={editValue}
+            onChange={(e) => setEditValue(e.target.value)}
+            className='min-h-[60px] resize-none'
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                submitEdit();
+              }
+              if (e.key === 'Escape') setIsEditing(false);
+            }}
+          />
+          <div className='flex items-center gap-2 text-xs'>
+            <Button size='sm' onClick={submitEdit} disabled={editMutation.isPending}>
+              Save
+            </Button>
+            <Button size='sm' variant='ghost' onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div
       className={cn(
-        'group/row relative flex gap-3 px-6 py-1 transition-colors',
-        showHeader && 'mt-2',
-        'hover:bg-muted/40',
-        isPending && 'opacity-60'
+        'group/row flex px-4 py-0.5',
+        isAuthor ? 'justify-end' : 'justify-start',
+        showHeader && 'mt-1.5',
+        isPending && 'opacity-70'
       )}
     >
-      <div className='w-10 shrink-0'>
-        {showHeader ? (
-          <Avatar className='h-9 w-9'>
-            <AvatarFallback className='text-xs'>{initialsFor(senderName)}</AvatarFallback>
-          </Avatar>
-        ) : (
-          <span className='block w-10 text-right text-[10px] text-muted-foreground opacity-0 group-hover/row:opacity-100'>
-            {formatTime(message.createdAt)}
-          </span>
+      <div
+        className={cn(
+          'flex min-w-0 max-w-[75%] flex-col',
+          isAuthor ? 'items-end' : 'items-start'
         )}
-      </div>
-
-      <div className='min-w-0 flex-1'>
-        {showHeader && (
-          <div className='mb-0.5 flex items-baseline gap-2'>
-            <span className='text-sm font-semibold'>{senderName}</span>
-            <span className='text-[11px] text-muted-foreground'>
-              {formatTime(message.createdAt)}
-            </span>
-            {isPending && (
-              <span className='inline-flex items-center gap-1 text-[11px] text-muted-foreground'>
-                <Icons.spinner className='h-3 w-3 animate-spin' />
-                Sending…
-              </span>
-            )}
-            {message.editedAt && (
-              <span className='text-[11px] text-muted-foreground'>(edited)</span>
-            )}
-          </div>
-        )}
-
-        {isDeleted ? (
-          <p className='text-sm italic text-muted-foreground'>This message was deleted.</p>
-        ) : isEditing ? (
-          <div className='space-y-2'>
-            <Textarea
-              ref={editTextareaRef}
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              className='min-h-[60px] resize-none'
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  submitEdit();
-                }
-                if (e.key === 'Escape') setIsEditing(false);
-              }}
-            />
-            <div className='flex items-center gap-2 text-xs'>
-              <Button size='sm' onClick={submitEdit} disabled={editMutation.isPending}>
-                Save
-              </Button>
-              <Button size='sm' variant='ghost' onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className='text-sm leading-snug'>
-            <DiscussionMessageMarkdown text={message.content ?? ''} tone='hybrid' />
-          </div>
-        )}
-
-        {!isDeleted && message.attachments && message.attachments.length > 0 && (
-          <DiscussionAttachmentCards
-            attachments={message.attachments.map((a) => ({
-              id: a.id,
-              fileType: a.fileType,
-              mimeType: a.mimeType,
-              size: a.size,
-              url: a.url,
-              accessUrl: a.accessUrl,
-              isE2EE: a.isE2EE
-            }))}
-            tone='hybrid'
-          />
-        )}
-
-        {!isDeleted && message.reactions && message.reactions.length > 0 && (
-          <DiscussionReactionPillRow
-            messageId={message.id}
-            reactions={message.reactions}
-            myUserId={myUserId ?? undefined}
-            tone='hybrid'
-            onToggle={onToggleReaction}
-            showAddPicker={false}
-          />
-        )}
-
-        {!isDeleted && !isPending && tickStatus && (
-          <div
-            className='mt-0.5 flex items-center gap-0.5 text-[10px] text-muted-foreground'
-            aria-label={tickStatus === 'seen' ? 'Seen' : 'Sent'}
-            title={tickStatus === 'seen' ? 'Seen' : 'Sent'}
-          >
-            {tickStatus === 'seen' ? (
-              <>
-                <Icons.checks className='h-3 w-3 text-sky-500' />
-                <span className='text-sky-600 dark:text-sky-400'>Seen</span>
-              </>
-            ) : (
-              <>
-                <Icons.check className='h-3 w-3' />
-                <span>Sent</span>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {!isDeleted && !isEditing && !isPending && (
+      >
+        {/* Bubble */}
         <div
           className={cn(
-            'absolute -top-4 right-4 z-10 hidden items-center gap-0.5 rounded-md border bg-popover p-0.5 shadow-md',
-            'group-hover/row:flex'
+            'relative w-fit max-w-full rounded-2xl px-2.5 py-1.5 shadow-sm',
+            isAuthor
+              ? 'rounded-tr-sm bg-primary text-primary-foreground'
+              : 'rounded-tl-sm border bg-card text-card-foreground'
           )}
         >
-          {QUICK_REACTIONS.map((emoji) => (
-            <Button
-              key={emoji}
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-7 w-7 text-base'
-              onClick={() => addReaction.mutate({ messageId: message.id, emoji })}
-              aria-label={`React with ${emoji}`}
+          {/* Hover action bar — anchored to the bubble's inner edge. */}
+          {!isDeleted && !isPending && (
+            <div
+              className={cn(
+                'absolute top-0 z-10 hidden items-center gap-0.5 rounded-full border bg-popover p-0.5 shadow-md',
+                'group-hover/row:flex',
+                isAuthor ? 'right-full mr-1' : 'left-full ml-1'
+              )}
             >
-              {emoji}
-            </Button>
-          ))}
-          {isAuthor && (
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-7 w-7'
-              onClick={() => {
-                setEditValue(message.content ?? '');
-                setIsEditing(true);
-              }}
-              aria-label='Edit message'
-            >
-              <Icons.edit className='h-3.5 w-3.5' />
-            </Button>
+              {QUICK_REACTIONS.map((emoji) => (
+                <Button
+                  key={emoji}
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='h-7 w-7 text-base'
+                  onClick={() => onToggleReaction(message.id, emoji)}
+                  aria-label={`React with ${emoji}`}
+                >
+                  {emoji}
+                </Button>
+              ))}
+              {isAuthor && (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='h-7 w-7'
+                  onClick={() => {
+                    setEditValue(message.content ?? '');
+                    setIsEditing(true);
+                  }}
+                  aria-label='Edit message'
+                >
+                  <Icons.edit className='h-3.5 w-3.5' />
+                </Button>
+              )}
+              {canDelete && (
+                <Button
+                  type='button'
+                  variant='ghost'
+                  size='icon'
+                  className='h-7 w-7 text-destructive hover:text-destructive'
+                  onClick={handleDelete}
+                  aria-label='Delete message'
+                >
+                  <Icons.trash className='h-3.5 w-3.5' />
+                </Button>
+              )}
+            </div>
           )}
-          {canDelete && (
-            <Button
-              type='button'
-              variant='ghost'
-              size='icon'
-              className='h-7 w-7 text-destructive hover:text-destructive'
-              onClick={handleDelete}
-              aria-label='Delete message'
+
+          {/* Sender name (group DMs) — only for others, colored per-person. */}
+          {!isAuthor && !isDeleted && (
+            <div
+              className='mb-0.5 text-xs font-semibold'
+              style={{ color: avatarSolid(senderName) }}
             >
-              <Icons.trash className='h-3.5 w-3.5' />
-            </Button>
+              {senderName}
+            </div>
+          )}
+
+          {isDeleted ? (
+            <p className='text-sm italic opacity-60'>This message was deleted.</p>
+          ) : (
+            <div className='text-sm leading-snug [overflow-wrap:anywhere]'>
+              <DiscussionMessageMarkdown text={message.content ?? ''} tone='hybrid' />
+            </div>
+          )}
+
+          {!isDeleted && message.attachments && message.attachments.length > 0 && (
+            <DiscussionAttachmentCards
+              attachments={message.attachments.map((a) => ({
+                id: a.id,
+                fileType: a.fileType,
+                mimeType: a.mimeType,
+                size: a.size,
+                url: a.url,
+                accessUrl: a.accessUrl,
+                isE2EE: a.isE2EE
+              }))}
+              tone='hybrid'
+            />
+          )}
+
+          {/* Meta: edited · time · ticks, bottom-right inside the bubble. */}
+          {!isDeleted && (
+            <div
+              className={cn(
+                'mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none',
+                isAuthor ? 'text-primary-foreground/70' : 'text-muted-foreground'
+              )}
+            >
+              {message.editedAt && <span>edited</span>}
+              <span className='tabular-nums'>{formatTime(message.createdAt)}</span>
+              {isAuthor &&
+                (isPending ? (
+                  <Icons.spinner className='h-3 w-3 animate-spin' />
+                ) : (
+                  <Icons.checks
+                    className={cn(
+                      'h-3.5 w-3.5',
+                      tickStatus === 'seen' && 'text-emerald-300'
+                    )}
+                    aria-label={tickStatus === 'seen' ? 'Seen' : 'Delivered'}
+                  />
+                ))}
+            </div>
           )}
         </div>
-      )}
+
+        {/* Reactions sit just under the bubble, aligned to the same side. */}
+        {!isDeleted && message.reactions && message.reactions.length > 0 && (
+          <div className='mt-0.5'>
+            <DiscussionReactionPillRow
+              messageId={message.id}
+              reactions={message.reactions}
+              myUserId={myUserId ?? undefined}
+              tone='hybrid'
+              onToggle={onToggleReaction}
+              showAddPicker={false}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

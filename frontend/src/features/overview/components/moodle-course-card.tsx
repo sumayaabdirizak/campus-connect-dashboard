@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import type { StudentCourse } from '@/features/student-courses/api/types';
+import { resolvePublicAssetUrl } from '@/lib/resolve-public-asset-url';
 import { courseColor } from '@/features/student-courses/lib/course-color';
 
 /**
@@ -12,6 +13,7 @@ import { courseColor } from '@/features/student-courses/lib/course-color';
 export function MoodleCourseCard({ course }: { course: StudentCourse }) {
   const color = courseColor(course.courseCode);
   const progress = course.progress || 0;
+  const coverSrc = resolvePublicAssetUrl(course.thumbnail);
 
   return (
     <Link
@@ -23,10 +25,10 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
         className='relative h-16 w-full bg-cover bg-center'
         style={{
           backgroundColor: color,
-          backgroundImage: course.thumbnail ? `url("${course.thumbnail}")` : undefined
+          backgroundImage: coverSrc ? `url("${coverSrc}")` : undefined
         }}
       >
-        {course.thumbnail && (
+        {coverSrc && (
           <span
             className='absolute inset-0 bg-gradient-to-t from-black/50 to-transparent'
             aria-hidden
@@ -46,7 +48,7 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
           {course.courseName}
         </h4>
         <p className='mt-1 truncate text-xs text-muted-foreground'>
-          {course.instructor?.name ?? 'Unassigned'}
+          {course.instructor || 'Unassigned'}
         </p>
       </div>
 
@@ -55,7 +57,9 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
         <div className='mb-1 flex items-center justify-between text-[11px] text-muted-foreground'>
           <span>{progress}% complete</span>
           <span>
-            {course.completedLessons}/{course.totalLessons}
+            {course.totalLessons > 0
+              ? `${course.completedLessons}/${course.totalLessons}`
+              : 'No items yet'}
           </span>
         </div>
         <div className='h-1.5 w-full overflow-hidden rounded-full bg-muted'>

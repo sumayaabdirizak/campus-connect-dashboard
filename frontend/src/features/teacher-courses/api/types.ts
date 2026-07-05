@@ -1,5 +1,5 @@
 export interface Course {
-  id: number;
+  id: string;
   courseCode: string;
   courseName: string;
   department: string;
@@ -7,6 +7,8 @@ export interface Course {
   thumbnail: string | null;
   totalStudents: number;
   totalLessons: number;
+  pendingSubmissions?: number;
+  drafts?: number;
   schedule?: {
     day: string;
     time: string;

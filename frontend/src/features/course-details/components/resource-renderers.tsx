@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import {
   FileText,
   Download,
-  Eye,
   Edit,
   Trash2,
   Link as LinkIcon,
@@ -20,7 +19,6 @@ import {
 import { format } from 'date-fns';
 import { resourceDownloadUrl } from '../api/resources-service';
 import type { Resource } from '../api/resources-types';
-import { isPdfUrl } from './pdf-viewer';
 
 // ─── URL helpers ───────────────────────────────────────────────────────────
 
@@ -34,10 +32,6 @@ function toYoutubeEmbed(url: string) {
   const short = url.match(/youtu\.be\/([\w-]+)/);
   if (short) return `https://www.youtube.com/embed/${short[1]}`;
   return url;
-}
-
-export function isPreviewable(resource: Resource) {
-  return resource.mimeType === 'application/pdf' || isPdfUrl(resource.url);
 }
 
 export function isAudio(resource: Resource) {
@@ -163,7 +157,6 @@ export function AudioRenderer({ url, title }: { url: string; title: string }) {
 export interface ResourceCardProps {
   resource: Resource;
   isStudent?: boolean;
-  onPreview: (r: Resource) => void;
   onEdit?: (r: Resource) => void;
   onDelete?: (id: number) => void;
   /// Optional drag handle slot (provided by the sortable wrapper). Hidden
@@ -174,14 +167,12 @@ export interface ResourceCardProps {
 export function ResourceCard({
   resource,
   isStudent,
-  onPreview,
   onEdit,
   onDelete,
   dragHandle
 }: ResourceCardProps) {
   const isUploaded = !!resource.originalName;
   const downloadHref = isUploaded ? resourceDownloadUrl(resource.id) : resource.url;
-  const previewable = isPreviewable(resource);
   return (
     <div className='border rounded-lg p-4 flex items-center justify-between gap-3'>
       <div className='flex items-center gap-3 min-w-0'>
@@ -210,24 +201,14 @@ export function ResourceCard({
         </div>
       </div>
       <div className='flex gap-1 shrink-0'>
-        {previewable && (
-          <Button
-            variant='outline'
-            size='sm'
-            className='gap-1'
-            onClick={() => onPreview(resource)}
-          >
-            <Eye className='w-4 h-4' /> <span className='hidden sm:inline'>Preview</span>
-          </Button>
-        )}
         <a
           href={downloadHref}
-          {...(isUploaded ? {} : { target: '_blank', rel: 'noreferrer' })}
+          {...(isUploaded ? { download: resource.originalName ?? true } : { target: '_blank', rel: 'noreferrer' })}
           className='inline-flex items-center gap-1 text-sm border rounded-md px-3 py-1.5 hover:bg-muted/30'
-          aria-label={isUploaded ? `Download ${resource.title}` : `Open ${resource.title}`}
+          aria-label={`Download ${resource.title}`}
         >
           <Download className='w-4 h-4' />
-          <span className='hidden sm:inline'>{isUploaded ? 'Download' : 'Open'}</span>
+          <span className='hidden sm:inline'>Download</span>
         </a>
         {!isStudent && onEdit && (
           <Button

@@ -17,7 +17,7 @@ export const assignmentSchema = z
     gradingScope: z.enum(['INDIVIDUAL', 'GROUP']),
     allowLate: z.boolean(),
     lateWindow: z.string().regex(/^\d+$/, 'Must be a number').or(z.literal('')),
-    maxMarks: z.number().int().min(1, 'Must be at least 1').max(1000, 'Max 1000')
+    maxMarks: z.number().int().min(1, 'Must be at least 1').max(100, 'Cannot exceed 100')
   })
   .superRefine((v, ctx) => {
     // Solo work can't share a group grade.
@@ -195,10 +195,19 @@ export function CreateAssignmentForm({
                 id='maxMarks'
                 type='number'
                 min={1}
-                max={1000}
+                max={100}
                 value={field.state.value}
                 onBlur={field.handleBlur}
-                onChange={(e) => field.handleChange(Number(e.target.value) || 0)}
+                onChange={(e) => {
+                  const raw = e.target.value;
+                  if (raw === '') {
+                    field.handleChange(0);
+                    return;
+                  }
+                  const parsed = Number(raw);
+                  if (!Number.isFinite(parsed)) return;
+                  field.handleChange(Math.min(100, Math.max(1, Math.trunc(parsed))));
+                }}
                 placeholder='100'
               />
               {field.state.meta.errors[0] && (

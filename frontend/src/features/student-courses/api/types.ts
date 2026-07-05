@@ -1,17 +1,15 @@
 export interface StudentCourse {
-  id: number;
+  id: string;
   courseCode: string;
   courseName: string;
   department: string;
   section: string;
   thumbnail: string | null;
-  instructor: {
-    id: number;
-    name: string;
-  };
+  instructor: string;
   totalLessons: number;
   completedLessons: number;
   progress: number;
+  schedule?: { day: number; time: string }[];
   nextClass?: {
     day: string;
     time: string;

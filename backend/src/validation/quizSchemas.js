@@ -89,6 +89,9 @@ export const createQuizBodySchema = Joi.object({
     if (value.open_at && value.close_at && new Date(value.open_at) >= new Date(value.close_at)) {
       return helpers.error("any.custom", { message: "open_at must be before close_at" });
     }
+    if (value.timing_mode === "fixed" && !value.open_at) {
+      return helpers.error("any.custom", { message: "Fixed mode requires open_at" });
+    }
     return value;
   }, "open/close window order");
 
@@ -107,9 +110,33 @@ export const patchQuizBodySchema = Joi.object({
   scheduled_duration: Joi.number().integer().min(1).max(480).allow(null).optional(),
   moduleId: Joi.number().integer().positive().allow(null).optional(),
   confidence_scoring: Joi.boolean().optional(),
-}).min(1); // require at least one field
+})
+  .min(1) // require at least one field
+  .custom((value, helpers) => {
+    if (value.timing_mode === "fixed" && value.open_at === null) {
+      return helpers.error("any.custom", { message: "Fixed mode requires open_at (cannot clear open time while in fixed mode)" });
+    }
+    return value;
+  }, "fixed mode schedule");
 
 // ─── Questions ───────────────────────────────────────────────────────────────
+
+// Shared option-shape validator for patch — only runs when `options` is present.
+function validateQuestionOptions(value, helpers) {
+  const qType = value.question_type ?? "MCQ";
+  if (qType === "SHORT_ANSWER" || value.options === undefined) return value;
+  const opts = value.options ?? [];
+  if (opts.length < 2) {
+    return helpers.error("any.custom", { message: "At least 2 options required" });
+  }
+  if (!opts.some((o) => o.is_correct)) {
+    return helpers.error("any.custom", { message: "Mark at least one option as correct" });
+  }
+  if (qType === "TRUE_FALSE" && opts.filter((o) => o.is_correct).length > 1) {
+    return helpers.error("any.custom", { message: "True/False allows only one correct option" });
+  }
+  return value;
+}
 
 export const createQuestionBodySchema = Joi.object({
   question_text: Joi.string().trim().min(1).max(5000).required(),
@@ -145,7 +172,7 @@ export const patchQuestionBodySchema = Joi.object({
   correct_answer: Joi.string().allow("", null).max(2000).optional(),
   explanation: Joi.string().trim().allow("", null).max(5000).optional(),
   options: Joi.array().items(optionInputSchema).max(50).optional(),
-}).min(1);
+}).min(1).custom(validateQuestionOptions, "options shape");
 
 // ─── Submit / Grade ──────────────────────────────────────────────────────────
 

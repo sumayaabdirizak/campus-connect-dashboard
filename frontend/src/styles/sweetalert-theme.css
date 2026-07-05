@@ -1,0 +1,110 @@
+@import 'sweetalert2/dist/sweetalert2.min.css';
+
+/* Backdrop — solid overlay so dashboard content does not show through */
+.swal2-container {
+  z-index: 9999 !important;
+  padding: 1rem !important;
+}
+
+.swal2-container.swal2-backdrop-show {
+  background: rgb(0 0 0 / 0.55) !important;
+  backdrop-filter: blur(2px);
+}
+
+/* Dialog panel */
+.swal-themed-popup,
+.swal2-popup.swal-themed-popup {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: calc(var(--radius) + 4px) !important;
+  box-shadow:
+    0 20px 25px -5px rgb(0 0 0 / 0.12),
+    0 8px 10px -6px rgb(0 0 0 / 0.08) !important;
+  font-family: inherit !important;
+  width: min(24rem, calc(100vw - 2rem)) !important;
+  max-width: min(24rem, calc(100vw - 2rem)) !important;
+  padding: 1.5rem !important;
+  opacity: 1 !important;
+}
+
+.swal-themed-title,
+.swal2-title.swal-themed-title {
+  color: var(--foreground) !important;
+  font-size: 1.125rem !important;
+  font-weight: 600 !important;
+  line-height: 1.4 !important;
+  padding: 0 !important;
+}
+
+.swal-themed-text,
+.swal2-html-container.swal-themed-text {
+  color: var(--muted-foreground) !important;
+  font-size: 0.875rem !important;
+  line-height: 1.5 !important;
+  margin-top: 0.5rem !important;
+}
+
+.swal2-actions {
+  gap: 0.5rem !important;
+  margin-top: 1.25rem !important;
+  width: 100% !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+}
+
+.swal-btn-confirm,
+.swal-btn-danger,
+.swal-btn-cancel {
+  border-radius: calc(var(--radius) - 2px) !important;
+  font-size: 0.875rem !important;
+  font-weight: 500 !important;
+  padding: 0.5rem 1rem !important;
+  box-shadow: none !important;
+  margin: 0 !important;
+  min-width: 5.5rem;
+}
+
+.swal-btn-confirm {
+  background: var(--primary) !important;
+  color: var(--primary-foreground) !important;
+}
+
+.swal-btn-danger {
+  background: var(--destructive) !important;
+  color: var(--destructive-foreground) !important;
+}
+
+.swal-btn-cancel {
+  background: var(--muted) !important;
+  color: var(--foreground) !important;
+}
+
+.swal2-icon {
+  border-color: var(--border) !important;
+  margin: 0.75rem auto 0 !important;
+  transform: scale(0.85);
+}
+
+.swal2-icon.swal2-question {
+  border-color: var(--info) !important;
+  color: var(--info) !important;
+}
+
+.swal2-success [class^='swal2-success-line'] {
+  background-color: var(--success) !important;
+}
+
+.swal2-success .swal2-success-ring {
+  border-color: color-mix(in oklab, var(--success) 30%, transparent) !important;
+}
+
+.swal2-warning {
+  border-color: var(--warning) !important;
+  color: var(--warning) !important;
+}
+
+.swal2-error {
+  border-color: var(--destructive) !important;
+  color: var(--destructive) !important;
+}

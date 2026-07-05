@@ -27,7 +27,10 @@ export function ChatShellV2() {
   const router = useRouter();
 
   const routeServerId = toFiniteId(params?.serverId);
-  const routeChannelId = toFiniteId(params?.channelId);
+  const channelParts = params?.channelParts;
+  const routeChannelId = toFiniteId(
+    Array.isArray(channelParts) ? channelParts[0] : undefined
+  );
   const routeGroupDmId = toFiniteId(params?.groupDmId);
   const isDmRoute = pathname.startsWith('/dashboard/chat/dm');
 

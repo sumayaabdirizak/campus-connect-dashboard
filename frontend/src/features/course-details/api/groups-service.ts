@@ -30,11 +30,12 @@ export async function deleteGroup(groupId: string): Promise<void> {
 export async function addGroupMember(
   groupId: string,
   studentId: number,
-  role: GroupMemberRole = 'MEMBER'
+  role: GroupMemberRole = 'MEMBER',
+  transfer = false
 ): Promise<GroupMember> {
   return fetchWithAuth<GroupMember>(`/groups/${groupId}/members`, {
     method: 'POST',
-    body: JSON.stringify({ studentId, role })
+    body: JSON.stringify({ studentId, role, transfer })
   });
 }
 

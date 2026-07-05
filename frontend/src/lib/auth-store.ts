@@ -25,7 +25,9 @@ interface AuthState {
   logout: () => void;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+import { getApiBaseUrl } from '@/lib/api-config';
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const useAuthStore = create<AuthState>()(
   persist(

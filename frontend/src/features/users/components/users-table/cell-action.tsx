@@ -13,7 +13,7 @@ import type { User } from '../../api/types';
 import { Icons } from '@/components/icons';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@/lib/async-query';
-import { toast } from 'sonner';
+import { handleApiError, showToast } from '@/lib/notifications';
 import { UserFormSheet } from '../user-form-sheet';
 
 interface CellActionProps {
@@ -29,11 +29,11 @@ export function CellAction({ data }: CellActionProps) {
     ...deleteUserMutation,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('User deleted successfully');
+      showToast('success', 'User deleted successfully');
       setDeleteOpen(false);
     },
-    onError: () => {
-      toast.error('Failed to delete user');
+    onError: (error: unknown) => {
+      handleApiError(error, 'Failed to delete user');
     }
   });
 

@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Plus, GraduationCap } from 'lucide-react';
+import React from 'react';
 import { useAuthStore } from '@/lib/auth-store';
 import { useTeacherCourses } from '@/features/teacher-courses/api/queries';
 import { useStudentCourses } from '@/features/student-courses/api/queries';
 import { CourseList } from '@/features/teacher-courses/components/course-list';
 import { StudentCourseList } from '@/features/student-courses/components/course-list';
+import PageContainer from '@/components/layout/page-container';
 
 export default function CoursesPage() {
   const { user } = useAuthStore();
@@ -23,9 +22,9 @@ export default function CoursesPage() {
 
   if (error) {
     return (
-      <div className='flex items-center justify-center min-h-[400px]'>
-        <div className='text-center space-y-2'>
-          <p className='text-destructive font-semibold'>Error loading courses</p>
+      <div className='flex min-h-[400px] items-center justify-center'>
+        <div className='space-y-2 text-center'>
+          <p className='font-semibold text-destructive'>Error loading courses</p>
           <p className='text-sm text-muted-foreground'>Please try again later</p>
         </div>
       </div>
@@ -33,41 +32,22 @@ export default function CoursesPage() {
   }
 
   return (
-    <div className='flex flex-1 p-4 md:p-6'>
-      <div className='flex flex-col flex-1 max-w-5xl mx-auto w-full'>
-        {/* Header */}
-        <div className='flex items-center justify-between mb-5'>
-          <div className='flex items-center gap-3'>
-            <div className='p-2 bg-primary/10 rounded-xl'>
-              <GraduationCap className='w-5 h-5 text-primary' />
-            </div>
-            <div>
-              <h1 className='text-2xl font-bold text-foreground'>My Courses</h1>
-              <p className='text-sm text-muted-foreground'>
-                {isTeacher
-                  ? `${(data as any[])?.length || 0} courses you're teaching`
-                  : `${(data as any)?.offerings?.length || 0} enrolled courses`}
-              </p>
-            </div>
-          </div>
-          {isTeacher && (
-            <Button className='bg-primary font-semibold'>
-              <Plus className='w-4 h-4 mr-2' />
-              New Course
-            </Button>
-          )}
-        </div>
-
-        {/* Course List */}
-        {isTeacher ? (
-          <CourseList courses={(data as any[]) || []} isLoading={isLoading} />
-        ) : (
-          <StudentCourseList
-            courses={((data as any)?.offerings as any[]) || []}
-            isLoading={isLoading}
-          />
-        )}
-      </div>
-    </div>
+    <PageContainer
+      pageTitle='My Courses'
+      pageDescription={
+        isTeacher
+          ? `${Array.isArray(data) ? data.length : 0} courses you're teaching`
+          : `${!Array.isArray(data) ? (data?.offerings?.length ?? 0) : 0} enrolled courses`
+      }
+    >
+      {isTeacher ? (
+        <CourseList courses={Array.isArray(data) ? data : []} isLoading={isLoading} />
+      ) : (
+        <StudentCourseList
+          courses={!Array.isArray(data) ? (data?.offerings ?? []) : []}
+          isLoading={isLoading}
+        />
+      )}
+    </PageContainer>
   );
 }

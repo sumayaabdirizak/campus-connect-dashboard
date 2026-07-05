@@ -10,7 +10,7 @@ import {
   updateAnnouncement
 } from './service';
 import { Announcement, CreateAnnouncementDTO } from './types';
-import { toast } from 'sonner';
+import { handleApiError, showToast } from '@/lib/notifications';
 
 export const useAnnouncements = (opts?: {
   scheduled?: boolean;
@@ -54,12 +54,10 @@ export const useCreateAnnouncement = () => {
     mutationFn: (data: CreateAnnouncementDTO | FormData) => createAnnouncement(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
-      toast.success('Announcement posted successfully');
+      showToast('success', 'Announcement posted successfully');
     },
-    onError: (error: any) => {
-      toast.error('Failed to post announcement', {
-        description: error.message
-      });
+    onError: (error: unknown) => {
+      handleApiError(error, 'Failed to post announcement');
     }
   });
 };
@@ -93,15 +91,13 @@ export const useDeleteAnnouncement = () => {
         current.filter((item) => String(item.id) !== String(id))
       );
     },
-    onError: (error: any) => {
+    onError: (error: unknown) => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
-      toast.error('Failed to delete announcement', {
-        description: error.message
-      });
+      handleApiError(error, 'Failed to delete announcement');
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
-      toast.success('Announcement deleted');
+      showToast('success', 'Announcement deleted');
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
@@ -116,12 +112,10 @@ export const useToggleAnnouncementPin = () => {
     mutationFn: (id: number) => togglePinAnnouncement(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
-      toast.success('Announcement pin status updated');
+      showToast('success', 'Announcement pin status updated');
     },
-    onError: (error: any) => {
-      toast.error('Failed to update pin status', {
-        description: error.message
-      });
+    onError: (error: unknown) => {
+      handleApiError(error, 'Failed to update pin status');
     }
   });
 };
@@ -142,12 +136,10 @@ export const useUpdateAnnouncement = () => {
     }) => updateAnnouncement(id, data),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
-      toast.success(variables.successToast ?? 'Announcement updated');
+      showToast('success', variables.successToast ?? 'Announcement updated');
     },
-    onError: (error: any) => {
-      toast.error('Failed to update announcement', {
-        description: error.message
-      });
+    onError: (error: unknown) => {
+      handleApiError(error, 'Failed to update announcement');
     }
   });
 };

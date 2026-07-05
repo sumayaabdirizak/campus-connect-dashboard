@@ -1,5 +1,6 @@
 import { apiClient } from '@/lib/api-client';
-import { ensureCsrfToken } from '@/lib/api-client';
+import { buildApiUrl } from '@/lib/api-config';
+import { uploadJson } from '@/lib/upload-client';
 import type {
   AiGradeSuggestion,
   Assignment,
@@ -14,8 +15,6 @@ import type {
   SubmitWorkInput,
   UpdateAssignmentInput
 } from './assignments-types';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 export async function getAssignments(courseOfferingId: string): Promise<Assignment[]> {
   return apiClient<Assignment[]>(`/course-offerings/${courseOfferingId}`);
@@ -113,21 +112,10 @@ export async function uploadSubmissionFile(
 ): Promise<{ url: string; originalName: string; mimeType: string; size: number }> {
   const formData = new FormData();
   formData.append('file', file);
-  const csrfToken = await ensureCsrfToken();
-  const res = await fetch(
-    `${API_BASE_URL}/course-offerings/${assignmentId}/submissions/upload`,
-    {
-      method: 'POST',
-      credentials: 'include',
-      headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
-      body: formData
-    }
+  return uploadJson<{ url: string; originalName: string; mimeType: string; size: number }>(
+    `/course-offerings/${assignmentId}/submissions/upload`,
+    formData
   );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Upload failed: ${res.status} ${res.statusText}`);
-  }
-  return res.json();
 }
 
 export async function listExtensions(assignmentId: number): Promise<SubmissionExtension[]> {
@@ -162,18 +150,10 @@ export async function uploadAssignmentAttachments(
 ): Promise<{ count: number; attachments: AssignmentAttachment[] }> {
   const formData = new FormData();
   for (const file of files) formData.append('files', file);
-  const csrfToken = await ensureCsrfToken();
-  const res = await fetch(`${API_BASE_URL}/course-offerings/${assignmentId}/attachments`, {
-    method: 'POST',
-    credentials: 'include',
-    headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : undefined,
-    body: formData
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || `Upload failed: ${res.status} ${res.statusText}`);
-  }
-  return res.json();
+  return uploadJson<{ count: number; attachments: AssignmentAttachment[] }>(
+    `/course-offerings/${assignmentId}/attachments`,
+    formData
+  );
 }
 
 export async function deleteAssignmentAttachment(
@@ -189,17 +169,17 @@ export async function deleteAssignmentAttachment(
 /// Force-download URL for an attachment (sets Content-Disposition on the
 /// server). Auth is sent automatically via cookies.
 export function attachmentDownloadUrl(attachmentId: number): string {
-  return `${API_BASE_URL}/course-offerings/attachments/${attachmentId}/download`;
+  return buildApiUrl(`/course-offerings/attachments/${attachmentId}/download`);
 }
 
 /// Single-assignment iCalendar feed.
 export function assignmentIcsUrl(assignmentId: number): string {
-  return `${API_BASE_URL}/course-offerings/${assignmentId}/calendar.ics`;
+  return buildApiUrl(`/course-offerings/${assignmentId}/calendar.ics`);
 }
 
 /// All assignments in this offering as one .ics — useful for "subscribe once".
 export function courseAssignmentsIcsUrl(courseOfferingId: string | number): string {
-  return `${API_BASE_URL}/course-offerings/course/${courseOfferingId}/calendar.ics`;
+  return buildApiUrl(`/course-offerings/course/${courseOfferingId}/calendar.ics`);
 }
 
 export async function suggestGradeWithAi(

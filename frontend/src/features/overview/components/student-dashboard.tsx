@@ -24,8 +24,9 @@ import { useAnnouncements } from '@/features/announcements/api/queries';
 import { courseColor } from '@/features/student-courses/lib/course-color';
 import { MoodleCourseCard } from './moodle-course-card';
 import { StatCard } from './stat-card';
-import { TimelineBlock, type TimelineItem } from './timeline-block';
 import { MonthCalendar } from './month-calendar';
+import { filterUpcomingDeadlines } from '@/features/calendar/deadline-calendar';
+import type { DeadlineRow } from '@/features/calendar/lib';
 
 type CourseFilter = 'all' | 'inprogress' | 'completed';
 
@@ -49,22 +50,15 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
   const { data: deadlineData, isLoading: deadlinesLoading } = useQuery({
     queryKey: ['calendar', 'deadlines', 'dashboard', fromIso],
     queryFn: () =>
-      apiClient<{ results: TimelineItem[] }>(
+      apiClient<{ results: DeadlineRow[] }>(
         `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
       )
   });
 
-  const timelineItems = useMemo(() => {
-    const now = Date.now();
-    return (deadlineData?.results ?? [])
-      .filter(
-        (d) =>
-          (d.kind === 'assignment' || d.kind === 'quiz') &&
-          d.deadlineAt &&
-          new Date(d.deadlineAt).getTime() >= now
-      )
-      .sort((a, b) => new Date(a.deadlineAt!).getTime() - new Date(b.deadlineAt!).getTime());
-  }, [deadlineData]);
+  const timelineItems = useMemo(
+    () => filterUpcomingDeadlines(deadlineData?.results),
+    [deadlineData]
+  );
 
   const filteredCourses = courses.filter((c) => {
     const p = c.progress || 0;
@@ -88,7 +82,7 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
 
   const assignments = timelineItems.filter((d) => d.kind === 'assignment');
   const quizzes = timelineItems.filter((d) => d.kind === 'quiz');
-  const dueThisWeek = (rows: TimelineItem[]) => {
+  const dueThisWeek = (rows: DeadlineRow[]) => {
     const end = Date.now() + 7 * 24 * 60 * 60 * 1000;
     return rows.filter((d) => d.deadlineAt && new Date(d.deadlineAt).getTime() <= end).length;
   };
@@ -108,8 +102,10 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
           </h1>
           <p className='text-sm text-primary-foreground/80'>
             {lessonsTotal > 0
-              ? `${lessonsDone} of ${lessonsTotal} lessons completed across your courses`
-              : 'Welcome to your dashboard'}
+              ? `${lessonsDone} of ${lessonsTotal} items completed across your courses`
+              : courses.length > 0
+                ? `${courses.length} course${courses.length === 1 ? '' : 's'} enrolled this semester`
+                : 'Welcome to your dashboard'}
           </p>
         </div>
         {lessonsTotal > 0 && (
@@ -137,8 +133,10 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
               icon={BookOpen}
               tone='warning'
               value={lessonsDone}
-              label='Lessons'
-              sublabel={`of ${lessonsTotal} completed`}
+              label='Course items'
+              sublabel={
+                lessonsTotal > 0 ? `of ${lessonsTotal} completed` : `${courses.length} courses enrolled`
+              }
               ratio={lessonsTotal ? lessonsDone / lessonsTotal : 0}
             />
             <StatCard
@@ -164,8 +162,6 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
         {/* Main */}
         <div className='flex flex-col gap-6 lg:col-span-8'>
-          <TimelineBlock items={timelineItems} loading={deadlinesLoading} />
-
           {/* Course overview */}
           <Card className='rounded-lg border-border'>
             <CardHeader className='gap-3 border-b py-3'>
@@ -269,7 +265,7 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
                               {c.courseName}
                             </p>
                             <p className='truncate text-xs text-muted-foreground'>
-                              {c.courseCode} · {c.instructor?.name ?? 'Unassigned'}
+                              {c.courseCode} · {c.instructor || 'Unassigned'}
                             </p>
                           </div>
                           <div className='hidden w-28 items-center gap-2 sm:flex'>

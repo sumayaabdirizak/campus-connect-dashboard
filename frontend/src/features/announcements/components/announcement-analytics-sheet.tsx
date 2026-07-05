@@ -46,10 +46,9 @@ import {
   TableRow
 } from '@/components/ui/table';
 import { Icons } from '@/components/icons';
+import { buildApiUrl } from '@/lib/api-config';
 import type { Announcement } from '../api/types';
 import { useAnnouncementAnalytics, useAnnouncementAcknowledgements } from '../api/use-announcement-analytics';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
 function pct(n: number | null | undefined) {
   if (n == null || !Number.isFinite(n)) return '—';
@@ -105,7 +104,9 @@ export function AnnouncementAnalyticsSheet({
 
   async function downloadAckCsv() {
     if (validId == null) return;
-    const url = `${API_BASE}/announcements/${validId}/acknowledgements?format=csv&filter=${encodeURIComponent(ackFilter)}`;
+    const url = buildApiUrl(
+      `/announcements/${validId}/acknowledgements?format=csv&filter=${encodeURIComponent(ackFilter)}`
+    );
     const res = await fetch(url, { credentials: 'include' });
     if (!res.ok) {
       throw new Error('Export failed');

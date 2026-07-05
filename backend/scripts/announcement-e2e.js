@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { io } from "socket.io-client";
-import bcrypt from "bcryptjs";
+import { hashPassword } from "../src/utils/password.js";
 
 const prisma = new PrismaClient();
 
@@ -144,7 +144,7 @@ async function main() {
   if (!superAdminDb) {
     const superAdminRole = await prisma.role.findUnique({ where: { name: "SUPER_ADMIN" } });
     assert(superAdminRole, "SUPER_ADMIN role is missing");
-    const passwordHash = await bcrypt.hash(TEST_PASSWORD, 10);
+    const passwordHash = await hashPassword(TEST_PASSWORD);
     const uniqueSuffix = Date.now();
     superAdminDb = await prisma.user.create({
       data: {

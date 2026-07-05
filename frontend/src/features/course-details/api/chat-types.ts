@@ -41,7 +41,7 @@ export interface ChatMessage {
 export interface ChatRoom {
   id: number;
   name: string;
-  courseOfferingId: number | null;
+  courseOfferingId: string | null;
   messages: ChatMessage[];
   nextCursor: number | null;
   hasMore: boolean;

@@ -19,6 +19,7 @@ import type { DiscussionMessage } from '../../api/types';
 import type { DiscussionPermissions } from '../../hooks/use-discussion-permissions';
 import { MessageContextWrapper, MessageMoreMenu } from './message-actions-menu';
 import { getDiscussionMessagePlaintext } from '../../decode-web-e2e-ciphertext';
+import { avatarGradient, avatarSolid } from '../../utils/avatar-color';
 
 const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥'];
 
@@ -74,7 +75,8 @@ function MessageActionsToolbar({
       // Using `hidden` here was causing the More menu to fall back to viewport
       // (0,0) when hover briefly disengaged while the menu opened.
       className={cn(
-        'pointer-events-none absolute -top-4 right-4 z-10 flex items-center gap-0.5 rounded-md border bg-popover p-0.5 opacity-0 shadow-md transition-opacity',
+        'pointer-events-none absolute top-0 z-10 flex items-center gap-0.5 rounded-lg border bg-popover p-0.5 opacity-0 shadow-lg transition-opacity',
+        isAuthor ? 'right-full mr-1' : 'left-full ml-1',
         'group-hover/row:pointer-events-auto group-hover/row:opacity-100',
         'focus-within:pointer-events-auto focus-within:opacity-100',
         'data-[menu-open=true]:pointer-events-auto data-[menu-open=true]:opacity-100'
@@ -297,57 +299,32 @@ export function MessageRow({
   const rowBody = (
     <div
       className={cn(
-        'group/row relative flex gap-3 px-6 py-1 transition-colors',
+        'group/row flex gap-2 px-3 py-0.5',
+        isAuthor ? 'justify-end' : 'justify-start',
         showHeader ? 'mt-2' : '',
-        'hover:bg-muted/40',
         isPending && 'opacity-60'
       )}
     >
-      <div className='w-10 shrink-0'>
-        {showHeader ? (
-          <Avatar className='h-9 w-9'>
-            <AvatarFallback className='text-xs'>{initialsFor(senderName)}</AvatarFallback>
-          </Avatar>
-        ) : (
-          <span className='block w-10 text-right text-[10px] text-muted-foreground opacity-0 group-hover/row:opacity-100'>
-            {formatTime(message.createdAt)}
-          </span>
-        )}
-      </div>
+      {/* Left avatar for others (WhatsApp group style); none for your own. */}
+      {!isAuthor && (
+        <Avatar className='mt-0.5 h-8 w-8 shrink-0 self-end shadow-sm ring-1 ring-black/5'>
+          <AvatarFallback
+            className='text-[10px] font-semibold text-white'
+            style={{ background: avatarGradient(senderName, message.isAnonymous) }}
+          >
+            {initialsFor(senderName)}
+          </AvatarFallback>
+        </Avatar>
+      )}
 
-      <div className='min-w-0 flex-1'>
-        {showHeader && (
-          <div className='mb-0.5 flex items-baseline gap-2'>
-            <span className='text-sm font-semibold'>{senderName}</span>
-            {message.isAnonymous && (
-              <span className='rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400'>
-                anonymous
-              </span>
-            )}
-            {message.messageType === 'QUESTION' && (
-              <span className='rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400'>
-                question
-              </span>
-            )}
-            <span className='text-[11px] text-muted-foreground'>
-              {formatTime(message.createdAt)}
-            </span>
-            {isPending && (
-              <span className='inline-flex items-center gap-1 text-[11px] text-muted-foreground'>
-                <Icons.spinner className='h-3 w-3 animate-spin' />
-                Sending…
-              </span>
-            )}
-            {message.editedAt && (
-              <span className='text-[11px] text-muted-foreground'>(edited)</span>
-            )}
-          </div>
+      <div
+        className={cn(
+          'flex min-w-0 max-w-[75%] flex-col',
+          isAuthor ? 'items-end' : 'items-start'
         )}
-
-        {isDeleted ? (
-          <p className='text-sm italic text-muted-foreground'>This message was deleted.</p>
-        ) : isEditing ? (
-          <div className='space-y-2'>
+      >
+        {isEditing ? (
+          <div className='w-full space-y-2 rounded-lg border bg-background p-2'>
             <Textarea
               ref={editTextareaRef}
               value={editValue}
@@ -372,60 +349,144 @@ export function MessageRow({
               </Button>
             </div>
           </div>
-        ) : (() => {
-          // Web client posts E2EE-shaped payloads where the "ciphertext" is
-          // base64(utf-8 plaintext); decode it locally so the user sees their
-          // own message instead of the 🔒 placeholder. Real opaque ciphertext
-          // (from a different client) returns null and we keep the placeholder.
-          const plain = getDiscussionMessagePlaintext({
-            content: message.content,
-            ciphertext: message.ciphertext,
-            messageType: message.messageType
-          });
-          if (plain && plain.trim().length > 0) {
-            return (
-              <div className='text-sm leading-snug'>
-                <DiscussionMessageMarkdown text={plain} tone='hybrid' />
-              </div>
-            );
-          }
-          if (message.ciphertext) {
-            return <p className='text-sm text-muted-foreground'>🔒 Encrypted message</p>;
-          }
-          return null;
-        })()}
+        ) : (
+          <div
+            className={cn(
+              'relative w-fit max-w-full rounded-2xl px-2.5 py-1.5 shadow-sm',
+              isAuthor
+                ? 'rounded-tr-sm bg-primary text-primary-foreground'
+                : 'rounded-tl-sm border bg-card text-card-foreground'
+            )}
+          >
+            {/* Hover action bar — anchored to the bubble's inner edge. */}
+            {!isDeleted && !isPending && (
+              <MessageActionsToolbar
+                message={message}
+                channelId={channelId}
+                isAuthor={isAuthor}
+                myUserId={myUserId}
+                perms={perms}
+                isPinned={isPinned}
+                inThread={inThread}
+                onReplyInThread={onReplyInThread}
+                onQuickReact={(emoji) => onToggleReaction(message.id, emoji)}
+                onOptimisticPatch={onOptimisticPatch}
+                onEdit={() => {
+                  setEditValue(messagePlaintext);
+                  setIsEditing(true);
+                }}
+              />
+            )}
 
-        {!isDeleted && message.attachments && message.attachments.length > 0 && (
-          <DiscussionAttachmentCards
-            attachments={message.attachments.map((a) => ({
-              id: a.id,
-              fileType: a.fileType,
-              mimeType: a.mimeType,
-              size: a.size,
-              url: a.url,
-              accessUrl: a.accessUrl,
-              isE2EE: a.isE2EE
-            }))}
-            tone='hybrid'
-          />
+            {/* Sender name (others) + anonymous / question badges. */}
+            {!isDeleted &&
+              (!isAuthor ||
+                message.isAnonymous ||
+                message.messageType === 'QUESTION') && (
+                <div className='mb-0.5 flex items-center gap-1.5'>
+                  {!isAuthor && (
+                    <span
+                      className='text-xs font-semibold'
+                      style={{ color: avatarSolid(senderName, message.isAnonymous) }}
+                    >
+                      {senderName}
+                    </span>
+                  )}
+                  {message.isAnonymous && (
+                    <span className='rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400'>
+                      anonymous
+                    </span>
+                  )}
+                  {message.messageType === 'QUESTION' && (
+                    <span className='rounded-full bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-medium text-amber-600 dark:text-amber-400'>
+                      question
+                    </span>
+                  )}
+                </div>
+              )}
+
+            {isDeleted ? (
+              <p className='text-sm italic opacity-60'>This message was deleted.</p>
+            ) : (
+              (() => {
+                // Web client posts E2EE-shaped payloads where the "ciphertext"
+                // is base64(utf-8 plaintext); decode it locally so the user
+                // sees their own message instead of the 🔒 placeholder. Real
+                // opaque ciphertext (from a different client) returns null and
+                // we keep the placeholder.
+                const plain = getDiscussionMessagePlaintext({
+                  content: message.content,
+                  ciphertext: message.ciphertext,
+                  messageType: message.messageType
+                });
+                if (plain && plain.trim().length > 0) {
+                  return (
+                    <div className='text-sm leading-snug [overflow-wrap:anywhere]'>
+                      <DiscussionMessageMarkdown text={plain} tone='hybrid' />
+                    </div>
+                  );
+                }
+                if (message.ciphertext) {
+                  return <p className='text-sm opacity-70'>🔒 Encrypted message</p>;
+                }
+                return null;
+              })()
+            )}
+
+            {!isDeleted && message.attachments && message.attachments.length > 0 && (
+              <DiscussionAttachmentCards
+                attachments={message.attachments.map((a) => ({
+                  id: a.id,
+                  fileType: a.fileType,
+                  mimeType: a.mimeType,
+                  size: a.size,
+                  url: a.url,
+                  accessUrl: a.accessUrl,
+                  isE2EE: a.isE2EE
+                }))}
+                tone='hybrid'
+              />
+            )}
+
+            {/* Meta: edited · time (+ sending state), bottom-right in bubble. */}
+            <div
+              className={cn(
+                'mt-0.5 flex items-center justify-end gap-1 text-[10px] leading-none',
+                isAuthor ? 'text-primary-foreground/70' : 'text-muted-foreground'
+              )}
+            >
+              {message.editedAt && <span>edited</span>}
+              {isPending ? (
+                <span className='inline-flex items-center gap-1'>
+                  <Icons.spinner className='h-3 w-3 animate-spin' /> Sending…
+                </span>
+              ) : (
+                <span className='tabular-nums'>{formatTime(message.createdAt)}</span>
+              )}
+            </div>
+          </div>
         )}
 
-        {!isDeleted && message.reactions && message.reactions.length > 0 && (
-          <DiscussionReactionPillRow
-            messageId={message.id}
-            reactions={message.reactions}
-            myUserId={myUserId ?? undefined}
-            tone='hybrid'
-            onToggle={onToggleReaction}
-            showAddPicker={false}
-          />
+        {/* Reactions sit just under the bubble, aligned to the same side. */}
+        {!isDeleted && !isEditing && message.reactions && message.reactions.length > 0 && (
+          <div className='mt-0.5'>
+            <DiscussionReactionPillRow
+              messageId={message.id}
+              reactions={message.reactions}
+              myUserId={myUserId ?? undefined}
+              tone='hybrid'
+              onToggle={onToggleReaction}
+              showAddPicker={false}
+            />
+          </div>
         )}
 
+        {/* Thread preview, aligned to the same side. */}
         {!isDeleted && !inThread && message.threadPreview && message.threadPreview.replyCount > 0 && (
           <button
             type='button'
             onClick={() => onReplyInThread?.(message.id)}
-            className='mt-1.5 flex items-center gap-2 rounded-md border bg-muted/40 px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-foreground'
+            className='mt-1.5 flex items-center gap-2 rounded-md border bg-card px-2 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/50 hover:bg-primary/10 hover:text-foreground'
           >
             <Icons.chat className='h-3 w-3' />
             <span>
@@ -443,25 +504,6 @@ export function MessageRow({
           </button>
         )}
       </div>
-
-      {!isDeleted && !isEditing && !isPending && (
-        <MessageActionsToolbar
-          message={message}
-          channelId={channelId}
-          isAuthor={isAuthor}
-          myUserId={myUserId}
-          perms={perms}
-          isPinned={isPinned}
-          inThread={inThread}
-          onReplyInThread={onReplyInThread}
-          onQuickReact={(emoji) => onToggleReaction(message.id, emoji)}
-          onOptimisticPatch={onOptimisticPatch}
-          onEdit={() => {
-            setEditValue(messagePlaintext);
-            setIsEditing(true);
-          }}
-        />
-      )}
     </div>
   );
 

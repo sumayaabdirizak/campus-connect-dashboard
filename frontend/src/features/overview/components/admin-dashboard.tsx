@@ -4,8 +4,6 @@ import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
 import {
   Users,
-  GraduationCap,
-  UserCheck,
   BookOpen,
   Layers,
   ClipboardList,
@@ -15,24 +13,18 @@ import {
   ChevronRight
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
-import { cn } from '@/lib/utils';
-import { useDeanUsers, usePendingRegistrations } from '@/features/dean/api/queries';
+import { useDeanReports } from '@/features/dean/api/queries';
+import { FacultyReportsKpiGrid } from '@/features/dean/components/faculty-reports/faculty-reports-kpi-grid';
 import { useAnnouncements } from '@/features/announcements/api/queries';
 import { MonthCalendar } from './month-calendar';
 
 const SHORTCUTS: { icon: LucideIcon; title: string; desc: string; href: string }[] = [
   { icon: Users, title: 'Users', desc: 'Students, teachers & staff', href: '/dashboard/dean/users' },
-  { icon: BookOpen, title: 'Courses', desc: 'Catalog & offerings', href: '/dashboard/dean/courses' },
-  { icon: Layers, title: 'Batches', desc: 'Batches & sections', href: '/dashboard/dean/batches' },
-  {
-    icon: ClipboardList,
-    title: 'Teacher assigning',
-    desc: 'Assign teachers to sections',
-    href: '/dashboard/dean/Assigning'
-  },
-  { icon: UsersRound, title: 'Clubs', desc: 'Student clubs', href: '/dashboard/dean/clubs' },
+  { icon: BookOpen, title: 'Courses', desc: 'Faculty course catalogue', href: '/dashboard/dean/courses' },
+  { icon: Layers, title: 'Batches', desc: 'Batches & sections overview', href: '/dashboard/dean/batches' },
+  { icon: ClipboardList, title: 'Offerings', desc: 'Active course offerings', href: '/dashboard/dean/Assigning' },
+  { icon: UsersRound, title: 'Clubs', desc: 'Approve & manage clubs', href: '/dashboard/dean/clubs' },
   {
     icon: Megaphone,
     title: 'Announcements',
@@ -41,62 +33,11 @@ const SHORTCUTS: { icon: LucideIcon; title: string; desc: string; href: string }
   }
 ];
 
-function AdminStat({
-  icon: Icon,
-  value,
-  label,
-  href,
-  loading,
-  accent
-}: {
-  icon: LucideIcon;
-  value: number;
-  label: string;
-  href: string;
-  loading?: boolean;
-  accent?: boolean;
-}) {
-  return (
-    <Link
-      href={href}
-      className='flex items-center gap-3 rounded-lg border bg-card p-4 shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-    >
-      <span
-        className={cn(
-          'flex size-10 shrink-0 items-center justify-center rounded-lg',
-          accent ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'
-        )}
-      >
-        <Icon className='size-5' />
-      </span>
-      <div className='min-w-0'>
-        {loading ? (
-          <Skeleton className='h-7 w-10' />
-        ) : (
-          <p className='text-2xl font-bold tabular-nums text-foreground'>{value}</p>
-        )}
-        <p className='text-xs text-muted-foreground'>{label}</p>
-      </div>
-    </Link>
-  );
-}
-
 export function AdminDashboard({ user }: { user: { full_name?: string } }) {
-  const { data: students, isLoading: studentsLoading } = useDeanUsers({
-    role: 'STUDENT',
-    pageSize: '1'
-  });
-  const { data: teachers, isLoading: teachersLoading } = useDeanUsers({
-    role: 'TEACHER',
-    pageSize: '1'
-  });
-  const { data: pending, isLoading: pendingLoading } = usePendingRegistrations();
+  const { data: reportsData, isLoading: reportsLoading } = useDeanReports({ period: '6m' });
   const { data: announcementsData } = useAnnouncements();
 
   const announcements = announcementsData ?? [];
-  const studentCount = students?.pagination?.total ?? 0;
-  const teacherCount = teachers?.pagination?.total ?? 0;
-  const pendingCount = pending?.registrations?.length ?? 0;
   const firstName = user?.full_name?.split(' ')[0];
 
   return (
@@ -115,35 +56,11 @@ export function AdminDashboard({ user }: { user: { full_name?: string } }) {
         </div>
       </div>
 
+      <FacultyReportsKpiGrid data={reportsData} loading={reportsLoading} />
+
       <div className='grid grid-cols-1 gap-6 lg:grid-cols-12'>
         {/* Main */}
         <div className='flex flex-col gap-6 lg:col-span-8'>
-          {/* Stats */}
-          <div className='grid grid-cols-1 gap-4 sm:grid-cols-3'>
-            <AdminStat
-              icon={Users}
-              value={studentCount}
-              label='Students'
-              href='/dashboard/dean/users'
-              loading={studentsLoading}
-            />
-            <AdminStat
-              icon={GraduationCap}
-              value={teacherCount}
-              label='Teachers'
-              href='/dashboard/dean/users'
-              loading={teachersLoading}
-            />
-            <AdminStat
-              icon={UserCheck}
-              value={pendingCount}
-              label='Pending approvals'
-              href='/dashboard/dean/users'
-              loading={pendingLoading}
-              accent={pendingCount > 0}
-            />
-          </div>
-
           {/* Management hub */}
           <Card className='rounded-lg border-border'>
             <CardHeader className='border-b py-3'>

@@ -119,7 +119,7 @@ export async function saveAttemptAnswers({ attemptId, studentId, answers = [] })
       err.statusCode = 404;
       throw err;
     }
-    if (attempt.studentId !== studentId) {
+    if (Number(attempt.studentId) !== Number(studentId)) {
       const err = new Error("Attempt does not belong to caller");
       err.statusCode = 403;
       throw err;
@@ -222,8 +222,18 @@ export async function finalizeAttempt({
     // Phase 3: stamp the attempt closed.
     const totalPoints = attempt.quiz.questions.reduce((s, q) => s + q.points, 0);
     const score = totalPoints > 0 ? (earned / totalPoints) * 100 : 0;
+    const storedViolations = attempt.violations_count ?? 0;
+    const effectiveViolations = Math.max(storedViolations, violationsCount ?? 0);
+    const storedWarnings = attempt.warnings_shown ?? 0;
+    const effectiveWarnings = Math.max(
+      storedWarnings,
+      effectiveViolations >= 3 ? 3 : effectiveViolations
+    );
     const effectiveClosure =
-      closureReason ?? (violationsCount >= 3 ? "violations" : null);
+      closureReason ?? (effectiveViolations >= 3 ? "violations" : null);
+    const hasShortAnswer = attempt.quiz.questions.some(
+      (q) => q.question_type === "SHORT_ANSWER"
+    );
 
     return tx.quizAttempt.update({
       where: { id: attemptId },
@@ -231,9 +241,10 @@ export async function finalizeAttempt({
         submitted_at: new Date(),
         score,
         grade: score,
+        is_graded: !hasShortAnswer,
         closure_reason: effectiveClosure,
-        violations_count: violationsCount,
-        warnings_shown: violationsCount >= 3 ? 3 : violationsCount,
+        violations_count: effectiveViolations,
+        warnings_shown: effectiveWarnings,
       },
       include: {
         student: { select: { id: true, full_name: true } },

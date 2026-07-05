@@ -15,6 +15,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Icons } from '@/components/icons';
+import { confirmAction } from '@/lib/notifications';
 import { useArchiveChannel, useHardDeleteChannel } from '../../../api/queries';
 import { useDiscussionPermissions } from '../../../hooks/use-discussion-permissions';
 import type { DiscussionChannel } from '../../../api/types';
@@ -51,16 +52,19 @@ export function DangerZoneTab({
     deleteConfirmText.trim().toLowerCase() === confirmName.toLowerCase() &&
     confirmName.length > 0;
 
-  const handleArchiveToggle = () => {
+  const handleArchiveToggle = async () => {
     if (archiveMut.isPending) return;
     if (isArchived) {
       archiveMut.mutate(false, { onSuccess: () => onArchiveSuccess() });
       return;
     }
     if (
-      !window.confirm(
-        'Archive this channel? Members will no longer see it in the sidebar. You can restore it later.'
-      )
+      !(await confirmAction(
+        'Archive this channel?',
+        'Members will no longer see it in the sidebar. You can restore it later.',
+        'Archive',
+        { icon: 'warning' }
+      ))
     ) {
       return;
     }

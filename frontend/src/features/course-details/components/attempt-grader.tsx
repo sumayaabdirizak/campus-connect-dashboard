@@ -285,7 +285,7 @@ export function AttemptGrader({
               {/* Answer body */}
               {isShort ? (
                 <div className='space-y-2 pl-6'>
-                  <div className='border rounded p-2 text-sm bg-muted/30 whitespace-pre-wrap min-h-[2.5rem]'>
+                  <div className='select-text border rounded p-2 text-sm bg-muted/30 whitespace-pre-wrap min-h-[2.5rem]'>
                     {ans.text_answer?.trim() || (
                       <span className='italic text-muted-foreground'>— no answer —</span>
                     )}

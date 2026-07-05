@@ -1,6 +1,6 @@
 # Campus Connect
 
-A full-stack university student portal for **Jazeera University** — courses, assignments, quizzes, attendance, real-time chat & discussions, and announcements, with role-based access for students, teachers, deans, faculty admins, and super admins.
+A full-stack university student portal for **Jazeera University** — courses, assignments, quizzes, real-time chat & discussions, and announcements, with role-based access for students, teachers, deans, faculty admins, and super admins.
 
 ![CI](https://github.com/sumayaabdirizak/campus-connect-dashboard/actions/workflows/ci.yml/badge.svg)
 
@@ -30,7 +30,6 @@ A full-stack university student portal for **Jazeera University** — courses, a
 - **Courses** — offerings with assigned teachers and enrolled students; resources, modules, and a course feed.
 - **Assignments** — draft/publish, open & due dates, file submissions, grading, submission counts.
 - **Quizzes** — authoring, question bank, student attempts, auto-grading, and a **live quiz monitor** for teachers over websockets.
-- **Attendance** — class schedules, manual marking, and **QR check-in with optional geofencing**.
 - **Course chat** — real-time messaging with replies, edits, @-mentions, file attachments, typing indicators, and presence.
 - **Discussions** — Discord-style servers/channels and group DMs with membership, roles, presence/status, and reactions.
 - **Announcements** — scoped publishing, tracked link redirects, analytics, and real-time notifications (web push via VAPID).
@@ -85,7 +84,7 @@ cd backend
 npm install
 cp .env.example .env          # then fill in DATABASE_URL + JWT_SECRET
 npm run prisma:migrate         # apply migrations (dev)
-npm run prisma:seed            # seed roles + a super admin
+npm run prisma:seed            # seed roles + demo academic data (set SEED_MINIMAL=1 for a small dataset)
 npm run dev                    # http://localhost:4000
 ```
 
@@ -98,6 +97,8 @@ npm run dev                    # http://localhost:3000
 ```
 
 Open **http://localhost:3000** and sign in with the seeded super-admin credentials (see `SUPER_ADMIN_EMAIL` in your backend `.env`). New users are provisioned by administrators — there is no public self sign-up.
+
+For Phase 2 thesis demos, see [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md) (seed accounts and a 15-minute walkthrough).
 
 ## Environment variables
 
@@ -156,7 +157,6 @@ campus-connect/
   - Backend: spin up Postgres → Prisma generate/validate/migrate/seed → `npm test` → `/health` smoke test.
 
 ## Roadmap
-- Harden attendance authorization (session start + scan enrollment checks).
 - Dark-mode token migration across remaining feature components.
 - Backend Dockerfile + `docker-compose` for one-command local/prod bring-up.
 - Broaden unit-test coverage of business logic.

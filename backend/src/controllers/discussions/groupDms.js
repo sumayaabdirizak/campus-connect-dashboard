@@ -3,58 +3,25 @@
  */
 
 import express from "express";
-import { z } from "zod";
 import { prisma } from "../../db/prisma.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
 import { getIo } from "../../socket/hub.js";
 import { buildUnreadSocketPayload } from "../../features/discussions/buildUnreadPayload.js";
+import {
+  parseDiscussionHistoryLimit,
+  encodeDiscussionCursor,
+  decodeDiscussionCursor,
+} from "../../features/discussions/discussionPagination.js";
+import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+import {
+  createGroupDmSchema,
+  groupDmSendMessageSchema,
+  addGroupDmMembersSchema,
+} from "../../features/discussions/validation/groupDiscussionSchemas.js";
 
 const router = express.Router();
-const MAX_HISTORY_LIMIT = 100;
 const MIN_TOTAL_MEMBERS = 3;
 const MAX_TOTAL_MEMBERS = 10;
-
-const createGroupDmSchema = z.object({
-  name: z.string().trim().max(120).optional().nullable(),
-  memberUserIds: z.array(z.number().int().positive()).min(2),
-});
-
-const sendMessageSchema = z.object({
-  content: z.string().trim().max(20000).optional().nullable(),
-  messageType: z.enum(["TEXT", "MEDIA", "SYSTEM"]).default("TEXT"),
-  parentMessageId: z.number().int().positive().optional().nullable(),
-});
-
-const addMembersSchema = z.object({
-  userIds: z.array(z.number().int().positive()).min(1),
-});
-
-function getCallerUserId(req) {
-  return Number(req.user?.id ?? req.user?.sub) || null;
-}
-
-function parseLimit(input) {
-  const n = Number(input ?? 50);
-  if (!Number.isFinite(n) || n <= 0) return 50;
-  return Math.min(n, MAX_HISTORY_LIMIT);
-}
-
-function encodeCursor(createdAt, id) {
-  return Buffer.from(JSON.stringify({ createdAt, id })).toString("base64url");
-}
-
-function decodeCursor(cursor) {
-  if (!cursor) return null;
-  try {
-    const parsed = JSON.parse(Buffer.from(String(cursor), "base64url").toString("utf8"));
-    if (!parsed?.createdAt || !Number.isFinite(Number(parsed?.id))) return null;
-    const dt = new Date(parsed.createdAt);
-    if (Number.isNaN(dt.getTime())) return null;
-    return { createdAt: dt, id: Number(parsed.id) };
-  } catch {
-    return null;
-  }
-}
 
 async function getActiveMember(groupDmId, userId) {
   return prisma.groupDmMember.findFirst({
@@ -66,7 +33,7 @@ async function getActiveMember(groupDmId, userId) {
 /** People who share a discussion server with you (for picking group DM members). Must stay before `/group-dms/:groupDmId`. */
 router.get("/group-dms/member-candidates", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const q = String(req.query.q ?? "")
       .trim()
@@ -128,7 +95,7 @@ router.get("/group-dms/member-candidates", async (req, res) => {
 
 router.get("/group-dms", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
 
     const rows = await prisma.groupDmMember.findMany({
@@ -189,7 +156,7 @@ router.get("/group-dms", async (req, res) => {
 
 router.post("/group-dms", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
 
     const parsed = createGroupDmSchema.safeParse(req.body);
@@ -267,7 +234,7 @@ router.post("/group-dms", async (req, res) => {
 
 router.get("/group-dms/:groupDmId", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
     if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
@@ -296,7 +263,7 @@ router.get("/group-dms/:groupDmId", async (req, res) => {
 
 router.get("/group-dms/:groupDmId/messages", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
     if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
@@ -307,8 +274,8 @@ router.get("/group-dms/:groupDmId/messages", async (req, res) => {
       return res.status(403).json(apiErrorBody("Forbidden", null));
     }
 
-    const limit = parseLimit(req.query.limit);
-    const cursor = decodeCursor(req.query.cursor);
+    const limit = parseDiscussionHistoryLimit(req.query.limit);
+    const cursor = decodeDiscussionCursor(req.query.cursor);
     const where = {
       groupDmId,
       deletedAt: null,
@@ -337,7 +304,7 @@ router.get("/group-dms/:groupDmId/messages", async (req, res) => {
     const pageRows = hasMore ? messages.slice(0, limit) : messages;
     const nextCursor =
       hasMore && pageRows.length
-        ? encodeCursor(pageRows[pageRows.length - 1].createdAt, pageRows[pageRows.length - 1].id)
+        ? encodeDiscussionCursor(pageRows[pageRows.length - 1].createdAt, pageRows[pageRows.length - 1].id)
         : null;
 
     return res.json({
@@ -353,7 +320,7 @@ router.get("/group-dms/:groupDmId/messages", async (req, res) => {
 
 router.post("/group-dms/:groupDmId/messages", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
     if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
@@ -367,7 +334,7 @@ router.post("/group-dms/:groupDmId/messages", async (req, res) => {
       return res.status(403).json(apiErrorBody("Posting is disabled for you in this group DM", null));
     }
 
-    const parsed = sendMessageSchema.safeParse(req.body);
+    const parsed = groupDmSendMessageSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json(apiErrorBody("Invalid request body", parsed.error.issues));
     }
@@ -440,10 +407,10 @@ router.post("/group-dms/:groupDmId/messages", async (req, res) => {
 
 router.post("/group-dms/:groupDmId/members", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
-    const parsed = addMembersSchema.safeParse(req.body);
+    const parsed = addGroupDmMembersSchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json(apiErrorBody("Invalid request body", parsed.error.issues));
     }
@@ -502,7 +469,7 @@ router.post("/group-dms/:groupDmId/members", async (req, res) => {
 
 router.delete("/group-dms/:groupDmId/members/:targetUserId", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
     const targetUserId = Number(req.params.targetUserId);
@@ -583,7 +550,7 @@ router.delete("/group-dms/:groupDmId/members/:targetUserId", async (req, res) =>
  */
 router.post("/group-dms/:groupDmId/leave", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
     if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
@@ -650,7 +617,7 @@ router.post("/group-dms/:groupDmId/leave", async (req, res) => {
  */
 router.get("/group-dms/:groupDmId/receipts", async (req, res) => {
   try {
-    const userId = getCallerUserId(req);
+    const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
     const groupDmId = Number(req.params.groupDmId);
     if (!Number.isInteger(groupDmId) || groupDmId <= 0) {

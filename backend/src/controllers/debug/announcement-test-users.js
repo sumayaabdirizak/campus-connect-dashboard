@@ -1,8 +1,7 @@
 import express from "express";
 import { prisma } from "../../db/prisma.js";
-import { auth } from "../../middleware/auth.js";
 import { requireRole } from "../../middleware/requireRole.js";
-import { canUserSeeAnnouncement } from "../../utils/announcement-visibility.js";
+import { canUserSeeAnnouncement } from "../../features/announcements/services/announcementVisibility.service.js";
 import { loadUserAnnouncementScope } from "../../utils/userAnnouncementScope.js";
 import {
   runDiscussionMembershipNightlySync,
@@ -81,7 +80,7 @@ function summarizeScope(scope) {
   };
 }
 
-router.get("/announcement-test-users", auth, requireRole("SUPER_ADMIN"), async (_req, res) => {
+router.get("/announcement-test-users", requireRole("SUPER_ADMIN"), async (_req, res) => {
   try {
     const superAdmin = await prisma.user.findFirst({
       where: { role: { name: "SUPER_ADMIN" } },
@@ -322,7 +321,7 @@ router.get("/announcement-test-users", auth, requireRole("SUPER_ADMIN"), async (
  * GET  /api/debug/announcement-scope-check/:id   -> checks a saved announcement
  * POST /api/debug/announcement-scope-check       -> checks an ad-hoc target payload
  */
-router.get("/announcement-scope-check/:id", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
+router.get("/announcement-scope-check/:id", requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const id = Number(req.params.id);
     if (!Number.isFinite(id)) {
@@ -355,7 +354,7 @@ router.get("/announcement-scope-check/:id", auth, requireRole("SUPER_ADMIN"), as
   }
 });
 
-router.post("/announcement-scope-check", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
+router.post("/announcement-scope-check", requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const targetType = String(req.body?.targetType ?? "").toUpperCase();
     if (!ALLOWED_TARGET_TYPES.has(targetType)) {
@@ -387,7 +386,7 @@ router.post("/announcement-scope-check", auth, requireRole("SUPER_ADMIN"), async
   }
 });
 
-router.post("/discussion-memberships/sync", auth, requireRole("SUPER_ADMIN"), async (req, res) => {
+router.post("/discussion-memberships/sync", requireRole("SUPER_ADMIN"), async (req, res) => {
   try {
     const userId = req.body?.userId ? Number(req.body.userId) : null;
     if (userId) {

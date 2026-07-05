@@ -1,6 +1,6 @@
 import { prisma } from "../../db/prisma.js";
 import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
+import { verifyPassword } from "../../utils/password.js";
 import { env } from "../../config/env.js";
 import { issueCsrfCookie } from "../../middleware/csrf.js";
 import { getFacultyIdForFacultyAdminUser } from "../../utils/facultyAccess.js";
@@ -117,7 +117,7 @@ export async function postLogin(req, res) {
     throw new HttpError(401, "Invalid credentials", null);
   }
 
-  const match = await bcrypt.compare(password, user.password_hash);
+  const match = await verifyPassword(password, user.password_hash);
   if (!match) {
     throw new HttpError(401, "Invalid credentials", null);
   }

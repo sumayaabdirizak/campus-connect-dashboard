@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import {
@@ -22,6 +23,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { courseColor } from '@/features/student-courses/lib/course-color';
+import { AddToCalendarButton } from '@/components/add-to-calendar-button';
+import { deadlineRowToCalendarInput } from '@/features/calendar/deadline-calendar';
 
 type DeadlineKind = 'announcement' | 'assignment' | 'quiz';
 interface DeadlineRow {
@@ -30,7 +33,7 @@ interface DeadlineRow {
   title: string;
   deadlineAt: string | null;
   courseCode?: string | null;
-  courseOfferingId?: number | null;
+  courseOfferingId?: string | null;
 }
 
 const WEEKDAYS = ['Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa', 'Su'];
@@ -85,7 +88,15 @@ export function MonthCalendar() {
   return (
     <Card className='rounded-lg border-border'>
       <CardHeader className='flex flex-row items-center justify-between gap-2 border-b py-3'>
-        <CardTitle className='text-base font-semibold'>{format(viewMonth, 'MMMM yyyy')}</CardTitle>
+        <div className='min-w-0'>
+          <CardTitle className='text-base font-semibold'>{format(viewMonth, 'MMMM yyyy')}</CardTitle>
+          <Link
+            href='/dashboard/calendar'
+            className='text-xs text-primary hover:underline'
+          >
+            Open full calendar
+          </Link>
+        </div>
         <div className='flex items-center gap-1'>
           <Button
             variant='ghost'
@@ -168,22 +179,36 @@ export function MonthCalendar() {
           {selectedItems.length === 0 ? (
             <p className='py-2 text-xs text-muted-foreground'>No deadlines this day.</p>
           ) : (
-            selectedItems.map((d) => (
-              <button
-                key={`${d.kind}-${d.id}`}
-                type='button'
-                onClick={() => openDeadline(d)}
-                className='flex w-full items-center gap-2 rounded-md p-1.5 text-left transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
-              >
-                <span
-                  className='size-2 shrink-0 rounded-full'
-                  style={{ backgroundColor: courseColor(d.courseCode ?? d.title) }}
-                />
-                <span className='truncate text-xs text-foreground'>
-                  {d.courseCode ? `${d.courseCode} · ${d.title}` : d.title}
-                </span>
-              </button>
-            ))
+            selectedItems.map((d) => {
+              const deadline = deadlineRowToCalendarInput(d);
+              return (
+                <div
+                  key={`${d.kind}-${d.id}`}
+                  className='flex items-start gap-1 rounded-md p-1 transition-colors hover:bg-muted'
+                >
+                  <button
+                    type='button'
+                    onClick={() => openDeadline(d)}
+                    className='flex min-w-0 flex-1 items-center gap-2 p-0.5 text-left focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+                  >
+                    <span
+                      className='size-2 shrink-0 rounded-full'
+                      style={{ backgroundColor: courseColor(d.courseCode ?? d.title) }}
+                    />
+                    <span className='truncate text-xs text-foreground'>
+                      {d.courseCode ? `${d.courseCode} · ${d.title}` : d.title}
+                    </span>
+                  </button>
+                  {deadline ? (
+                    <AddToCalendarButton
+                      deadline={deadline}
+                      className='shrink-0 px-1 text-[10px] text-muted-foreground'
+                      label='Add'
+                    />
+                  ) : null}
+                </div>
+              );
+            })
           )}
         </div>
       </CardContent>
