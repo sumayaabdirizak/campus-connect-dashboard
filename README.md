@@ -78,6 +78,18 @@ docs/screenshots/  ← drop images here and reference them, e.g. ![Dashboard](do
 - **Node.js 22+**
 - **PostgreSQL 16+** (running locally or a connection string)
 
+### Quick start (both apps from repo root)
+
+```bash
+npm install              # installs concurrently at root
+npm run install:all      # backend + frontend dependencies (first time)
+cd backend && cp .env.example .env && cd ..   # fill DATABASE_URL + JWT_SECRET
+cd frontend && cp .env.example .env.local && cd ..
+cd backend && npm run prisma:migrate && npm run prisma:seed && cd ..
+
+npm run dev              # backend :4000 + frontend :3000
+```
+
 ### 1. Backend
 ```bash
 cd backend

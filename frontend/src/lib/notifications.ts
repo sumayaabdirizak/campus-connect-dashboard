@@ -22,7 +22,20 @@ let swalModule: typeof import('sweetalert2') | null = null;
 
 async function getSwal() {
   if (!swalModule) {
-    swalModule = await import('sweetalert2');
+    // #region agent log
+    fetch('http://127.0.0.1:7768/ingest/31870779-47f0-4312-b278-1c6da891de23',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'240e4e'},body:JSON.stringify({sessionId:'240e4e',location:'notifications.ts:getSwal',message:'loading sweetalert2',data:{hasCached:!!swalModule},timestamp:Date.now(),hypothesisId:'H-A',runId:'post-fix'})}).catch(()=>{});
+    // #endregion
+    try {
+      swalModule = await import('sweetalert2');
+      // #region agent log
+      fetch('http://127.0.0.1:7768/ingest/31870779-47f0-4312-b278-1c6da891de23',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'240e4e'},body:JSON.stringify({sessionId:'240e4e',location:'notifications.ts:getSwal',message:'sweetalert2 loaded',data:{ok:true},timestamp:Date.now(),hypothesisId:'H-A',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+    } catch (err) {
+      // #region agent log
+      fetch('http://127.0.0.1:7768/ingest/31870779-47f0-4312-b278-1c6da891de23',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'240e4e'},body:JSON.stringify({sessionId:'240e4e',location:'notifications.ts:getSwal',message:'sweetalert2 import failed',data:{error:err instanceof Error?err.message:String(err)},timestamp:Date.now(),hypothesisId:'H-A',runId:'post-fix'})}).catch(()=>{});
+      // #endregion
+      throw err;
+    }
   }
   return swalModule.default;
 }
