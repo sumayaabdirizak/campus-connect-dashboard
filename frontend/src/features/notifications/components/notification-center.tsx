@@ -19,14 +19,18 @@ export function NotificationCenter() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button variant='ghost' size='icon' className='relative h-8 w-8'>
-          <Icons.notification className='h-4 w-4' />
+        <Button
+          variant='outline'
+          size='icon'
+          className='relative size-9 rounded-full bg-background shadow-none'
+          aria-label='Open notifications'
+        >
+          <Icons.notification className='size-4' aria-hidden='true' />
           {unreadCount > 0 && (
             <span className='bg-destructive text-destructive-foreground absolute -top-0.5 -right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-medium'>
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
-          <span className='sr-only'>Notifications</span>
         </Button>
       </PopoverTrigger>
       <PopoverContent align='end' className='w-[calc(100vw-2rem)] p-0 sm:w-[380px]' sideOffset={8}>
@@ -55,11 +59,7 @@ export function NotificationCenter() {
           ) : (
             <div className='flex flex-col divide-y divide-border'>
               {recent.map((item) => (
-                <NotificationItem
-                  key={item.key}
-                  item={item}
-                  onRead={() => markRead(item)}
-                />
+                <NotificationItem key={item.key} item={item} onRead={() => markRead(item)} />
               ))}
             </div>
           )}

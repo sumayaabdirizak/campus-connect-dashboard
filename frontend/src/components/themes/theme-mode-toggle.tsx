@@ -38,9 +38,10 @@ export function ThemeModeToggle() {
     <Tooltip>
       <TooltipTrigger asChild>
         <Button
-          variant='secondary'
+          variant='outline'
           size='icon'
-          className='group/toggle size-8'
+          className='group/toggle size-9 rounded-full bg-background shadow-none'
+          aria-label='Toggle color theme'
           onClick={handleThemeToggle}
         >
           <Icons.brightness />
