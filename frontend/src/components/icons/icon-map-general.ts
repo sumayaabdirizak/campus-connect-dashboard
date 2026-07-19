@@ -34,6 +34,7 @@ import {
   IconDotsVertical,
   IconEdit,
   IconExternalLink,
+  IconEye,
   IconEyeOff,
   IconFile,
   IconFileText,
@@ -94,7 +95,7 @@ import {
   IconUserPlus,
   IconUserX,
   IconUsers,
-  IconVideo,
+  IconVideo
 } from '@tabler/icons-react';
 
 export type Icon = React.ComponentType<IconProps>;
@@ -194,6 +195,7 @@ export const generalIcons = {
   trendingDown: IconTrendingDown,
   trendingUp: IconTrendingUp,
   eyeOff: IconEyeOff,
+  eye: IconEye,
   adjustments: IconAdjustmentsHorizontal,
   bold: IconBold,
   italic: IconItalic,
@@ -207,5 +209,5 @@ export const generalIcons = {
   slash: IconSlash,
   calendar: IconCalendar,
   galleryVerticalEnd: IconStack2,
-  moreHorizontal: IconDots,
+  moreHorizontal: IconDots
 };
