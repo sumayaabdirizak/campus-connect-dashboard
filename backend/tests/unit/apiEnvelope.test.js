@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   apiErrorBody,
   apiSuccessBody,
+  namedListSuccess,
   prismaSchemaDriftHint,
 } from "../../src/utils/apiEnvelope.js";
 
@@ -19,6 +20,29 @@ describe("utils/apiEnvelope", () => {
       status: "error",
       message: "Nope",
       details: ["bad field"],
+    });
+  });
+
+  it("namedListSuccess keeps domain key and pagination fields", () => {
+    const items = [{ id: 1 }];
+    expect(
+      namedListSuccess({
+        message: "ok",
+        name: "faculties",
+        items,
+        page: 1,
+        pageSize: 50,
+        totalCount: 1,
+      })
+    ).toEqual({
+      status: "success",
+      message: "ok",
+      count: 1,
+      faculties: items,
+      totalCount: 1,
+      page: 1,
+      pageSize: 50,
+      results: items,
     });
   });
 

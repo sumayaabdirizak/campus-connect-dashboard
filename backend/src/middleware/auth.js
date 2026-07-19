@@ -54,7 +54,7 @@ export async function auth(req, res, next) {
   try {
     account = await prisma.user.findUnique({
       where: { id: Number(payload.sub) },
-      select: { status: true },
+      select: { status: true, tokenVersion: true },
     });
   } catch (e) {
     // Fail-closed, same rationale as the revocation lookup above.
@@ -64,6 +64,9 @@ export async function auth(req, res, next) {
   if (!account) return res.status(401).json(apiErrorBody("Invalid token", null));
   if (account.status !== "ACTIVE") {
     return res.status(403).json(apiErrorBody("Account is not active", null));
+  }
+  if (payload.tv != null && Number(payload.tv) !== Number(account.tokenVersion ?? 0)) {
+    return res.status(401).json(apiErrorBody("Token has been revoked", null));
   }
 
   const facultyId = payload.facultyId ?? payload.faculty_id ?? null;

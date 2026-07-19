@@ -6,6 +6,7 @@
 
 @import './theme.css';
 @import './sweetalert-theme.css';
+@import './communication.css';
 
 /* ─── Semantic status colours exposed as Tailwind utilities ────────────
  * `bg-warning`, `text-warning-foreground`, `border-warning`, `bg-warning-muted`
@@ -29,8 +30,54 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground select-none;
+    /* Award-craft rendering: crisper glyphs, better kerning. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings + titles use the theme's display face with tightened tracking —
+     the single biggest "designed" upgrade, applied app-wide. Falls back to
+     --font-sans on themes that don't define --font-display. Components that
+     render headings as plain divs can opt in with the `.font-display` class. */
+  h1,
+  h2,
+  h3,
+  .font-display,
+  [data-slot='card-title'],
+  [data-slot='dialog-title'],
+  [data-slot='sheet-title'],
+  [data-slot='alert-dialog-title'] {
+    font-family: var(--font-display, var(--font-sans));
+  }
+  h1 {
+    letter-spacing: -0.03em;
+  }
+  h2,
+  [data-slot='card-title'],
+  [data-slot='dialog-title'],
+  [data-slot='sheet-title'],
+  [data-slot='alert-dialog-title'] {
+    letter-spacing: -0.02em;
+  }
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Pastel-tinted text selection — a small detail award sites always nail. */
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   /* Copyable / editable regions opt back in to text selection. */
@@ -182,5 +229,56 @@
   ::view-transition-new(quiz-question-card) {
     animation-duration: 100ms;
     animation-name: none;
+  }
+}
+
+/* ─── Award-craft motion utilities (opt-in, reduced-motion safe) ──────────
+ * Shared micro-interaction helpers so cards/sections across the app move
+ * with one consistent, tasteful cadence (150–200ms ease) — the "Hover
+ * States / Godly" polish, applied deliberately rather than everywhere. */
+@layer utilities {
+  .hover-lift {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .press-scale {
+    transition: transform 120ms ease;
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+
+  @keyframes cc-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animate-fade-up {
+    animation: cc-fade-up 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hover-lift,
+    .hover-lift:hover,
+    .press-scale,
+    .press-scale:active {
+      transition: none;
+      transform: none;
+    }
+    .animate-fade-up {
+      animation: none;
+    }
   }
 }

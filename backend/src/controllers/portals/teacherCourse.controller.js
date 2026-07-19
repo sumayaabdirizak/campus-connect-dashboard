@@ -2,6 +2,8 @@ import fs from "fs";
 import { prisma } from "../../db/prisma.js";
 import { enforceUploadContentSafety } from "../courses/resources.js";
 import { resolveCourseThumbnail } from "../../utils/publicAssetUrl.js";
+import { respondInternalError } from "../../utils/httpError.js";
+import { commitUploadedFile } from "../../storage/objectStorage.js";
 
 function buildQuickLinks(resources = []) {
   const visible = resources.filter((r) => !r.is_draft && r.status === "APPROVED");
@@ -93,7 +95,7 @@ export const getMyCourses = async (req, res) => {
     res.json(result);
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Failed to fetch teacher courses', error: e.message });
+    respondInternalError(res, 'Failed to fetch teacher courses', e);
   }
 };
 
@@ -207,7 +209,7 @@ export const getCourseDetail = async (req, res) => {
 
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Failed to fetch course details', error: e.message });
+    respondInternalError(res, 'Failed to fetch course details', e);
   }
 };
 
@@ -242,7 +244,24 @@ export const updateCourseCover = async (req, res) => {
       return res.status(400).json({ message: 'File contents do not match an image. Upload rejected.' });
     }
 
-    const url = `/uploads/covers/${req.file.filename}`;
+    const hostBase = `${req.protocol}://${req.get("host")}`;
+    let committed;
+    try {
+      committed = await commitUploadedFile({
+        prefix: "covers",
+        filename: req.file.filename,
+        localPath: req.file.path,
+        contentType: req.file.mimetype,
+        hostBase,
+      });
+    } catch (err) {
+      fs.unlink(req.file.path, () => {});
+      console.error("cover upload storage commit failed", err);
+      return res.status(500).json({ message: "Failed to store cover image" });
+    }
+
+    // Persist a host-stable path (`/uploads/covers/...`) for FE rewrites.
+    const url = committed.url.replace(/^https?:\/\/[^/]+/i, "") || `/uploads/${committed.storageKey}`;
 
     const course = await prisma.course.update({
       where: { id: offering.courseId },
@@ -253,6 +272,6 @@ export const updateCourseCover = async (req, res) => {
     res.json({ success: true, course });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Failed to update course cover', error: e.message });
+    respondInternalError(res, 'Failed to update course cover', e);
   }
 };

@@ -10,6 +10,7 @@ Campus Connect uses the **Express backend** for authentication. The Next.js fron
 4. Mutating API calls (`POST`, `PATCH`, `DELETE`) send `X-CSRF-Token` matching the `csrf_token` cookie (double-submit pattern).
 5. Session refresh: `POST /api/auth/refresh` (also cookie-based). Logout: `POST /api/auth/logout`.
 6. Client validates session on load via `GET /api/users/me` (`validateSession()` in `src/lib/auth-store.ts`).
+7. Next.js `src/middleware.ts` soft-gates `/dashboard` when the `auth_token` cookie is visible on the page origin (localhost or same-origin reverse proxy). API auth remains authoritative.
 
 ## Environment
 
@@ -31,6 +32,7 @@ After `npm run prisma:seed` in `backend/`, demo users use password `password123`
 
 | File | Purpose |
 |------|---------|
+| `src/middleware.ts` | Soft cookie gate for `/dashboard` |
 | `src/lib/auth-store.ts` | Zustand session + `validateSession` |
 | `src/lib/api-client.ts` | Fetch wrapper with cookies + CSRF |
 | `src/lib/api-config.ts` | `NEXT_PUBLIC_API_URL` normalization |

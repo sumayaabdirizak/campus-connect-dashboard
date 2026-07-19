@@ -30,3 +30,10 @@ debug-*.log
 # Local tooling (do not commit)
 .claude/
 .cursor/
+
+# Vendor / ThemeForest templates (reference only — never commit)
+/themeforest-0MsmiFYq-dreamspos-pos-inventory-management-admin-dashboard-template/
+/themeforest-*/
+/_vendor/
+/_vendor/dreamspos/
+/vendor-templates/

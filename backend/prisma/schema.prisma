@@ -244,6 +244,8 @@ model User {
   phone                String?
   password_hash        String
   status               AccountStatus @default(ACTIVE)
+  /// Bumped by `revokeAllForUser` so every previously issued JWT (access + refresh) is rejected.
+  tokenVersion         Int           @default(0)
   must_change_password Boolean       @default(true)
   last_login_at        DateTime?
   created_at           DateTime      @default(now())
@@ -300,6 +302,10 @@ model User {
   discussionGroupsOwned DiscussionGroup[] @relation("DiscussionGroupOwner")
   groupDmsCreated       GroupDm[]         @relation("GroupDmCreator")
   groupDmMemberships    GroupDmMember[]
+
+  officeStaffMemberships SupportOfficeStaff[]
+  officeThreadsAsStudent OfficeThread[]       @relation("OfficeThreadStudent")
+  officeThreadsAssigned  OfficeThread[]       @relation("OfficeThreadAssignee")
 
   clubsOwned            Club[]                 @relation("ClubOwner")
   clubJoinRequests      ClubJoinRequest[]      @relation("ClubJoinRequester")
@@ -472,6 +478,7 @@ model Department {
   announcements  Announcement[]
   lecturers      LecturerProfile[]
 
+  @@index([facultyId])
   @@index([headUserId])
 }
 
@@ -757,6 +764,9 @@ model Submission {
   student    User         @relation(fields: [studentId], references: [id])
   group      CourseGroup? @relation(fields: [groupId], references: [id])
 
+  @@unique([assignmentId, studentId])
+  @@index([assignmentId])
+  @@index([studentId])
   @@index([groupId])
 }
 
@@ -819,6 +829,7 @@ model Quiz {
   questions      QuizQuestion[]
   attempts       QuizAttempt[]
 
+  @@index([courseOfferingId])
   @@index([moduleId])
 }
 
@@ -1129,6 +1140,7 @@ model Announcement {
   /// Full-text search (maintained by SQL trigger; optional until migration applied).
   searchVector Unsupported("tsvector")?
 
+  @@index([createdById])
   @@index([facultyId])
   @@index([departmentId])
   @@index([batchId])
@@ -1430,6 +1442,74 @@ model DiscussionAuditLog {
 }
 
 /// User-created group chat (min 3 members). Messages use `DiscussionMessage.groupDmId` with `groupId` null.
+/// An administrative unit students can message (Academic Office, Exam
+/// Office, Finance, Registrar, IT…). Staff behind it answer from a shared
+/// inbox, so conversations survive staff rotation.
+model SupportOffice {
+  id          Int      @id @default(autoincrement())
+  name        String
+  slug        String   @unique
+  description String?
+  /// Short uppercase prefix for thread reference codes, e.g. "EXM" → EXM-2026-0142.
+  codePrefix  String   @default("OFC")
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  staff   SupportOfficeStaff[]
+  threads OfficeThread[]
+}
+
+enum SupportOfficeStaffRole {
+  AGENT
+  MANAGER
+}
+
+model SupportOfficeStaff {
+  id       Int                    @id @default(autoincrement())
+  officeId Int
+  userId   Int
+  role     SupportOfficeStaffRole @default(AGENT)
+  addedAt  DateTime               @default(now())
+
+  office SupportOffice @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([officeId, userId])
+  @@index([userId])
+}
+
+enum OfficeThreadStatus {
+  OPEN
+  AWAITING_STUDENT
+  RESOLVED
+}
+
+/// One private conversation between a student and an office. Messages reuse
+/// DiscussionMessage via the nullable officeThreadId FK — same multiplexing
+/// pattern as channels and group DMs.
+model OfficeThread {
+  id           Int                @id @default(autoincrement())
+  officeId     Int
+  studentId    Int
+  topic        String
+  /// Human-quotable code (e.g. EXM-2026-0142) for phone/offline follow-up.
+  reference    String             @unique
+  status       OfficeThreadStatus @default(OPEN)
+  assignedToId Int?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  resolvedAt   DateTime?
+
+  office     SupportOffice @relation(fields: [officeId], references: [id], onDelete: Cascade)
+  student    User          @relation("OfficeThreadStudent", fields: [studentId], references: [id], onDelete: Cascade)
+  assignedTo User?         @relation("OfficeThreadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  messages   DiscussionMessage[]
+
+  @@index([officeId, status, updatedAt])
+  @@index([studentId, updatedAt])
+  @@index([assignedToId, status])
+}
+
 model GroupDm {
   id          Int       @id @default(autoincrement())
   name        String?
@@ -1492,6 +1572,9 @@ model DiscussionMessage {
   groupId       Int?
   channelId     Int?
   groupDmId     Int?
+  officeThreadId Int?
+  /// Staff-only note inside an office thread — never shown to the student.
+  isInternalNote Boolean @default(false)
   senderId      Int?
   content       String?               @db.Text
   messageType   DiscussionMessageType @default(TEXT)
@@ -1509,6 +1592,7 @@ model DiscussionMessage {
   group        DiscussionGroup?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   channel      DiscussionChannel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
   groupDm      GroupDm?                @relation(fields: [groupDmId], references: [id], onDelete: Cascade)
+  officeThread OfficeThread?           @relation(fields: [officeThreadId], references: [id], onDelete: Cascade)
   sender       User?                     @relation("DiscussionMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
   parentMessage DiscussionMessage?       @relation("DiscussionMessageThread", fields: [parentMessageId], references: [id], onDelete: SetNull)
   replies      DiscussionMessage[]       @relation("DiscussionMessageThread")
@@ -1524,6 +1608,7 @@ model DiscussionMessage {
   @@index([groupId, parentMessageId, createdAt])
   @@index([channelId, createdAt])
   @@index([groupDmId, createdAt])
+  @@index([officeThreadId, createdAt])
   // Hot path: GET /channels/:id/messages filters by `parentMessageId IS NULL`
   // (main thread) or `parentMessageId = ROOT_ID` (thread expansion). The
   // existing [channelId, createdAt] index forced row-level filtering on

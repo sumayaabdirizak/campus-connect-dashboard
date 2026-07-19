@@ -23,7 +23,7 @@ const SHORTCUTS: { icon: LucideIcon; title: string; desc: string; href: string }
   { icon: Users, title: 'Users', desc: 'Students, teachers & staff', href: '/dashboard/dean/users' },
   { icon: BookOpen, title: 'Courses', desc: 'Faculty course catalogue', href: '/dashboard/dean/courses' },
   { icon: Layers, title: 'Batches', desc: 'Batches & sections overview', href: '/dashboard/dean/batches' },
-  { icon: ClipboardList, title: 'Offerings', desc: 'Active course offerings', href: '/dashboard/dean/Assigning' },
+  { icon: ClipboardList, title: 'Offerings', desc: 'Active course offerings', href: '/dashboard/dean/assigning' },
   { icon: UsersRound, title: 'Clubs', desc: 'Approve & manage clubs', href: '/dashboard/dean/clubs' },
   {
     icon: Megaphone,

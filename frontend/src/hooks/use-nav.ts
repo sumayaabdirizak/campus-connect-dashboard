@@ -2,114 +2,73 @@
 
 import { useMemo } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
+import { useQuery } from '@/lib/async-query';
+import { apiClient } from '@/lib/api-client';
+import { filterNavItems, pathAllowed, roleAllows } from '@/lib/nav-access';
 import type { NavItem, NavGroup } from '@/types';
 
+type NavPageRow = {
+  id: number;
+  slug: string;
+  title: string;
+  path: string;
+  groupLabel?: string | null;
+};
+
+type MyNavPagesResponse = {
+  user: { id: number; role: string };
+  pages: NavPageRow[];
+};
+
+function useServerNavPaths(enabled: boolean) {
+  return useQuery({
+    queryKey: ['rbac', 'me-nav-pages'],
+    queryFn: () => apiClient<MyNavPagesResponse>('/rbac/me/nav-pages'),
+    enabled,
+    staleTime: 60_000
+  });
+}
+
 /**
- * Hook to filter navigation items based on RBAC (fully client-side)
- *
- * @param items - Array of navigation items to filter
- * @returns Filtered items
+ * Filter nav items by client role, then optionally by server RBAC page paths
+ * from `GET /api/rbac/me/nav-pages`. Falls back to role-only filter if the
+ * API is unavailable (keeps sidebar usable during outages).
  */
 export function useFilteredNavItems(items: NavItem[]) {
   const user = useAuthStore((state) => state.user);
+  const navQuery = useServerNavPaths(Boolean(user));
+  const allowedPaths = useMemo(() => {
+    const pages = navQuery.data?.pages;
+    if (!pages?.length) return null;
+    return new Set(pages.map((p) => p.path));
+  }, [navQuery.data?.pages]);
 
-  // Filter items synchronously
-  const filteredItems = useMemo(() => {
-    return items
-      .filter((item) => {
-        // No access restrictions
-        if (!item.access) {
-          return true;
-        }
-
-        // Require being logged in
-        if (!user) {
-          return false;
-        }
-
-        // Check role
-        if (item.access.roles) {
-          if (!item.access.roles.includes(user.role)) {
-            return false;
-          }
-        }
-
-        return true;
-      })
-      .map((item) => {
-        // Recursively filter child items
-        if (item.items && item.items.length > 0) {
-          const filteredChildren = item.items.filter((childItem) => {
-            // No access restrictions
-            if (!childItem.access) {
-              return true;
-            }
-
-            if (!user) return false;
-
-            // Check role
-            if (childItem.access.roles) {
-              if (!childItem.access.roles.includes(user.role)) {
-                return false;
-              }
-            }
-
-            return true;
-          });
-
-          return {
-            ...item,
-            items: filteredChildren
-          };
-        }
-
-        return item;
-      });
-  }, [items, user]);
-
-  return filteredItems;
+  return useMemo(
+    () => filterNavItems(items, user?.role, allowedPaths),
+    [items, user?.role, allowedPaths]
+  );
 }
 
 /**
- * Hook to filter navigation groups based on RBAC (fully client-side)
- *
- * @param groups - Array of navigation groups to filter
- * @returns Filtered groups (empty groups are removed)
+ * Filter navigation groups — role gate + server nav-page allowlist.
  */
 export function useFilteredNavGroups(groups: NavGroup[]) {
-  // We need to keep the group structure, but filter the items within each group
   const user = useAuthStore((state) => state.user);
+  const navQuery = useServerNavPaths(Boolean(user));
+  const allowedPaths = useMemo(() => {
+    const pages = navQuery.data?.pages;
+    if (!pages?.length) return null;
+    return new Set(pages.map((p) => p.path));
+  }, [navQuery.data?.pages]);
 
   return useMemo(() => {
     return groups
-      .map((group) => {
-        const filteredItems = group.items
-          .filter((item) => {
-            if (!item.access) return true;
-            if (!user) return false;
-            if (item.access.roles && !item.access.roles.includes(user.role)) return false;
-            return true;
-          })
-          .map((item) => {
-            if (item.items && item.items.length > 0) {
-              return {
-                ...item,
-                items: item.items.filter((sub) => {
-                  if (!sub.access) return true;
-                  if (!user) return false;
-                  if (sub.access.roles && !sub.access.roles.includes(user.role)) return false;
-                  return true;
-                })
-              };
-            }
-            return item;
-          });
-
-        return {
-          ...group,
-          items: filteredItems
-        };
-      })
+      .map((group) => ({
+        ...group,
+        items: filterNavItems(group.items, user?.role, allowedPaths)
+      }))
       .filter((group) => group.items.length > 0);
-  }, [groups, user]);
+  }, [groups, user?.role, allowedPaths]);
 }
+
+export { roleAllows, pathAllowed, filterNavItems };

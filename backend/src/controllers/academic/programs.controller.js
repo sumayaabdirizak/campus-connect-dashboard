@@ -1,22 +1,50 @@
 import { prisma } from "../../db/prisma.js";
+import { respondInternalError } from "../../utils/httpError.js";
+import { namedListSuccess } from "../../utils/apiEnvelope.js";
+import { parsePaginationQuery } from "../../utils/pagination.js";
 
 // GET all programs (optionally filter by department/level)
 export const getAllPrograms = async (req, res) => {
   try {
-    const { departmentId, level } = req.query;
+    const { departmentId, level, search } = req.query;
+    const { page, pageSize, skip } = parsePaginationQuery(req.query, {
+      defaultPageSize: 50,
+      maxPageSize: 200,
+    });
 
     const where = {};
     if (departmentId) where.departmentId = Number(departmentId);
     if (level) where.level = level;
+    if (search) {
+      where.OR = [
+        { name: { contains: String(search), mode: "insensitive" } },
+        { code: { contains: String(search), mode: "insensitive" } },
+      ];
+    }
 
-    const programs = await prisma.program.findMany({
-      where,
-      include: { department: true }
-    });
+    const [totalCount, programs] = await Promise.all([
+      prisma.program.count({ where }),
+      prisma.program.findMany({
+        where,
+        include: { department: true },
+        orderBy: { name: "asc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
 
-    res.json({ message: "Programs fetched", programs });
+    res.json(
+      namedListSuccess({
+        message: "Programs fetched",
+        name: "programs",
+        items: programs,
+        page,
+        pageSize,
+        totalCount,
+      })
+    );
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch programs", error: err.message });
+    respondInternalError(res, "Failed to fetch programs", err);
   }
 };
 
@@ -31,7 +59,7 @@ export const getProgramById = async (req, res) => {
     if (!program) return res.status(404).json({ message: "Program not found" });
     res.json({ message: "Program fetched", program });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch program", error: err.message });
+    respondInternalError(res, "Failed to fetch program", err);
   }
 };
 
@@ -59,7 +87,7 @@ export const createProgram = async (req, res) => {
     });
     res.status(201).json({ message: "Program created", program });
   } catch (err) {
-    res.status(500).json({ message: "Failed to create program", error: err.message });
+    respondInternalError(res, "Failed to create program", err);
   }
 };
 
@@ -88,7 +116,7 @@ export const updateProgram = async (req, res) => {
     });
     res.json({ message: "Program updated", program });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update program", error: err.message });
+    respondInternalError(res, "Failed to update program", err);
   }
 };
 
@@ -101,6 +129,6 @@ export const deleteProgram = async (req, res) => {
     });
     res.json({ message: "Program deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete program", error: err.message });
+    respondInternalError(res, "Failed to delete program", err);
   }
 };

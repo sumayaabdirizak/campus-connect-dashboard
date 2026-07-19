@@ -92,7 +92,12 @@ export async function apiClient<T>(
     credentials: 'include'
   });
 
-  if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
+  if (
+    response.status === 401 &&
+    endpoint !== '/auth/login' &&
+    endpoint !== '/auth/refresh' &&
+    endpoint !== '/auth/logout'
+  ) {
     const refreshed = await tryRefreshAccessToken();
     if (refreshed) {
       if (needsCsrf && csrfTokenInMemory) {

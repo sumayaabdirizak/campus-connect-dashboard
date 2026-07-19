@@ -1,15 +1,36 @@
 import { prisma } from "../../db/prisma.js";
+import { respondInternalError } from "../../utils/httpError.js";
+import { namedListSuccess } from "../../utils/apiEnvelope.js";
+import { parsePaginationQuery } from "../../utils/pagination.js";
 
 // Get all academic years
 export const getAllAcademicYears = async (req, res) => {
   try {
-    const years = await prisma.academicYear.findMany({
-      orderBy: { start_date: "desc" },
-      include: { semesters: true, batches: true }
+    const { page, pageSize, skip } = parsePaginationQuery(req.query, {
+      defaultPageSize: 50,
+      maxPageSize: 200,
     });
-    res.json({ message: "Academic years fetched", years });
+    const [totalCount, years] = await Promise.all([
+      prisma.academicYear.count(),
+      prisma.academicYear.findMany({
+        orderBy: { start_date: "desc" },
+        include: { semesters: true, batches: true },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+    res.json(
+      namedListSuccess({
+        message: "Academic years fetched",
+        name: "years",
+        items: years,
+        page,
+        pageSize,
+        totalCount,
+      })
+    );
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch academic years", error: err.message });
+    respondInternalError(res, "Failed to fetch academic years", err);
   }
 };
 
@@ -24,7 +45,7 @@ export const getAcademicYearById = async (req, res) => {
     if (!year) return res.status(404).json({ message: "Academic year not found" });
     res.json({ message: "Academic year fetched", year });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch academic year", error: err.message });
+    respondInternalError(res, "Failed to fetch academic year", err);
   }
 };
 
@@ -44,7 +65,7 @@ export const createAcademicYear = async (req, res) => {
     if (err.code === "P2002") {
       res.status(409).json({ message: "Academic year name must be unique." });
     } else {
-      res.status(500).json({ message: "Failed to create academic year", error: err.message });
+      respondInternalError(res, "Failed to create academic year", err);
     }
   }
 };
@@ -64,7 +85,7 @@ export const updateAcademicYear = async (req, res) => {
     });
     res.json({ message: "Academic year updated", year });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update academic year", error: err.message });
+    respondInternalError(res, "Failed to update academic year", err);
   }
 };
 
@@ -75,7 +96,7 @@ export const deleteAcademicYear = async (req, res) => {
     await prisma.academicYear.delete({ where: { id: Number(id) } });
     res.json({ message: "Academic year deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete academic year", error: err.message });
+    respondInternalError(res, "Failed to delete academic year", err);
   }
 };
 
@@ -178,6 +199,6 @@ export const promoteAcademicYear = async (req, res) => {
       batchesUpdated: updated.count
     });
   } catch (err) {
-    res.status(500).json({ message: "Failed to promote academic year", error: err.message });
+    respondInternalError(res, "Failed to promote academic year", err);
   }
 };

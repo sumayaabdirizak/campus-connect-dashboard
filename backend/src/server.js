@@ -16,6 +16,7 @@ import { runAnnouncementExpiryFallbackScan } from "./features/announcements/serv
 import { runAnnouncementPublishFallbackScan } from "./features/announcements/services/announcementPublishFallback.service.js";
 import { runDiscussionMembershipNightlySync } from "./features/discussions/membershipSync.service.js";
 import { autoSubmitExpiredAttempts } from "./services/quizAttempt.service.js";
+import { cleanExpiredRevokedTokens } from "./utils/tokenRevocation.js";
 
 assertEnv();
 
@@ -130,6 +131,30 @@ initializeSocketAdapter()
       // are cleaned up immediately, then settle into the interval cadence.
       quizTick();
       globalThis.__quizAutoSubmitTimer = setInterval(quizTick, QUIZ_AUTO_SUBMIT_MS);
+
+      // Purge expired RevokedToken rows (same as `npm run tokens:clean`).
+      // Default: every 6 hours; disable with TOKEN_CLEAN_INTERVAL_MS=0.
+      const TOKEN_CLEAN_MS = Number(process.env.TOKEN_CLEAN_INTERVAL_MS);
+      if (TOKEN_CLEAN_MS !== 0) {
+        const intervalMs = Math.max(
+          60_000,
+          Number.isFinite(TOKEN_CLEAN_MS) && TOKEN_CLEAN_MS > 0
+            ? TOKEN_CLEAN_MS
+            : 6 * 60 * 60 * 1000
+        );
+        const tokenCleanTick = async () => {
+          try {
+            const { deleted } = await cleanExpiredRevokedTokens();
+            if (deleted > 0) {
+              console.log(`[tokens] cleaned ${deleted} expired revoked jti(s)`);
+            }
+          } catch (err) {
+            console.error("[tokens] clean failed:", err?.message || err);
+          }
+        };
+        tokenCleanTick();
+        globalThis.__tokenCleanTimer = setInterval(tokenCleanTick, intervalMs);
+      }
     });
   });
 
@@ -143,6 +168,11 @@ process.on("SIGTERM", async () => {
     const t = globalThis.__quizAutoSubmitTimer;
     if (t != null) clearInterval(t);
     globalThis.__quizAutoSubmitTimer = undefined;
+  } catch {}
+  try {
+    const t = globalThis.__tokenCleanTimer;
+    if (t != null) clearInterval(t);
+    globalThis.__tokenCleanTimer = undefined;
   } catch {}
   try {
     const stop = globalThis.__announcementWorkersStop;

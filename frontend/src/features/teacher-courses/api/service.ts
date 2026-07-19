@@ -1,13 +1,13 @@
 import { apiClient } from '@/lib/api-client';
 import { uploadJson } from '@/lib/upload-client';
-import type { Course } from './types';
+import type { Course, CourseOfferingDetail } from './types';
 
 export const getTeacherCourses = async () => {
   return apiClient<Course[]>('/lecturer-portal/courses');
 };
 
 export const getCourseDetail = async (offeringId: string) => {
-  return apiClient<any>(`/lecturer-portal/courses/${offeringId}`);
+  return apiClient<CourseOfferingDetail>(`/lecturer-portal/courses/${offeringId}`);
 };
 
 export interface CourseCoverResult {

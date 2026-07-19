@@ -44,3 +44,21 @@ export const pushSubscribeRateLimit = rateLimit({
   keyGenerator: keyByUserOrIp,
   message: { message: "Too many push-subscription updates. Try again later." },
 });
+
+/**
+ * File uploads (resources, submissions, chat/feed/discussion attachments,
+ * announcement images, course covers). Uploads write to local disk, so an
+ * unthrottled client could fill the volume. 30 upload *requests* per 10
+ * minutes per user — multi-file requests count once, so even a teacher
+ * bulk-attaching materials stays far under the limit, while a scripted
+ * loop hits the wall in seconds. Mount BEFORE multer so a limited request
+ * is rejected without ever touching disk.
+ */
+export const uploadRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: isTest ? 10_000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: keyByUserOrIp,
+  message: { message: "Too many uploads — wait a few minutes and try again." },
+});

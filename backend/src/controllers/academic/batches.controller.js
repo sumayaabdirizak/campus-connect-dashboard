@@ -2,6 +2,7 @@ import { prisma } from "../../db/prisma.js";
 import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
 import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
 import { refreshDiscussionMembershipsForScope } from "../../features/discussions/membershipSync.service.js";
+import { respondInternalError } from "../../utils/httpError.js";
 
 // Get all batches (filter by academicYearId/programId if needed)
 export const getAllBatches = async (req, res) => {
@@ -17,7 +18,7 @@ export const getAllBatches = async (req, res) => {
     });
     res.json({ message: "Batches fetched", batches });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch batches", error: err.message });
+    respondInternalError(res, "Failed to fetch batches", err);
   }
 };
 
@@ -32,7 +33,7 @@ export const getBatchById = async (req, res) => {
     if (!batch) return res.status(404).json({ message: "Batch not found" });
     res.json({ message: "Batch fetched", batch });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch batch", error: err.message });
+    respondInternalError(res, "Failed to fetch batch", err);
   }
 };
 
@@ -71,7 +72,7 @@ export const createBatch = async (req, res) => {
     if (err.code === "P2002") {
       res.status(409).json({ message: "Batch already exists for this program and academic year" });
     } else {
-      res.status(500).json({ message: "Failed to create batch", error: err.message });
+      respondInternalError(res, "Failed to create batch", err);
     }
   }
 };
@@ -107,7 +108,7 @@ export const updateBatch = async (req, res) => {
     }
     res.json({ message: "Batch updated", batch });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update batch", error: err.message });
+    respondInternalError(res, "Failed to update batch", err);
   }
 };
 
@@ -132,6 +133,6 @@ export const deleteBatch = async (req, res) => {
     await prisma.batch.delete({ where: { id: Number(id) } });
     res.json({ message: "Batch deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete batch", error: err.message });
+    respondInternalError(res, "Failed to delete batch", err);
   }
 };

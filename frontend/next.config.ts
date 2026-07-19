@@ -2,7 +2,6 @@ import type { NextConfig } from 'next';
 import path from 'path';
 import { withSentryConfig } from '@sentry/nextjs';
 
-// Define the base Next.js configuration
 const baseConfig: NextConfig = {
   output: process.env.BUILD_STANDALONE === 'true' ? 'standalone' : undefined,
   devIndicators: false,
@@ -19,6 +18,21 @@ const baseConfig: NextConfig = {
     root: path.join(__dirname, '..')
   },
 
+  experimental: {
+    optimizePackageImports: ['lucide-react', '@tabler/icons-react', 'recharts', 'date-fns']
+  },
+
+  // Preserve bookmarks to the legacy PascalCase dean offerings URL.
+  async redirects() {
+    return [
+      {
+        source: '/dashboard/dean/Assigning',
+        destination: '/dashboard/dean/assigning',
+        permanent: true
+      }
+    ];
+  },
+
   // Proxy the backend download endpoint through the Next.js server so the
   // browser makes a same-origin request.  Same-origin requests automatically
   // include every cookie (no CORS, no credentials juggling), so the
@@ -30,17 +44,28 @@ const baseConfig: NextConfig = {
     return [
       {
         source: '/api/download/:id',
-        destination: `${apiBase}/resources/:id/download`,
+        destination: `${apiBase}/resources/:id/download`
       },
       {
         source: '/uploads/:path*',
-        destination: `${apiOrigin}/uploads/:path*`,
-      },
+        destination: `${apiOrigin}/uploads/:path*`
+      }
     ];
   },
 
   images: {
     remotePatterns: [
+      (() => {
+        const origin = (
+          process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'
+        ).replace(/\/api\/?$/, '');
+        const url = new URL(origin);
+        return {
+          protocol: url.protocol.replace(':', '') as 'http' | 'https',
+          hostname: url.hostname,
+          port: url.port
+        };
+      })(),
       {
         protocol: 'https',
         hostname: 'api.slingacademy.com',
@@ -70,43 +95,30 @@ const baseConfig: NextConfig = {
   }
 };
 
-let configWithPlugins = baseConfig;
+const sentryEnabled =
+  process.env.NEXT_PUBLIC_SENTRY_DISABLED !== 'true' &&
+  Boolean(process.env.NEXT_PUBLIC_SENTRY_DSN);
 
-/*
-// Conditionally enable Sentry configuration
-if (!process.env.NEXT_PUBLIC_SENTRY_DISABLED) {
-  configWithPlugins = withSentryConfig(configWithPlugins, {
-    org: process.env.NEXT_PUBLIC_SENTRY_ORG,
-    project: process.env.NEXT_PUBLIC_SENTRY_PROJECT,
-    // Only print logs for uploading source maps in CI
-    silent: !process.env.CI,
-
-    // Upload a larger set of source maps for prettier stack traces (increases build time)
-    widenClientFileUpload: true,
-
-    // Route browser requests to Sentry through a Next.js rewrite to circumvent ad-blockers.
-    tunnelRoute: '/monitoring',
-
-    // Disable Sentry telemetry
-    telemetry: false,
-
-    // Sentry v10: moved under webpack namespace
-    webpack: {
-      reactComponentAnnotation: {
-        enabled: true
+const nextConfig = sentryEnabled
+  ? withSentryConfig(baseConfig, {
+      org: process.env.NEXT_PUBLIC_SENTRY_ORG,
+      project: process.env.NEXT_PUBLIC_SENTRY_PROJECT,
+      silent: !process.env.CI,
+      widenClientFileUpload: true,
+      tunnelRoute: '/monitoring',
+      telemetry: false,
+      webpack: {
+        reactComponentAnnotation: {
+          enabled: true
+        },
+        treeshake: {
+          removeDebugLogging: true
+        }
       },
-      treeshake: {
-        removeDebugLogging: true
+      sourcemaps: {
+        disable: !process.env.NEXT_PUBLIC_SENTRY_ORG || !process.env.NEXT_PUBLIC_SENTRY_PROJECT
       }
-    },
+    })
+  : baseConfig;
 
-    // Disable source map upload when org/project are not configured
-    sourcemaps: {
-      disable: !process.env.NEXT_PUBLIC_SENTRY_ORG || !process.env.NEXT_PUBLIC_SENTRY_PROJECT
-    }
-  });
-}
-*/
-
-const nextConfig = baseConfig;
 export default nextConfig;

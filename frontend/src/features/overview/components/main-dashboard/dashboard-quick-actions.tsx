@@ -45,13 +45,13 @@ export const MAIN_DASHBOARD_QUICK_ACTIONS: QuickActionItem[] = [
     icon: ClipboardList,
     title: 'Create Assignment',
     description: 'Manage course offerings & assignments',
-    href: '/dashboard/dean/Assigning',
+    href: '/dashboard/dean/assigning',
   },
   {
     icon: FileQuestion,
     title: 'Create Quiz',
     description: 'Set up assessments in active courses',
-    href: '/dashboard/dean/Assigning',
+    href: '/dashboard/dean/assigning',
   },
   {
     icon: BarChart3,

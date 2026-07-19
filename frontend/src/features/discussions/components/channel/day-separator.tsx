@@ -31,7 +31,7 @@ export function DaySeparator({ iso }: { iso: string }) {
       className='relative my-2 flex items-center'
     >
       <div className='flex-1 border-t border-border' />
-      <span className='mx-3 rounded-full border bg-background px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground'>
+      <span className='mx-3 rounded-full border border-border/70 bg-card/90 px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground shadow-sm backdrop-blur'>
         {formatDayLabel(iso)}
       </span>
       <div className='flex-1 border-t border-border' />

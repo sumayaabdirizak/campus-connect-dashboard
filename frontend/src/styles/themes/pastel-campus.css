@@ -1,0 +1,109 @@
+/*
+ * "Pastel Campus" theme — the colorful design direction picked from the
+ * Dribbble/Pinterest exploration (option 1).
+ *
+ * Character: warm off-white canvas, candy-pastel fills with dark same-family
+ * text, violet primary, extra-round corners (--radius 1rem drives every
+ * shadcn rounded-* class), and soft violet-tinted shadows.
+ *
+ * Pairs with `src/lib/pastel.ts`, which assigns stable pastel slots to
+ * courses, tabs, and statuses.
+ */
+[data-theme='pastel-campus'] {
+  --background: oklch(0.985 0.008 84);
+  --foreground: oklch(0.28 0.03 290);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.28 0.03 290);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.28 0.03 290);
+  --primary: oklch(0.58 0.17 292);
+  --primary-foreground: oklch(1 0 0);
+  --secondary: oklch(0.9 0.06 165);
+  --secondary-foreground: oklch(0.35 0.08 160);
+  --muted: oklch(0.96 0.01 84);
+  --muted-foreground: oklch(0.5 0.02 290);
+  --accent: oklch(0.93 0.04 292);
+  --accent-foreground: oklch(0.4 0.12 292);
+  --destructive: oklch(0.64 0.17 18);
+  --destructive-foreground: oklch(1 0 0);
+  --border: oklch(0.91 0.012 84);
+  --input: oklch(0.93 0.012 84);
+  --ring: oklch(0.58 0.17 292);
+  --chart-1: oklch(0.68 0.13 292);
+  --chart-2: oklch(0.75 0.1 220);
+  --chart-3: oklch(0.78 0.1 160);
+  --chart-4: oklch(0.8 0.1 70);
+  --chart-5: oklch(0.75 0.12 350);
+  --sidebar: oklch(0.975 0.012 292);
+  --sidebar-foreground: oklch(0.28 0.03 290);
+  --sidebar-primary: oklch(0.58 0.17 292);
+  --sidebar-primary-foreground: oklch(1 0 0);
+  --sidebar-accent: oklch(0.92 0.045 292);
+  --sidebar-accent-foreground: oklch(0.4 0.12 292);
+  --sidebar-border: oklch(0.91 0.015 292);
+  --sidebar-ring: oklch(0.58 0.17 292);
+  --font-sans: var(--font-inter), 'Noto Color Emoji', system-ui, -apple-system, sans-serif;
+  --font-serif: var(--font-inter), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), Geist Mono, monospace;
+  /* Display face for headings/titles — geometric, modern, "editorial SaaS".
+     Globals apply it to headings via var(--font-display) with a sans fallback
+     for themes that don't set it. */
+  --font-display: var(--font-outfit), var(--font-inter), system-ui, sans-serif;
+  --radius: 1rem;
+  --shadow-x: 0px;
+  --shadow-y: 2px;
+  --shadow-blur: 8px;
+  --shadow-spread: 0px;
+  --shadow-opacity: 0.1;
+  --shadow-color: hsl(270 45% 30%);
+  --shadow-2xs: 0px 1px 3px 0px hsl(270 45% 30% / 0.05);
+  --shadow-xs: 0px 1px 3px 0px hsl(270 45% 30% / 0.05);
+  --shadow-sm: 0px 2px 6px 0px hsl(270 45% 30% / 0.08), 0px 1px 2px -1px hsl(270 45% 30% / 0.08);
+  --shadow: 0px 2px 8px 0px hsl(270 45% 30% / 0.08), 0px 1px 3px -1px hsl(270 45% 30% / 0.08);
+  --shadow-md: 0px 3px 10px 0px hsl(270 45% 30% / 0.1), 0px 2px 4px -1px hsl(270 45% 30% / 0.08);
+  --shadow-lg: 0px 6px 16px 0px hsl(270 45% 30% / 0.12), 0px 4px 6px -2px hsl(270 45% 30% / 0.08);
+  --shadow-xl: 0px 10px 24px 0px hsl(270 45% 30% / 0.14), 0px 8px 10px -2px hsl(270 45% 30% / 0.08);
+  --shadow-2xl: 0px 16px 40px 0px hsl(270 45% 30% / 0.2);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+}
+
+/* Dark mode — "pastel night": deep plum canvas, the same pastel hues kept
+ * bright enough to read as color rather than grey. Duplicated selectors for
+ * root-level and subtree-scoped adoption (same pattern as campus-connect). */
+[data-theme='pastel-campus'].dark,
+.dark [data-theme='pastel-campus'] {
+  --background: oklch(0.18 0.025 292);
+  --foreground: oklch(0.94 0.01 292);
+  --card: oklch(0.22 0.03 292);
+  --card-foreground: oklch(0.94 0.01 292);
+  --popover: oklch(0.24 0.03 292);
+  --popover-foreground: oklch(0.94 0.01 292);
+  --primary: oklch(0.75 0.13 292);
+  --primary-foreground: oklch(0.16 0.03 292);
+  --secondary: oklch(0.4 0.07 165);
+  --secondary-foreground: oklch(0.92 0.05 165);
+  --muted: oklch(0.26 0.03 292);
+  --muted-foreground: oklch(0.7 0.02 292);
+  --accent: oklch(0.32 0.06 292);
+  --accent-foreground: oklch(0.88 0.06 292);
+  --destructive: oklch(0.68 0.16 18);
+  --destructive-foreground: oklch(0.14 0.02 18);
+  --border: oklch(0.3 0.03 292);
+  --input: oklch(0.3 0.03 292);
+  --ring: oklch(0.75 0.13 292);
+  --chart-1: oklch(0.75 0.13 292);
+  --chart-2: oklch(0.78 0.1 220);
+  --chart-3: oklch(0.8 0.1 160);
+  --chart-4: oklch(0.82 0.1 70);
+  --chart-5: oklch(0.78 0.12 350);
+  --sidebar: oklch(0.16 0.025 292);
+  --sidebar-foreground: oklch(0.94 0.01 292);
+  --sidebar-primary: oklch(0.75 0.13 292);
+  --sidebar-primary-foreground: oklch(0.16 0.03 292);
+  --sidebar-accent: oklch(0.28 0.05 292);
+  --sidebar-accent-foreground: oklch(0.88 0.06 292);
+  --sidebar-border: oklch(0.26 0.03 292);
+  --sidebar-ring: oklch(0.75 0.13 292);
+  --shadow-color: hsl(270 60% 5%);
+}

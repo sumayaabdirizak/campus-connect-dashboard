@@ -1,0 +1,62 @@
+import { gradeToGpa } from './helpers.js';
+
+export function buildStudentReports({
+  studentProfiles,
+  departments,
+  gradedSubmissions,
+  recentSubmissions,
+  attendanceRate,
+}) {
+  const studentGradesByUser = new Map();
+  for (const g of gradedSubmissions) {
+    if (!studentGradesByUser.has(g.studentId)) studentGradesByUser.set(g.studentId, []);
+    studentGradesByUser.get(g.studentId).push(Number(g.grade ?? 0));
+  }
+
+  return studentProfiles.slice(0, 100).map((sp) => {
+    const grades = studentGradesByUser.get(sp.user.id) ?? [];
+    const gpa =
+      grades.length > 0
+        ? Math.round((grades.reduce((s, g) => s + gradeToGpa(g), 0) / grades.length) * 100) / 100
+        : 0;
+    const dept = departments.find((d) => d.id === sp.departmentId);
+    const level =
+      sp.user.studentRegistrations?.[0]?.batchSection?.batch?.program?.level ?? 'UNDERGRADUATE';
+    const lateCount = recentSubmissions.filter((s) => s.is_late).length;
+    const attendance = Math.max(0, Math.min(100, attendanceRate - (lateCount > 5 ? 15 : 0)));
+    let status = 'Good Standing';
+    if (gpa < 2.0 || attendance < 60) status = 'At Risk';
+    else if (gpa < 2.5) status = 'Probation';
+    else if (gpa >= 3.5) status = "Dean's List";
+    return {
+      id: sp.user.id,
+      student: sp.user.full_name,
+      department: dept?.name ?? '—',
+      level: String(level).replace(/_/g, ' '),
+      gpa,
+      attendance,
+      status,
+    };
+  });
+}
+
+export function buildInstructorReports({ teachers, offerings, allQuizAttempts }) {
+  return teachers.map((t) => {
+    const teacherOfferings = offerings.filter((o) => o.teacherId === t.id);
+    const tIds = teacherOfferings.map((o) => o.id);
+    const attempts = allQuizAttempts.filter((a) => tIds.includes(a.quiz?.courseOfferingId));
+    const completion =
+      attempts.length > 0
+        ? Math.min(100, Math.round((attempts.filter((a) => a.score != null).length / attempts.length) * 100))
+        : 0;
+    const rating = Math.min(5, Math.round((3.5 + completion / 100) * 10) / 10);
+    return {
+      id: t.id,
+      instructor: t.full_name,
+      department: t.lecturerProfile?.department?.name ?? '—',
+      courses: teacherOfferings.length,
+      rating,
+      completion,
+    };
+  });
+}

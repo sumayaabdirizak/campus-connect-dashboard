@@ -1,0 +1,88 @@
+/* Communication module tokens — scoped under [data-comm] wrappers.
+ * Brand: Primary Blue + Secondary Green (campus-connect). */
+
+[data-comm] {
+  --comm-rail-w: 4.25rem;
+  --comm-list-w: 20rem;
+  --comm-bubble-radius: 1.125rem;
+  --comm-composer-radius: 1.5rem;
+  --comm-online: oklch(0.62 0.17 145);
+  --comm-offline: oklch(0.7 0 0);
+  --comm-busy: oklch(0.65 0.18 25);
+  --comm-unread: var(--primary);
+  --comm-surface: color-mix(in oklch, var(--muted) 55%, var(--background));
+  --comm-chat-bg:
+    radial-gradient(
+      1200px 600px at 10% -10%,
+      color-mix(in oklch, var(--primary) 7%, transparent),
+      transparent 55%
+    ),
+    radial-gradient(
+      900px 500px at 110% 20%,
+      color-mix(in oklch, var(--secondary) 6%, transparent),
+      transparent 50%
+    ),
+    var(--background);
+  --comm-pattern:
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+.dark [data-comm],
+[data-comm].dark {
+  --comm-pattern:
+    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.035'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+}
+
+[data-comm] .comm-chat-canvas {
+  background-color: var(--background);
+  background-image: var(--comm-pattern), var(--comm-chat-bg);
+  background-blend-mode: normal, normal;
+}
+
+[data-comm] .comm-rail-btn {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+[data-comm] .comm-rail-btn:hover {
+  transform: translateY(-1px);
+}
+
+[data-comm] .comm-row {
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+[data-comm] .comm-bubble-in {
+  animation: comm-bubble-in 220ms ease-out;
+}
+
+@keyframes comm-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-comm] .comm-rail-btn,
+  [data-comm] .comm-row,
+  [data-comm] .comm-bubble-in {
+    transition: none !important;
+    animation: none !important;
+  }
+  [data-comm] .comm-rail-btn:hover {
+    transform: none;
+  }
+  [data-comm] .animate-pulse,
+  [data-comm] .animate-spin {
+    animation: none !important;
+  }
+}

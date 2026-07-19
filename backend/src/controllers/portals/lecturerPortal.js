@@ -5,6 +5,7 @@ import path from 'path';
 import { requireRole } from "../../middleware/requireRole.js";
 import { getMyAssignments } from './lecturerPortal.controller.js';
 import { getMyCourses, getCourseDetail, updateCourseCover } from './teacherCourse.controller.js';
+import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
 
 const router = Router();
 router.use(requireRole("TEACHER"));
@@ -44,6 +45,6 @@ function coverUploadMw(req, res, next) {
 router.get('/my-assignments', getMyAssignments);
 router.get('/courses', getMyCourses);
 router.get('/courses/:offeringId', getCourseDetail);
-router.post('/courses/:offeringId/cover', coverUploadMw, updateCourseCover);
+router.post('/courses/:offeringId/cover', uploadRateLimit, coverUploadMw, updateCourseCover);
 
 export default router;

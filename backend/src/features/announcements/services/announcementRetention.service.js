@@ -1,8 +1,16 @@
 import crypto from "crypto";
 import { prisma as defaultPrisma } from "../../../db/prisma.js";
+import { getSigningSecret } from "../../../utils/signingSecret.js";
 import { announcementLog } from "../announcementLogger.js";
 import { getBullConnection, isAnnouncementSchedulerEnabled } from "./announcementJobs.service.js";
 import { Queue } from "bullmq";
+import {
+  hashActorId,
+  anonymizeAnnouncementAuditForUser,
+} from "./announcementAuditAnonymize.js";
+
+// Re-export for backward compatibility
+export { hashActorId, anonymizeAnnouncementAuditForUser };
 
 /**
  * Default retention horizons.
@@ -166,55 +174,6 @@ export async function applyStaleDraftRetention(opts = {}) {
   return { policy, affected };
 }
 
-/**
- * Hash a user identifier with a server secret so erased actors remain
- * correlatable across audit rows for integrity (GDPR Art. 17 + Art. 5(1)(e)).
- *
- * @param {number | string} actorId
- * @returns {string}
- */
-export function hashActorId(actorId) {
-  const secret = process.env.ANNOUNCEMENT_AUDIT_HASH_SECRET ?? "campus-connect-audit-fallback";
-  return crypto
-    .createHmac("sha256", secret)
-    .update(String(actorId))
-    .digest("hex")
-    .slice(0, 32);
-}
-
-/**
- * Anonymise audit rows for a user about to be erased. Sets actorId NULL while
- * preserving an HMAC fingerprint so security investigations can still cluster
- * actions by the same (now-anonymous) actor.
- *
- * Call this from the user-deletion flow BEFORE deleting the user row, since
- * the FK is `onDelete: SetNull` and we want the hash populated.
- *
- * @param {number} userId
- * @param {{ prisma?: import("@prisma/client").PrismaClient }} [opts]
- * @returns {Promise<{ anonymized: number }>}
- */
-export async function anonymizeAnnouncementAuditForUser(userId, opts = {}) {
-  const prisma = opts.prisma ?? defaultPrisma;
-  const hash = hashActorId(userId);
-  try {
-    const result = await prisma.announcementAudit.updateMany({
-      where: { actorId: userId },
-      data: { actorId: null, actorIdHash: hash },
-    });
-    announcementLog("info", "announcement.retention.audit_anonymized", {
-      userId,
-      anonymized: result.count,
-    });
-    return { anonymized: result.count };
-  } catch (err) {
-    announcementLog("error", "announcement.retention.audit_anonymize_failed", {
-      userId,
-      message: err?.message ?? String(err),
-    });
-    return { anonymized: 0 };
-  }
-}
 
 /**
  * Schedule a recurring nightly retention purge via Bull-MQ when the scheduler

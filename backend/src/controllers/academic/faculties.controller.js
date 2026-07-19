@@ -1,23 +1,56 @@
-// src/controllers/faculty.controller.js
 import { prisma } from "../../db/prisma.js";
 import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
 import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
+import { respondInternalError } from "../../utils/httpError.js";
 import {
   refreshDiscussionMembershipsForScope,
   syncDiscussionMembershipsForUser,
 } from "../../features/discussions/membershipSync.service.js";
+import { namedListSuccess, apiErrorBody } from "../../utils/apiEnvelope.js";
+import { parsePaginationQuery } from "../../utils/pagination.js";
 
 export const getAllFaculties = async (req, res) => {
   try {
-    const faculties = await prisma.faculty.findMany({
-      include: {
-        departments: true,
-        dean: { select: { id: true, full_name: true, email: true } }
-      }
+    const { search } = req.query;
+    const { page, pageSize, skip } = parsePaginationQuery(req.query, {
+      defaultPageSize: 50,
+      maxPageSize: 200,
     });
-    res.json({ message: "Faculties retrieved successfully", faculties });
+    const where = search
+      ? {
+          OR: [
+            { name: { contains: String(search), mode: "insensitive" } },
+            { code: { contains: String(search), mode: "insensitive" } },
+          ],
+        }
+      : {};
+
+    const [totalCount, faculties] = await Promise.all([
+      prisma.faculty.count({ where }),
+      prisma.faculty.findMany({
+        where,
+        include: {
+          departments: true,
+          dean: { select: { id: true, full_name: true, email: true } },
+        },
+        orderBy: { name: "asc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    res.json(
+      namedListSuccess({
+        message: "Faculties retrieved successfully",
+        name: "faculties",
+        items: faculties,
+        page,
+        pageSize,
+        totalCount,
+      })
+    );
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch faculties", detail: err.message });
+    res.status(500).json(apiErrorBody("Failed to fetch faculties", err.message));
   }
 };
 
@@ -151,6 +184,6 @@ export const assignDean = async (req, res) => {
 
     res.json({ message: "Dean assigned to faculty", faculty: updatedFaculty });
   } catch (err) {
-    res.status(500).json({ message: "Dean assignment failed", error: err.message });
+    respondInternalError(res, "Dean assignment failed", err);
   }
 };

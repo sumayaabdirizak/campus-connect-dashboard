@@ -8,6 +8,32 @@ export function apiSuccessBody(data, message = "Request completed successfully")
   return { status: "success", message, data };
 }
 
+/**
+ * List success envelope that keeps a named domain key (e.g. `faculties`) for
+ * existing clients while also exposing `results` / `totalCount` / `page`.
+ *
+ * @param {{
+ *   message: string;
+ *   name: string;
+ *   items: unknown[];
+ *   page: number;
+ *   pageSize: number;
+ *   totalCount: number;
+ * }} args
+ */
+export function namedListSuccess({ message, name, items, page, pageSize, totalCount }) {
+  return {
+    status: "success",
+    message,
+    count: totalCount,
+    [name]: items,
+    totalCount,
+    page,
+    pageSize,
+    results: items,
+  };
+}
+
 /** Send a consistent success JSON response. */
 export function sendSuccess(res, data, message, statusCode = 200) {
   return res.status(statusCode).json(apiSuccessBody(data, message));

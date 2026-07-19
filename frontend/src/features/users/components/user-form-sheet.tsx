@@ -11,7 +11,7 @@ import {
   SheetDescription,
   SheetFooter,
   SheetHeader,
-  SheetTitle
+  SheetTitle,
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -20,10 +20,23 @@ import {
   SelectContent,
   SelectItem,
   SelectTrigger,
-  SelectValue
+  SelectValue,
 } from '@/components/ui/select';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Checkbox } from '@/components/ui/checkbox';
+import { UserFormStudentSection } from './user-form-student-section';
+import { UserFormTeacherSection } from './user-form-teacher-section';
+
+const EMPTY_FORM = {
+  full_name: '',
+  email: '',
+  role: 'STUDENT',
+  password: '',
+  departmentCode: '',
+  batchSectionId: '',
+  academicYearId: '',
+  semesterId: '1',
+  courseIds: [] as string[],
+};
 
 export function UserFormSheetTrigger() {
   const [open, setOpen] = useState(false);
@@ -40,20 +53,16 @@ export function UserFormSheetTrigger() {
 interface UserFormSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user?: any; // For editing
+  user?: { full_name?: string; email?: string; role?: string; departmentCode?: string };
 }
 
 export function UserFormSheet({ open, onOpenChange, user }: UserFormSheetProps) {
   const [form, setForm] = useState({
+    ...EMPTY_FORM,
     full_name: user?.full_name || '',
     email: user?.email || '',
     role: user?.role || 'STUDENT',
-    password: '',
     departmentCode: user?.departmentCode || '',
-    batchSectionId: '',
-    academicYearId: '',
-    semesterId: '1', // Defaults to 1 for First Semester
-    courseIds: [] as string[]
   });
 
   const mutation = useRegisterUser();
@@ -69,16 +78,12 @@ export function UserFormSheet({ open, onOpenChange, user }: UserFormSheetProps) 
     setForm((f) => ({ ...f, [e.target.name]: e.target.value }));
   }
 
-  function handleRoleChange(val: string) {
-    setForm((f) => ({ ...f, role: val }));
-  }
-
   function toggleCourse(courseId: string) {
     setForm((f) => ({
       ...f,
       courseIds: f.courseIds.includes(courseId)
         ? f.courseIds.filter((id) => id !== courseId)
-        : [...f.courseIds, courseId]
+        : [...f.courseIds, courseId],
     }));
   }
 
@@ -87,24 +92,14 @@ export function UserFormSheet({ open, onOpenChange, user }: UserFormSheetProps) 
     const data = {
       ...form,
       departmentCode:
-        form.role === 'STUDENT' || form.role === 'TEACHER' ? form.departmentCode : undefined
+        form.role === 'STUDENT' || form.role === 'TEACHER' ? form.departmentCode : undefined,
     };
 
     mutation.mutate(data, {
       onSuccess: () => {
         onOpenChange(false);
-        setForm({
-          full_name: '',
-          email: '',
-          role: 'STUDENT',
-          password: '',
-          departmentCode: '',
-          batchSectionId: '',
-          academicYearId: '',
-          semesterId: '1',
-          courseIds: []
-        });
-      }
+        setForm(EMPTY_FORM);
+      },
     });
   }
 
@@ -165,7 +160,7 @@ export function UserFormSheet({ open, onOpenChange, user }: UserFormSheetProps) 
 
               <div className='space-y-1.5'>
                 <Label>Academic Role</Label>
-                <Select value={form.role} onValueChange={handleRoleChange}>
+                <Select value={form.role} onValueChange={(val) => setForm((f) => ({ ...f, role: val }))}>
                   <SelectTrigger>
                     <SelectValue placeholder='Select a role' />
                   </SelectTrigger>
@@ -192,98 +187,21 @@ export function UserFormSheet({ open, onOpenChange, user }: UserFormSheetProps) 
                 </div>
               )}
 
-              {/* STUDENT SPECIFIC FIELDS */}
               {form.role === 'STUDENT' && (
-                <div className='space-y-4 mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50'>
-                  <h4 className='text-sm font-semibold'>Student Enrollment</h4>
-
-                  <div className='space-y-1.5'>
-                    <Label>Assign Batch Section</Label>
-                    <Select
-                      value={form.batchSectionId}
-                      onValueChange={(val) => setForm((f) => ({ ...f, batchSectionId: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select Section' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {sections.map((sec: any) => (
-                          <SelectItem key={sec.id} value={sec.id.toString()}>
-                            {sec.batch?.name} - {sec.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className='space-y-1.5'>
-                    <Label>Academic Year</Label>
-                    <Select
-                      value={form.academicYearId}
-                      onValueChange={(val) => setForm((f) => ({ ...f, academicYearId: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select Year' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {academicYears.map((ay: any) => (
-                          <SelectItem key={ay.id} value={ay.id.toString()}>
-                            {ay.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className='space-y-1.5'>
-                    <Label>Semester Number</Label>
-                    <Select
-                      value={form.semesterId}
-                      onValueChange={(val) => setForm((f) => ({ ...f, semesterId: val }))}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder='Select Semester' />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value='1'>First Semester</SelectItem>
-                        <SelectItem value='2'>Second Semester</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
+                <UserFormStudentSection
+                  form={form}
+                  onChange={(patch) => setForm((f) => ({ ...f, ...patch }))}
+                  sections={sections}
+                  academicYears={academicYears}
+                />
               )}
 
-              {/* TEACHER SPECIFIC FIELDS */}
               {form.role === 'TEACHER' && (
-                <div className='space-y-4 mt-6 p-4 border rounded-lg bg-slate-50 dark:bg-slate-900/50'>
-                  <h4 className='text-sm font-semibold'>Teacher Course Assignments</h4>
-
-                  <div className='space-y-3'>
-                    <Label>Assign Courses</Label>
-                    {courses.length > 0 ? (
-                      courses.map((course: any) => (
-                        <div key={course.id} className='flex items-center space-x-2'>
-                          <Checkbox
-                            id={`course-${course.id}`}
-                            checked={form.courseIds.includes(course.id.toString())}
-                            onCheckedChange={() => toggleCourse(course.id.toString())}
-                          />
-                          <Label
-                            htmlFor={`course-${course.id}`}
-                            className='text-sm font-normal cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70'
-                          >
-                            <span className='font-medium text-slate-800 dark:text-slate-200'>
-                              {course.code}
-                            </span>{' '}
-                            - {course.name}
-                          </Label>
-                        </div>
-                      ))
-                    ) : (
-                      <p className='text-sm text-slate-500'>No courses available.</p>
-                    )}
-                  </div>
-                </div>
+                <UserFormTeacherSection
+                  courseIds={form.courseIds}
+                  onToggleCourse={toggleCourse}
+                  courses={courses}
+                />
               )}
             </div>
           </ScrollArea>

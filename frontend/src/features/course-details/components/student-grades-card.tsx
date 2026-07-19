@@ -15,6 +15,20 @@ function fmtPct(pct: number | null | undefined): string {
   return pct == null ? '—' : `${Math.round(pct)}%`;
 }
 
+/** Pastel band color for a score bar: mint ≥80, peach ≥60, pink below. */
+function bandBar(pct: number): string {
+  if (pct >= 80) return 'bg-emerald-400 dark:bg-emerald-500';
+  if (pct >= 60) return 'bg-amber-400 dark:bg-amber-500';
+  return 'bg-pink-400 dark:bg-pink-500';
+}
+
+function bandText(pct: number | null): string {
+  if (pct == null) return '';
+  if (pct >= 80) return 'text-emerald-700 dark:text-emerald-300';
+  if (pct >= 60) return 'text-amber-700 dark:text-amber-300';
+  return 'text-pink-700 dark:text-pink-300';
+}
+
 function GradeRow({ item }: { item: MyGradeItem }) {
   const Icon = item.kind === 'quiz' ? ClipboardCheck : FileText;
   const isAssignment = item.kind === 'assignment';
@@ -51,19 +65,22 @@ function GradeRow({ item }: { item: MyGradeItem }) {
         <div className='flex items-center gap-2'>
           <p className='truncate text-sm font-medium'>{item.title}</p>
           {item.late ? (
-            <Badge variant='outline' className='h-4 shrink-0 px-1 text-[9px]'>
+            <Badge className='h-4 shrink-0 border-0 bg-pink-100 px-1.5 text-[9px] font-semibold text-pink-700 dark:bg-pink-500/20 dark:text-pink-300'>
               Late
             </Badge>
           ) : null}
           {pending ? (
-            <Badge variant='secondary' className='h-4 shrink-0 px-1 text-[9px]'>
+            <Badge className='h-4 shrink-0 border-0 bg-amber-100 px-1.5 text-[9px] font-semibold text-amber-700 dark:bg-amber-500/20 dark:text-amber-300'>
               Pending
             </Badge>
           ) : null}
         </div>
         {pct != null ? (
           <div className='mt-1.5 h-1 max-w-[8rem] overflow-hidden rounded-full bg-muted'>
-            <div className='h-full rounded-full bg-primary' style={{ width: `${barWidth}%` }} />
+            <div
+              className={cn('h-full rounded-full', bandBar(barWidth))}
+              style={{ width: `${barWidth}%` }}
+            />
           </div>
         ) : null}
       </div>
@@ -101,10 +118,17 @@ export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
           <p className='text-[11px] font-medium uppercase tracking-wide text-muted-foreground'>
             Course average
           </p>
-          <p className='mt-0.5 text-2xl font-semibold tabular-nums'>{fmtPct(data.overallPct)}</p>
+          <p
+            className={cn(
+              'mt-0.5 text-2xl font-semibold tabular-nums',
+              bandText(data.overallPct)
+            )}
+          >
+            {fmtPct(data.overallPct)}
+          </p>
           <div className='mt-2 h-1.5 overflow-hidden rounded-full bg-muted'>
             <div
-              className='h-full rounded-full bg-primary'
+              className={cn('h-full rounded-full', bandBar(overallWidth))}
               style={{ width: `${overallWidth}%` }}
             />
           </div>

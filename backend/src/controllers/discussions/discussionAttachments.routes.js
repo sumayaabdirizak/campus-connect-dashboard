@@ -1,6 +1,5 @@
 import express from "express";
 import multer from "multer";
-import path from "path";
 import fs from "fs";
 import { prisma } from "../../db/prisma.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
@@ -11,21 +10,22 @@ import {
   hasPermission,
 } from "../../features/discussions/permissions.js";
 import { requireActiveDiscussionMembership } from "../../features/discussions/discussionMembership.js";
+import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
 import {
-  DISCUSSION_UPLOAD_DIR,
   DISCUSSION_FILE_SIZE_LIMITS,
   discussionAttachmentUpload,
-  discussionAttachmentTypeFromMime,
   parseDiscussionAttachmentToken,
   toDiscussionAttachmentDto,
   scanDiscussionUploadedFile,
   buildDiscussionAttachmentAccessUrl as buildAttachmentAccessUrl,
   DISCUSSION_ATTACHMENT_URL_TTL_SECONDS as ATTACHMENT_URL_TTL_SECONDS,
+  enforceDiscussionUploadContentSafety,
+  discussionAttachmentTypeFromFile,
 } from "../../features/discussions/discussionAttachments.js";
 
 const router = express.Router();
 
-router.post("/uploads", discussionAttachmentUpload.single("file"), async (req, res) => {
+router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file"), async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
     const groupIdRaw = Number(req.body?.groupId);
@@ -77,7 +77,14 @@ router.post("/uploads", discussionAttachmentUpload.single("file"), async (req, r
       return res.status(400).json(apiErrorBody("file is required", null));
     }
 
-    const fileType = discussionAttachmentTypeFromMime(req.file.mimetype);
+    const contentCheck = await enforceDiscussionUploadContentSafety(req.file);
+    if (!contentCheck.ok) {
+      return res
+        .status(400)
+        .json(apiErrorBody("File contents do not match the declared type. Upload rejected.", null));
+    }
+
+    const fileType = discussionAttachmentTypeFromFile(req.file);
     const maxSize = DISCUSSION_FILE_SIZE_LIMITS[fileType];
     if (req.file.size > maxSize) {
       try {
@@ -97,13 +104,30 @@ router.post("/uploads", discussionAttachmentUpload.single("file"), async (req, r
     }
 
     const hostBase = `${req.protocol}://${req.get("host")}`;
-    const url = `${hostBase}/uploads/discussions/${req.file.filename}`;
+    const { commitUploadedFile } = await import("../../storage/objectStorage.js");
+    let committed;
+    try {
+      committed = await commitUploadedFile({
+        prefix: "discussions",
+        filename: req.file.filename,
+        localPath: req.file.path,
+        contentType: req.file.mimetype,
+        hostBase,
+      });
+    } catch (err) {
+      try {
+        fs.unlinkSync(req.file.path);
+      } catch {}
+      console.error("discussion upload storage commit failed", err);
+      return res.status(500).json(apiErrorBody("Failed to store attachment", null));
+    }
+
     const attachment = await prisma.discussionAttachment.create({
       data: {
         uploadedById: userId,
         groupId: resolvedGroupId,
-        url,
-        storageKey: req.file.filename,
+        url: committed.url,
+        storageKey: committed.storageKey,
         fileType,
         mimeType: req.file.mimetype,
         size: BigInt(req.file.size),
@@ -120,7 +144,7 @@ router.post("/uploads", discussionAttachmentUpload.single("file"), async (req, r
     if (error instanceof multer.MulterError) {
       return res.status(400).json(apiErrorBody(error.message, null));
     }
-    if (error instanceof Error && error.message === "Unsupported file type") {
+    if (error instanceof Error && String(error.message).startsWith("Unsupported file type")) {
       return res.status(415).json(apiErrorBody(error.message, null));
     }
     return res.status(500).json(apiErrorBody("Failed to upload attachment", null));
@@ -183,12 +207,13 @@ router.get("/attachments/:id/download", async (req, res) => {
     if (!attachment.storageKey) {
       return res.status(410).json(apiErrorBody("Attachment binary is unavailable", null));
     }
-    const absolutePath = path.resolve(DISCUSSION_UPLOAD_DIR, attachment.storageKey);
-    if (!fs.existsSync(absolutePath)) {
-      return res.status(404).json(apiErrorBody("Attachment file not found", null));
-    }
+    const { sendStoredFile } = await import("../../storage/objectStorage.js");
     res.setHeader("Content-Type", attachment.mimeType || "application/octet-stream");
-    return res.sendFile(absolutePath);
+    return sendStoredFile(res, attachment.storageKey, {
+      legacyPrefix: "discussions",
+      contentType: attachment.mimeType || "application/octet-stream",
+      inline: true,
+    });
   } catch (error) {
     console.error("GET /discussions/attachments/:id/download failed", error);
     return res.status(500).json(apiErrorBody("Failed to download attachment", null));

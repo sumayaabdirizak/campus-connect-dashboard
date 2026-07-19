@@ -145,15 +145,15 @@ export function DmComposer({
 
   if (!canPost) {
     return (
-      <div className='border-t bg-muted/40 px-6 py-3 text-center text-xs text-muted-foreground'>
+      <div className='border-t border-border/70 bg-card/80 px-6 py-3 text-center text-xs text-muted-foreground backdrop-blur'>
         You can’t send messages in this conversation.
       </div>
     );
   }
 
   return (
-    <div className='border-t bg-background px-4 py-3'>
-      <div className='flex items-end gap-2 rounded-lg border bg-background px-2 py-1.5 focus-within:ring-2 focus-within:ring-ring/40'>
+    <div className='border-t border-border/70 bg-[#E6F0FA]/30 px-3 py-3 sm:px-4'>
+      <div className='flex items-end gap-1.5 rounded-[var(--comm-composer-radius)] border border-border/70 bg-background px-2 py-2 shadow-sm focus-within:border-primary/30 focus-within:ring-2 focus-within:ring-ring/25'>
         <Textarea
           ref={textareaRef}
           value={value}
@@ -174,7 +174,7 @@ export function DmComposer({
         <Button
           type='button'
           size='icon'
-          className='h-8 w-8 shrink-0'
+          className='h-9 w-9 shrink-0 rounded-full bg-[#0066CC] text-white shadow-sm transition-transform hover:bg-[#0D3B66] hover:scale-[1.03] active:scale-95'
           aria-label='Send message'
           onClick={handleSubmit}
           disabled={!canSend || sendMutation.isPending}
@@ -186,7 +186,7 @@ export function DmComposer({
           )}
         </Button>
       </div>
-      <p className='mt-1 px-1 text-[10px] text-muted-foreground'>
+      <p className='mt-1.5 px-1 text-[10px] text-muted-foreground'>
         Enter to send · Shift+Enter for newline
       </p>
     </div>

@@ -2,6 +2,9 @@ import { prisma } from "../../db/prisma.js";
 import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
 import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
 import { refreshDiscussionMembershipsForScope } from "../../features/discussions/membershipSync.service.js";
+import { respondInternalError } from "../../utils/httpError.js";
+import { namedListSuccess } from "../../utils/apiEnvelope.js";
+import { parsePaginationQuery } from "../../utils/pagination.js";
 
 /**
  * Deans and faculty admins only see/act on departments in their assigned faculty.
@@ -40,23 +43,55 @@ async function facultyScopeForRestrictedAcademicRoles(req) {
 export const getAllDepartments = async (req, res) => {
   try {
     const scope = await facultyScopeForRestrictedAcademicRoles(req);
-    const where =
+    const { search } = req.query;
+    const { page, pageSize, skip } = parsePaginationQuery(req.query, {
+      defaultPageSize: 50,
+      maxPageSize: 200,
+    });
+    const baseWhere =
       scope.mode === "faculty"
         ? { facultyId: scope.facultyId }
         : scope.mode === "none"
           ? { facultyId: -1 }
           : {};
+    const where = {
+      ...baseWhere,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: String(search), mode: "insensitive" } },
+              { code: { contains: String(search), mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
 
-    const departments = await prisma.department.findMany({
-      where,
-      include: {
-        faculty: true,
-        programs: true,
-      },
-    });
-    res.json({ message: "Departments fetched", departments });
+    const [totalCount, departments] = await Promise.all([
+      prisma.department.count({ where }),
+      prisma.department.findMany({
+        where,
+        include: {
+          faculty: true,
+          programs: true,
+        },
+        orderBy: { name: "asc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    res.json(
+      namedListSuccess({
+        message: "Departments fetched",
+        name: "departments",
+        items: departments,
+        page,
+        pageSize,
+        totalCount,
+      })
+    );
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch departments", error: err.message });
+    respondInternalError(res, "Failed to fetch departments", err);
   }
 };
 
@@ -81,7 +116,7 @@ export const getDepartmentById = async (req, res) => {
     }
     res.json({ message: "Department fetched", department });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch department", error: err.message });
+    respondInternalError(res, "Failed to fetch department", err);
   }
 };
 
@@ -109,7 +144,7 @@ export const createDepartment = async (req, res) => {
     }
     res.status(201).json({ message: "Department created", department });
   } catch (err) {
-    res.status(500).json({ message: "Failed to create department", error: err.message });
+    respondInternalError(res, "Failed to create department", err);
   }
 };
 
@@ -143,7 +178,7 @@ export const updateDepartment = async (req, res) => {
     }
     res.json({ message: "Department updated", department });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update department", error: err.message });
+    respondInternalError(res, "Failed to update department", err);
   }
 };
 
@@ -158,6 +193,6 @@ export const deleteDepartment = async (req, res) => {
     await prisma.department.delete({ where: { id: Number(id) } });
     res.json({ message: "Department deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete department", error: err.message });
+    respondInternalError(res, "Failed to delete department", err);
   }
 };

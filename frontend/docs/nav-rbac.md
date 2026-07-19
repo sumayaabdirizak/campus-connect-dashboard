@@ -2,13 +2,19 @@
 
 ## Overview
 
-Sidebar and command-palette items are filtered **client-side** for UX. Security is enforced by the Express API on every protected route.
+Sidebar items are filtered for UX in two layers:
+
+1. **Client role** — `access.roles` on `nav-config.ts` (always applied).
+2. **Server nav pages** — `GET /api/rbac/me/nav-pages` path allowlist (when available). If the API fails or returns empty, the sidebar falls back to role-only filtering.
+
+**Security is still enforced by the Express API** on every protected route. Hiding a nav item is not authorization.
 
 ## Core files
 
 1. **`src/config/nav-config.ts`** — nav groups and `access` rules per item
-2. **`src/hooks/use-nav.ts`** — `useFilteredNavItems()` filters by signed-in `user.role`
-3. **`src/lib/auth-store.ts`** — current user from cookie session
+2. **`src/hooks/use-nav.ts`** — `useFilteredNavGroups` / `useFilteredNavItems`
+3. **`backend/src/config/navPages.registry.js`** — registry synced to `NavPage` / `RoleNavPermission`
+4. **`src/lib/auth-store.ts`** — current user from cookie session
 
 ## Access rules
 
@@ -23,25 +29,10 @@ In `nav-config.ts`, use `access.roles` with campus roles:
 }
 ```
 
-`useFilteredNavItems()` only evaluates **`roles`** today. Legacy template fields (`requireOrg`, `permission`, `plan`, `feature`) remain on the `PermissionCheck` type but are not used by the hook.
-
-## Usage in components
-
-```typescript
-import { useFilteredNavItems } from '@/hooks/use-nav';
-
-function SidebarNav({ items }: { items: NavItem[] }) {
-  const filtered = useFilteredNavItems(items);
-  // render filtered
-}
-```
+Sync server registry: `cd backend && npm run rbac:sync` (or `POST /api/rbac/pages/sync` as SUPER_ADMIN).
 
 ## Best practices
 
-1. **Always set `access.roles`** for items that are not universal.
-2. **Do not rely on nav hiding for security** — protect pages with session checks and let the API return 403/401.
-3. **Keep roles aligned** with `src/types/auth.ts` and backend RBAC.
-
-## Page-level protection
-
-Client pages typically read `useAuthStore` and redirect unauthenticated users to `/auth/sign-in`. Server Components that need the user should call the backend with forwarded cookies or use client guards consistent with the rest of the app.
+- Keep `nav-config.ts` paths aligned with registry `path` values so server filtering matches.
+- Never rely on the sidebar alone for secrets or admin actions — API RBAC is the source of truth.
+- Prefer announcements a11y patterns (`role="status"` empty states, labeled controls) on new surfaces.

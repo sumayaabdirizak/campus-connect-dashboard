@@ -10,67 +10,11 @@ import PageContainer from '@/components/layout/page-container';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
-import { Label } from '@/components/ui/label';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle
-} from '@/components/ui/alert-dialog';
 import { NotificationToggle } from '@/features/notifications/notification-toggle';
 import { roleBadgeVariant } from '@/lib/role-badge';
 import { cn } from '@/lib/utils';
-
-function ProfileRow({
-  label,
-  value,
-  mono
-}: {
-  label: string;
-  value: string;
-  mono?: boolean;
-}) {
-  return (
-    <div className='flex items-center justify-between gap-4 px-4 py-3'>
-      <span className='text-sm text-muted-foreground'>{label}</span>
-      <span className={cn('truncate text-sm font-medium', mono && 'font-mono tabular-nums')}>
-        {value}
-      </span>
-    </div>
-  );
-}
-
-function SettingRow({
-  id,
-  title,
-  description,
-  control
-}: {
-  id?: string;
-  title: string;
-  description: string;
-  control: React.ReactNode;
-}) {
-  return (
-    <div className='flex items-start justify-between gap-4 px-4 py-3'>
-      <div className='min-w-0 space-y-0.5'>
-        {id ? (
-          <Label htmlFor={id} className='text-sm font-medium'>
-            {title}
-          </Label>
-        ) : (
-          <p className='text-sm font-medium'>{title}</p>
-        )}
-        <p className='text-xs text-muted-foreground'>{description}</p>
-      </div>
-      <div className='shrink-0 pt-0.5'>{control}</div>
-    </div>
-  );
-}
+import { ProfileRow, SettingRow } from './profile-view/profile-rows';
+import { ProfileSmsConsentDialog } from './profile-view/profile-sms-consent-dialog';
 
 export default function ProfileViewPage() {
   const user = useAuthStore((state) => state.user);
@@ -186,42 +130,16 @@ export default function ProfileViewPage() {
         </div>
       </div>
 
-      <AlertDialog
+      <ProfileSmsConsentDialog
         open={consentOpen}
-        onOpenChange={(open) => {
+        busy={busy}
+        pendingEnable={pendingEnable}
+        onOpenChange={(open: boolean) => {
           setConsentOpen(open);
           if (!open) setPendingEnable(false);
         }}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm SMS opt-in</AlertDialogTitle>
-            <AlertDialogDescription className='space-y-2 text-left'>
-              <span>
-                You agree to receive automated text messages from Campus Connect about important
-                campus announcements at the phone number we have on file. This is optional and not
-                required to use the platform.
-              </span>
-              <span className='text-muted-foreground block'>
-                Reply STOP to opt out of future texts where supported by your carrier; you can also
-                disable this here at any time.
-              </span>
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={busy}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={busy || !pendingEnable}
-              onClick={(e) => {
-                e.preventDefault();
-                void patchSmsOptIn(true);
-              }}
-            >
-              {busy ? 'Saving…' : 'I agree — enable SMS'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onConfirm={() => void patchSmsOptIn(true)}
+      />
     </PageContainer>
   );
 }

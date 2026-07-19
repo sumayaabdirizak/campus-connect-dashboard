@@ -112,6 +112,8 @@ Open **http://localhost:3000** and sign in with the seeded super-admin credentia
 
 For Phase 2 thesis demos, see [`docs/DEMO_GUIDE.md`](docs/DEMO_GUIDE.md) (seed accounts and a 15-minute walkthrough).
 
+Architecture depth: [`docs/SYSTEM_DESIGN.md`](docs/SYSTEM_DESIGN.md). Living security notes: [`docs/SECURITY.md`](docs/SECURITY.md).
+
 ## Environment variables
 
 **Backend** (`backend/.env`) — see [`backend/.env.example`](backend/.env.example):
@@ -155,23 +157,31 @@ campus-connect/
 
 ## Security highlights
 - JWT (httpOnly cookies) with **refresh-token rotation + revocation deny-list**, enforced on both HTTP and Socket.IO.
+- **`tokenVersion` session bust** — disabling a user (or `revokeAllForUser`) invalidates outstanding JWTs immediately.
 - **Account-status enforcement** — disabled users are locked out immediately, not at token expiry.
 - **CSRF** double-submit; **Helmet** headers; env-driven **CORS allowlist** (no wildcards with credentials).
 - **Upload safety** — extension allowlist + magic-byte content sniffing + `Content-Disposition: attachment`.
 - **RBAC/IDOR** middleware scoping every course sub-resource by membership; parameterized SQL throughout; SSRF guard on outbound URLs.
 - Per-IP **and** per-account login rate limiting.
+- See [`docs/SECURITY.md`](docs/SECURITY.md).
 
 ## Testing & CI
 - **Unit tests** (Vitest, no DB needed): `cd backend && npm run test:unit`.
 - **Full suite** (needs Postgres): `cd backend && npm test`.
 - **CI** ([`.github/workflows/ci.yml`](.github/workflows/ci.yml)) on every push/PR:
-  - Frontend: `npm ci` → `lint` → `typecheck`.
-  - Backend: spin up Postgres → Prisma generate/validate/migrate/seed → `npm test` → `/health` smoke test.
+  - Frontend: typecheck + build.
+  - Backend: Postgres → Prisma → seed → `npm test`.
 
 ## Roadmap
-- Dark-mode token migration across remaining feature components.
-- Backend Dockerfile + `docker-compose` for one-command local/prod bring-up.
 - Broaden unit-test coverage of business logic.
+- Wire uploads to object storage (see [`docs/UPLOAD_STORAGE.md`](docs/UPLOAD_STORAGE.md); MinIO profile in compose).
+- Dark-mode token migration across remaining feature components.
+
+### Docker
+```bash
+docker compose up --build
+# optional MinIO: docker compose --profile storage up --build
+```
 
 ---
 

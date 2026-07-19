@@ -17,6 +17,11 @@ export interface Program {
 export interface ProgramsResponse {
   message: string;
   programs: Program[];
+  status?: string;
+  totalCount?: number;
+  page?: number;
+  pageSize?: number;
+  results?: Program[];
 }
 
 export const fetchPrograms = async () => {

@@ -1,63 +1,14 @@
 import { findAnnouncementRecipientUserIds } from "./announcementRecipients.service.js";
 import { ANNOUNCEMENT_LIKE_EMOJI } from "../dto/announcementDto.js";
+import {
+  cacheGet,
+  cacheSet,
+  resetAnnouncementAnalyticsCacheForTests,
+  invalidateAnnouncementAnalyticsCache,
+} from "./announcementAnalyticsCache.js";
 
-/**
- * In-process LRU-ish cache for analytics payloads keyed by announcementId.
- * Each entry has a 5-minute TTL (configurable). Avoids re-running 5–8 count
- * queries per analytics request on hot announcements while still returning
- * a fresh result within a small staleness window. Callers can bypass via
- * {@link computeAnnouncementAnalytics}'s `forceRefresh` argument.
- *
- * Bounded to ANALYTICS_CACHE_MAX_ENTRIES so a long tail of announcements
- * can't grow the cache unbounded. We use Map insertion order as the eviction
- * heuristic: on `set` we delete the oldest entry when at capacity.
- *
- * @type {Map<number, { at: number; payload: unknown }>}
- */
-const ANALYTICS_CACHE = new Map();
-const ANALYTICS_CACHE_TTL_MS = Math.max(
-  5_000,
-  Number(process.env.ANNOUNCEMENT_ANALYTICS_CACHE_TTL_MS ?? 5 * 60 * 1000),
-);
-const ANALYTICS_CACHE_MAX_ENTRIES = Math.max(
-  10,
-  Math.min(10_000, Number(process.env.ANNOUNCEMENT_ANALYTICS_CACHE_MAX_ENTRIES ?? 200)),
-);
-
-function cacheGet(announcementId) {
-  const entry = ANALYTICS_CACHE.get(announcementId);
-  if (!entry) return null;
-  if (Date.now() - entry.at >= ANALYTICS_CACHE_TTL_MS) {
-    ANALYTICS_CACHE.delete(announcementId);
-    return null;
-  }
-  return entry.payload;
-}
-
-function cacheSet(announcementId, payload) {
-  if (ANALYTICS_CACHE.size >= ANALYTICS_CACHE_MAX_ENTRIES) {
-    const oldestKey = ANALYTICS_CACHE.keys().next().value;
-    if (oldestKey !== undefined) ANALYTICS_CACHE.delete(oldestKey);
-  }
-  ANALYTICS_CACHE.set(announcementId, { at: Date.now(), payload });
-}
-
-/** Test hook. */
-export function resetAnnouncementAnalyticsCacheForTests() {
-  ANALYTICS_CACHE.clear();
-}
-
-/**
- * Invalidate the cached analytics for one announcement. Call from any
- * mutation path that affects engagement counts (reads, likes, acks, link
- * clicks) so the next analytics request recomputes immediately rather than
- * waiting for TTL.
- *
- * @param {number} announcementId
- */
-export function invalidateAnnouncementAnalyticsCache(announcementId) {
-  ANALYTICS_CACHE.delete(announcementId);
-}
+// Re-export cache management for backward compatibility
+export { resetAnnouncementAnalyticsCacheForTests, invalidateAnnouncementAnalyticsCache };
 
 /**
  * Rich analytics for announcements (reads over time, CTR proxy counts, acknowledgement completion).

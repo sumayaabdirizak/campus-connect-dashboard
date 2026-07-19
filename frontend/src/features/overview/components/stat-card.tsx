@@ -1,4 +1,6 @@
+import Link from 'next/link';
 import type { LucideIcon } from 'lucide-react';
+import { ArrowUpRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Tone = 'warning' | 'info' | 'success' | 'primary';
@@ -60,7 +62,8 @@ export function StatCard({
   label,
   sublabel,
   ratio,
-  tone
+  tone,
+  href
 }: {
   icon: LucideIcon;
   value: number | string;
@@ -68,11 +71,13 @@ export function StatCard({
   sublabel?: string;
   ratio?: number;
   tone: Tone;
+  /** Bento behaviour: makes the tile a deep link (with hover lift + arrow). */
+  href?: string;
 }) {
   const t = TONE[tone];
   const color = `var(${t.varName})`;
-  return (
-    <div className={cn('flex items-start justify-between gap-3 rounded-2xl p-4', t.tint)}>
+  const body = (
+    <>
       <div className='min-w-0'>
         <span
           className='flex size-9 items-center justify-center rounded-xl text-white shadow-sm'
@@ -85,6 +90,85 @@ export function StatCard({
         {sublabel && <p className='text-xs text-muted-foreground'>{sublabel}</p>}
       </div>
       {ratio != null && <Donut ratio={ratio} color={color} />}
+    </>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cn(
+          'hover-lift group relative flex items-start justify-between gap-3 rounded-2xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          t.tint
+        )}
+      >
+        <ArrowUpRight
+          className='absolute top-3 right-3 size-4 text-foreground/30 opacity-0 transition-opacity duration-150 group-hover:opacity-100'
+          aria-hidden
+        />
+        {body}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cn('flex items-start justify-between gap-3 rounded-2xl p-4', t.tint)}>
+      {body}
     </div>
   );
+}
+
+/**
+ * Bento hero tile — the dashboard's "what do I do right now?" answer (next
+ * class, item due, or work waiting to grade). Deep violet in both modes so
+ * it anchors the grid; pairs with StatCard tiles around it.
+ */
+export function HeroTile({
+  kicker,
+  title,
+  meta,
+  href,
+  icon: Icon,
+  className
+}: {
+  kicker: string;
+  title: string;
+  meta?: string;
+  href?: string;
+  icon?: LucideIcon;
+  className?: string;
+}) {
+  const inner = (
+    <>
+      {Icon && (
+        <span className='absolute top-4 right-4 flex size-9 items-center justify-center rounded-xl bg-white/15 text-white ring-1 ring-white/25'>
+          <Icon className='size-5' />
+        </span>
+      )}
+      <p className='text-[11px] font-semibold tracking-[0.2em] text-white/60 uppercase'>{kicker}</p>
+      <p className='font-display mt-2 text-2xl leading-tight font-bold tracking-tight text-white sm:text-3xl'>
+        {title}
+      </p>
+      {meta && <p className='mt-1.5 text-sm text-white/70'>{meta}</p>}
+    </>
+  );
+
+  const shell = cn(
+    'relative overflow-hidden rounded-2xl bg-[oklch(0.24_0.09_292)] p-5',
+    // Soft pastel glow, echoing the sign-in brand panel.
+    'before:pointer-events-none before:absolute before:-top-10 before:-right-10 before:size-40 before:rounded-full before:bg-[oklch(0.75_0.13_292)]/25 before:blur-2xl',
+    className
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className={cn(shell, 'hover-lift block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring')}
+      >
+        {inner}
+      </Link>
+    );
+  }
+  return <div className={shell}>{inner}</div>;
 }

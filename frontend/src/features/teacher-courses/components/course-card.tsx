@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { BookOpen, Calendar, Users } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { pastelFor } from '@/lib/pastel';
 
 export interface TeacherCourseCardData {
   id: string;
@@ -22,54 +24,55 @@ interface CourseCardProps {
   index: number;
 }
 
-const GRADIENTS = [
-  'from-indigo-500 via-violet-500 to-fuchsia-500',
-  'from-sky-500 via-blue-500 to-indigo-500',
-  'from-emerald-500 via-teal-500 to-cyan-500',
-  'from-amber-500 via-orange-500 to-rose-500',
-  'from-rose-500 via-pink-500 to-purple-500'
-];
-
-function gradientFor(seed: string): string {
-  let hash = 0;
-  for (let i = 0; i < seed.length; i++) hash = (hash << 5) - hash + seed.charCodeAt(i);
-  return GRADIENTS[Math.abs(hash) % GRADIENTS.length];
-}
-
+/**
+ * Pastel-campus course card: without a cover photo the course renders as a
+ * soft pastel tile in its stable hue (same seed → same color everywhere),
+ * with oversized initials as the artwork. Hover lifts the card slightly.
+ */
 export function CourseCard({ course }: CourseCardProps) {
   const cover = course.thumbnail?.trim();
   const initials = (course.courseCode || course.courseName || 'C').slice(0, 2).toUpperCase();
+  const hue = pastelFor(course.courseCode || course.courseName || '');
 
   return (
-    <Link href={`/dashboard/courses/${course.id}`}>
-      <div className='overflow-hidden rounded-lg border transition-colors hover:bg-muted/30'>
+    <Link href={`/dashboard/courses/${course.id}`} className='group block'>
+      <div className='overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md'>
         <div className='relative h-28 overflow-hidden'>
           {cover ? (
-            <Image src={cover} alt={course.courseName} fill unoptimized className='object-cover' />
+            <>
+              <Image
+                src={cover}
+                alt={course.courseName}
+                fill
+                unoptimized
+                className='object-cover transition-transform duration-300 group-hover:scale-[1.03]'
+              />
+              <div className='absolute inset-0 bg-gradient-to-t from-black/50 to-transparent' />
+            </>
           ) : (
-            <div
-              className={`flex h-full w-full items-center justify-center bg-gradient-to-br ${gradientFor(
-                course.courseCode || course.courseName || ''
-              )}`}
-            >
-              <span className='text-3xl font-bold text-white/90'>{initials}</span>
+            <div className={cn('flex h-full w-full items-center justify-center', hue.tile)}>
+              <span className={cn('text-4xl font-bold tracking-tight', hue.text)}>{initials}</span>
             </div>
           )}
-          <div className='absolute inset-0 bg-gradient-to-t from-black/60 to-transparent' />
           <span
-            className={`absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-medium ${
-              course.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-muted'
-            }`}
+            className={cn(
+              'absolute right-2 top-2 rounded-full px-2 py-0.5 text-[10px] font-semibold',
+              course.status === 'active'
+                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                : 'bg-muted text-muted-foreground'
+            )}
           >
             {course.status}
           </span>
         </div>
 
-        <div className='p-3'>
-          <span className='text-xs font-medium text-primary'>{course.courseCode}</span>
-          <h3 className='mb-1 line-clamp-1 text-sm font-medium'>{course.courseName}</h3>
-          <p className='mb-2 text-xs text-muted-foreground'>
-            {course.section} / {course.department}
+        <div className='p-3.5'>
+          <span className={cn('inline-block rounded-md px-1.5 py-0.5 text-[11px] font-semibold', hue.chip)}>
+            {course.courseCode}
+          </span>
+          <h3 className='mt-1.5 line-clamp-1 text-sm font-semibold'>{course.courseName}</h3>
+          <p className='mb-2.5 mt-0.5 text-xs text-muted-foreground'>
+            {course.section} · {course.department}
           </p>
           <div className='flex items-center gap-3 text-xs text-muted-foreground'>
             <span className='flex items-center gap-1'>

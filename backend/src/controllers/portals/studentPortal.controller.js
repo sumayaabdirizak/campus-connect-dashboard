@@ -1,5 +1,6 @@
 import { prisma } from "../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../utils/publicAssetUrl.js";
+import { respondInternalError } from "../../utils/httpError.js";
 
 function buildQuickLinks(resources = []) {
   const visible = resources.filter((r) => !r.is_draft && r.status === "APPROVED");
@@ -154,7 +155,7 @@ export const getMyCourses = async (req, res) => {
       }
     });
   } catch (e) {
-    res.status(500).json({ success: false, message: 'Failed to fetch student courses', error: e.message });
+    respondInternalError(res, 'Failed to fetch student courses', e);
   }
 };
 
@@ -272,6 +273,6 @@ export const getCourseDetail = async (req, res) => {
 
   } catch (e) {
     console.error(e);
-    res.status(500).json({ message: 'Failed to fetch course details', error: e.message });
+    respondInternalError(res, 'Failed to fetch course details', e);
   }
 };

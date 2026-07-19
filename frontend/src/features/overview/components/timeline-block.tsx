@@ -1,80 +1,19 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
-import { FileText, ClipboardCheck, Megaphone, CheckCircle2 } from 'lucide-react';
-import { format, isToday, isTomorrow } from 'date-fns';
+import { format } from 'date-fns';
+import { CheckCircle2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn } from '@/lib/utils';
-import { AddToCalendarButton } from '@/components/add-to-calendar-button';
-import { deadlineRowToCalendarInput } from '@/features/calendar/deadline-calendar';
+import { SegmentedControl } from './timeline-block/segmented-control';
+import { TimelineItemRow } from './timeline-block/timeline-item-row';
+import {
+  timelineDayHeading,
+  type TimelineGroup,
+  type TimelineItem
+} from './timeline-block/types';
 
-type DeadlineKind = 'announcement' | 'assignment' | 'quiz';
-export interface TimelineItem {
-  kind: DeadlineKind;
-  id: number;
-  title: string;
-  deadlineAt: string | null;
-  courseCode?: string | null;
-  courseOfferingId?: string | null;
-}
-
-const ICON: Record<DeadlineKind, typeof FileText> = {
-  assignment: FileText,
-  quiz: ClipboardCheck,
-  announcement: Megaphone
-};
-const ACTION_BY_AUDIENCE: Record<'student' | 'teacher', Record<DeadlineKind, string>> = {
-  student: { assignment: 'Add submission', quiz: 'Attempt quiz', announcement: 'View' },
-  teacher: { assignment: 'View submissions', quiz: 'View results', announcement: 'View' }
-};
-
-function hrefFor(d: TimelineItem): string {
-  if (d.kind === 'announcement') return '/dashboard/calendar';
-  const tab = d.kind === 'quiz' ? 'quizzes' : 'assignments';
-  return d.courseOfferingId ? `/dashboard/courses/${d.courseOfferingId}?tab=${tab}` : '/dashboard/calendar';
-}
-
-function dayHeading(d: Date): string {
-  if (isToday(d)) return 'Today';
-  if (isTomorrow(d)) return 'Tomorrow';
-  return format(d, 'EEEE, d MMMM');
-}
-
-interface Group {
-  heading: string;
-  items: TimelineItem[];
-}
-
-function Segmented<T extends string>({
-  value,
-  onChange,
-  options
-}: {
-  value: T;
-  onChange: (v: T) => void;
-  options: readonly (readonly [T, string])[];
-}) {
-  return (
-    <div className='flex rounded-md border bg-muted/40 p-0.5 text-xs'>
-      {options.map(([key, label]) => (
-        <button
-          key={key}
-          type='button'
-          onClick={() => onChange(key)}
-          className={cn(
-            'rounded px-2.5 py-1 font-medium transition-colors',
-            value === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-          )}
-        >
-          {label}
-        </button>
-      ))}
-    </div>
-  );
-}
+export type { TimelineItem } from './timeline-block/types';
 
 /**
  * Moodle-style Timeline block with the real controls: a date-range filter
@@ -91,11 +30,10 @@ export function TimelineBlock({
   loading?: boolean;
   audience?: 'student' | 'teacher';
 }) {
-  const action = ACTION_BY_AUDIENCE[audience];
   const [rangeDays, setRangeDays] = useState<'7' | '30'>('30');
   const [sortBy, setSortBy] = useState<'date' | 'course'>('date');
 
-  const groups = useMemo<Group[]>(() => {
+  const groups = useMemo<TimelineGroup[]>(() => {
     const end = Date.now() + Number(rangeDays) * 24 * 60 * 60 * 1000;
     const inRange = items
       .filter((d) => d.deadlineAt && new Date(d.deadlineAt).getTime() <= end)
@@ -110,11 +48,11 @@ export function TimelineBlock({
       return Array.from(m, ([heading, groupItems]) => ({ heading, items: groupItems }));
     }
 
-    const m = new Map<string, Group>();
+    const m = new Map<string, TimelineGroup>();
     for (const it of inRange) {
       const d = new Date(it.deadlineAt!);
       const key = format(d, 'yyyy-MM-dd');
-      if (!m.has(key)) m.set(key, { heading: dayHeading(d), items: [] });
+      if (!m.has(key)) m.set(key, { heading: timelineDayHeading(d), items: [] });
       m.get(key)!.items.push(it);
     }
     return Array.from(m.values());
@@ -125,7 +63,7 @@ export function TimelineBlock({
       <CardHeader className='flex flex-row flex-wrap items-center justify-between gap-2 border-b py-3'>
         <CardTitle className='text-base font-semibold'>Timeline</CardTitle>
         <div className='flex flex-wrap items-center gap-2'>
-          <Segmented
+          <SegmentedControl
             value={rangeDays}
             onChange={setRangeDays}
             options={[
@@ -133,7 +71,7 @@ export function TimelineBlock({
               ['30', 'Next 30 days']
             ]}
           />
-          <Segmented
+          <SegmentedControl
             value={sortBy}
             onChange={setSortBy}
             options={[
@@ -165,43 +103,9 @@ export function TimelineBlock({
                   {group.heading}
                 </p>
                 <ul className='divide-y divide-border'>
-                  {group.items.map((d) => {
-                    const Icon = ICON[d.kind];
-                    const when = d.deadlineAt ? new Date(d.deadlineAt) : null;
-                    return (
-                      <li key={`${d.kind}-${d.id}`} className='flex items-center gap-3 px-4 py-3'>
-                        <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
-                          <Icon className='size-4' />
-                        </span>
-                        <div className='min-w-0 flex-1'>
-                          <p className='text-xs text-muted-foreground'>
-                            {when ? format(when, 'h:mm a') : ''}
-                          </p>
-                          <Link
-                            href={hrefFor(d)}
-                            className='block truncate text-sm font-medium text-primary hover:underline'
-                          >
-                            {d.title}
-                          </Link>
-                          <p className='truncate text-xs text-muted-foreground'>{d.courseCode ?? ''}</p>
-                        </div>
-                        <div className='flex shrink-0 flex-col items-end gap-1.5'>
-                          {(() => {
-                            const deadline = deadlineRowToCalendarInput(d);
-                            return deadline ? (
-                              <AddToCalendarButton
-                                deadline={deadline}
-                                className='text-[11px] text-muted-foreground'
-                              />
-                            ) : null;
-                          })()}
-                          <Button asChild variant='outline' size='sm'>
-                            <Link href={hrefFor(d)}>{action[d.kind]}</Link>
-                          </Button>
-                        </div>
-                      </li>
-                    );
-                  })}
+                  {group.items.map((d) => (
+                    <TimelineItemRow key={`${d.kind}-${d.id}`} item={d} audience={audience} />
+                  ))}
                 </ul>
               </div>
             ))}

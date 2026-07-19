@@ -1,0 +1,119 @@
+'use client'
+
+import { useEffect, type Dispatch, type SetStateAction } from 'react'
+import { getDiscussionSocket } from '../../api/socket'
+import type { MessageReaction } from '../../api/types'
+import {
+  isMainThreadMessage,
+  mergeMessages,
+  unwrap,
+  type ChannelMessagesState,
+} from './message-list-helpers'
+
+export function useChannelSocketSync(
+  validId: number | null,
+  setState: Dispatch<SetStateAction<ChannelMessagesState>>
+) {
+  useEffect(() => {
+    if (validId == null) return
+    const socket = getDiscussionSocket()
+
+    const onNew = (raw: unknown) => {
+      const msg = unwrap(raw)
+      if (!msg || Number(msg.channelId) !== validId) return
+      if (isMainThreadMessage(msg)) {
+        setState((s) => ({ ...s, messages: mergeMessages(s.messages, [msg]) }))
+        return
+      }
+      const parentId = Number(msg.parentMessageId)
+      if (!Number.isFinite(parentId)) return
+      setState((s) => {
+        const idx = s.messages.findIndex((x) => x.id === parentId)
+        if (idx < 0) return s
+        const next = s.messages.slice()
+        const parent = next[idx]
+        const prevPreview = parent.threadPreview ?? {
+          replyCount: 0,
+          lastReplyAt: null,
+          previewSenders: [],
+        }
+        const senderEntry = msg.isAnonymous
+          ? { id: 0, full_name: 'Anonymous' }
+          : (msg.sender ?? null)
+        const senders = senderEntry
+          ? [
+              senderEntry,
+              ...prevPreview.previewSenders.filter(
+                (p) => p.id !== senderEntry.id || p.full_name !== senderEntry.full_name
+              ),
+            ].slice(0, 3)
+          : prevPreview.previewSenders
+        next[idx] = {
+          ...parent,
+          threadPreview: {
+            replyCount: prevPreview.replyCount + 1,
+            lastReplyAt: msg.createdAt,
+            previewSenders: senders,
+          },
+        }
+        return { ...s, messages: next }
+      })
+    }
+
+    const onEdit = (raw: unknown) => {
+      const msg = unwrap(raw)
+      if (!msg || Number(msg.channelId) !== validId) return
+      setState((s) => {
+        const idx = s.messages.findIndex((x) => x.id === msg.id)
+        if (idx < 0) return s
+        const next = s.messages.slice()
+        next[idx] = { ...next[idx], ...msg }
+        return { ...s, messages: next }
+      })
+    }
+
+    const onDelete = (payload: { messageId?: number; channelId?: number }) => {
+      const messageId = Number(payload?.messageId)
+      if (!Number.isFinite(messageId)) return
+      if (payload?.channelId != null && Number(payload.channelId) !== validId) return
+      setState((s) => {
+        const idx = s.messages.findIndex((x) => x.id === messageId)
+        if (idx < 0) return s
+        const next = s.messages.slice()
+        next[idx] = { ...next[idx], deletedAt: new Date().toISOString() }
+        return { ...s, messages: next }
+      })
+    }
+
+    const onReaction = (payload: { messageId?: number; reactions?: MessageReaction[] }) => {
+      const messageId = Number(payload?.messageId)
+      if (!Number.isFinite(messageId)) return
+      if (!Array.isArray(payload?.reactions)) return
+      setState((s) => {
+        const idx = s.messages.findIndex((x) => x.id === messageId)
+        if (idx < 0) return s
+        const next = s.messages.slice()
+        next[idx] = { ...next[idx], reactions: payload.reactions }
+        return { ...s, messages: next }
+      })
+    }
+
+    socket.on('message:new', onNew)
+    socket.on('discussion:message:new', onNew)
+    socket.on('message:edit', onEdit)
+    socket.on('message:edited', onEdit)
+    socket.on('message:delete', onDelete)
+    socket.on('message:deleted', onDelete)
+    socket.on('reaction:update', onReaction)
+
+    return () => {
+      socket.off('message:new', onNew)
+      socket.off('discussion:message:new', onNew)
+      socket.off('message:edit', onEdit)
+      socket.off('message:edited', onEdit)
+      socket.off('message:delete', onDelete)
+      socket.off('message:deleted', onDelete)
+      socket.off('reaction:update', onReaction)
+    }
+  }, [validId, setState])
+}

@@ -6,6 +6,7 @@ import { whereBatchSectionsInFaculty } from "../../utils/scopeWhere.js";
 import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
 import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
 import { refreshDiscussionMembershipsForScope } from "../../features/discussions/membershipSync.service.js";
+import { respondInternalError } from "../../utils/httpError.js";
 
 // GET all sections (optionally by batch) — paginated; scoped for DEAN / FACULTY_ADMIN / STUDENT
 export const getAllBatchSections = async (req, res) => {
@@ -60,7 +61,7 @@ export const getBatchSectionById = async (req, res) => {
     if (!section) return res.status(404).json({ message: "Batch section not found" });
     res.json({ message: "Batch section fetched", section });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch batch section", error: err.message });
+    respondInternalError(res, "Failed to fetch batch section", err);
   }
 };
 
@@ -92,7 +93,7 @@ export const createBatchSection = async (req, res) => {
     }
     res.status(201).json({ message: "Batch section created", section });
   } catch (err) {
-    res.status(500).json({ message: "Failed to create batch section", error: err.message });
+    respondInternalError(res, "Failed to create batch section", err);
   }
 };
 
@@ -125,7 +126,7 @@ export const updateBatchSection = async (req, res) => {
     }
     res.json({ message: "Batch section updated", section });
   } catch (err) {
-    res.status(500).json({ message: "Failed to update batch section", error: err.message });
+    respondInternalError(res, "Failed to update batch section", err);
   }
 };
 
@@ -140,6 +141,6 @@ export const deleteBatchSection = async (req, res) => {
     await prisma.batchSection.delete({ where: { id: Number(id) } });
     res.json({ message: "Batch section deleted" });
   } catch (err) {
-    res.status(500).json({ message: "Failed to delete batch section", error: err.message });
+    respondInternalError(res, "Failed to delete batch section", err);
   }
 };

@@ -3,6 +3,7 @@ import { env } from "../../config/env.js";
 import { prisma } from "../../db/prisma.js";
 import { loadUserAnnouncementScope } from "../../utils/userAnnouncementScope.js";
 import { readCookieFromHeader } from "../../utils/cookies.js";
+import { assertAccessJwt } from "./assertAccessJwt.js";
 
 /**
  * Socket.IO auth gate — mirrors the HTTP `/api` auth middleware.
@@ -19,6 +20,18 @@ export function createSocketAuthMiddleware() {
       if (!token) return next(new Error("Unauthorized"));
 
       const payload = jwt.verify(token, env.JWT_SECRET);
+      const accessCheck = await assertAccessJwt(payload);
+      if (!accessCheck.ok) return next(new Error("Unauthorized"));
+
+      const account = await prisma.user.findUnique({
+        where: { id: Number(payload.sub) },
+        select: { tokenVersion: true, status: true },
+      });
+      if (!account || account.status !== "ACTIVE") return next(new Error("Unauthorized"));
+      if (payload.tv != null && Number(payload.tv) !== Number(account.tokenVersion ?? 0)) {
+        return next(new Error("Unauthorized"));
+      }
+
       const scope = await loadUserAnnouncementScope(prisma, Number(payload.sub));
       if (!scope) return next(new Error("Unauthorized"));
 

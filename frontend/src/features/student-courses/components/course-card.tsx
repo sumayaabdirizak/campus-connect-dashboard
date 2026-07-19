@@ -4,8 +4,9 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { Clock } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { cn } from '@/lib/utils';
 import { resolvePublicAssetUrl } from '@/lib/resolve-public-asset-url';
-import { courseColor } from '../lib/course-color';
+import { pastelFor } from '@/lib/pastel';
 
 export interface StudentCourseCardData {
   id: number | string;
@@ -25,15 +26,15 @@ interface StudentCourseCardProps {
 const dayAbbr = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function StudentCourseCard({ course }: StudentCourseCardProps) {
-  const color = courseColor(course.courseCode);
+  const hue = pastelFor(course.courseCode || course.courseName || '');
   const coverSrc = resolvePublicAssetUrl(course.thumbnail);
   const [coverFailed, setCoverFailed] = useState(false);
   const showCover = Boolean(coverSrc) && !coverFailed;
   const schedule = course.schedule || [];
 
   return (
-    <Link href={`/dashboard/courses/${course.id}`}>
-      <div className='overflow-hidden rounded-xl border bg-card transition-shadow hover:shadow-md'>
+    <Link href={`/dashboard/courses/${course.id}`} className='group block'>
+      <div className='overflow-hidden rounded-2xl border bg-card shadow-sm transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-md'>
         <div className='relative h-36 w-full overflow-hidden'>
           {showCover ? (
             // Plain img + same-origin /uploads proxy avoids Next image optimizer
@@ -42,27 +43,25 @@ export function StudentCourseCard({ course }: StudentCourseCardProps) {
             <img
               src={coverSrc!}
               alt={course.courseName}
-              className='absolute inset-0 h-full w-full object-cover'
+              className='absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]'
               onError={() => setCoverFailed(true)}
             />
           ) : (
-            <div
-              className='flex h-full w-full items-center justify-center'
-              style={{ backgroundColor: color }}
-            >
-              <span className='text-3xl font-bold text-white/90'>
+            <div className={cn('flex h-full w-full items-center justify-center', hue.tile)}>
+              <span className={cn('text-4xl font-bold tracking-tight', hue.text)}>
                 {(course.courseCode || course.courseName || 'C').slice(0, 2).toUpperCase()}
               </span>
             </div>
           )}
           <span
-            className='absolute left-3 top-3 rounded-md px-2 py-1 text-xs font-semibold text-white shadow-sm'
-            style={{ backgroundColor: color }}
+            className={cn(
+              'absolute left-3 top-3 rounded-full px-2 py-1 text-xs font-semibold shadow-sm',
+              showCover ? 'bg-white/90 text-foreground dark:bg-black/60 dark:text-white' : hue.chip
+            )}
           >
             {course.courseCode}
           </span>
         </div>
-        <div className='h-1' style={{ backgroundColor: color }} />
 
         <div className='p-4'>
           <h3 className='line-clamp-1 text-base font-semibold text-foreground'>

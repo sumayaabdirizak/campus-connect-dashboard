@@ -21,6 +21,11 @@ export interface Department {
 export interface DepartmentsResponse {
   message: string;
   departments: Department[];
+  status?: string;
+  totalCount?: number;
+  page?: number;
+  pageSize?: number;
+  results?: Department[];
 }
 
 export const fetchDepartments = async () => {
