@@ -12,13 +12,13 @@ export function AppSidebarUserMenu() {
   return (
     <SidebarMenu>
       <SidebarMenuItem>
-        <UserProfileMenu contentClassName='w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg p-2'>
+        <UserProfileMenu contentClassName='w-(--radix-dropdown-menu-trigger-width) min-w-60 rounded-xl p-2'>
           <SidebarMenuButton
             size='lg'
-            className='data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground'
+            className='h-14 rounded-xl border border-sidebar-border/70 bg-sidebar-accent/35 px-2.5 hover:bg-sidebar-accent data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground group-data-[collapsible=icon]:border-transparent group-data-[collapsible=icon]:bg-transparent'
           >
-            <UserAvatarProfile className='size-8 rounded-lg' showInfo user={user} />
-            <Icons.chevronsDown className='ml-auto size-4' />
+            <UserAvatarProfile className='size-9 rounded-lg' showInfo user={user} />
+            <Icons.chevronsDown className='ml-auto size-4 text-sidebar-foreground/45 group-data-[collapsible=icon]:hidden' />
           </SidebarMenuButton>
         </UserProfileMenu>
       </SidebarMenuItem>
