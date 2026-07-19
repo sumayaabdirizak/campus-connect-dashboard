@@ -153,3 +153,53 @@ _vendor/dreamspos/
 ## Git ignore
 
 ThemeForest payload and `_vendor/` are ignored via root `.gitignore` so they cannot be committed accidentally.
+
+---
+
+## Frontend Technology and Migration Rules
+
+### Locked production stack (`frontend/`)
+
+| Layer | Choice | Notes |
+| ----- | ------ | ----- |
+| Framework | **Next.js 16.2.1** (App Router under `src/app/`) | Do not change version for this migration |
+| UI runtime | **React 19.2.4** | Server Components by default; `'use client'` only when needed |
+| Language | **TypeScript 5.7.2** (`strict: true`) | New files must be `.ts` / `.tsx`; aliases `@/*`, `@shared/*` |
+| Styling | **Tailwind CSS v4.2.2** via `@import 'tailwindcss'` in `src/styles/globals.css` | Theme tokens in `theme.css` + `styles/themes/` |
+| Components | **shadcn/ui** (New York) + **Radix UI** | Config: `frontend/components.json` |
+| Forms / tables | **TanStack Form**, **TanStack Table**, **Zod** | Prefer existing field wrappers |
+| Client state | **Zustand** | Includes `useAuthStore` |
+| Charts / motion | **Recharts**, **Framer Motion** | Prefer these over DreamsPOS Apex/Bootstrap charts |
+| Realtime | **Socket.IO client** | Existing discussions / course chat |
+| Package manager | **Bun** (official for frontend commands) | See dual-lockfile risk below |
+
+**Not allowed in production frontend:** Bootstrap, jQuery, Ant Design, DreamsPOS global CSS/JS, or a second frontend app architecture.
+
+### Dual-lockfile risk
+
+`frontend/` contains both `bun.lock` (preferred) and `package-lock.json`. Root scripts also use npm (`npm run … --prefix frontend`). Prefer **Bun** for all future frontend install/dev/build/lint/typecheck commands (`bun install`, `bun run typecheck`, `bun run lint`, `bun run build`). Do not delete either lockfile in the migration without an explicit follow-up; mixing `npm install` and `bun install` can drift dependency trees.
+
+### Migration rules (enforce)
+
+1. The current `frontend/` remains the **production** frontend.
+2. DreamsPOS under `_vendor/dreamspos/` is a **visual reference** only.
+3. Laundry Login UI may be **adapted** into the existing Campus Connect login route (`/auth/sign-in`); keep cookie JWT + CSRF auth.
+4. Pharmacy HTML must be **visually recreated** using Tailwind and TypeScript.
+5. Pharmacy **Bootstrap classes must not** be copied directly.
+6. Pharmacy **jQuery scripts must not** be imported.
+7. Pharmacy **global CSS and JavaScript must not** be added to Campus Connect.
+8. Retail Chat must **not replace** the existing Campus Connect chat / discussions architecture.
+9. Existing authentication, API client, CSRF handling, RBAC, routing, and state management must be **preserved**.
+10. All new frontend components must use **TypeScript** (`.ts` / `.tsx`).
+11. All new styling must use **Tailwind CSS** and existing theme tokens.
+12. Existing **shadcn** components should be reused before custom components are created.
+
+### Verification scripts (frontend)
+
+```bash
+bun run typecheck   # tsc --noEmit
+bun run lint        # oxlint
+bun run build       # next build
+```
+
+If Bun is unavailable on a machine, use `npm run typecheck|lint|build` in `frontend/` as a temporary fallback, then realign with Bun before merge.
