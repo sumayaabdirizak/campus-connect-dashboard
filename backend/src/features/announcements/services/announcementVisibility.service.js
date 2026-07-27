@@ -6,7 +6,6 @@ export {
 export {
   buildVisibleAnnouncementsWhere,
   buildVisibleAnnouncementsWhereLegacy,
-  buildAnnouncementVisibilityWhere,
 } from "./visibility/buildWhere.js";
 
 export { getVisibleAnnouncements, getUnreadCount } from "./visibility/queries.js";

@@ -43,6 +43,3 @@ export function buildVisibleAnnouncementsWhereLegacy(user) {
     AND: [base, { OR: [creatorClause, { AND: [{ OR: or }, roleClause] }] }],
   };
 }
-
-/** @deprecated Use {@link buildVisibleAnnouncementsWhere} */
-export const buildAnnouncementVisibilityWhere = buildVisibleAnnouncementsWhere;
