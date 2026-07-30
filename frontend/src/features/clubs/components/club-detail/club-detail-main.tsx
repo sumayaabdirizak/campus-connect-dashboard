@@ -1,16 +1,17 @@
-import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Icons } from '@/components/icons'
 import type { Club } from '@/features/clubs/api/types'
-import { formatJoinPolicy } from './helpers'
+import { ClubFeed } from './club-feed/club-feed'
 
 type Props = {
   club: Club
   themeColor: string
   isMember: boolean
   isOwner: boolean
+  joinRequestPending?: boolean
   joining: boolean
   onJoin: () => void
+  hideJoinActions?: boolean
 }
 
 export function ClubDetailMain({
@@ -18,9 +19,13 @@ export function ClubDetailMain({
   themeColor,
   isMember,
   isOwner,
+  joinRequestPending = false,
   joining,
   onJoin,
+  hideJoinActions = false,
 }: Props) {
+  const canSeeFeed = (isMember || isOwner) && club.serverId && club.status === 'APPROVED'
+
   return (
     <div className='min-w-0 flex-1 space-y-4'>
       {club.interests && club.interests.length > 0 ? (
@@ -37,87 +42,100 @@ export function ClubDetailMain({
         </div>
       ) : null}
 
-      {club.description ? (
-        <div className='rounded-xl border bg-card p-5'>
-          <h3 className='mb-2 text-sm font-semibold'>About this community</h3>
-          <p className='text-sm leading-relaxed text-muted-foreground'>{club.description}</p>
-        </div>
-      ) : null}
-
-      {(isMember || isOwner) && club.serverId ? (
-        <div className='rounded-xl border bg-card p-6'>
-          <div className='flex flex-col items-center gap-3 py-8 text-center'>
-            <div
-              className='flex h-12 w-12 items-center justify-center rounded-full'
-              style={{ backgroundColor: `${themeColor}15` }}
-            >
-              <Icons.chat className='h-6 w-6' style={{ color: themeColor }} />
-            </div>
-            <div>
-              <p className='font-medium'>Start chatting</p>
-              <p className='text-sm text-muted-foreground'>
-                Head to the club chat to connect with members
-              </p>
-            </div>
-            <Link href={`/dashboard/chat/${club.serverId}`}>
-              <Button size='sm' className='mt-1 gap-1.5' style={{ backgroundColor: themeColor }}>
-                <Icons.chat className='h-3.5 w-3.5' />
-                Open Chat
-              </Button>
-            </Link>
-          </div>
-        </div>
+      {canSeeFeed ? (
+        <ClubFeed serverId={club.serverId!} themeColor={themeColor} />
       ) : !isMember && !isOwner ? (
-        <div className='rounded-xl border bg-card p-6'>
-          <div className='flex flex-col items-center gap-3 py-8 text-center'>
-            <div
-              className='flex h-12 w-12 items-center justify-center rounded-full'
-              style={{ backgroundColor: `${themeColor}15` }}
-            >
-              <Icons.teams className='h-6 w-6' style={{ color: themeColor }} />
-            </div>
-            <div>
-              <p className='font-medium'>Join {club.name}</p>
-              <p className='text-sm text-muted-foreground'>
-                Become a member to chat and participate
-              </p>
-            </div>
-            {club.joinPolicy !== 'INVITE_ONLY' ? (
-              <Button
-                size='sm'
-                className='mt-1'
-                style={{ backgroundColor: themeColor }}
-                onClick={onJoin}
-                disabled={joining}
-              >
-                {joining
-                  ? 'Joining...'
-                  : club.joinPolicy === 'OPEN'
-                    ? 'Join Club'
-                    : 'Request to Join'}
-              </Button>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
-
-      <div className='grid grid-cols-3 gap-3'>
-        <div className='rounded-xl border bg-card p-4 text-center'>
-          <Icons.teams className='mx-auto mb-1 h-5 w-5 text-muted-foreground' />
-          <p className='text-lg font-bold'>{club.memberCountCache}</p>
-          <p className='text-xs text-muted-foreground'>
-            Member{club.memberCountCache !== 1 ? 's' : ''}
+        <JoinPrompt
+          club={club}
+          themeColor={themeColor}
+          joinRequestPending={joinRequestPending}
+          joining={joining}
+          onJoin={onJoin}
+          hideJoinActions={hideJoinActions}
+        />
+      ) : (
+        <div className='rounded-xl border border-dashed border-[#E5E7EB] bg-white px-6 py-12 text-center'>
+          <Icons.alertCircle className='mx-auto mb-2 h-8 w-8 text-[#98A2B3]' />
+          <p className='text-sm font-medium text-[#344054]'>Feed not ready</p>
+          <p className='mt-1 text-xs text-[#667085]'>
+            {club.status === 'PENDING'
+              ? 'This club is awaiting approval. The feed unlocks once it is approved.'
+              : 'Discussion space is still being set up.'}
           </p>
         </div>
-        <div className='rounded-xl border bg-card p-4 text-center'>
-          <Icons.lock className='mx-auto mb-1 h-5 w-5 text-muted-foreground' />
-          <p className='text-lg font-bold capitalize'>{formatJoinPolicy(club.joinPolicy)}</p>
-          <p className='text-xs text-muted-foreground'>Join Policy</p>
+      )}
+    </div>
+  )
+}
+
+function JoinPrompt({
+  club,
+  themeColor,
+  joinRequestPending,
+  joining,
+  onJoin,
+  hideJoinActions = false,
+}: {
+  club: Club
+  themeColor: string
+  joinRequestPending: boolean
+  joining: boolean
+  onJoin: () => void
+  hideJoinActions?: boolean
+}) {
+  return (
+    <div className='space-y-4'>
+      {club.description ? (
+        <div className='rounded-xl border border-[#E5E7EB] bg-white p-5'>
+          <h3 className='mb-2 text-sm font-semibold text-[#101828]'>About</h3>
+          <p className='text-sm leading-relaxed text-[#667085]'>{club.description}</p>
         </div>
-        <div className='rounded-xl border bg-card p-4 text-center'>
-          <Icons.teams className='mx-auto mb-1 h-5 w-5 text-muted-foreground' />
-          <p className='text-lg font-bold capitalize'>{club.scopeKind.toLowerCase()}</p>
-          <p className='text-xs text-muted-foreground'>Scope</p>
+      ) : null}
+      <div className='rounded-xl border border-[#E5E7EB] bg-white p-6'>
+        <div className='flex flex-col items-center gap-3 py-6 text-center'>
+          <div
+            className='flex h-12 w-12 items-center justify-center rounded-full'
+            style={{ backgroundColor: `${themeColor}15` }}
+          >
+            <Icons.teams className='h-6 w-6' style={{ color: themeColor }} />
+          </div>
+          <div>
+            <p className='font-medium text-[#101828]'>
+              {hideJoinActions
+                ? club.name
+                : joinRequestPending
+                  ? `Request pending for ${club.name}`
+                  : `Join ${club.name}`}
+            </p>
+            <p className='text-sm text-[#667085]'>
+              {hideJoinActions
+                ? 'Members-only content — feed unlocks once a member joins.'
+                : joinRequestPending
+                  ? 'A moderator will review your request soon.'
+                  : 'Become a member to see posts and share updates'}
+            </p>
+          </div>
+          {hideJoinActions ? null : joinRequestPending ? (
+            <Button size='sm' variant='outline' disabled className='mt-1 text-[#667085]'>
+              Pending
+            </Button>
+          ) : club.joinPolicy !== 'INVITE_ONLY' ? (
+            <Button
+              size='sm'
+              className='mt-1'
+              style={{ backgroundColor: themeColor }}
+              onClick={onJoin}
+              disabled={joining}
+            >
+              {joining
+                ? 'Joining...'
+                : club.joinPolicy === 'OPEN'
+                  ? 'Join Club'
+                  : 'Request to Join'}
+            </Button>
+          ) : (
+            <p className='text-xs text-[#98A2B3]'>This club is invite-only</p>
+          )}
         </div>
       </div>
     </div>

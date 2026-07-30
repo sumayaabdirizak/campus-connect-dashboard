@@ -1,16 +1,37 @@
 import { prisma } from '../../db/prisma.js';
 
-/** 1:1 DMs — dean ↔ teacher only. */
-export const DIRECT_DM_ROLE_NAMES = Object.freeze(['DEAN', 'TEACHER']);
+/** Classic 1:1 DMs — dean / teacher / student (pairwise scope elsewhere). */
+export const DIRECT_DM_ROLE_NAMES = Object.freeze(['DEAN', 'TEACHER', 'STUDENT']);
+
+/** Office Staff may start 1:1 DMs (scope from desk: university vs faculty). */
+export const OFFICE_STAFF_DIRECT_DM_ROLE = 'OFFICE_STAFF';
+
+/** Academic Office may start 1:1 DMs with deans (university-wide). */
+export const ACADEMIC_OFFICE_DIRECT_DM_ROLE = 'ACADEMIC_OFFICE';
 
 /** Group DMs may *include* these roles as members. */
 export const GROUP_DM_ROLE_NAMES = Object.freeze(['DEAN', 'TEACHER', 'STUDENT']);
 
-/** Who may *create* a group DM (student peer groups). Teachers use 1:1 only. */
-export const GROUP_DM_CREATOR_ROLE_NAMES = Object.freeze(['STUDENT']);
+/** Who may *create* a group DM. */
+export const GROUP_DM_CREATOR_ROLE_NAMES = Object.freeze([
+  'STUDENT',
+  'ACADEMIC_OFFICE',
+  'DEAN',
+]);
+
+/** AO dean / office-staff groups: other members (kept for docs; enforced in assertAoDeanGroupMembers). */
+export const AO_GROUP_DM_MEMBER_ROLE_NAMES = Object.freeze(['DEAN', 'OFFICE_STAFF']);
 
 export function isDirectDmRoleName(roleName) {
   return DIRECT_DM_ROLE_NAMES.includes(String(roleName || '').toUpperCase());
+}
+
+export function isOfficeStaffDmRoleName(roleName) {
+  return String(roleName || '').toUpperCase() === OFFICE_STAFF_DIRECT_DM_ROLE;
+}
+
+export function isAcademicOfficeDmRoleName(roleName) {
+  return String(roleName || '').toUpperCase() === ACADEMIC_OFFICE_DIRECT_DM_ROLE;
 }
 
 export function isGroupDmRoleName(roleName) {
@@ -34,24 +55,28 @@ export async function loadDmUserRole(userId, prismaClient = prisma) {
   return { id: user.id, roleName: String(user.role?.name || '').toUpperCase() };
 }
 
-/** Caller may use 1:1 DMs (dean/teacher). */
+/** Caller may use 1:1 DMs (dean/teacher/student or office staff). */
 export async function assertUserCanUseDms(userId, prismaClient = prisma) {
   const row = await loadDmUserRole(userId, prismaClient);
   if (!row) {
     return { ok: false, status: 404, message: 'User not found', code: 'DM_USER_NOT_FOUND' };
   }
-  if (!isDirectDmRoleName(row.roleName)) {
+  if (
+    !isDirectDmRoleName(row.roleName) &&
+    !isOfficeStaffDmRoleName(row.roleName) &&
+    !isAcademicOfficeDmRoleName(row.roleName)
+  ) {
     return {
       ok: false,
       status: 403,
-      message: 'Only deans and teachers can use direct messages',
+      message: 'Only deans, teachers, students, office staff, and Academic Office can use direct messages',
       code: 'DM_ROLE_FORBIDDEN',
     };
   }
   return { ok: true, user: row };
 }
 
-/** Caller may create group DMs / load group candidates (students only). */
+/** Caller may create group DMs / load group candidates. */
 export async function assertUserCanUseGroupDms(userId, prismaClient = prisma) {
   const row = await loadDmUserRole(userId, prismaClient);
   if (!row) {
@@ -61,7 +86,7 @@ export async function assertUserCanUseGroupDms(userId, prismaClient = prisma) {
     return {
       ok: false,
       status: 403,
-      message: 'Only students can start group messages',
+      message: 'Only students, deans, or Academic Office can start group messages',
       code: 'DM_ROLE_FORBIDDEN',
     };
   }
@@ -86,111 +111,22 @@ export async function listActiveFacultyServerIds(userId, prismaClient = prisma) 
 }
 
 /**
- * 1:1 DM is dean ↔ teacher only (not teacher↔teacher, not dean↔dean).
+ * Complementary 1:1 targets by actor role.
  * @param {string} actorRole
  * @returns {readonly string[]}
  */
 export function directDmTargetRolesFor(actorRole) {
   const r = String(actorRole || '').toUpperCase();
-  if (r === 'TEACHER') return Object.freeze(['DEAN']);
-  if (r === 'DEAN') return Object.freeze(['TEACHER']);
+  if (r === 'TEACHER') return Object.freeze(['DEAN', 'STUDENT']);
+  if (r === 'STUDENT') return Object.freeze(['TEACHER']);
+  if (r === 'DEAN') {
+    return Object.freeze(['TEACHER', 'STUDENT', 'OFFICE_STAFF', ACADEMIC_OFFICE_DIRECT_DM_ROLE]);
+  }
+  if (r === OFFICE_STAFF_DIRECT_DM_ROLE) {
+    return Object.freeze(['DEAN', 'TEACHER', 'STUDENT']);
+  }
+  if (r === ACADEMIC_OFFICE_DIRECT_DM_ROLE) {
+    return Object.freeze(['DEAN']);
+  }
   return Object.freeze([]);
-}
-
-/**
- * Both users must be complementary (dean↔teacher) and share a faculty server.
- */
-export async function assertCanDirectMessage(actorUserId, targetUserId, prismaClient = prisma) {
-  const actor = await assertUserCanUseDms(actorUserId, prismaClient);
-  if (!actor.ok) return actor;
-
-  if (Number(actorUserId) === Number(targetUserId)) {
-    return {
-      ok: false,
-      status: 400,
-      message: "You can't start a DM with yourself",
-      code: 'DM_SELF',
-    };
-  }
-
-  const target = await loadDmUserRole(targetUserId, prismaClient);
-  if (!target) {
-    return { ok: false, status: 404, message: 'User not found', code: 'DM_USER_NOT_FOUND' };
-  }
-
-  const allowedTargets = directDmTargetRolesFor(actor.user.roleName);
-  if (!allowedTargets.includes(target.roleName)) {
-    const msg =
-      actor.user.roleName === 'TEACHER'
-        ? 'Teachers can only message the faculty dean'
-        : 'Deans can only message teachers in their faculty';
-    return {
-      ok: false,
-      status: 403,
-      message: msg,
-      code: 'DM_TARGET_ROLE_FORBIDDEN',
-    };
-  }
-
-  const serverIds = await listActiveFacultyServerIds(actorUserId, prismaClient);
-  if (serverIds.length === 0) {
-    return {
-      ok: false,
-      status: 403,
-      message: 'You can only message people you share a faculty with',
-      code: 'DM_NO_SHARED_FACULTY',
-    };
-  }
-
-  const shares = await prismaClient.discussionGroupMembership.count({
-    where: {
-      groupId: { in: serverIds },
-      userId: Number(targetUserId),
-      leftAt: null,
-      isActive: true,
-    },
-  });
-  if (shares < 1) {
-    return {
-      ok: false,
-      status: 403,
-      message: 'You can only message people you share a faculty with',
-      code: 'DM_NO_SHARED_FACULTY',
-    };
-  }
-
-  return { ok: true, actor: actor.user, target };
-}
-
-/**
- * Every id must be an active dean, teacher, or student (group DMs).
- * @param {Iterable<number>} userIds
- */
-export async function assertAllUsersDmEligible(userIds, prismaClient = prisma) {
-  const ids = [...new Set([...userIds].map(Number).filter((n) => Number.isFinite(n) && n > 0))];
-  if (ids.length === 0) {
-    return { ok: false, status: 400, message: 'No members provided', code: 'DM_NO_MEMBERS' };
-  }
-  const users = await prismaClient.user.findMany({
-    where: { id: { in: ids }, status: 'ACTIVE' },
-    select: { id: true, role: { select: { name: true } } },
-  });
-  if (users.length !== ids.length) {
-    return {
-      ok: false,
-      status: 400,
-      message: 'One or more users are invalid or inactive',
-      code: 'DM_INVALID_USERS',
-    };
-  }
-  const bad = users.filter((u) => !isGroupDmRoleName(u.role?.name));
-  if (bad.length > 0) {
-    return {
-      ok: false,
-      status: 403,
-      message: 'Group messages may only include deans, teachers, and students',
-      code: 'DM_ROLE_FORBIDDEN',
-    };
-  }
-  return { ok: true, users };
 }
