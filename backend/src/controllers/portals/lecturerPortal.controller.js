@@ -22,6 +22,7 @@ export const getMyAssignments = async (req, res) => {
         course: {
           include: {
             offerings: {
+              where: { teacherId: userId },
               include: {
                 section: { include: { batch: { include: { program: true } } } },
                 semester: true,

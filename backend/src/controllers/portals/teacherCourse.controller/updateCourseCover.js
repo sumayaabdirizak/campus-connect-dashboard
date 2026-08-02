@@ -32,6 +32,7 @@ export const updateCourseCover = async (req, res) => {
     // this confirms the bytes are actually an image before we expose the URL.
     const verdict = await enforceUploadContentSafety([req.file]);
     if (!verdict.ok) {
+      fs.unlink(req.file.path, () => {});
       return res.status(400).json({ message: 'File contents do not match an image. Upload rejected.' });
     }
 
