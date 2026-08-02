@@ -2,7 +2,7 @@ import { Router } from "express";
 import { prisma } from "../../db/prisma.js";
 import { auth } from "../../middleware/auth.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
-import { buildUnreadSocketPayload } from "../../features/discussions/buildUnreadPayload.js";
+import { buildUnreadSocketPayload } from "../../services/discussions/buildUnreadPayload.js";
 import { loadClubServersForUser, loadClubMetaByServerIds } from "./loadClubServers.js";
 import { buildGroupInboxRows } from "./buildGroupInboxRows.js";
 import { buildDmInboxRows } from "./buildDmInboxRows.js";
@@ -14,7 +14,7 @@ import {
   isOfficeInboxOversight,
   isOfficeMessagesOnlyRole,
 } from "../../../../shared/roles.js";
-import { countOfficeThreadUnreads } from "../../features/offices/officeThreadRead.js";
+import { countOfficeThreadUnreads } from "../../services/offices/officeThreadRead.js";
 
 /**
  * Unified inbox — groups + clubs + DMs + offices, recency-sorted.

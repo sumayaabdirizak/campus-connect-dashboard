@@ -2,7 +2,7 @@ import express from "express";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { loadUserAnnouncementScope } from "../../../../utils/userAnnouncementScope.js";
-import { patchDiscussionMeStatusSchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { patchDiscussionMeStatusSchema } from "../../../../validation/groupDiscussionSchemas.js";
 
 const router = express.Router();
 

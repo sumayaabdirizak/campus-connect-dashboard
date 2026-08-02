@@ -3,10 +3,10 @@ import { z } from "zod";
 import { prisma } from "../../db/prisma.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
 import { getIo } from "../../socket/hub.js";
-import { requireActiveDiscussionMembership } from "../../features/discussions/discussionMembership.js";
-import { applyAnonymousSenderPolicy } from "../../features/discussions/discussionMessagePublic.js";
-import { toDiscussionAttachmentDto } from "../../features/discussions/discussionAttachments.js";
-import { pinBodySchema } from "../../features/discussions/validation/groupDiscussionSchemas.js";
+import { requireActiveDiscussionMembership } from "../../services/discussions/discussionMembership.js";
+import { applyAnonymousSenderPolicy } from "../../services/discussions/discussionMessagePublic.js";
+import { toDiscussionAttachmentDto } from "../../services/discussions/discussionAttachments.js";
+import { pinBodySchema } from "../../validation/groupDiscussionSchemas.js";
 import { resolveServerRow } from "./serverShared.js";
 import { resolveMessageRow, toMessageDto, buildMessagePublicIdMap } from "./messageShared.js";
 

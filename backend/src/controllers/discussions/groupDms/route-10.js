@@ -6,18 +6,18 @@ import express from "express";
 import { prisma } from "../../../db/prisma.js";
 import { apiErrorBody } from "../../../utils/apiEnvelope.js";
 import { getIo } from "../../../socket/hub.js";
-import { buildUnreadSocketPayload } from "../../../features/discussions/buildUnreadPayload.js";
+import { buildUnreadSocketPayload } from "../../../services/discussions/buildUnreadPayload.js";
 import {
   parseDiscussionHistoryLimit,
   encodeDiscussionCursor,
   decodeDiscussionCursor,
-} from "../../../features/discussions/discussionPagination.js";
-import { getDiscussionCallerUserId } from "../../../features/discussions/discussionCaller.js";
+} from "../../../services/discussions/discussionPagination.js";
+import { getDiscussionCallerUserId } from "../../../services/discussions/discussionCaller.js";
 import {
   createGroupDmSchema,
   groupDmSendMessageSchema,
   addGroupDmMembersSchema,
-} from "../../../features/discussions/validation/groupDiscussionSchemas.js";
+} from "../../../validation/groupDiscussionSchemas.js";
 
 import { getActiveMember } from './helpers.js';
 import { buildMessagePublicIdMap } from '../messageShared.js';

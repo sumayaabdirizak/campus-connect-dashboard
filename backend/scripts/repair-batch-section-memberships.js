@@ -5,9 +5,9 @@
  * Usage: node scripts/repair-batch-section-memberships.js
  */
 import { prisma } from '../src/db/prisma.js';
-import { syncDiscussionMembershipsForUser } from '../src/features/discussions/membershipSync.service.js';
-import { ensureDiscussionGroupForScope } from '../src/features/discussions/groupProvisioning.service.js';
-import { DISCUSSION_SCOPE_TYPES } from '../src/features/discussions/policy.js';
+import { syncDiscussionMembershipsForUser } from '../src/services/discussions/membershipSync.service.js';
+import { ensureDiscussionGroupForScope } from '../src/services/discussions/groupProvisioning.service.js';
+import { DISCUSSION_SCOPE_TYPES } from '../src/services/discussions/policy.js';
 
 async function ensureScopesForRegistration(reg) {
   const section = reg.batchSection;

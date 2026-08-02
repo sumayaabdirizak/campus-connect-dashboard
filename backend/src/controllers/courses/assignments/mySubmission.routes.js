@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireStudentSubmission } from '../../../middleware/courseOfferingRbac.js';
 import { loadMySubmissionContext } from './mySubmissionHelpers.js';
-import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
+import { toSubmissionClient } from '../../../services/assignments/submissionDto.js';
 
 const router = Router();
 

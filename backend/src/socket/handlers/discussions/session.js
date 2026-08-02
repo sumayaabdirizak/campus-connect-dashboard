@@ -1,7 +1,7 @@
 import { prisma } from "../../../db/prisma.js";
-import { metricCount, metricTimerEnd, metricTimerStart } from "../../../features/discussions/reliability/metrics.js";
-import { buildUnreadSocketPayload } from "../../../features/discussions/buildUnreadPayload.js";
-import { getDiscussionPresenceWindowMs } from "../../../features/discussions/discussionPresence.js";
+import { metricCount, metricTimerEnd, metricTimerStart } from "../../../services/discussions/reliability/metrics.js";
+import { buildUnreadSocketPayload } from "../../../services/discussions/buildUnreadPayload.js";
+import { getDiscussionPresenceWindowMs } from "../../../services/discussions/discussionPresence.js";
 
 const DISCUSSION_SERVER_ID = process.env.SERVER_ID || process.env.HOSTNAME || "api";
 

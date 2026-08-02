@@ -6,25 +6,25 @@ import express from "express";
 import { prisma } from "../../../db/prisma.js";
 import { apiErrorBody } from "../../../utils/apiEnvelope.js";
 import { getIo } from "../../../socket/hub.js";
-import { buildUnreadSocketPayload } from "../../../features/discussions/buildUnreadPayload.js";
+import { buildUnreadSocketPayload } from "../../../services/discussions/buildUnreadPayload.js";
 import {
   parseDiscussionHistoryLimit,
   encodeDiscussionCursor,
   decodeDiscussionCursor,
-} from "../../../features/discussions/discussionPagination.js";
-import { getDiscussionCallerUserId } from "../../../features/discussions/discussionCaller.js";
+} from "../../../services/discussions/discussionPagination.js";
+import { getDiscussionCallerUserId } from "../../../services/discussions/discussionCaller.js";
 import {
   createGroupDmSchema,
   groupDmSendMessageSchema,
   addGroupDmMembersSchema,
-} from "../../../features/discussions/validation/groupDiscussionSchemas.js";
+} from "../../../validation/groupDiscussionSchemas.js";
 
 import { getActiveMember } from './helpers.js';
 import {
   REPLY_TO_INCLUDE,
   resolveReplyToMessageId,
-} from '../../../features/discussions/replyToMessage.js';
-import { toDiscussionAttachmentDto } from '../../../features/discussions/discussionAttachments.js';
+} from '../../../services/discussions/replyToMessage.js';
+import { toDiscussionAttachmentDto } from '../../../services/discussions/discussionAttachments.js';
 import { resolveMessageRow, resolveAttachmentIds, buildMessagePublicIdMap, toMessageDto } from '../messageShared.js';
 
 /** @param {import('express').Router} router */

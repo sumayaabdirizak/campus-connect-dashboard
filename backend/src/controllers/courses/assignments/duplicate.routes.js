@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
-import { ensureLifecycle, enrichAssignmentDto } from '../../../features/assignments/lifecycleService.js';
+import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
 
 const router = Router();
 

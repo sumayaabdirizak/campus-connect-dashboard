@@ -24,12 +24,12 @@ import {
   computeServerPermissions,
   hasPermission,
   requireServerPermission,
-} from "../../features/discussions/permissions.js";
-import { getServerVisibleChannels } from "../../features/discussions/serverChannelAccess.js";
-import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
-import { slugifyDiscussionChannelName } from "../../features/discussions/discussionChannelUtils.js";
-import { createChannelSchema } from "../../features/discussions/validation/serverSchemas.js";
-import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+} from "../../services/discussions/permissions.js";
+import { getServerVisibleChannels } from "../../services/discussions/serverChannelAccess.js";
+import { getDiscussionCallerUserId } from "../../services/discussions/discussionCaller.js";
+import { slugifyDiscussionChannelName } from "../../services/discussions/discussionChannelUtils.js";
+import { createChannelSchema } from "../../validation/serverSchemas.js";
+import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
 import { resolveServerRow, resolveCategoryRow, toServerDto, toCategoryDto, toChannelDto } from "./serverShared.js";
 import serverChannelsRouter from "./serverChannels.routes.js";
 import serverMembersRouter from "./serverMembers.routes.js";

@@ -1,26 +1,26 @@
 import { prisma } from "../../../db/prisma.js";
-import { metricCount, metricTimerEnd, metricTimerStart } from "../../../features/discussions/reliability/metrics.js";
+import { metricCount, metricTimerEnd, metricTimerStart } from "../../../services/discussions/reliability/metrics.js";
 import {
   computeChannelPermissions,
   hasPermission,
   PERMISSION_BITS,
-} from "../../../features/discussions/permissions.js";
-import { extractMentionHandles, resolveMentionUserIds } from "../../../features/discussions/mentionResolution.js";
+} from "../../../services/discussions/permissions.js";
+import { extractMentionHandles, resolveMentionUserIds } from "../../../services/discussions/mentionResolution.js";
 import {
   excludeDoNotDisturbUserIds,
   getDiscussionPresenceWindowMs,
   isDoNotDisturbStatus,
-} from "../../../features/discussions/discussionPresence.js";
+} from "../../../services/discussions/discussionPresence.js";
 import {
   collectThreadParticipantSenderIds,
   resolveThreadRootMessageId,
-} from "../../../features/discussions/threadParticipants.js";
+} from "../../../services/discussions/threadParticipants.js";
 import {
   anonymousSafeSenderName,
   applyAnonymousSenderPolicy,
   deriveQuestionFields,
-} from "../../../features/discussions/discussionMessagePublic.js";
-import { filterMembershipRowsByChannelScope } from "../../../features/discussions/channelScopeAccess.js";
+} from "../../../services/discussions/discussionMessagePublic.js";
+import { filterMembershipRowsByChannelScope } from "../../../services/discussions/channelScopeAccess.js";
 import { buildMessagePublicIdMap, toMessageDto } from "../../../controllers/discussions/messageShared.js";
 import { notifyOfflineOrMentionedByEmail } from "./discussion-send/emailNotify.js";
 

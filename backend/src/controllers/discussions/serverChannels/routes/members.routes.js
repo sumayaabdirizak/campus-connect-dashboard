@@ -1,9 +1,9 @@
 import express from "express";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { PERMISSION_BITS, requireChannelPermission } from "../../../../features/discussions/permissions.js";
-import { filterMembershipRowsByChannelScope } from "../../../../features/discussions/channelScopeAccess.js";
-import { getDiscussionCallerUserId } from "../../../../features/discussions/discussionCaller.js";
+import { PERMISSION_BITS, requireChannelPermission } from "../../../../services/discussions/permissions.js";
+import { filterMembershipRowsByChannelScope } from "../../../../services/discussions/channelScopeAccess.js";
+import { getDiscussionCallerUserId } from "../../../../services/discussions/discussionCaller.js";
 
 const router = express.Router();
 

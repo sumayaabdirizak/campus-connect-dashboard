@@ -1,7 +1,7 @@
 import { prisma } from "../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../utils/publicAssetUrl.js";
 import { respondInternalError } from "../../utils/httpError.js";
-import { ensureSectionOfferings } from "../../features/academic/ensureSectionOfferings.js";
+import { ensureSectionOfferings } from "../../services/academic/ensureSectionOfferings.js";
 
 function buildQuickLinks(resources = []) {
   const visible = resources.filter((r) => !r.is_draft && r.status === "APPROVED");

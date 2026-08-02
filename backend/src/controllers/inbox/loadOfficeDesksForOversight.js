@@ -1,6 +1,6 @@
 import { prisma } from '../../db/prisma.js';
 import { isOfficeInboxOversight } from '../../../../shared/roles.js';
-import { countOfficeThreadUnreads } from '../../features/offices/officeThreadRead.js';
+import { countOfficeThreadUnreads } from '../../services/offices/officeThreadRead.js';
 
 /**
  * Active desks for oversight, each with optional DM thread preview (AO ↔ office).

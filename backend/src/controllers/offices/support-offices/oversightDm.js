@@ -1,8 +1,8 @@
 import { prisma } from '../../../db/prisma.js';
 import { HttpError } from '../../../utils/httpError.js';
 import { isOfficeInboxOversight } from '../../../../../shared/roles.js';
-import { emitOfficeMessageNew } from '../../../features/offices/emitOfficeMessageNew.js';
-import { markOfficeThreadRead } from '../../../features/offices/officeThreadRead.js';
+import { emitOfficeMessageNew } from '../../../services/offices/emitOfficeMessageNew.js';
+import { markOfficeThreadRead } from '../../../services/offices/officeThreadRead.js';
 import { nextReference, MESSAGE_SELECT } from './helpers.js';
 
 const OFFICE_SELECT = {

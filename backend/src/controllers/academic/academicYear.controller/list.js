@@ -5,15 +5,15 @@ import { parsePaginationQuery } from "../../../utils/pagination.js";
 import {
   getCurrentAcademicYearBounds,
   getSemesterInYear,
-} from "../../../features/academic/academicCalendar.js";
-import { ensureAcademicYearForDate } from "../../../features/academic/ensureAcademicYear.js";
-import { renumberSemestersGloballyIfNeeded } from "../../../features/academic/semesterSequence.js";
-import { graduateCompletedCohorts } from "../../../features/academic/graduateCompletedCohorts.js";
+} from "../../../services/academic/academicCalendar.js";
+import { ensureAcademicYearForDate } from "../../../services/academic/ensureAcademicYear.js";
+import { renumberSemestersGloballyIfNeeded } from "../../../services/academic/semesterSequence.js";
+import { graduateCompletedCohorts } from "../../../services/academic/graduateCompletedCohorts.js";
 import {
   ensureActiveAcademicYears,
   ACTIVE_ACADEMIC_YEAR_WINDOW,
   isYearInActiveWindow,
-} from "../../../features/academic/ensureSemesterCount.js";
+} from "../../../services/academic/ensureSemesterCount.js";
 
 export const getAllAcademicYears = async (req, res) => {
   try {

@@ -3,7 +3,7 @@ import crypto from "crypto";
 import { z } from "zod";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { registerDeviceSchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { registerDeviceSchema } from "../../../../validation/groupDiscussionSchemas.js";
 
 const router = express.Router();
 

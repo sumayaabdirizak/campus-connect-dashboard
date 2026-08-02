@@ -3,9 +3,9 @@ import { respondInternalError } from "../../../utils/httpError.js";
 import {
   buildDefaultSemesterRows,
   getCurrentAcademicYearBounds,
-} from "../../../features/academic/academicCalendar.js";
-import { parseAcademicYearStartYear } from "../../../features/academic/academicCalendarDefaults.js";
-import { getNextSemesterSequence } from "../../../features/academic/semesterSequence.js";
+} from "../../../services/academic/academicCalendar.js";
+import { parseAcademicYearStartYear } from "../../../services/academic/academicCalendarDefaults.js";
+import { getNextSemesterSequence } from "../../../services/academic/semesterSequence.js";
 
 export const createAcademicYear = async (req, res) => {
   const { name, start_date, end_date } = req.body;

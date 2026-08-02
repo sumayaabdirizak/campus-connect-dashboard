@@ -1,5 +1,5 @@
 import { prisma } from '../../../db/prisma.js';
-import { whereFromParam } from '../../../features/discussions/publicIdResolution.js';
+import { whereFromParam } from '../../../services/discussions/publicIdResolution.js';
 
 export const MIN_TOTAL_MEMBERS = 3;
 /** Total members including creator (was 10). */

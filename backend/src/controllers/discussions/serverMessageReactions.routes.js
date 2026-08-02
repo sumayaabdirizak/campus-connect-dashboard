@@ -4,15 +4,15 @@
 import express from 'express';
 import { prisma } from '../../db/prisma.js';
 import { apiErrorBody } from '../../utils/apiEnvelope.js';
-import { assertMessageReactionAllowed } from '../../features/discussions/messageAccess.js';
-import { getDiscussionCallerUserId } from '../../features/discussions/discussionCaller.js';
+import { assertMessageReactionAllowed } from '../../services/discussions/messageAccess.js';
+import { getDiscussionCallerUserId } from '../../services/discussions/discussionCaller.js';
 import {
   serverReactionBodySchema,
-} from '../../features/discussions/validation/serverSchemas.js';
+} from '../../validation/serverSchemas.js';
 import {
   loadReactionsForMessage,
   emitReactionSocket,
-} from '../../features/discussions/messageReactions.js';
+} from '../../services/discussions/messageReactions.js';
 import { resolveMessageRow } from './messageShared.js';
 
 const router = express.Router();

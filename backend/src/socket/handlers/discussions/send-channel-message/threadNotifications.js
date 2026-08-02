@@ -1,8 +1,8 @@
 import {
   collectThreadParticipantSenderIds,
   resolveThreadRootMessageId,
-} from "../../../../features/discussions/threadParticipants.js";
-import { anonymousSafeSenderName } from "../../../../features/discussions/discussionMessagePublic.js";
+} from "../../../../services/discussions/threadParticipants.js";
+import { anonymousSafeSenderName } from "../../../../services/discussions/discussionMessagePublic.js";
 
 /** @param {import("@prisma/client").Prisma.TransactionClient} tx @param {object} ctx */
 export async function createChannelThreadNotifications(tx, ctx) {

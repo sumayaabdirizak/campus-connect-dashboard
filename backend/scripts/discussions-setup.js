@@ -7,7 +7,7 @@
  */
 import "dotenv/config";
 import { prisma } from "../src/db/prisma.js";
-import { runFullDiscussionSetup } from "../src/features/discussions/discussionSetup.service.js";
+import { runFullDiscussionSetup } from "../src/services/discussions/discussionSetup.service.js";
 
 async function main() {
   console.log("Running full discussion setup (groups → memberships → hybrid)…");

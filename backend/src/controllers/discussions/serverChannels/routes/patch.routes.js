@@ -1,9 +1,9 @@
 import express from "express";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { PERMISSION_BITS, requireChannelPermission } from "../../../../features/discussions/permissions.js";
-import { getDiscussionCallerUserId } from "../../../../features/discussions/discussionCaller.js";
-import { patchChannelSchema } from "../../../../features/discussions/validation/serverSchemas.js";
+import { PERMISSION_BITS, requireChannelPermission } from "../../../../services/discussions/permissions.js";
+import { getDiscussionCallerUserId } from "../../../../services/discussions/discussionCaller.js";
+import { patchChannelSchema } from "../../../../validation/serverSchemas.js";
 import {
   emitPatchChannelUpdate,
   normalizePatchTopic,

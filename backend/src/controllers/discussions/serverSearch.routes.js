@@ -14,10 +14,10 @@ import {
   hasPermission,
   requireChannelPermission,
   requireServerPermission,
-} from "../../features/discussions/permissions.js";
-import { resolveServerMessageSearchFilters } from "../../features/discussions/serverMessageSearch.js";
-import { applyAnonymousSenderPolicy } from "../../features/discussions/discussionMessagePublic.js";
-import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+} from "../../services/discussions/permissions.js";
+import { resolveServerMessageSearchFilters } from "../../services/discussions/serverMessageSearch.js";
+import { applyAnonymousSenderPolicy } from "../../services/discussions/discussionMessagePublic.js";
+import { getDiscussionCallerUserId } from "../../services/discussions/discussionCaller.js";
 import { buildMessagePublicIdMap, toMessageDto } from "./messageShared.js";
 
 const router = express.Router();

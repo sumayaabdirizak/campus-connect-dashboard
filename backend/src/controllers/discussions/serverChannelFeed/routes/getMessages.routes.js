@@ -4,15 +4,15 @@ import { apiErrorBody, prismaSchemaDriftHint } from "../../../../utils/apiEnvelo
 import {
   PERMISSION_BITS,
   requireChannelPermission,
-} from "../../../../features/discussions/permissions.js";
-import { mapChannelMessagesForViewer } from "../../../../features/discussions/serverChannelAccess.js";
+} from "../../../../services/discussions/permissions.js";
+import { mapChannelMessagesForViewer } from "../../../../services/discussions/serverChannelAccess.js";
 import {
   parseDiscussionHistoryLimit,
   encodeDiscussionCursor,
   decodeDiscussionCursor,
-} from "../../../../features/discussions/discussionPagination.js";
-import { getDiscussionCallerUserId } from "../../../../features/discussions/discussionCaller.js";
-import { enrichDiscussionMessagesAttachments } from "../../../../features/discussions/discussionAttachments.js";
+} from "../../../../services/discussions/discussionPagination.js";
+import { getDiscussionCallerUserId } from "../../../../services/discussions/discussionCaller.js";
+import { enrichDiscussionMessagesAttachments } from "../../../../services/discussions/discussionAttachments.js";
 import { CHANNEL_MSG_INCLUDE, buildChannelThreadPreviewMap } from "../shared.js";
 import { resolveMessageRow, buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 

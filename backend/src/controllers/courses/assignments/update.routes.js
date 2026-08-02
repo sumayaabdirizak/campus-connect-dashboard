@@ -12,7 +12,7 @@ import {
   enrichAssignmentDto,
   publishStatusFromDraft,
   transitionPublish,
-} from '../../../features/assignments/lifecycleService.js';
+} from '../../../services/assignments/lifecycleService.js';
 
 const router = Router();
 

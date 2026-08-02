@@ -25,16 +25,16 @@ import {
   PERMISSION_ADMINISTRATOR,
   PERMISSION_BITS,
   requireChannelPermission,
-} from "../../features/discussions/permissions.js";
+} from "../../services/discussions/permissions.js";
 import {
   parseOverwriteTargetType,
   parseOverwriteTargetId,
   safePermissionBigInt,
   overwriteRowToDto,
   overwriteUpsertSchema,
-} from "../../features/discussions/permissionOverwriteUtils.js";
-import { recordDiscussionAuditLog } from "../../features/discussions/auditLog.js";
-import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+} from "../../services/discussions/permissionOverwriteUtils.js";
+import { recordDiscussionAuditLog } from "../../services/discussions/auditLog.js";
+import { getDiscussionCallerUserId } from "../../services/discussions/discussionCaller.js";
 
 const router = express.Router();
 

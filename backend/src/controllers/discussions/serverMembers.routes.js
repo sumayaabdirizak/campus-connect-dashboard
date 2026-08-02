@@ -12,9 +12,9 @@ import { getIo } from "../../socket/hub.js";
 import {
   PERMISSION_BITS,
   requireServerPermission,
-} from "../../features/discussions/permissions.js";
-import { recordDiscussionAuditLog } from "../../features/discussions/auditLog.js";
-import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+} from "../../services/discussions/permissions.js";
+import { recordDiscussionAuditLog } from "../../services/discussions/auditLog.js";
+import { getDiscussionCallerUserId } from "../../services/discussions/discussionCaller.js";
 import { resolveChannelRow } from "./serverShared.js";
 
 const router = express.Router();

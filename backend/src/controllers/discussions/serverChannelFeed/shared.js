@@ -1,5 +1,5 @@
 import { prisma } from "../../../db/prisma.js";
-import { REPLY_TO_INCLUDE } from "../../../features/discussions/replyToMessage.js";
+import { REPLY_TO_INCLUDE } from "../../../services/discussions/replyToMessage.js";
 
 export const CHANNEL_MSG_INCLUDE = {
   sender: { select: { id: true, full_name: true, avatarUrl: true } },

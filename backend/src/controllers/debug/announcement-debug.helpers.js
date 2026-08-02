@@ -2,7 +2,7 @@
  * Shared helper utilities for the announcement debug routes.
  */
 import { prisma } from '../../db/prisma.js';
-import { canUserSeeAnnouncement } from '../../features/announcements/services/announcementVisibility.service.js';
+import { canUserSeeAnnouncement } from '../../services/announcements/announcementVisibility.service.js';
 import { loadUserAnnouncementScope } from '../../utils/userAnnouncementScope.js';
 
 export const ALLOWED_TARGET_TYPES = new Set(['ALL', 'FACULTY', 'DEPARTMENT', 'BATCH', 'SECTION']);

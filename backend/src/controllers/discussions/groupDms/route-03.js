@@ -5,8 +5,8 @@
 import { prisma } from '../../../db/prisma.js';
 import { apiErrorBody } from '../../../utils/apiEnvelope.js';
 import { getIo } from '../../../socket/hub.js';
-import { getDiscussionCallerUserId } from '../../../features/discussions/discussionCaller.js';
-import { assertCanDirectMessage } from '../../../features/discussions/assertCanDirectMessage.js';
+import { getDiscussionCallerUserId } from '../../../services/discussions/discussionCaller.js';
+import { assertCanDirectMessage } from '../../../services/discussions/assertCanDirectMessage.js';
 import { toGroupDmDto } from './helpers.js';
 
 /** @param {import('express').Router} router */

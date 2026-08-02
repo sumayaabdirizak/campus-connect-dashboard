@@ -1,8 +1,8 @@
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { PERMISSION_BITS, hasPermission } from "../../../../features/discussions/permissions.js";
-import { deriveQuestionFields } from "../../../../features/discussions/discussionMessagePublic.js";
-import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { PERMISSION_BITS, hasPermission } from "../../../../services/discussions/permissions.js";
+import { deriveQuestionFields } from "../../../../services/discussions/discussionMessagePublic.js";
+import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 
 export async function loadChannelForSend(channelId) {
   return prisma.discussionChannel.findUnique({

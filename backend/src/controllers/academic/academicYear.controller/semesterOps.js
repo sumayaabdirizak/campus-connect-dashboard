@@ -1,12 +1,12 @@
 import { prisma } from "../../../db/prisma.js";
 import { respondInternalError } from "../../../utils/httpError.js";
-import { renumberSemestersGloballyIfNeeded } from "../../../features/academic/semesterSequence.js";
+import { renumberSemestersGloballyIfNeeded } from "../../../services/academic/semesterSequence.js";
 import {
   ensureActiveAcademicYears,
   ACTIVE_ACADEMIC_YEAR_WINDOW,
   peekNextSemesterSequences,
-} from "../../../features/academic/ensureSemesterCount.js";
-import { resetToCleanTwelveSemesters } from "../../../features/academic/resetSemesters.js";
+} from "../../../services/academic/ensureSemesterCount.js";
+import { resetToCleanTwelveSemesters } from "../../../services/academic/resetSemesters.js";
 
 export const getNextSemesterNumbers = async (_req, res) => {
   try {

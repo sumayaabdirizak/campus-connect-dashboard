@@ -3,9 +3,9 @@ import { z } from "zod";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { getIo } from "../../../../socket/hub.js";
-import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
-import { isDiscussionQaChannelNameKey } from "../../../../features/discussions/discussionMessagePublic.js";
-import { acceptedAnswerBodySchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { requireActiveDiscussionMembership } from "../../../../services/discussions/discussionMembership.js";
+import { isDiscussionQaChannelNameKey } from "../../../../services/discussions/discussionMessagePublic.js";
+import { acceptedAnswerBodySchema } from "../../../../validation/groupDiscussionSchemas.js";
 import { resolveServerRow } from "../../serverShared.js";
 import { resolveMessageRow } from "../../messageShared.js";
 

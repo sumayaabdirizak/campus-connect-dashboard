@@ -1,11 +1,11 @@
 import express from "express";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { PERMISSION_BITS, requireChannelPermission } from "../../../../features/discussions/permissions.js";
+import { PERMISSION_BITS, requireChannelPermission } from "../../../../services/discussions/permissions.js";
 import {
   encodeDiscussionCursor,
   decodeDiscussionCursor,
-} from "../../../../features/discussions/discussionPagination.js";
+} from "../../../../services/discussions/discussionPagination.js";
 import { AUDIT_LOG_PAGE_SIZE } from "../shared.js";
 
 const router = express.Router();

@@ -1,11 +1,11 @@
 import { prisma } from "../../db/prisma.js";
-import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
-import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
-import { refreshDiscussionMembershipsForScope } from "../../features/discussions/membershipSync.service.js";
-import { enrichBatchWithCohortSemester, getSemesterInYear } from "../../features/academic/academicCalendar.js";
-import { ensureAcademicYearForDate } from "../../features/academic/ensureAcademicYear.js";
-import { parseAcademicYearStartYear } from "../../features/academic/academicCalendarDefaults.js";
-import { graduateCompletedCohorts } from "../../features/academic/graduateCompletedCohorts.js";
+import { archiveDiscussionGroupForScope } from "../../services/discussions/groupProvisioning.service.js";
+import { DISCUSSION_SCOPE_TYPES } from "../../services/discussions/policy.js";
+import { refreshDiscussionMembershipsForScope } from "../../services/discussions/membershipSync.service.js";
+import { enrichBatchWithCohortSemester, getSemesterInYear } from "../../services/academic/academicCalendar.js";
+import { ensureAcademicYearForDate } from "../../services/academic/ensureAcademicYear.js";
+import { parseAcademicYearStartYear } from "../../services/academic/academicCalendarDefaults.js";
+import { graduateCompletedCohorts } from "../../services/academic/graduateCompletedCohorts.js";
 import { respondInternalError } from "../../utils/httpError.js";
 
 const batchIncludeSafe = {

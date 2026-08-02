@@ -1,6 +1,6 @@
 import { prisma } from "../../../db/prisma.js";
-import { archiveDiscussionGroupForScope } from "../../../features/discussions/groupProvisioning.service.js";
-import { DISCUSSION_SCOPE_TYPES } from "../../../features/discussions/policy.js";
+import { archiveDiscussionGroupForScope } from "../../../services/discussions/groupProvisioning.service.js";
+import { DISCUSSION_SCOPE_TYPES } from "../../../services/discussions/policy.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 
 // DELETE batch section

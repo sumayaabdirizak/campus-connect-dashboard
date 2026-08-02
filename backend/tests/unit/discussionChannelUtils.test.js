@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { slugifyDiscussionChannelName } from "../../src/features/discussions/discussionChannelUtils.js";
+import { slugifyDiscussionChannelName } from "../../src/services/discussions/discussionChannelUtils.js";
 
 describe("features/discussions/discussionChannelUtils", () => {
   it("slugifyDiscussionChannelName normalizes display names", () => {

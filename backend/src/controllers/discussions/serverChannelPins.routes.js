@@ -13,13 +13,13 @@ import { getIo } from "../../socket/hub.js";
 import {
   PERMISSION_BITS,
   requireChannelPermission,
-} from "../../features/discussions/permissions.js";
+} from "../../services/discussions/permissions.js";
 import {
   filterMembershipRowsByChannelScope,
-} from "../../features/discussions/channelScopeAccess.js";
-import { emitDiscussionNotificationEvents } from "../../features/discussions/notificationEmit.js";
-import { recordDiscussionAuditLog } from "../../features/discussions/auditLog.js";
-import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+} from "../../services/discussions/channelScopeAccess.js";
+import { emitDiscussionNotificationEvents } from "../../services/discussions/notificationEmit.js";
+import { recordDiscussionAuditLog } from "../../services/discussions/auditLog.js";
+import { getDiscussionCallerUserId } from "../../services/discussions/discussionCaller.js";
 import { resolveMessageRow, toMessageDto, buildMessagePublicIdMap } from "./messageShared.js";
 
 const router = express.Router();

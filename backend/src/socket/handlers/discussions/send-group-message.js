@@ -1,8 +1,8 @@
-import { metricTimerEnd } from "../../../features/discussions/reliability/metrics.js";
+import { metricTimerEnd } from "../../../services/discussions/reliability/metrics.js";
 import {
   anonymousSafeSenderName,
   applyAnonymousSenderPolicy,
-} from "../../../features/discussions/discussionMessagePublic.js";
+} from "../../../services/discussions/discussionMessagePublic.js";
 import { prisma } from "../../../db/prisma.js";
 import { validateGroupMessagePreconditions } from "./send-group-message/groupValidate.js";
 import { persistGroupMessageInTx } from "./send-group-message/groupPersist.js";

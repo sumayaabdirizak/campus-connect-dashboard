@@ -4,7 +4,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireStudentSubmission } from '../../../middleware/courseOfferingRbac.js';
 import { resolveSubmitGroup, resolveEffectiveDue } from './submitWindow.js';
 import { upsertOwnSubmission, fanOutGroupSubmissions } from './submitPersist.js';
-import { getCloseAtMs } from '../../../features/assignments/lifecycleCore.js';
+import { getCloseAtMs } from '../../../services/assignments/lifecycleCore.js';
 
 const router = Router();
 

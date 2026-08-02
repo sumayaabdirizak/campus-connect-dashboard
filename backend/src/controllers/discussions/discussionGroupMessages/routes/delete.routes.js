@@ -2,9 +2,9 @@ import express from "express";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { getIo } from "../../../../socket/hub.js";
-import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
+import { requireActiveDiscussionMembership } from "../../../../services/discussions/discussionMembership.js";
 import { resolveServerRow } from "../../serverShared.js";
-import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 
 const router = express.Router();
 

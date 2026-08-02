@@ -1,6 +1,6 @@
 import { prisma } from "../../db/prisma.js";
 import { respondInternalError } from "../../utils/httpError.js";
-import { getNextSemesterSequence } from "../../features/academic/semesterSequence.js";
+import { getNextSemesterSequence } from "../../services/academic/semesterSequence.js";
 
 export const createSemester = async (req, res) => {
   const yearId = Number(req.params.yearId);
@@ -80,7 +80,7 @@ export const getAllSemesters = async (req, res) => {
     const { renumber } = req.query;
     if (["1", "true", "yes"].includes(String(renumber ?? "").toLowerCase())) {
       const { renumberSemestersGloballyIfNeeded } = await import(
-        "../../features/academic/semesterSequence.js"
+        "../../services/academic/semesterSequence.js"
       );
       await renumberSemestersGloballyIfNeeded();
     }

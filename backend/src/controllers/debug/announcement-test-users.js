@@ -4,7 +4,7 @@ import { requireRole } from '../../middleware/requireRole.js';
 import {
   runDiscussionMembershipNightlySync,
   syncDiscussionMembershipsForUser,
-} from '../../features/discussions/membershipSync.service.js';
+} from '../../services/discussions/membershipSync.service.js';
 import {
   ALLOWED_TARGET_TYPES,
   normalizeTargetRoles,

@@ -3,9 +3,9 @@
  * inferring batch/section from student_number (STD-{BATCH}-section-{a|b}-NN).
  */
 import { prisma } from '../src/db/prisma.js';
-import { syncDiscussionMembershipsForUser } from '../src/features/discussions/membershipSync.service.js';
-import { ensureDiscussionGroupForScope } from '../src/features/discussions/groupProvisioning.service.js';
-import { DISCUSSION_SCOPE_TYPES } from '../src/features/discussions/policy.js';
+import { syncDiscussionMembershipsForUser } from '../src/services/discussions/membershipSync.service.js';
+import { ensureDiscussionGroupForScope } from '../src/services/discussions/groupProvisioning.service.js';
+import { DISCUSSION_SCOPE_TYPES } from '../src/services/discussions/policy.js';
 
 const NUM_RE = /^STD-(.+)-section-([a-z0-9]+)-\d+$/i;
 

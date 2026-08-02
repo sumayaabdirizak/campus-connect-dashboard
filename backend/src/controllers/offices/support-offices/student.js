@@ -2,8 +2,8 @@ import { prisma } from '../../../db/prisma.js';
 import { HttpError } from '../../../utils/httpError.js';
 import { namedListSuccess } from '../../../utils/apiEnvelope.js';
 import { parsePaginationQuery } from '../../../utils/pagination.js';
-import { emitOfficeMessageNew } from '../../../features/offices/emitOfficeMessageNew.js';
-import { markOfficeThreadRead } from '../../../features/offices/officeThreadRead.js';
+import { emitOfficeMessageNew } from '../../../services/offices/emitOfficeMessageNew.js';
+import { markOfficeThreadRead } from '../../../services/offices/officeThreadRead.js';
 import {
   loadThreadScoped,
   nextReference,

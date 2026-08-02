@@ -6,7 +6,7 @@ import { attachmentInclude } from './shared.js';
 import {
   enrichAssignmentDto,
   publishedAssignmentWhere,
-} from '../../../features/assignments/lifecycleService.js';
+} from '../../../services/assignments/lifecycleService.js';
 
 const router = Router();
 

@@ -1,6 +1,6 @@
 import { prisma } from '../../db/prisma.js';
 import { HttpError } from '../../utils/httpError.js';
-import { syncDiscussionMembershipsForUser } from '../../features/discussions/membershipSync.service.js';
+import { syncDiscussionMembershipsForUser } from '../../services/discussions/membershipSync.service.js';
 import { revokeJti, isJtiRevoked } from '../../utils/tokenRevocation.js';
 import { readCookie } from '../../utils/cookies.js';
 import jwt from 'jsonwebtoken';

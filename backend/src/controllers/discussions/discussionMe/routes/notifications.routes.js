@@ -2,12 +2,12 @@ import express from "express";
 import { z } from "zod";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { buildUnreadSocketPayload } from "../../../../features/discussions/buildUnreadPayload.js";
-import { enrichDiscussionNotificationsForApi } from "../../../../features/discussions/enrichDiscussionNotifications.js";
+import { buildUnreadSocketPayload } from "../../../../services/discussions/buildUnreadPayload.js";
+import { enrichDiscussionNotificationsForApi } from "../../../../services/discussions/enrichDiscussionNotifications.js";
 import {
   markReadSchema,
   notificationsQuerySchema,
-} from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+} from "../../../../validation/groupDiscussionSchemas.js";
 import { resolveServerRow } from "../../serverShared.js";
 
 const router = express.Router();

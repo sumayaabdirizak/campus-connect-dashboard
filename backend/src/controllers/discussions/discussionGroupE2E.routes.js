@@ -5,8 +5,8 @@ import { apiErrorBody } from "../../utils/apiEnvelope.js";
 import {
   requireActiveDiscussionMembership,
   canManageDiscussionGroup,
-} from "../../features/discussions/discussionMembership.js";
-import { publishEpochSchema } from "../../features/discussions/validation/groupDiscussionSchemas.js";
+} from "../../services/discussions/discussionMembership.js";
+import { publishEpochSchema } from "../../validation/groupDiscussionSchemas.js";
 import { resolveServerRow } from "./serverShared.js";
 
 const router = express.Router();

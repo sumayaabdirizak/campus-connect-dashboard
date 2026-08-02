@@ -13,7 +13,7 @@ import { configureTrustProxy, getCorsAllowlist } from './config/env.js';
 import {
   announcementLinkRedirectLimiter,
   announcementLinkRedirectHandler,
-} from './features/announcements/handlers/announcementLinkRedirect.handler.js';
+} from './controllers/announcements/announcementLinkRedirect.handler.js';
 import { mountRoutes } from './routes.js';
 
 const app = express();

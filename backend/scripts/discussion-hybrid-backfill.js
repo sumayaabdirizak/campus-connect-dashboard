@@ -6,7 +6,7 @@
  *   node scripts/discussion-hybrid-backfill.js --apply
  */
 
-import { runHybridBackfill } from "../src/features/discussions/serverHierarchy.service.js";
+import { runHybridBackfill } from "../src/services/discussions/serverHierarchy.service.js";
 import { prisma } from "../src/db/prisma.js";
 
 const dryRun = process.argv.includes("--dry-run");

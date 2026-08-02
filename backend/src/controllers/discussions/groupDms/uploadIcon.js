@@ -6,7 +6,7 @@ import { apiErrorBody } from '../../../utils/apiEnvelope.js';
 import { commitUploadedFile } from '../../../storage/objectStorage.js';
 import { enforceUploadContentSafety } from '../../courses/resources.js';
 import { getIo } from '../../../socket/hub.js';
-import { getDiscussionCallerUserId } from '../../../features/discussions/discussionCaller.js';
+import { getDiscussionCallerUserId } from '../../../services/discussions/discussionCaller.js';
 import { getActiveMember } from './helpers.js';
 
 const ICON_DIR = './uploads/group-dm-icons';

@@ -1,0 +1,89 @@
+import { prisma } from "../../../db/prisma.js";
+import { z } from "zod";
+import multer from "multer";
+import {
+  buildVisibleAnnouncementsWhere,
+  buildVisibleAnnouncementsWhereLegacy,
+  getUnreadCount,
+  isPrismaAnnouncementSchemaDriftError,
+} from "../../../services/announcements/announcementVisibility.service.js";
+import { findVisibleAnnouncementsBySearch } from "../../../services/announcements/announcementSearch.service.js";
+import { parsePaginationQuery, paginatedPayload } from "../../../utils/pagination.js";
+import { apiErrorBody } from "../../../utils/apiEnvelope.js";
+import { loadUserAnnouncementScope } from "../../../utils/userAnnouncementScope.js";
+import {
+  toAnnouncementDto,
+  announcementDtoPrismaInclude,
+  announcementDtoPrismaIncludeLegacy,
+  ANNOUNCEMENT_LIKE_EMOJI,
+} from "../../../services/announcements/dto/announcementDto.js";
+import {
+  createAnnouncement,
+  updateAnnouncement,
+  deleteAnnouncement,
+  togglePin,
+  markAsRead,
+  markAsReadBulk,
+  getReadAnnouncementIdSet,
+  normalizeTargetRoles,
+  visibilityUserFromLoaded,
+  writeAnnouncementAudit,
+  sortAnnouncementsForList,
+} from "../../../services/announcements/announcementService.js";
+import { findAnnouncementRecipientUserIds } from "../../../services/announcements/announcementRecipients.service.js";
+import { sendAnnouncementSmsNotifications, redactPhone } from "../../../services/announcements/announcementSms.service.js";
+import { countOverdueScheduledAnnouncements } from "../../../services/announcements/announcementJobs.service.js";
+import {
+  computeAnnouncementAnalytics,
+  listAnnouncementAcknowledgements,
+  invalidateAnnouncementAnalyticsCache,
+} from "../../../services/announcements/announcementAnalytics.service.js";
+import { commitUploadedFile } from "../../../storage/objectStorage.js";
+import {
+  encodeAnnouncementRedirectToken,
+  buildTrackedRedirectUrl,
+} from "../../../services/announcements/announcementLinkRedirect.service.js";
+import {
+  loadAllVisibleDeadlineRows,
+  isAnnouncementDeadlineAllDayUtc,
+} from "../../../services/announcements/calendarDeadlines.service.js";
+import { announcementLog } from "../../../services/announcements/announcementLogger.js";
+import { attachLikedByCurrentUser } from "../../../services/announcements/announcementReactions.service.js";
+import { csvEscapeCell } from "../../../utils/csv.js";
+import {
+  trackableLinkBodySchema,
+  createAnnouncementSchema,
+  updateAnnouncementSchema,
+  readBulkSchema,
+  previewRecipientsSchema,
+} from "../../../validation/announcementSchemas.js";
+import { assertCanManageAnnouncementById } from "../../../services/announcements/assertAnnouncementAuthor.js";
+
+
+
+export async function handleAnnouncementAnalytics(req, res) {
+  try {
+    const id = Number.parseInt(req.params.id, 10);
+    if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
+    const role = String(req.user?.role ?? "").toUpperCase();
+    if (!["DEAN", "SUPER_ADMIN", "ACADEMIC_OFFICE", "OFFICE_STAFF", "ADMIN"].includes(role)) {
+      return res.status(403).json({ message: "Forbidden" });
+    }
+    const authorGate = await assertCanManageAnnouncementById(prisma, Number(req.user.sub), id);
+    if (!authorGate.ok) {
+      return res.status(authorGate.status).json({ message: authorGate.message });
+    }
+    const forceRefresh =
+      req.query.refresh === "1" ||
+      String(req.query.refresh ?? "").toLowerCase() === "true";
+    const data = await computeAnnouncementAnalytics(prisma, id, { forceRefresh });
+    if (!data) return res.status(404).json({ message: "Announcement not found" });
+    res.json(data);
+  } catch (e) {
+    announcementLog("error", "announcement.analytics_failed", {
+      message: e?.message ?? String(e),
+      code: e?.code,
+    });
+    res.status(500).json(apiErrorBody(e?.message || "Failed", null));
+  }
+}

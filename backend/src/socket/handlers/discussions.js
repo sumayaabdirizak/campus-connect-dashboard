@@ -1,5 +1,5 @@
 import { prisma } from "../../db/prisma.js";
-import { isDoNotDisturbStatus } from "../../features/discussions/discussionPresence.js";
+import { isDoNotDisturbStatus } from "../../services/discussions/discussionPresence.js";
 import { registerMessageSendHandler } from "./discussions/message-send.js";
 import { registerTypingPresenceHandlers } from "./discussions/typing-presence.js";
 import { registerRoomEventHandlers } from "./discussions/room-events.js";
@@ -14,7 +14,7 @@ import { createDiscussionSessionHelpers } from "./discussions/session.js";
  * Discussion realtime handlers — presence, typing, messaging, channels, group DMs.
  *
  * @param {import("socket.io").Server} io
- * @param {{ fanout: ReturnType<import("../../features/discussions/reliability/fanout.js").createFanout>, presenceStorePromise: Promise<unknown> }} deps
+ * @param {{ fanout: ReturnType<import("../../services/discussions/reliability/fanout.js").createFanout>, presenceStorePromise: Promise<unknown> }} deps
  */
 export function createDiscussionHandlers(io, { fanout, presenceStorePromise }) {
   const rooms = createDiscussionRoomHelpers(io);

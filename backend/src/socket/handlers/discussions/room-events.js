@@ -1,11 +1,11 @@
 import { prisma } from "../../../db/prisma.js";
-import { buildUnreadSocketPayload } from "../../../features/discussions/buildUnreadPayload.js";
+import { buildUnreadSocketPayload } from "../../../services/discussions/buildUnreadPayload.js";
 import {
   computeChannelPermissions,
   hasPermission,
   PERMISSION_BITS,
-} from "../../../features/discussions/permissions.js";
-import { assertOfficeThreadSocketAccess } from "../../../features/offices/assertOfficeThreadSocketAccess.js";
+} from "../../../services/discussions/permissions.js";
+import { assertOfficeThreadSocketAccess } from "../../../services/offices/assertOfficeThreadSocketAccess.js";
 import { getActiveMember, resolveGroupDmRow } from "../../../controllers/discussions/groupDms/helpers.js";
 import { resolveServerRow, resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
 

@@ -1,10 +1,10 @@
 import { prisma } from "../../../../db/prisma.js";
-import { extractMentionHandles, resolveMentionUserIds } from "../../../../features/discussions/mentionResolution.js";
-import { anonymousSafeSenderName } from "../../../../features/discussions/discussionMessagePublic.js";
+import { extractMentionHandles, resolveMentionUserIds } from "../../../../services/discussions/mentionResolution.js";
+import { anonymousSafeSenderName } from "../../../../services/discussions/discussionMessagePublic.js";
 import {
   collectThreadParticipantSenderIds,
   resolveThreadRootMessageId,
-} from "../../../../features/discussions/threadParticipants.js";
+} from "../../../../services/discussions/threadParticipants.js";
 
 export async function createGroupMessageTransaction({
   groupId,

@@ -3,7 +3,7 @@ import {
   createClubApplication,
   createClubAsDean,
   getClubBySlug,
-} from '../../../features/clubs/club.service.js';
+} from '../../../services/clubs/club.service.js';
 import { prisma } from '../../../db/prisma.js';
 import { apiErrorBody } from '../../../utils/apiEnvelope.js';
 import { getIo } from '../../../socket/hub.js';

@@ -1,4 +1,4 @@
-import { AO_GROUP_MEMBER_ROLES } from '../../../features/discussions/assertAoDeanGroupMembers.js';
+import { AO_GROUP_MEMBER_ROLES } from '../../../services/discussions/assertAoDeanGroupMembers.js';
 import { listUniversityRoleCandidates } from './listUniversityRoleCandidates.js';
 
 /**

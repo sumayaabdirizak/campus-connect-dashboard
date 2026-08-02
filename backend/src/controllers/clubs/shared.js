@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { ClubServiceError } from '../../features/clubs/club.service.js';
+import { ClubServiceError } from '../../services/clubs/club.service.js';
 
 export function userId(req) {
   return Number(req.user?.id ?? req.user?.sub);

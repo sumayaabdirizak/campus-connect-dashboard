@@ -6,7 +6,7 @@
  * @param {number} userId
  * @returns {Promise<{ userId: number, full_name: string, role: string, status: string, facultyIds: number[], departmentIds: number[], batchIds: number[], sectionIds: number[] } | null>}
  */
-import { resolveOfficeStaffDmScope } from '../features/discussions/officeStaffDmScope.js';
+import { resolveOfficeStaffDmScope } from '../services/discussions/officeStaffDmScope.js';
 import { expandFacultyAnnouncementTree } from './expandFacultyAnnouncementTree.js';
 
 export async function loadUserAnnouncementScope(prisma, userId) {

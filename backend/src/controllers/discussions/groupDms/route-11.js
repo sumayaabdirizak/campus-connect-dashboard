@@ -5,8 +5,8 @@
 import { prisma } from "../../../db/prisma.js";
 import { apiErrorBody } from "../../../utils/apiEnvelope.js";
 import { getIo } from "../../../socket/hub.js";
-import { getDiscussionCallerUserId } from "../../../features/discussions/discussionCaller.js";
-import { renameGroupDmSchema } from "../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { getDiscussionCallerUserId } from "../../../services/discussions/discussionCaller.js";
+import { renameGroupDmSchema } from "../../../validation/groupDiscussionSchemas.js";
 
 import { getActiveMember } from './helpers.js';
 

@@ -1,4 +1,4 @@
-import { ensureDefaultSupportOffices } from '../../../features/offices/ensureDefaultSupportOffices.js';
+import { ensureDefaultSupportOffices } from '../../../services/offices/ensureDefaultSupportOffices.js';
 import { namedListSuccess } from '../../../utils/apiEnvelope.js';
 
 /** SUPER_ADMIN / ACADEMIC_OFFICE: university desks + per-faculty Dean's Offices. */

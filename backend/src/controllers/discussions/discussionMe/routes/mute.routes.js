@@ -2,8 +2,8 @@ import express from "express";
 import { z } from "zod";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
-import { muteBodySchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { requireActiveDiscussionMembership } from "../../../../services/discussions/discussionMembership.js";
+import { muteBodySchema } from "../../../../validation/groupDiscussionSchemas.js";
 import { resolveServerRow } from "../../serverShared.js";
 
 const router = express.Router();

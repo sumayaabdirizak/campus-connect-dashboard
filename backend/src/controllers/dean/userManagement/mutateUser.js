@@ -2,7 +2,7 @@ import { prisma } from "../../../db/prisma.js";
 import {
   deactivateDiscussionMembershipsForUser,
   syncDiscussionMembershipsForUser,
-} from "../../../features/discussions/membershipSync.service.js";
+} from "../../../services/discussions/membershipSync.service.js";
 import { revokeAllForUser } from "../../../utils/tokenRevocation.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import { assertInFaculty } from "./helpers.js";

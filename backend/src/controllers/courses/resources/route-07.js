@@ -25,7 +25,7 @@ import {
 } from "../../../storage/objectStorage.js";
 
 import { resourceKeyFromUrl, verifyContentMatchesExtension, uploadExtensionFilter, enforceUploadContentSafety } from './helpers.js';
-import { assertActiveResourceType } from '../../../features/resources/resourceTypeOptions.js';
+import { assertActiveResourceType } from '../../../services/resources/resourceTypeOptions.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {

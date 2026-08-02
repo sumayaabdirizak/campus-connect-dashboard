@@ -1,8 +1,8 @@
 import { prisma } from '../../../db/prisma.js';
 import { pushToUser, pushToUsers } from '../../../services/pushNotifier.service.js';
 import { courseOfferingDashboardPath } from '../../../utils/courseOfferingAccess.js';
-import { upsertSubmissionGrade } from '../../../features/assignments/submissionGrade.js';
-import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
+import { upsertSubmissionGrade } from '../../../services/assignments/submissionGrade.js';
+import { toSubmissionClient } from '../../../services/assignments/submissionDto.js';
 
 const studentInclude = {
   student: { select: { id: true, full_name: true, email: true, number: true } },

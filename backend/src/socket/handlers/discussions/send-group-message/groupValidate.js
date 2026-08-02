@@ -5,7 +5,7 @@ import {
   validateE2ePayload,
 } from "../discussion-send/contentAndValidation.js";
 import { resolveServerRow } from "../../../../controllers/discussions/serverShared.js";
-import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 
 /** @param {object} args */
 export async function validateGroupMessagePreconditions(args) {

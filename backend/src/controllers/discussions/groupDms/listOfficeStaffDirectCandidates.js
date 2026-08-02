@@ -3,7 +3,7 @@ import { enrichCandidateDepartment } from './enrichCandidateDepartment.js';
 import {
   listFacultyServerIdsForFaculties,
   resolveOfficeStaffDmScope,
-} from '../../../features/discussions/officeStaffDmScope.js';
+} from '../../../services/discussions/officeStaffDmScope.js';
 
 /**
  * Office Staff 1:1 candidates: university desk → university-wide;

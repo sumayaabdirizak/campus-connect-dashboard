@@ -1,7 +1,7 @@
 import { prisma } from "../../../../db/prisma.js";
 import { getIo } from "../../../../socket/hub.js";
-import { recordDiscussionAuditLog } from "../../../../features/discussions/auditLog.js";
-import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { recordDiscussionAuditLog } from "../../../../services/discussions/auditLog.js";
+import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 
 export function normalizePatchTopic(topic) {
   if (topic === undefined || topic === null) return topic;

@@ -4,10 +4,10 @@ import {
   buildDefaultSemesterRows,
   enrichBatchWithCohortSemester,
   getCurrentAcademicYearBounds,
-} from "../../../features/academic/academicCalendar.js";
-import { parseAcademicYearStartYear } from "../../../features/academic/academicCalendarDefaults.js";
-import { getNextSemesterSequence } from "../../../features/academic/semesterSequence.js";
-import { graduateCompletedCohorts } from "../../../features/academic/graduateCompletedCohorts.js";
+} from "../../../services/academic/academicCalendar.js";
+import { parseAcademicYearStartYear } from "../../../services/academic/academicCalendarDefaults.js";
+import { getNextSemesterSequence } from "../../../services/academic/semesterSequence.js";
+import { graduateCompletedCohorts } from "../../../services/academic/graduateCompletedCohorts.js";
 
 /** Promote: create next year + sync batch semester_number from cohort formula (capped by duration). */
 export const promoteAcademicYear = async (req, res) => {

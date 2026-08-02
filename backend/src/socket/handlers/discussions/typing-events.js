@@ -3,8 +3,8 @@ import {
   computeChannelPermissions,
   hasPermission,
   PERMISSION_BITS,
-} from "../../../features/discussions/permissions.js";
-import { assertOfficeThreadSocketAccess } from "../../../features/offices/assertOfficeThreadSocketAccess.js";
+} from "../../../services/discussions/permissions.js";
+import { assertOfficeThreadSocketAccess } from "../../../services/offices/assertOfficeThreadSocketAccess.js";
 import { resolveGroupDmRow } from "../../../controllers/discussions/groupDms/helpers.js";
 import { resolveServerRow, resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
 

@@ -5,7 +5,7 @@ import {
   discussionAttachmentTypeFromMime,
   discussionAttachmentTypeFromFile,
   DISCUSSION_ALLOWED_EXTENSIONS,
-} from "../../src/features/discussions/discussionAttachments.js";
+} from "../../src/services/discussions/discussionAttachments.js";
 
 describe("features/discussions/discussionAttachments", () => {
   it("discussionAttachmentTypeFromMime maps mime families", () => {

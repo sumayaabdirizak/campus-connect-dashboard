@@ -1,5 +1,5 @@
 import { prisma } from "../../../db/prisma.js";
-import { syncDiscussionMembershipsForUser } from "../../../features/discussions/membershipSync.service.js";
+import { syncDiscussionMembershipsForUser } from "../../../services/discussions/membershipSync.service.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 
 export const assignStudentToSection = async (req, res) => {

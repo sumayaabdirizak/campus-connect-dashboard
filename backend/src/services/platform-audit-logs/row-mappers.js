@@ -1,4 +1,4 @@
-import { redactPhone } from '../../features/announcements/services/announcementSms.service.js';
+import { redactPhone } from '../announcements/announcementSms.service.js';
 import { SOURCE_LABELS } from './constants.js';
 import { actorFromRelation, enrichEntry, normalizeActionLabel } from './entry-enrichment.js';
 

@@ -1,7 +1,7 @@
 import { prisma } from "../../../db/prisma.js";
 import { HttpError } from "../../../utils/httpError.js";
 import { respondInternalError } from "../../../utils/httpError.js";
-import { deleteAcademicYearCascade } from "../../../features/academic/deleteAcademicYearCascade.js";
+import { deleteAcademicYearCascade } from "../../../services/academic/deleteAcademicYearCascade.js";
 
 export const getAcademicYearById = async (req, res) => {
   const { id } = req.params;

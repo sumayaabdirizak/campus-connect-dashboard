@@ -6,7 +6,7 @@
  * are rewritten to that message's publicId too.
  */
 import { prisma } from "../../db/prisma.js";
-import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
 
 export async function resolveMessageRow(identifier, extraWhere = {}) {
   const where = whereFromParam(identifier);

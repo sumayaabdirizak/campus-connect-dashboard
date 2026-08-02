@@ -3,17 +3,17 @@ import multer from "multer";
 import fs from "fs";
 import { prisma } from "../../db/prisma.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
-import { checkDiscussionUploadRateLimit } from "../../features/discussions/uploadRateLimit.js";
+import { checkDiscussionUploadRateLimit } from "../../services/discussions/uploadRateLimit.js";
 import {
   PERMISSION_BITS,
   computeChannelPermissions,
   hasPermission,
-} from "../../features/discussions/permissions.js";
-import { requireActiveDiscussionMembership } from "../../features/discussions/discussionMembership.js";
+} from "../../services/discussions/permissions.js";
+import { requireActiveDiscussionMembership } from "../../services/discussions/discussionMembership.js";
 import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
 import { getActiveMember } from "./groupDms/helpers.js";
 import { resolveChannelRow, resolveServerRow } from "./serverShared.js";
-import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
 import {
   DISCUSSION_FILE_SIZE_LIMITS,
   discussionAttachmentUpload,
@@ -24,7 +24,7 @@ import {
   DISCUSSION_ATTACHMENT_URL_TTL_SECONDS as ATTACHMENT_URL_TTL_SECONDS,
   enforceDiscussionUploadContentSafety,
   discussionAttachmentTypeFromFile,
-} from "../../features/discussions/discussionAttachments.js";
+} from "../../services/discussions/discussionAttachments.js";
 
 const router = express.Router();
 

@@ -6,9 +6,9 @@ import {
   PERMISSION_BITS,
   computeChannelPermissions,
   hasPermission,
-} from '../../features/discussions/permissions.js';
-import { getDiscussionCallerUserId } from '../../features/discussions/discussionCaller.js';
-import { editChannelMessageSchema } from '../../features/discussions/validation/serverSchemas.js';
+} from '../../services/discussions/permissions.js';
+import { getDiscussionCallerUserId } from '../../services/discussions/discussionCaller.js';
+import { editChannelMessageSchema } from '../../validation/serverSchemas.js';
 import reactionRoutes from './serverMessageReactions.routes.js';
 import { resolveMessageRow, buildMessagePublicIdMap, toMessageDto } from './messageShared.js';
 

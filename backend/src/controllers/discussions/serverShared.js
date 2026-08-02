@@ -8,7 +8,7 @@
  * likewise rewritten to the referenced entity's publicId.
  */
 import { prisma } from "../../db/prisma.js";
-import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
 
 export async function resolveServerRow(identifier, extraWhere = {}) {
   const where = whereFromParam(identifier);

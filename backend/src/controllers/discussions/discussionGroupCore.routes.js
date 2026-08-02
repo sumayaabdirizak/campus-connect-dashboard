@@ -1,10 +1,10 @@
 import express from "express";
 import { prisma } from "../../db/prisma.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
-import { requireActiveDiscussionMembership } from "../../features/discussions/discussionMembership.js";
-import { computeMemberPresence } from "../../features/discussions/discussionPresence.js";
-import { isDiscussionQaChannelNameKey } from "../../features/discussions/discussionMessagePublic.js";
-import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+import { requireActiveDiscussionMembership } from "../../services/discussions/discussionMembership.js";
+import { computeMemberPresence } from "../../services/discussions/discussionPresence.js";
+import { isDiscussionQaChannelNameKey } from "../../services/discussions/discussionMessagePublic.js";
+import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
 import { resolveServerRow } from "./serverShared.js";
 
 const router = express.Router();

@@ -1,12 +1,12 @@
 import express from "express";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { getIo } from "../../../../socket/hub.js";
-import { PERMISSION_BITS, requireChannelPermission } from "../../../../features/discussions/permissions.js";
-import { emitDiscussionNotificationEvents } from "../../../../features/discussions/notificationEmit.js";
-import { applyAnonymousSenderPolicy } from "../../../../features/discussions/discussionMessagePublic.js";
-import { getDiscussionCallerUserId } from "../../../../features/discussions/discussionCaller.js";
-import { enrichDiscussionMessagesAttachments } from "../../../../features/discussions/discussionAttachments.js";
-import { sendChannelMessageSchema } from "../../../../features/discussions/validation/serverSchemas.js";
+import { PERMISSION_BITS, requireChannelPermission } from "../../../../services/discussions/permissions.js";
+import { emitDiscussionNotificationEvents } from "../../../../services/discussions/notificationEmit.js";
+import { applyAnonymousSenderPolicy } from "../../../../services/discussions/discussionMessagePublic.js";
+import { getDiscussionCallerUserId } from "../../../../services/discussions/discussionCaller.js";
+import { enrichDiscussionMessagesAttachments } from "../../../../services/discussions/discussionAttachments.js";
+import { sendChannelMessageSchema } from "../../../../validation/serverSchemas.js";
 import {
   checkMemberMuted,
   checkSlowMode,
@@ -19,7 +19,7 @@ import {
 import { createChannelMessageTransaction } from "./postMessageTx.helpers.js";
 import {
   resolveReplyToMessageId,
-} from "../../../../features/discussions/replyToMessage.js";
+} from "../../../../services/discussions/replyToMessage.js";
 import { buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 import { prisma } from "../../../../db/prisma.js";
 

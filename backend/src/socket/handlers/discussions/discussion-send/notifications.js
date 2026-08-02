@@ -1,6 +1,6 @@
-import { extractMentionHandles, resolveMentionUserIds } from "../../../../features/discussions/mentionResolution.js";
-import { excludeDoNotDisturbUserIds } from "../../../../features/discussions/discussionPresence.js";
-import { anonymousSafeSenderName } from "../../../../features/discussions/discussionMessagePublic.js";
+import { extractMentionHandles, resolveMentionUserIds } from "../../../../services/discussions/mentionResolution.js";
+import { excludeDoNotDisturbUserIds } from "../../../../services/discussions/discussionPresence.js";
+import { anonymousSafeSenderName } from "../../../../services/discussions/discussionMessagePublic.js";
 
 /**
  * @param {import("@prisma/client").Prisma.TransactionClient} tx

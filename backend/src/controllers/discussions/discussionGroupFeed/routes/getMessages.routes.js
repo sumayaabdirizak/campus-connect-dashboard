@@ -1,16 +1,16 @@
 import express from "express";
 import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody, prismaSchemaDriftHint } from "../../../../utils/apiEnvelope.js";
-import { applyAnonymousSenderPolicy } from "../../../../features/discussions/discussionMessagePublic.js";
+import { applyAnonymousSenderPolicy } from "../../../../services/discussions/discussionMessagePublic.js";
 import {
   parseDiscussionHistoryLimit,
   encodeDiscussionCursor,
   decodeDiscussionCursor,
-} from "../../../../features/discussions/discussionPagination.js";
-import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
-import { toDiscussionAttachmentDto } from "../../../../features/discussions/discussionAttachments.js";
+} from "../../../../services/discussions/discussionPagination.js";
+import { requireActiveDiscussionMembership } from "../../../../services/discussions/discussionMembership.js";
+import { toDiscussionAttachmentDto } from "../../../../services/discussions/discussionAttachments.js";
 import { buildGroupThreadPreviewMap } from "../shared.js";
-import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 import { buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 
 const router = express.Router();

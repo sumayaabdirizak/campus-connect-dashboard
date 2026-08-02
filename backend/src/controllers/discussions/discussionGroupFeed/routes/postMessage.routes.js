@@ -6,14 +6,14 @@ import { getIo } from "../../../../socket/hub.js";
 import {
   applyAnonymousSenderPolicy,
   deriveQuestionFields,
-} from "../../../../features/discussions/discussionMessagePublic.js";
+} from "../../../../services/discussions/discussionMessagePublic.js";
 import {
   requireActiveDiscussionMembership,
   resolveDiscussionE2EERequirement,
-} from "../../../../features/discussions/discussionMembership.js";
-import { buildUnreadSocketPayload } from "../../../../features/discussions/buildUnreadPayload.js";
-import { toDiscussionAttachmentDto } from "../../../../features/discussions/discussionAttachments.js";
-import { sendMessageSchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+} from "../../../../services/discussions/discussionMembership.js";
+import { buildUnreadSocketPayload } from "../../../../services/discussions/buildUnreadPayload.js";
+import { toDiscussionAttachmentDto } from "../../../../services/discussions/discussionAttachments.js";
+import { sendMessageSchema } from "../../../../validation/groupDiscussionSchemas.js";
 import { createGroupMessageTransaction } from "./postMessage.helpers.js";
 import { resolveServerRow } from "../../serverShared.js";
 import { resolveMessageRow, resolveAttachmentIds, buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";

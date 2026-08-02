@@ -6,9 +6,9 @@ import { getIo } from "../../../../socket/hub.js";
 import {
   requireActiveDiscussionMembership,
   resolveDiscussionE2EERequirement,
-} from "../../../../features/discussions/discussionMembership.js";
-import { toDiscussionAttachmentDto } from "../../../../features/discussions/discussionAttachments.js";
-import { editMessageSchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+} from "../../../../services/discussions/discussionMembership.js";
+import { toDiscussionAttachmentDto } from "../../../../services/discussions/discussionAttachments.js";
+import { editMessageSchema } from "../../../../validation/groupDiscussionSchemas.js";
 import { resolveServerRow } from "../../serverShared.js";
 import { resolveMessageRow, buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 

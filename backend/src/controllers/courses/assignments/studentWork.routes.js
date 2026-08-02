@@ -5,9 +5,9 @@ import { requireCourseOfferingRead } from '../../../middleware/courseOfferingRba
 import {
   getCloseAtMs,
   pickEffectiveDue,
-} from '../../../features/assignments/lifecycleCore.js';
-import { publishedAssignmentWhere } from '../../../features/assignments/lifecycleService.js';
-import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
+} from '../../../services/assignments/lifecycleCore.js';
+import { publishedAssignmentWhere } from '../../../services/assignments/lifecycleService.js';
+import { toSubmissionClient } from '../../../services/assignments/submissionDto.js';
 
 const router = Router();
 

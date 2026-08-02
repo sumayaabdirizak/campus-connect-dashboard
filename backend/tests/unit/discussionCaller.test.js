@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { getDiscussionCallerUserId } from "../../src/features/discussions/discussionCaller.js";
+import { getDiscussionCallerUserId } from "../../src/services/discussions/discussionCaller.js";
 
 describe("features/discussions/discussionCaller", () => {
   it("getDiscussionCallerUserId prefers id then sub", () => {

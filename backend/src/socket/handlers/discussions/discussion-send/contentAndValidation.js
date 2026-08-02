@@ -1,4 +1,4 @@
-import { deriveQuestionFields } from "../../../../features/discussions/discussionMessagePublic.js";
+import { deriveQuestionFields } from "../../../../services/discussions/discussionMessagePublic.js";
 
 /**
  * @param {boolean} e2eeEnabled

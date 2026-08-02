@@ -1,5 +1,5 @@
 import { prisma } from "../../../db/prisma.js";
-import { syncDiscussionMembershipsForUsers } from "../../../features/discussions/membershipSync.service.js";
+import { syncDiscussionMembershipsForUsers } from "../../../services/discussions/membershipSync.service.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import { getFacultyProgramIds } from "../batchManagement/helpers.js";
 import { getFacultyDepartmentIds } from "./helpers.js";

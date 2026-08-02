@@ -1,8 +1,8 @@
-import { listActiveFacultyServerIds } from '../../../features/discussions/groupDmEligibility.js';
+import { listActiveFacultyServerIds } from '../../../services/discussions/groupDmEligibility.js';
 import {
   listStudentIdsForTeacher,
   listTeacherIdsForStudent,
-} from '../../../features/discussions/studentTeacherDm.js';
+} from '../../../services/discussions/studentTeacherDm.js';
 import { enrichCandidateDepartment } from './enrichCandidateDepartment.js';
 
 /**

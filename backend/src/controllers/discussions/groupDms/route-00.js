@@ -5,18 +5,18 @@
 
 import { prisma } from '../../../db/prisma.js';
 import { apiErrorBody } from '../../../utils/apiEnvelope.js';
-import { getDiscussionCallerUserId } from '../../../features/discussions/discussionCaller.js';
+import { getDiscussionCallerUserId } from '../../../services/discussions/discussionCaller.js';
 import {
   assertUserCanUseDms,
   assertUserCanUseGroupDms,
   directDmTargetRolesFor,
   GROUP_DM_ROLE_NAMES,
   listActiveFacultyServerIds,
-} from '../../../features/discussions/groupDmEligibility.js';
+} from '../../../services/discussions/groupDmEligibility.js';
 import { enrichCandidateDepartment } from './enrichCandidateDepartment.js';
 import { listDeanCandidatesForAo } from './listDeanCandidatesForAo.js';
 import { listOfficeStaffDirectCandidates } from './listOfficeStaffDirectCandidates.js';
-import { listFacultyDeanOfficeStaffCandidates } from '../../../features/discussions/deanOfficeStaffDm.js';
+import { listFacultyDeanOfficeStaffCandidates } from '../../../services/discussions/deanOfficeStaffDm.js';
 import { listStudentTeacherDirectCandidates } from './listStudentTeacherDirectCandidates.js';
 import { listUniversityRoleCandidates } from './listUniversityRoleCandidates.js';
 

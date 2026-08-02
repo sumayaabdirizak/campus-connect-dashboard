@@ -3,13 +3,13 @@ import {
   computeChannelPermissions,
   hasPermission,
   PERMISSION_BITS,
-} from "../../../../features/discussions/permissions.js";
+} from "../../../../services/discussions/permissions.js";
 import {
   deriveDiscussionMessageFields,
   validatePendingAttachments,
   validateE2ePayload,
 } from "../discussion-send/contentAndValidation.js";
-import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 
 /** @param {object} args */
 export async function validateChannelMessagePreconditions(args) {

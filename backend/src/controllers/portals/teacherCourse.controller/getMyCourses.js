@@ -1,7 +1,7 @@
 import { prisma } from "../../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../../utils/publicAssetUrl.js";
 import { respondInternalError } from "../../../utils/httpError.js";
-import { ensureTeacherOfferings } from "../../../features/academic/ensureTeacherOfferings.js";
+import { ensureTeacherOfferings } from "../../../services/academic/ensureTeacherOfferings.js";
 
 /**
  * GET /api/lecturer/courses

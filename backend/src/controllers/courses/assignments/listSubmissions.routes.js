@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentSubmissionsRead } from '../../../middleware/courseOfferingRbac.js';
-import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
+import { toSubmissionClient } from '../../../services/assignments/submissionDto.js';
 
 const router = Router();
 

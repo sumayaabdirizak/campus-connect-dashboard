@@ -1,5 +1,5 @@
 import { asyncHandler } from '../../../utils/asyncHandler.js';
-import { listResourceTypeOptions } from '../../../features/resources/resourceTypeOptions.js';
+import { listResourceTypeOptions } from '../../../services/resources/resourceTypeOptions.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {

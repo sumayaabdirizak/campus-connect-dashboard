@@ -1,4 +1,4 @@
-import { filterMembershipRowsByChannelScope } from "../../../../features/discussions/channelScopeAccess.js";
+import { filterMembershipRowsByChannelScope } from "../../../../services/discussions/channelScopeAccess.js";
 import {
   createMemberMessageNotifications,
   resolvePopupRecipientIds,

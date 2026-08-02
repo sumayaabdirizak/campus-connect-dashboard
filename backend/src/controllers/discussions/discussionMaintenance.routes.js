@@ -4,11 +4,11 @@ import fs from "fs";
 import { prisma } from "../../db/prisma.js";
 import { apiErrorBody } from "../../utils/apiEnvelope.js";
 import { requireRole } from "../../middleware/requireRole.js";
-import { getDiscussionMetricsSnapshot, metricCount } from "../../features/discussions/reliability/metrics.js";
+import { getDiscussionMetricsSnapshot, metricCount } from "../../services/discussions/reliability/metrics.js";
 import {
   DISCUSSION_UPLOAD_DIR,
   DISCUSSION_ARCHIVE_DIR,
-} from "../../features/discussions/discussionAttachments.js";
+} from "../../services/discussions/discussionAttachments.js";
 
 const router = express.Router();
 

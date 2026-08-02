@@ -1,8 +1,8 @@
 import { prisma } from "../../../../db/prisma.js";
-import { filterMembershipRowsByChannelScope } from "../../../../features/discussions/channelScopeAccess.js";
-import { extractMentionHandles, resolveMentionUserIds } from "../../../../features/discussions/mentionResolution.js";
-import { anonymousSafeSenderName } from "../../../../features/discussions/discussionMessagePublic.js";
-import { REPLY_TO_INCLUDE } from "../../../../features/discussions/replyToMessage.js";
+import { filterMembershipRowsByChannelScope } from "../../../../services/discussions/channelScopeAccess.js";
+import { extractMentionHandles, resolveMentionUserIds } from "../../../../services/discussions/mentionResolution.js";
+import { anonymousSafeSenderName } from "../../../../services/discussions/discussionMessagePublic.js";
+import { REPLY_TO_INCLUDE } from "../../../../services/discussions/replyToMessage.js";
 
 export async function createChannelMessageTransaction({
   channel,

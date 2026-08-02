@@ -4,7 +4,7 @@ import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import {
   PERMISSION_BITS,
   requireChannelPermission,
-} from "../../../../features/discussions/permissions.js";
+} from "../../../../services/discussions/permissions.js";
 import { toChannelDto } from "../../serverShared.js";
 
 const router = express.Router();

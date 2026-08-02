@@ -1,6 +1,6 @@
 import express from 'express';
 import { prisma } from '../../../db/prisma.js';
-import { listClubsForUser } from '../../../features/clubs/club.service.js';
+import { listClubsForUser } from '../../../services/clubs/club.service.js';
 import { userId, formatClubForApi } from '../shared.js';
 import { attachViewerJoinState } from '../viewerJoinState.js';
 import { viewerClubDiscoveryWhere } from '../viewerClubDiscovery.js';

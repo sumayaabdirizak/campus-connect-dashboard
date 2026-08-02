@@ -9,7 +9,7 @@ import {
   normaliseLateWindow,
 } from './shared.js';
 import { notifyAssignmentPublished } from './notifyStudents.js';
-import { ensureLifecycle, enrichAssignmentDto } from '../../../features/assignments/lifecycleService.js';
+import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
 
 const router = Router();
 

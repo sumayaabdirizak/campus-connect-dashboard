@@ -1,7 +1,7 @@
 import { prisma } from "../../../db/prisma.js";
 import {
   syncDiscussionMembershipsForUsers,
-} from "../../../features/discussions/membershipSync.service.js";
+} from "../../../services/discussions/membershipSync.service.js";
 import { namedListSuccess } from "../../../utils/apiEnvelope.js";
 import { parsePaginationQuery } from "../../../utils/pagination.js";
 import { respondInternalError } from "../../../utils/httpError.js";

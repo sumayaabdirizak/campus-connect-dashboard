@@ -4,7 +4,7 @@ import {
   encodeDiscussionCursor,
   decodeDiscussionCursor,
   MAX_DISCUSSION_HISTORY_LIMIT,
-} from "../../src/features/discussions/discussionPagination.js";
+} from "../../src/services/discussions/discussionPagination.js";
 
 describe("features/discussions/discussionPagination", () => {
   it("parseDiscussionHistoryLimit clamps invalid and oversized values", () => {
