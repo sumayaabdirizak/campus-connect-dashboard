@@ -1,1 +1,1 @@
-export { default } from './quiz-taking/index.js';
+export { default } from '../../router/courses/quiz-taking/index.js';

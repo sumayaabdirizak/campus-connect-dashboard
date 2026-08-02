@@ -1,1 +1,1 @@
-export { default } from "./discussionMe/index.js";
+export { default } from "../../router/discussions/discussionMe/index.js";

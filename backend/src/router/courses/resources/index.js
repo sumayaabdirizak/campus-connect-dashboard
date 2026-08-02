@@ -1,0 +1,37 @@
+import { Router } from 'express';
+import { register as rTypes } from '../../../controllers/courses/resources/route-types.js';
+import { register as r0 } from '../../../controllers/courses/resources/route-00.js';
+import { register as r1 } from '../../../controllers/courses/resources/route-01.js';
+import { register as r2 } from '../../../controllers/courses/resources/route-02.js';
+import { register as r3 } from '../../../controllers/courses/resources/route-03.js';
+import { register as r4 } from '../../../controllers/courses/resources/route-04.js';
+import { register as r5 } from '../../../controllers/courses/resources/route-05.js';
+import { register as r6 } from '../../../controllers/courses/resources/route-06.js';
+import { register as r7 } from '../../../controllers/courses/resources/route-07.js';
+import { register as r8 } from '../../../controllers/courses/resources/route-08.js';
+import { register as r9 } from '../../../controllers/courses/resources/route-09.js';
+import { register as r10 } from '../../../controllers/courses/resources/route-10.js';
+import { register as r11 } from '../../../controllers/courses/resources/route-11.js';
+import { register as r12 } from '../../../controllers/courses/resources/route-12.js';
+import { register as r13 } from '../../../controllers/courses/resources/route-13.js';
+import { register as r14 } from '../../../controllers/courses/resources/route-14.js';
+
+const router = Router();
+rTypes(router);
+r0(router);
+r1(router);
+r2(router);
+r3(router);
+r4(router);
+r5(router);
+r6(router);
+r7(router);
+r8(router);
+r9(router);
+r10(router);
+r11(router);
+r12(router);
+r13(router);
+r14(router);
+
+export default router;

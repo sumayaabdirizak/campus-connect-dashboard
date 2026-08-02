@@ -1,1 +1,1 @@
-export { default } from "./serverChannels/index.js";
+export { default } from "../../router/discussions/serverChannels/index.js";

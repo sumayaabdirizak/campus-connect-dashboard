@@ -1,4 +1,4 @@
-export { default } from './resources/index.js';
+export { default } from '../../router/courses/resources/index.js';
 export {
   resourceKeyFromUrl,
   verifyContentMatchesExtension,

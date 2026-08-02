@@ -14,7 +14,7 @@ import {
   announcementLinkRedirectLimiter,
   announcementLinkRedirectHandler,
 } from './controllers/announcements/announcementLinkRedirect.handler.js';
-import { mountRoutes } from './routes.js';
+import { mountRoutes } from './router/index.js';
 
 const app = express();
 configureTrustProxy(app);

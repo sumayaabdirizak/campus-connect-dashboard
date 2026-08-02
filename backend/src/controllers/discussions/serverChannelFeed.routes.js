@@ -1,1 +1,1 @@
-export { default } from "./serverChannelFeed/index.js";
+export { default } from "../../router/discussions/serverChannelFeed/index.js";
