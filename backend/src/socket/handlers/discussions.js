@@ -1,7 +1,9 @@
 import { prisma } from "../../db/prisma.js";
 import { isDoNotDisturbStatus } from "../../services/discussions/discussionPresence.js";
 import { registerMessageSendHandler } from "./discussions/message-send.js";
-import { registerTypingPresenceHandlers } from "./discussions/typing-presence.js";
+import { registerTypingHandlers } from "./discussions/typing-events.js";
+import { registerReadReceiptHandlers } from "./discussions/read-receipts.js";
+import { registerPresenceDisconnectHandlers } from "./discussions/presence-disconnect.js";
 import { registerRoomEventHandlers } from "./discussions/room-events.js";
 import {
   ackOrEmitError,
@@ -102,7 +104,9 @@ export function createDiscussionHandlers(io, { fanout, presenceStorePromise }) {
 
     registerRoomEventHandlers(socket, ctx);
     registerMessageSendHandler(socket, ctx);
-    registerTypingPresenceHandlers(socket, ctx);
+    registerTypingHandlers(socket, ctx);
+    registerReadReceiptHandlers(socket, ctx);
+    registerPresenceDisconnectHandlers(socket, ctx);
   }
 
   return { beginSession, registerEventHandlers };
