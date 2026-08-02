@@ -71,26 +71,30 @@ export function register(router) {
   
     const rows = students.map((s) => {
       const v = viewByStudent.get(s.id);
+      const watchedSeconds = v?.watchedSeconds ?? 0;
+      const durationSeconds = v?.durationSeconds ?? 0;
+      const completed = v?.completed ?? false;
       return {
         studentId: s.id,
         fullName: s.full_name,
         number: s.number,
-        watchedSeconds: v?.watchedSeconds ?? 0,
-        durationSeconds: v?.durationSeconds ?? 0,
-        percent: v ? pct(v.watchedSeconds, v.durationSeconds) : 0,
-        completed: v?.completed ?? false,
+        watchedSeconds,
+        durationSeconds,
+        percent: v ? pct(watchedSeconds, durationSeconds) : 0,
+        completed,
         viewCount: v?.viewCount ?? 0,
         lastViewedAt: v?.updated_at ?? null,
-        started: !!v && (v.watchedSeconds ?? 0) > 0,
+        // viewCount > 0 covers play-started heartbeats before seconds accumulate.
+        started: completed || watchedSeconds > 0 || (v?.viewCount ?? 0) > 0,
       };
     });
-  
+
     const startedRows = rows.filter((r) => r.started);
     const completedCount = rows.filter((r) => r.completed).length;
     const avgPercent = rows.length
       ? Math.round(rows.reduce((sum, r) => sum + r.percent, 0) / rows.length)
       : 0;
-  
+
     res.json({
       summary: {
         totalStudents: rows.length,

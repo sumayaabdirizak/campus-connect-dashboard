@@ -2,16 +2,15 @@ import { prisma } from "../../../../db/prisma.js";
 import { isPrismaAnnouncementSchemaDriftError } from "../announcementVisibility.service.js";
 import { announcementLog } from "../../announcementLogger.js";
 import { previewAnnouncementSnapshot } from "../../dto/announcementDto.js";
-import { DEAN_SCOPE_FORBIDDEN } from "../announcementService.helpers.js";
+import { assertAnnouncementAuthor } from "../assertAnnouncementAuthor.js";
 
 /**
- * Soft-deletes (archives) an announcement.
+ * Soft-deletes (archives) an announcement — author only.
  * @param {number} announcementId
  * @param {import("jsonwebtoken").JwtPayload & { sub: string; role: string }} jwtUser
  */
 export async function deleteAnnouncement(announcementId, jwtUser) {
   const userId = Number(jwtUser.sub);
-  const role = String(jwtUser.role).toUpperCase();
 
   const announcement = await prisma.announcement.findUnique({
     where: { id: announcementId },
@@ -21,32 +20,14 @@ export async function deleteAnnouncement(announcementId, jwtUser) {
     return { ok: false, status: 404, message: "Announcement not found" };
   }
 
-  if (role === "DEAN") {
-    const deanProfile = await prisma.deanProfile.findUnique({
-      where: { userId },
-      select: { facultyId: true },
+  const authorGate = assertAnnouncementAuthor(userId, announcement);
+  if (!authorGate.ok) {
+    announcementLog("warn", "announcement.delete_not_author", {
+      announcementId,
+      actorUserId: userId,
+      createdById: announcement.createdById,
     });
-    if (!deanProfile) {
-      return { ok: false, status: 403, message: DEAN_SCOPE_FORBIDDEN };
-    }
-    const announcementFacultyIds = new Set();
-    if (announcement.facultyId != null) announcementFacultyIds.add(announcement.facultyId);
-    for (const t of announcement.targets ?? []) {
-      if (String(t.scopeType).toUpperCase() === "FACULTY") {
-        announcementFacultyIds.add(Number(t.scopeId));
-      }
-    }
-    for (const fid of announcementFacultyIds) {
-      if (fid !== deanProfile.facultyId) {
-        announcementLog("warn", "announcement.dean_cross_faculty_delete_blocked", {
-          announcementId,
-          deanUserId: userId,
-          deanFacultyId: deanProfile.facultyId,
-          announcementFacultyId: fid,
-        });
-        return { ok: false, status: 403, message: DEAN_SCOPE_FORBIDDEN };
-      }
-    }
+    return authorGate;
   }
 
   const beforeSnap = previewAnnouncementSnapshot(announcement);

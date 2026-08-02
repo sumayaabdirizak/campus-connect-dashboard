@@ -64,6 +64,7 @@ export const createQuizBodySchema = Joi.object({
   description: Joi.string().trim().allow("", null).max(5000).optional(),
   duration_minutes: Joi.number().integer().min(1).max(480).default(30),
   is_draft: Joi.boolean().default(false),
+  auto_publish_at_open: Joi.boolean().default(false),
   open_at: optionalDate,
   close_at: optionalDate,
   shuffle_questions: Joi.boolean().default(false),
@@ -92,6 +93,25 @@ export const createQuizBodySchema = Joi.object({
     if (value.timing_mode === "fixed" && !value.open_at) {
       return helpers.error("any.custom", { message: "Fixed mode requires open_at" });
     }
+    if (value.auto_publish_at_open) {
+      if (!value.open_at) {
+        return helpers.error("any.custom", {
+          message: "Scheduled publish requires open_at",
+        });
+      }
+      if (value.is_draft === false) {
+        return helpers.error("any.custom", {
+          message: "Scheduled publish requires the quiz to stay as a draft until Opens",
+        });
+      }
+    }
+    const now = Date.now() - 60_000;
+    if (value.open_at && new Date(value.open_at).getTime() < now) {
+      return helpers.error("any.custom", { message: "open_at cannot be in the past" });
+    }
+    if (value.close_at && new Date(value.close_at).getTime() < now) {
+      return helpers.error("any.custom", { message: "close_at cannot be in the past" });
+    }
     return value;
   }, "open/close window order");
 
@@ -100,6 +120,7 @@ export const patchQuizBodySchema = Joi.object({
   description: Joi.string().trim().allow("", null).max(5000).optional(),
   duration_minutes: Joi.number().integer().min(1).max(480).optional(),
   is_draft: Joi.boolean().optional(),
+  auto_publish_at_open: Joi.boolean().optional(),
   open_at: optionalDate,
   close_at: optionalDate,
   shuffle_questions: Joi.boolean().optional(),
@@ -114,7 +135,14 @@ export const patchQuizBodySchema = Joi.object({
   .min(1) // require at least one field
   .custom((value, helpers) => {
     if (value.timing_mode === "fixed" && value.open_at === null) {
-      return helpers.error("any.custom", { message: "Fixed mode requires open_at (cannot clear open time while in fixed mode)" });
+      return helpers.error("any.custom", {
+        message: "Fixed mode requires open_at (cannot clear open time while in fixed mode)",
+      });
+    }
+    if (value.auto_publish_at_open === true && value.open_at === null) {
+      return helpers.error("any.custom", {
+        message: "Scheduled publish requires open_at",
+      });
     }
     return value;
   }, "fixed mode schedule");

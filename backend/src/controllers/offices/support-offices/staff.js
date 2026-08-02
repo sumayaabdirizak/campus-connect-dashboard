@@ -2,6 +2,7 @@ import { prisma } from '../../../db/prisma.js';
 import { HttpError } from '../../../utils/httpError.js';
 import { namedListSuccess } from '../../../utils/apiEnvelope.js';
 import { parsePaginationQuery } from '../../../utils/pagination.js';
+import { isOfficeInboxOversight } from '../../../../../shared/roles.js';
 import { staffMembership, loadThreadScoped } from './helpers.js';
 
 export async function getInbox(req, res) {
@@ -9,8 +10,9 @@ export async function getInbox(req, res) {
   const office = await prisma.supportOffice.findUnique({ where: { slug: req.params.slug } });
   if (!office) throw new HttpError(404, 'Office not found');
   const staff = await staffMembership(userId, office.id);
-  if (!staff) throw new HttpError(403, 'You are not staff of this office');
-
+  if (!staff && !isOfficeInboxOversight(req.user?.role)) {
+    throw new HttpError(403, 'You are not staff of this office');
+  }
   const status = req.query.status ? String(req.query.status) : undefined;
   const mine = req.query.mine === 'true';
   const unassigned = req.query.unassigned === 'true';
@@ -58,13 +60,47 @@ export async function getInbox(req, res) {
   );
 }
 
+/** Agent: claim unassigned only. Manager: can take over any conversation. */
 export async function claimThread(req, res) {
   const userId = Number(req.user.sub);
-  const { thread, isStaff } = await loadThreadScoped(Number(req.params.id), userId);
+  const { thread, isStaff, isManager } = await loadThreadScoped(
+    Number(req.params.id),
+    userId,
+    req.user?.role
+  );
   if (!isStaff) throw new HttpError(403, 'Only office staff can claim conversations');
+
+  if (thread.assignedToId && thread.assignedToId !== userId && !isManager) {
+    throw new HttpError(403, 'Only a manager can take over an assigned conversation');
+  }
+
   const updated = await prisma.officeThread.update({
     where: { id: thread.id },
     data: { assignedToId: userId },
+    include: { assignedTo: { select: { id: true, full_name: true } } }
+  });
+  res.json(updated);
+}
+
+/** Manager only: assign conversation to any office staff member. */
+export async function reassignThread(req, res) {
+  const userId = Number(req.user.sub);
+  const assigneeId = Number(req.body?.userId);
+  if (!Number.isFinite(assigneeId)) throw new HttpError(400, 'userId is required');
+
+  const { thread, isManager } = await loadThreadScoped(
+    Number(req.params.id),
+    userId,
+    req.user?.role
+  );
+  if (!isManager) throw new HttpError(403, 'Only office managers can reassign conversations');
+
+  const assignee = await staffMembership(assigneeId, thread.officeId);
+  if (!assignee) throw new HttpError(400, 'Assignee must be staff of this office');
+
+  const updated = await prisma.officeThread.update({
+    where: { id: thread.id },
+    data: { assignedToId: assigneeId },
     include: { assignedTo: { select: { id: true, full_name: true } } }
   });
   res.json(updated);
@@ -76,8 +112,15 @@ export async function updateStatus(req, res) {
   if (!['OPEN', 'AWAITING_STUDENT', 'RESOLVED'].includes(status)) {
     throw new HttpError(400, 'Invalid status');
   }
-  const { thread, isStaff } = await loadThreadScoped(Number(req.params.id), userId);
+  const { thread, isStaff, isOfficeToOffice } = await loadThreadScoped(
+    Number(req.params.id),
+    userId,
+    req.user?.role
+  );
   if (!isStaff) throw new HttpError(403, 'Only office staff can change status');
+  if (isOfficeToOffice) {
+    throw new HttpError(400, 'Office-to-office chats do not use ticket status');
+  }
   const updated = await prisma.officeThread.update({
     where: { id: thread.id },
     data: { status, resolvedAt: status === 'RESOLVED' ? new Date() : null }

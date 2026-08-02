@@ -10,11 +10,11 @@ import {
   announcementDtoPrismaIncludeLegacy,
 } from "../dto/announcementDto.js";
 import {
-  CREATE_ANNOUNCEMENT_ROLES,
   getReadAnnouncementIdSet,
   sortAnnouncementsForList,
   visibilityUserFromLoaded,
 } from "./announcementService.js";
+import { canManageAnnouncements } from "../../../../../shared/roles.js";
 import {
   buildVisibleAnnouncementsWhere,
   buildVisibleAnnouncementsWhereLegacy,
@@ -25,7 +25,7 @@ import {
   resolveAnnouncementQuerySearchIds,
   buildAnnouncementListFilterWhere,
 } from "./announcementListFilters.service.js";
-import { attachLikedByCurrentUser } from "./announcementReactions.service.js";
+import { attachLikedByCurrentUser, attachAcknowledgedByCurrentUser } from "./announcementReactions.service.js";
 import { announcementLog } from "../announcementLogger.js";
 
 export async function handleAnnouncementList(req, res) {
@@ -59,10 +59,10 @@ export async function handleAnnouncementList(req, res) {
         String(req.query.scheduled ?? "").toLowerCase() === "true" ||
         statusParam === "SCHEDULED");
     const roleUpper = String(visibilityUser.role ?? "").toUpperCase();
-    if (scheduledOnly && !["DEAN", "SUPER_ADMIN"].includes(roleUpper)) {
+    if (scheduledOnly && !canManageAnnouncements(roleUpper)) {
       return res.status(403).json({ message: "Only announcement publishers can list scheduled posts" });
     }
-    if (draftsOnly && !CREATE_ANNOUNCEMENT_ROLES.has(roleUpper)) {
+    if (draftsOnly && !canManageAnnouncements(roleUpper)) {
       return res.status(403).json({ message: "Only announcement publishers can list drafts" });
     }
 
@@ -209,6 +209,7 @@ export async function handleAnnouncementList(req, res) {
     }
 
     announcements = await attachLikedByCurrentUser(announcements, currentUserId);
+    announcements = await attachAcknowledgedByCurrentUser(announcements, currentUserId);
 
     if (useCursor) {
       const hasMore = announcements.length > limit;

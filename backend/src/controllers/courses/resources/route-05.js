@@ -41,7 +41,27 @@ export function register(router) {
       include: { teacher: { select: { id: true, full_name: true } } },
       orderBy: [{ moduleId: 'asc' }, { position: 'asc' }, { created_at: 'desc' }],
     });
-  
-    res.json(resources);
+
+    // Aggregate watch counts in one query rather than N+1 per resource.
+    const resourceIds = resources.map((r) => r.id);
+    const viewAgg = resourceIds.length
+      ? await prisma.resourceView.groupBy({
+          by: ['resourceId'],
+          where: { resourceId: { in: resourceIds } },
+          _sum: { viewCount: true },
+          _count: { _all: true },
+        })
+      : [];
+    const aggByResource = new Map(
+      viewAgg.map((v) => [v.resourceId, { watchCount: v._sum.viewCount ?? 0, viewerCount: v._count._all }])
+    );
+
+    res.json(
+      resources.map((r) => ({
+        ...r,
+        watchCount: aggByResource.get(r.id)?.watchCount ?? 0,
+        viewerCount: aggByResource.get(r.id)?.viewerCount ?? 0,
+      }))
+    );
   }));
 }

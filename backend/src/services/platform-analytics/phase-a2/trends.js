@@ -31,13 +31,23 @@ export async function buildTrendSeries({
     safe(
       () =>
         offeringIds.length
-          ? prisma.submission.findMany({
-              where: {
-                assignment: { courseOfferingId: { in: offeringIds } },
-                submitted_at: { gte: since },
-              },
-              select: { submitted_at: true, grade: true },
-            })
+          ? prisma.submission
+              .findMany({
+                where: {
+                  assignment: { courseOfferingId: { in: offeringIds } },
+                  submitted_at: { gte: since },
+                },
+                select: {
+                  submitted_at: true,
+                  gradeRow: { select: { score: true } },
+                },
+              })
+              .then((rows) =>
+                rows.map((s) => ({
+                  submitted_at: s.submitted_at,
+                  grade: s.gradeRow?.score ?? null,
+                })),
+              )
           : [],
       []
     ),

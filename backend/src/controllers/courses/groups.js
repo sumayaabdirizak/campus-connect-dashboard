@@ -15,11 +15,26 @@ import {
 
 const router = Router();
 
-// ── List all groups in a course offering ─────────────────────────────
+// ── List groups in a course offering ─────────────────────────────────
+// Teachers/admins see every group. Students only see groups they belong to.
 router.get('/:courseOfferingId', requireCourseOfferingRead(), asyncHandler(async (req, res) => {
   const offering = req.courseOffering;
+  const role = req.user?.role;
+  const studentId = Number(req.user?.id ?? req.user?.sub);
+
+  /** @type {import('@prisma/client').Prisma.CourseGroupWhereInput} */
+  const where = { courseOfferingId: offering.id };
+
+  // Fail closed for students: never return the full roster of groups.
+  if (role === 'STUDENT') {
+    if (!Number.isFinite(studentId) || studentId <= 0) {
+      return res.json([]);
+    }
+    where.members = { some: { memberId: studentId } };
+  }
+
   const groups = await prisma.courseGroup.findMany({
-    where: { courseOfferingId: offering.id },
+    where,
     include: {
       members: {
         include: memberInclude,

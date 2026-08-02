@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import crypto from 'crypto';
 import { prisma } from '../../../db/prisma.js';
 import { apiErrorBody } from '../../../utils/apiEnvelope.js';
@@ -20,11 +20,16 @@ router.get('/:id/invites', async (req, res, next) => {
       return res.status(404).json(apiErrorBody('Club not found'));
     }
 
-    // Only owner or moderator
-    const isOwner = club.ownerId === uid;
-    if (!isOwner) {
+    const ownerId = club.ownerId == null ? null : Number(club.ownerId);
+    if (ownerId !== uid) {
       const mem = await prisma.discussionGroupMembership.findFirst({
-        where: { groupId: club.serverId, userId: uid, leftAt: null, isActive: true, role: 'ADMIN' },
+        where: {
+          groupId: club.serverId,
+          userId: uid,
+          leftAt: null,
+          isActive: true,
+          role: { in: ['ADMIN', 'DEAN'] },
+        },
       });
       if (!mem) return res.status(403).json(apiErrorBody('Forbidden'));
     }
@@ -75,10 +80,16 @@ router.delete('/:id/invites/:inviteId', async (req, res, next) => {
       return res.status(404).json(apiErrorBody('Club not found'));
     }
 
-    const isOwner = club.ownerId === uid;
-    if (!isOwner) {
+    const ownerId = club.ownerId == null ? null : Number(club.ownerId);
+    if (ownerId !== uid) {
       const mem = await prisma.discussionGroupMembership.findFirst({
-        where: { groupId: club.serverId, userId: uid, leftAt: null, isActive: true, role: 'ADMIN' },
+        where: {
+          groupId: club.serverId,
+          userId: uid,
+          leftAt: null,
+          isActive: true,
+          role: { in: ['ADMIN', 'DEAN'] },
+        },
       });
       if (!mem) return res.status(403).json(apiErrorBody('Forbidden'));
     }

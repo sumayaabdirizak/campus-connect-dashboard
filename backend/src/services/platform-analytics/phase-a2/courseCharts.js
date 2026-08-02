@@ -10,14 +10,14 @@ export async function buildSubmissionsByCourse(uniqueCourses, offerings) {
         safe(
           () =>
             prisma.submission.count({
-              where: { assignment: { courseOfferingId: { in: ids } }, is_late: false },
+              where: { assignment: { courseOfferingId: { in: ids } }, lateState: 'ON_TIME' },
             }),
           0
         ),
         safe(
           () =>
             prisma.submission.count({
-              where: { assignment: { courseOfferingId: { in: ids } }, is_late: true },
+              where: { assignment: { courseOfferingId: { in: ids } }, lateState: 'LATE' },
             }),
           0
         ),

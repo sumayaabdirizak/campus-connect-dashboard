@@ -5,6 +5,7 @@ import { getIo } from "../../../../socket/hub.js";
 import { PERMISSION_BITS, requireChannelPermission } from "../../../../features/discussions/permissions.js";
 import { recordDiscussionAuditLog } from "../../../../features/discussions/auditLog.js";
 import { getDiscussionCallerUserId } from "../../../../features/discussions/discussionCaller.js";
+import { toChannelDto } from "../../serverShared.js";
 
 const router = express.Router();
 
@@ -19,11 +20,14 @@ async function setArchiveState(req, res, archivedAt) {
   const channel = await prisma.discussionChannel.update({
     where: { id: channelId },
     data: { archivedAt },
-    include: { category: true },
+    include: { category: true, server: { select: { publicId: true } } },
   });
+  const categoryMap = channel.category ? new Map([[channel.category.id, channel.category.publicId]]) : null;
+  const { server, category: _category, ...channelRow } = channel;
+  const channelDto = toChannelDto(channelRow, server.publicId, categoryMap);
   try {
     const io = getIo();
-    if (io) io.to(`channel:${channelId}`).emit("channel:update", { channelId, channel });
+    if (io) io.to(`channel:${channelId}`).emit("channel:update", { channelId: channelDto.id, channel: channelDto });
   } catch (emitErr) {
     console.warn("channel:archive socket emit failed", emitErr?.message);
   }
@@ -40,7 +44,7 @@ async function setArchiveState(req, res, archivedAt) {
       after: { archivedAt: channel.archivedAt?.toISOString() ?? null },
     });
   }
-  return res.json({ channel });
+  return res.json({ channel: channelDto });
 }
 
 router.post(

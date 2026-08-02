@@ -9,17 +9,24 @@ import {
 } from "../../../../features/discussions/discussionMembership.js";
 import { toDiscussionAttachmentDto } from "../../../../features/discussions/discussionAttachments.js";
 import { editMessageSchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { resolveServerRow } from "../../serverShared.js";
+import { resolveMessageRow, buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 
 const router = express.Router();
 
 router.patch("/groups/:groupId/messages/:messageId", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
-    const messageId = Number(req.params.messageId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId) || !Number.isFinite(messageId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
     }
+    const groupId = groupRow.id;
+    const messageRow = await resolveMessageRow(req.params.messageId, { groupId });
+    if (!messageRow) {
+      return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
+    }
+    const messageId = messageRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     const msg = await prisma.discussionMessage.findFirst({
@@ -57,15 +64,17 @@ router.patch("/groups/:groupId/messages/:messageId", async (req, res) => {
         attachments: true,
       },
     });
+    const publicIdById = await buildMessagePublicIdMap([updated]);
     const dto = {
-      ...updated,
+      ...toMessageDto(updated, publicIdById),
+      groupId: groupRow.publicId,
       attachments: (updated.attachments || []).map((a) => toDiscussionAttachmentDto(req, a, userId)),
     };
     const io = getIo();
     if (io) {
       io.to(`discussion:group:${groupId}`).emit("message:edited", {
-        groupId,
-        messageId,
+        groupId: groupRow.publicId,
+        messageId: updated.publicId,
         content: dto.content,
         ciphertext: dto.ciphertext,
         nonce: dto.nonce,

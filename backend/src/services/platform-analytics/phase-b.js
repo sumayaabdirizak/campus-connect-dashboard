@@ -52,7 +52,7 @@ export async function runAnalyticsPhaseB(ctx) {
       () =>
         offeringIds.length
           ? prisma.submission.count({
-              where: { assignment: { courseOfferingId: { in: offeringIds } }, is_late: true },
+              where: { assignment: { courseOfferingId: { in: offeringIds } }, lateState: 'LATE' },
             })
           : 0,
       0

@@ -1,65 +1,17 @@
-import { prisma } from "../../../../db/prisma.js";
 import { z } from "zod";
 import multer from "multer";
-import {
-  buildVisibleAnnouncementsWhere,
-  buildVisibleAnnouncementsWhereLegacy,
-  getUnreadCount,
-  isPrismaAnnouncementSchemaDriftError,
-} from "../announcementVisibility.service.js";
-import { findVisibleAnnouncementsBySearch } from "../announcementSearch.service.js";
-import { parsePaginationQuery, paginatedPayload } from "../../../../utils/pagination.js";
+import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
-import { loadUserAnnouncementScope } from "../../../../utils/userAnnouncementScope.js";
-import {
-  toAnnouncementDto,
-  announcementDtoPrismaInclude,
-  announcementDtoPrismaIncludeLegacy,
-  ANNOUNCEMENT_LIKE_EMOJI,
-} from "../../dto/announcementDto.js";
-import {
-  createAnnouncement,
-  updateAnnouncement,
-  deleteAnnouncement,
-  togglePin,
-  markAsRead,
-  markAsReadBulk,
-  getReadAnnouncementIdSet,
-  normalizeTargetRoles,
-  visibilityUserFromLoaded,
-  writeAnnouncementAudit,
-  sortAnnouncementsForList,
-} from "../announcementService.js";
-import { findAnnouncementRecipientUserIds } from "../announcementRecipients.service.js";
-import { sendAnnouncementSmsNotifications, redactPhone } from "../announcementSms.service.js";
-import { countOverdueScheduledAnnouncements } from "../announcementJobs.service.js";
-import {
-  computeAnnouncementAnalytics,
-  listAnnouncementAcknowledgements,
-  invalidateAnnouncementAnalyticsCache,
-} from "../announcementAnalytics.service.js";
-import { commitUploadedFile } from "../../../../storage/objectStorage.js";
-import {
-  encodeAnnouncementRedirectToken,
-  buildTrackedRedirectUrl,
-} from "../announcementLinkRedirect.service.js";
-import {
-  loadAllVisibleDeadlineRows,
-  buildCalendarDeadlinesIcs,
-  isAnnouncementDeadlineAllDayUtc,
-} from "../calendarDeadlines.service.js";
+import { toAnnouncementDto } from "../../dto/announcementDto.js";
+import { updateAnnouncement, normalizeTargetRoles } from "../announcementService.js";
+import { sendAnnouncementEmailNotifications } from "../announcementEmail.service.js";
 import { announcementLog } from "../../announcementLogger.js";
 import { attachLikedByCurrentUser } from "../announcementReactions.service.js";
-import { csvEscapeCell } from "../../../../utils/csv.js";
+import { updateAnnouncementSchema } from "../../validation/announcementSchemas.js";
 import {
-  trackableLinkBodySchema,
-  createAnnouncementSchema,
-  updateAnnouncementSchema,
-  readBulkSchema,
-  previewRecipientsSchema,
-} from "../../validation/announcementSchemas.js";
-
-
+  prepareAnnouncementPatchBody,
+  syncAnnouncementImagesAfterPatch,
+} from "./patch/imageSync.js";
 
 export async function handleAnnouncementPatch(req, res) {
   try {
@@ -67,30 +19,64 @@ export async function handleAnnouncementPatch(req, res) {
     if (!Number.isFinite(id)) {
       return res.status(400).json({ message: "Invalid announcement id" });
     }
-    const normalizedTargetRoles = req.body?.targetRoles
+
+    const { body, uploadFiles, committedUploads } = await prepareAnnouncementPatchBody(req);
+
+    const normalizedTargetRoles = body?.targetRoles
       ? normalizeTargetRoles(
-          Array.isArray(req.body.targetRoles) ? req.body.targetRoles : [req.body.targetRoles],
+          Array.isArray(body.targetRoles) ? body.targetRoles : [body.targetRoles],
         )
       : undefined;
     const parsed = updateAnnouncementSchema.parse({
-      ...req.body,
+      ...body,
       ...(normalizedTargetRoles ? { targetRoles: normalizedTargetRoles } : {}),
-      publishedAt: req.body?.publishedAt,
-      expiresAt: req.body?.expiresAt,
-      deadlineAt: req.body?.deadlineAt,
+      publishedAt: body?.publishedAt,
+      expiresAt: body?.expiresAt,
+      deadlineAt: body?.deadlineAt,
     });
+
     const userId = Number(req.user.sub);
+    const before = await prisma.announcement.findUnique({ where: { id }, select: { status: true } });
     const result = await updateAnnouncement(id, req.user, parsed);
     if (!result.ok) {
       return res.status(result.status).json({ message: result.message });
     }
+    const wasDraftOrScheduled =
+      before && ["DRAFT", "SCHEDULED"].includes(String(before.status ?? "").toUpperCase());
+    const isNowPublished =
+      result.announcement && String(result.announcement.status ?? "").toUpperCase() === "PUBLISHED";
+    if (wasDraftOrScheduled && isNowPublished) {
+      void sendAnnouncementEmailNotifications(prisma, result.announcement).catch((err) => {
+        announcementLog("warn", "announcement.email_async_failed", {
+          announcementId: id,
+          message: err?.message ?? String(err),
+        });
+      });
+    }
+
+    await syncAnnouncementImagesAfterPatch(
+      id,
+      parsed.imageUrls,
+      req,
+      uploadFiles,
+      committedUploads,
+    );
+
     const [patchedWithLiked] = await attachLikedByCurrentUser(
       result.announcement ? [result.announcement] : [],
       userId,
     );
     return res.json(toAnnouncementDto(patchedWithLiked ?? result.announcement, userId));
   } catch (error) {
-    announcementLog("error", "announcement.patch_failed", { message: error?.message ?? String(error) });
+    announcementLog("error", "announcement.patch_failed", {
+      message: error?.message ?? String(error),
+    });
+    if (error instanceof multer.MulterError) {
+      return res.status(400).json({ message: error.message });
+    }
+    if (error instanceof Error && error.message === "Only image files are allowed") {
+      return res.status(400).json({ message: error.message });
+    }
     if (error instanceof z.ZodError) {
       return res.status(400).json({ message: "Validation failed", issues: error.issues });
     }

@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "kill-port 4000 && nodemon src/server.js",
+    "dev": "nodemon --exec \"npx kill-port 4000 && node src/server.js\"",
     "start": "node src/server.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
@@ -55,6 +55,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
+    "nodemailer": "^9.0.3",
     "redis": "^5.12.1",
     "sanitize-html": "^2.17.3",
     "socket.io": "^4.8.1",

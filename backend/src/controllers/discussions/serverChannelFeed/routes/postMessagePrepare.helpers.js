@@ -2,17 +2,19 @@ import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { PERMISSION_BITS, hasPermission } from "../../../../features/discussions/permissions.js";
 import { deriveQuestionFields } from "../../../../features/discussions/discussionMessagePublic.js";
+import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
 
 export async function loadChannelForSend(channelId) {
   return prisma.discussionChannel.findUnique({
     where: { id: channelId },
     select: {
       id: true,
+      publicId: true,
       serverId: true,
       scopeType: true,
       scopeId: true,
       slowModeSeconds: true,
-      server: { select: { id: true, e2eeEnabled: true } },
+      server: { select: { id: true, publicId: true, e2eeEnabled: true } },
     },
   });
 }
@@ -30,13 +32,19 @@ export function checkMemberMuted(channelMembership) {
   return until;
 }
 
-export async function validateParentMessage(channelId, parentMessageId) {
-  if (parentMessageId == null) return true;
+/** Resolves a client-supplied parentMessageId (publicId or legacy int) to
+ * the internal integer id. Returns `undefined` when none was supplied (not
+ * an error), or `null` when the supplied value doesn't resolve to a root
+ * message in this channel. */
+export async function resolveParentMessage(channelId, parentMessageId) {
+  if (parentMessageId == null) return undefined;
+  const where = whereFromParam(parentMessageId);
+  if (!where) return null;
   const parent = await prisma.discussionMessage.findFirst({
-    where: { id: parentMessageId, channelId, deletedAt: null, parentMessageId: null },
+    where: { ...where, channelId, deletedAt: null, parentMessageId: null },
     select: { id: true },
   });
-  return !!parent;
+  return parent?.id ?? null;
 }
 
 export function deriveChannelMessageContent(body, parentMessageId) {
@@ -77,18 +85,24 @@ export function deriveChannelMessageContent(body, parentMessageId) {
   return { isEncrypted, effectiveContent, messageType, isAnonymousFlag, hasText, attachmentIds };
 }
 
-export async function validatePendingAttachments(attachmentIds, userId, serverId) {
-  if (attachmentIds.length === 0) return true;
+/** Resolves client-supplied attachment identifiers (publicId or legacy int)
+ * and validates ownership/status. Returns the resolved internal int ids, or
+ * `null` if any identifier is invalid/unowned/already used. */
+export async function resolvePendingAttachmentIds(attachmentIdentifiers, userId, serverId) {
+  if (attachmentIdentifiers.length === 0) return [];
+  const wheres = attachmentIdentifiers.map(whereFromParam).filter(Boolean);
+  if (wheres.length !== attachmentIdentifiers.length) return null;
   const pendingRows = await prisma.discussionAttachment.findMany({
     where: {
-      id: { in: attachmentIds },
+      AND: [{ OR: wheres }, { OR: [{ groupId: serverId }, { groupId: null }] }],
       uploadedById: userId,
       status: "PENDING",
       messageId: null,
-      OR: [{ groupId: serverId }, { groupId: null }],
     },
+    select: { id: true },
   });
-  return pendingRows.length === attachmentIds.length;
+  if (pendingRows.length !== attachmentIdentifiers.length) return null;
+  return pendingRows.map((r) => r.id);
 }
 
 export async function checkSlowMode({ channel, channelId, userId, channelPermissions }) {

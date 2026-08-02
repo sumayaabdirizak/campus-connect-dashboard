@@ -16,7 +16,10 @@ import { runAnnouncementExpiryFallbackScan } from "./features/announcements/serv
 import { runAnnouncementPublishFallbackScan } from "./features/announcements/services/announcementPublishFallback.service.js";
 import { runDiscussionMembershipNightlySync } from "./features/discussions/membershipSync.service.js";
 import { autoSubmitExpiredAttempts } from "./services/quizAttempt.service.js";
+import { autoPublishScheduledQuizzes } from "./services/quizAutoPublish.service.js";
+import { runQuizReminderTicks } from "./services/quizReminders.service.js";
 import { cleanExpiredRevokedTokens } from "./utils/tokenRevocation.js";
+import { listenHttp } from "./listenHttp.js";
 
 assertEnv();
 
@@ -80,7 +83,7 @@ initializeSocketAdapter()
     console.warn("Adapter initialization failed:", error?.message || error);
   })
   .finally(() => {
-    httpServer.listen(port, () => {
+    listenHttp(httpServer, port, () => {
       console.log(`API running on http://localhost:${port}`);
       console.log(`Socket.IO running on http://localhost:${port}`);
       globalThis.__announcementWorkersStop = startAnnouncementBullWorkers();
@@ -125,6 +128,22 @@ initializeSocketAdapter()
           if (n > 0) console.log(`[quiz] auto-submitted ${n} expired attempt(s)`);
         } catch (err) {
           console.error("[quiz] auto-submit scan failed:", err?.message || err);
+        }
+        try {
+          const p = await autoPublishScheduledQuizzes();
+          if (p > 0) console.log(`[quiz] auto-published ${p} scheduled quiz(zes)`);
+        } catch (err) {
+          console.error("[quiz] auto-publish scan failed:", err?.message || err);
+        }
+        try {
+          const r = await runQuizReminderTicks();
+          if (r.opened > 0 || r.closing > 0) {
+            console.log(
+              `[quiz] reminders opened=${r.opened} closing=${r.closing}`
+            );
+          }
+        } catch (err) {
+          console.error("[quiz] reminder scan failed:", err?.message || err);
         }
       };
       // Run once at boot so attempts that expired while the server was down

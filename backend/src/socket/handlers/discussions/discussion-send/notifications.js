@@ -11,6 +11,9 @@ export async function createMemberMessageNotifications(tx, opts) {
     groupId,
     channelId,
     messageId,
+    groupPublicId,
+    channelPublicId,
+    messagePublicId,
     senderId,
     sender,
     isAnonymous,
@@ -35,9 +38,9 @@ export async function createMemberMessageNotifications(tx, opts) {
         messageId,
         type: "MESSAGE",
         payload: {
-          groupId,
-          ...(channelId != null ? { channelId } : {}),
-          messageId,
+          groupId: groupPublicId ?? null,
+          ...(channelPublicId != null ? { channelId: channelPublicId } : {}),
+          messageId: messagePublicId ?? null,
           senderId,
           senderName,
         },
@@ -54,15 +57,20 @@ export async function createMemberMessageNotifications(tx, opts) {
         messageId,
         type: "MENTION",
         payload: {
-          groupId,
-          ...(channelId != null ? { channelId } : {}),
-          messageId,
+          groupId: groupPublicId ?? null,
+          ...(channelPublicId != null ? { channelId: channelPublicId } : {}),
+          messageId: messagePublicId ?? null,
           senderId,
           senderName,
         },
       })),
     });
   }
+
+  // Exposed so callers can decide who gets an email (offline recipients +
+  // everyone @mentioned, regardless of online status) without recomputing
+  // mention resolution a second time.
+  return { mentionUserIds: [...mentionUserIds] };
 }
 
 /**

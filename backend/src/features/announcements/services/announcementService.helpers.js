@@ -15,6 +15,8 @@ export {
   normalizeTargetRoles,
   validateDeanTargetRoles,
   validateDeanTargetType,
+  validateFacultyScopedTargetRoles,
+  validateFacultyScopedTargetType,
 } from "./helpers/targetRoles.js";
 
 export {

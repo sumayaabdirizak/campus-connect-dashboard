@@ -45,7 +45,6 @@ import {
 } from "../announcementLinkRedirect.service.js";
 import {
   loadAllVisibleDeadlineRows,
-  buildCalendarDeadlinesIcs,
   isAnnouncementDeadlineAllDayUtc,
 } from "../calendarDeadlines.service.js";
 import { announcementLog } from "../../announcementLogger.js";
@@ -58,6 +57,7 @@ import {
   readBulkSchema,
   previewRecipientsSchema,
 } from "../../validation/announcementSchemas.js";
+import { assertCanManageAnnouncementById } from "../assertAnnouncementAuthor.js";
 
 
 
@@ -66,8 +66,12 @@ export async function handleAnnouncementAcknowledgementsList(req, res) {
     const id = Number.parseInt(req.params.id, 10);
     if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
     const role = String(req.user?.role ?? "").toUpperCase();
-    if (!["DEAN", "SUPER_ADMIN", "ADMIN"].includes(role)) {
+    if (!["DEAN", "SUPER_ADMIN", "ACADEMIC_OFFICE", "OFFICE_STAFF", "ADMIN"].includes(role)) {
       return res.status(403).json({ message: "Forbidden" });
+    }
+    const authorGate = await assertCanManageAnnouncementById(prisma, Number(req.user.sub), id);
+    if (!authorGate.ok) {
+      return res.status(authorGate.status).json({ message: authorGate.message });
     }
     const filter = String(req.query.filter ?? "all");
     if (String(req.query.format) === "csv") {

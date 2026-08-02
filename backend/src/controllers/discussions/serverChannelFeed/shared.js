@@ -1,9 +1,11 @@
 import { prisma } from "../../../db/prisma.js";
+import { REPLY_TO_INCLUDE } from "../../../features/discussions/replyToMessage.js";
 
 export const CHANNEL_MSG_INCLUDE = {
-  sender: { select: { id: true, full_name: true } },
+  sender: { select: { id: true, full_name: true, avatarUrl: true } },
   attachments: true,
   reactions: { include: { user: { select: { id: true, full_name: true } } } },
+  ...REPLY_TO_INCLUDE,
 };
 
 export async function buildChannelThreadPreviewMap(channelId, rootIds) {

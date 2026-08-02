@@ -27,16 +27,14 @@ export function register(router) {
     try {
       const userId = getDiscussionCallerUserId(req);
       if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
-      const groupDmId = Number(req.params.groupDmId);
-      if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
-        return res.status(400).json(apiErrorBody("Invalid groupDmId", null));
-      }
-  
-      const self = await getActiveMember(groupDmId, userId);
+
+      const self = await getActiveMember(req.params.groupDmId, userId);
       if (!self?.groupDm || self.groupDm.archivedAt) {
         return res.status(404).json(apiErrorBody("Group DM not found", null));
       }
-  
+      const groupDmId = self.groupDm.id;
+      const groupDmPublicId = self.groupDm.publicId;
+
       const wasOwner = self.role === "OWNER";
       let archived = false;
       let newOwnerId = null;
@@ -70,7 +68,7 @@ export function register(router) {
       try {
         const io = getIo();
         if (io) {
-          const payload = { groupDmId, userId, archived, newOwnerId };
+          const payload = { groupDmId: groupDmPublicId, userId, archived, newOwnerId };
           io.to(`groupdm:${groupDmId}`).emit("groupdm:member:leave", payload);
           io.to(`user:${userId}`).emit("groupdm:member:leave", payload);
         }

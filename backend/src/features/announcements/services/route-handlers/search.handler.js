@@ -45,11 +45,10 @@ import {
 } from "../announcementLinkRedirect.service.js";
 import {
   loadAllVisibleDeadlineRows,
-  buildCalendarDeadlinesIcs,
   isAnnouncementDeadlineAllDayUtc,
 } from "../calendarDeadlines.service.js";
 import { announcementLog } from "../../announcementLogger.js";
-import { attachLikedByCurrentUser } from "../announcementReactions.service.js";
+import { attachLikedByCurrentUser, attachAcknowledgedByCurrentUser } from "../announcementReactions.service.js";
 import { csvEscapeCell } from "../../../../utils/csv.js";
 import {
   trackableLinkBodySchema,
@@ -98,6 +97,7 @@ export async function handleAnnouncementSearch(req, res) {
     }
 
     announcements = await attachLikedByCurrentUser(announcements, currentUserId);
+    announcements = await attachAcknowledgedByCurrentUser(announcements, currentUserId);
     const readSet = await getReadAnnouncementIdSet(
       currentUserId,
       announcements.map((a) => a.id),

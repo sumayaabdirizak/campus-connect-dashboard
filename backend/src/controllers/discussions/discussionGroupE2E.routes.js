@@ -7,18 +7,20 @@ import {
   canManageDiscussionGroup,
 } from "../../features/discussions/discussionMembership.js";
 import { publishEpochSchema } from "../../features/discussions/validation/groupDiscussionSchemas.js";
+import { resolveServerRow } from "./serverShared.js";
 
 const router = express.Router();
 
 router.get("/groups/:groupId/e2e/keys", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
     const deviceId = String(req.query?.deviceId || "");
     const fromVersion = req.query?.fromVersion ? Number(req.query.fromVersion) : null;
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     if (!deviceId) {
       return res.status(400).json(apiErrorBody("deviceId query param is required", null));
     }
@@ -42,7 +44,7 @@ router.get("/groups/:groupId/e2e/keys", async (req, res) => {
       orderBy: [{ keyVersion: "asc" }, { createdAt: "asc" }],
     });
     return res.json({
-      groupId,
+      groupId: groupRow.publicId,
       currentKeyVersion: membership.group?.e2eeCurrentKeyVersion ?? 1,
       rotationRequired: membership.group?.e2eeRotationRequired ?? false,
       envelopes,
@@ -55,11 +57,12 @@ router.get("/groups/:groupId/e2e/keys", async (req, res) => {
 
 router.post("/groups/:groupId/e2e/epochs", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     if (!canManageDiscussionGroup(membership)) {
@@ -121,7 +124,7 @@ router.post("/groups/:groupId/e2e/epochs", async (req, res) => {
     });
 
     return res.status(201).json({
-      groupId,
+      groupId: groupRow.publicId,
       keyVersion: parsed.keyVersion,
       publishedEnvelopes: result,
       rotationReason: parsed.rotationReason ?? null,

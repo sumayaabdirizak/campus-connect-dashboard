@@ -25,11 +25,11 @@ router.post('/', async (req, res, next) => {
 
     if (isDeanMode) {
       // Path B — dean / super-admin direct create
-      if (!['DEAN', 'SUPER_ADMIN'].includes(req.user.role)) {
-        return res.status(403).json(apiErrorBody('Only deans and super-admins can create clubs directly'));
+      if (!['DEAN', 'SUPER_ADMIN', 'ACADEMIC_OFFICE'].includes(req.user.role)) {
+        return res.status(403).json(apiErrorBody('Only deans and academic leadership can create clubs directly'));
       }
 
-      // If dean, resolve their faculty
+      // If dean, resolve their faculty. Cross-faculty admins must pick faculty for FACULTY scope.
       let deanFacultyId = parsed.facultyId;
       if (req.user.role === 'DEAN') {
         const deanProfile = await prisma.deanProfile.findUnique({
@@ -39,10 +39,14 @@ router.post('/', async (req, res, next) => {
         if (!deanProfile) {
           return res.status(403).json(apiErrorBody('No faculty assignment found for this Dean'));
         }
-        // Dean can only create clubs in their own faculty
+        // Dean can only create faculty clubs in their own faculty
         if (parsed.scopeKind === 'FACULTY') {
           deanFacultyId = deanProfile.facultyId;
         }
+      } else if (parsed.scopeKind === 'FACULTY' && !deanFacultyId) {
+        return res.status(400).json(
+          apiErrorBody('Select a faculty for faculty-scoped clubs, or use University scope.')
+        );
       }
 
       const result = await createClubAsDean({
@@ -58,8 +62,8 @@ router.post('/', async (req, res, next) => {
       });
     }
 
-    // Path A — student application
-    // Auto-resolve student's faculty if not provided
+    // Path A — student / teacher application
+    // Auto-resolve faculty if not provided
     let facultyId = parsed.facultyId;
     if (parsed.scopeKind === 'FACULTY' && !facultyId) {
       const studentProfile = await prisma.studentProfile.findUnique({
@@ -68,7 +72,21 @@ router.post('/', async (req, res, next) => {
       });
       if (studentProfile?.facultyId) {
         facultyId = studentProfile.facultyId;
+      } else {
+        const lecturer = await prisma.lecturerProfile.findUnique({
+          where: { userId: uid },
+          select: { department: { select: { facultyId: true } } },
+        });
+        if (lecturer?.department?.facultyId) {
+          facultyId = lecturer.department.facultyId;
+        }
       }
+    }
+
+    if (parsed.scopeKind === 'FACULTY' && !facultyId) {
+      return res.status(400).json(
+        apiErrorBody('Faculty is required for faculty-scoped clubs. Your account has no faculty assigned.')
+      );
     }
 
     const club = await createClubApplication({

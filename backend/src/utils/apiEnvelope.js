@@ -53,9 +53,10 @@ export function prismaSchemaDriftHint(error) {
   }
   if (
     /column\s+["']?isAnonymous["']?\s+does not exist/i.test(msg) ||
-    /invalid.*value.*DiscussionMessageType/i.test(msg)
+    /invalid.*value.*DiscussionMessageType/i.test(msg) ||
+    /Unknown field [`']?replyTo[`']?/i.test(msg)
   ) {
-    return " Apply pending migrations from the backend folder: npx prisma migrate deploy";
+    return " Restart the backend after: npx prisma generate (and migrate deploy if needed)";
   }
   return "";
 }

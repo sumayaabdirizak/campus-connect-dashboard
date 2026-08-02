@@ -14,6 +14,7 @@ import {
   createClubSchema,
   editClubSchema,
 } from '../shared.js';
+import { attachViewerJoinState } from '../viewerJoinState.js';
 
 const router = express.Router();
 
@@ -39,10 +40,13 @@ router.get('/:slug', async (req, res, next) => {
       });
     }
 
+    const [formatted] = await attachViewerJoinState([formatClubForApi(club)], uid);
+
+    const ownerId = club.ownerId == null ? null : Number(club.ownerId);
     res.json({
-      club: formatClubForApi(club),
+      club: formatted,
       isMember: !!membership,
-      isOwner: club.ownerId === uid,
+      isOwner: ownerId != null && ownerId === uid,
       membershipRole: membership?.role ?? null,
     });
   } catch (err) {

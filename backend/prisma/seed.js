@@ -18,7 +18,7 @@ async function main() {
 
   // --- 1. Roles ---
   console.log('Seeding Roles...');
-  const roleNames = ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT', 'FACULTY_ADMIN'];
+  const roleNames = ['SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN', 'TEACHER', 'STUDENT'];
   const roleMap = {};
   for (const name of roleNames) {
     const role = await prisma.role.upsert({
@@ -107,6 +107,7 @@ async function main() {
         {
           name: 'Faculty of Computing',
           code: 'FC',
+          defaultDurationYears: 4,
           dean: { name: 'Dr. Alan Turing', email: 'dean.computing@university.edu', number: 'DEAN001' },
           departments: [{ name: 'Department of Computer Science', code: 'CS' }],
         },
@@ -115,6 +116,7 @@ async function main() {
     {
       name: 'Faculty of Computing',
       code: 'FC',
+      defaultDurationYears: 4,
       dean: { name: 'Dr. Alan Turing', email: 'dean.computing@university.edu', number: 'DEAN001' },
       departments: [
         { name: 'Department of Computer Science', code: 'CS' },
@@ -124,10 +126,20 @@ async function main() {
     {
       name: 'Faculty of Sciences',
       code: 'FS',
+      defaultDurationYears: 4,
       dean: { name: 'Dr. Marie Curie', email: 'dean.sciences@university.edu', number: 'DEAN002' },
       departments: [
         { name: 'Department of Mathematics', code: 'MATH' },
         { name: 'Department of Physics', code: 'PHYS' },
+      ],
+    },
+    {
+      name: 'Faculty of Medicine',
+      code: 'FM',
+      defaultDurationYears: 6,
+      dean: { name: 'Dr. Amina Hassan', email: 'dean.medicine@university.edu', number: 'DEAN003' },
+      departments: [
+        { name: 'Department of Medicine', code: 'MED' },
       ],
     },
   ];
@@ -155,11 +167,15 @@ async function main() {
     // Create/Update Faculty
     const faculty = await prisma.faculty.upsert({
       where: { code: fSpec.code },
-      update: { deanId: deanUser.id },
+      update: {
+        deanId: deanUser.id,
+        defaultDurationYears: fSpec.defaultDurationYears ?? 4,
+      },
       create: {
         name: fSpec.name,
         code: fSpec.code,
         deanId: deanUser.id,
+        defaultDurationYears: fSpec.defaultDurationYears ?? 4,
       },
     });
     faculties.push(faculty);
@@ -171,30 +187,6 @@ async function main() {
         create: { userId: deanUser.id, facultyId: faculty.id }
     });
 
-    // One faculty administrator on Computing (FC) for RBAC demos
-    if (fSpec.code === 'FC') {
-      const faUser = await prisma.user.upsert({
-        where: { email: 'faculty.admin@university.edu' },
-        update: {
-          full_name: 'Faculty Administrator (Computing)',
-          number: 'FA-FC-001',
-          roleId: roleMap['FACULTY_ADMIN'],
-        },
-        create: {
-          full_name: 'Faculty Administrator (Computing)',
-          email: 'faculty.admin@university.edu',
-          number: 'FA-FC-001',
-          password_hash: hashedPassword,
-          roleId: roleMap['FACULTY_ADMIN'],
-        },
-      });
-      await prisma.facultyAdminProfile.upsert({
-        where: { user_id: faUser.id },
-        update: { faculty_id: faculty.id },
-        create: { user_id: faUser.id, faculty_id: faculty.id },
-      });
-    }
-
     for (const dSpec of fSpec.departments) {
       const dept = await prisma.department.upsert({
         where: { code: dSpec.code },
@@ -205,7 +197,7 @@ async function main() {
           facultyId: faculty.id,
         },
       });
-      departments.push(dept);
+      departments.push({ ...dept, faculty });
     }
   }
 
@@ -220,12 +212,17 @@ async function main() {
     const progCode = `BSC-${dept.code}`;
     const prog = await prisma.program.upsert({
       where: { code: progCode },
-      update: { name: `BSc ${dept.name.replace('Department of ', '')}`, departmentId: dept.id },
+      update: {
+        name: `BSc ${dept.name.replace('Department of ', '')}`,
+        departmentId: dept.id,
+        durationYears: dept.faculty?.defaultDurationYears ?? 4,
+      },
       create: {
         name: `BSc ${dept.name.replace('Department of ', '')}`,
         code: progCode,
         level: 'UNDERGRADUATE',
         departmentId: dept.id,
+        durationYears: dept.faculty?.defaultDurationYears ?? 4,
       },
     });
     programs.push(prog);
@@ -529,8 +526,13 @@ async function main() {
                           description: "Implement the core concepts discussed in class.",
                           due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
                           courseOfferingId: offering.id,
-                          is_draft: false
-                      }
+                          lifecycle: {
+                              create: {
+                                  publishStatus: 'PUBLISHED',
+                                  scheduleStatus: 'OPEN',
+                              },
+                          },
+                      },
                   });
 
                   // Add some pending submissions for testing
@@ -549,8 +551,7 @@ async function main() {
                               assignmentId: asgn.id,
                               studentId: student.id,
                               content_url: "https://university.edu/submissions/s1.pdf",
-                              is_reviewed: false
-                          }
+                          },
                       });
                   }
               }
@@ -599,6 +600,30 @@ async function main() {
     console.log('Club vocabulary seeded (interest tags + quota policy).');
   } catch (e) {
     console.error('Club vocabulary seed failed:', e?.message || e);
+    throw e;
+  }
+
+  try {
+    const { ensureResourceTypeOptions } = await import(
+      '../src/features/resources/resourceTypeOptions.js'
+    );
+    await ensureResourceTypeOptions();
+    console.log('Resource type options seeded.');
+  } catch (e) {
+    console.error('Resource type options seed failed:', e?.message || e);
+    throw e;
+  }
+
+  try {
+    const { ensureDefaultSupportOffices } = await import(
+      '../src/features/offices/ensureDefaultSupportOffices.js'
+    );
+    const officeResult = await ensureDefaultSupportOffices();
+    console.log(
+      `Support offices ensured (${officeResult.created} created, ${officeResult.updated} updated).`
+    );
+  } catch (e) {
+    console.error('Support offices seed failed:', e?.message || e);
     throw e;
   }
 

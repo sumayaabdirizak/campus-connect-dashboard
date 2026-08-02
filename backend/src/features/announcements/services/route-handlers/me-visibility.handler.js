@@ -45,7 +45,6 @@ import {
 } from "../announcementLinkRedirect.service.js";
 import {
   loadAllVisibleDeadlineRows,
-  buildCalendarDeadlinesIcs,
   isAnnouncementDeadlineAllDayUtc,
 } from "../calendarDeadlines.service.js";
 import { announcementLog } from "../../announcementLogger.js";
@@ -67,8 +66,11 @@ export async function handleAnnouncementMeVisibility(req, res) {
     const loaded = await loadUserAnnouncementScope(prisma, currentUserId);
     if (!loaded) return res.status(404).json({ message: "User not found" });
     const visibilityUser = visibilityUserFromLoaded(loaded);
-    const deanPrimaryFacultyId =
-      loaded.role === "DEAN" && loaded.facultyIds?.length ? loaded.facultyIds[0] : null;
+    // Dean + faculty Dean's Office staff — primary faculty for create-dialog reach.
+    const roleUpper = String(loaded.role || "").toUpperCase();
+    const facultyPublisher =
+      (roleUpper === "DEAN" || roleUpper === "OFFICE_STAFF") && loaded.facultyIds?.length;
+    const deanPrimaryFacultyId = facultyPublisher ? loaded.facultyIds[0] : null;
     res.json({ visibilityUser, deanPrimaryFacultyId });
   } catch (error) {
     announcementLog("error", "announcement.me_visibility_failed", { message: error?.message ?? String(error) });

@@ -1,6 +1,7 @@
 import { emitAnnouncementRealtimeEvent } from "./announcementRealtime.service.js";
 import { writeAnnouncementAudit } from "./announcementService.js";
 import { expireAnnouncementIfDue } from "./announcementExpiry.service.js";
+import { sendAnnouncementEmailNotifications } from "./announcementEmail.service.js";
 import { announcementLog } from "../announcementLogger.js";
 
 /**
@@ -50,6 +51,12 @@ export async function publishScheduledAnnouncementIfDue(prisma, announcementId, 
   announcementLog("info", "announcement.scheduled_published", {
     announcementId,
     source,
+  });
+  void sendAnnouncementEmailNotifications(prisma, afterPin).catch((err) => {
+    announcementLog("warn", "announcement.email_async_failed", {
+      announcementId,
+      message: err?.message ?? String(err),
+    });
   });
   return true;
 }

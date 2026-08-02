@@ -4,6 +4,7 @@ import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireCourseOfferingManage } from '../../../middleware/courseOfferingRbac.js';
 import { createQuizBodySchema } from '../../../validation/quizSchemas.js';
 import { resolveModuleIdForOffering } from './helpers.js';
+import { notifyQuizPublished } from './notifyStudents.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -12,11 +13,18 @@ export function register(router) {
     const {
       title, description, duration_minutes, is_draft, open_at, close_at,
       shuffle_questions, shuffle_answers, max_attempts, passing_score,
-      timing_mode, scheduled_duration, moduleId, confidence_scoring, questions
+      timing_mode, scheduled_duration, moduleId, confidence_scoring, questions,
+      auto_publish_at_open,
     } = req.body;
 
-    if (!is_draft && !(Array.isArray(questions) && questions.length > 0)) {
+    const schedulePublish = !!auto_publish_at_open;
+    const draft = schedulePublish ? true : (is_draft || false);
+
+    if (!draft && !(Array.isArray(questions) && questions.length > 0)) {
       return res.status(400).json({ message: 'Cannot publish a quiz with no questions' });
+    }
+    if (schedulePublish && !open_at) {
+      return res.status(400).json({ message: 'Scheduled publish requires an open time' });
     }
 
     let resolvedModuleId;
@@ -56,7 +64,8 @@ export function register(router) {
         description,
         duration_minutes: duration_minutes || 30,
         courseOfferingId: cid,
-        is_draft: is_draft || false,
+        is_draft: draft,
+        auto_publish_at_open: schedulePublish,
         open_at: open_at ? new Date(open_at) : null,
         close_at: close_at ? new Date(close_at) : null,
         shuffle_questions: shuffle_questions || false,
@@ -64,7 +73,8 @@ export function register(router) {
         max_attempts: max_attempts || 1,
         passing_score: passing_score || 50,
         timing_mode: timing_mode || 'flexible',
-        scheduled_duration: scheduled_duration || null,
+        // UI no longer sets a separate scheduled duration — always null.
+        scheduled_duration: scheduled_duration ?? null,
         confidence_scoring: !!confidence_scoring,
         ...(resolvedModuleId !== undefined && { moduleId: resolvedModuleId }),
         ...(nestedQuestions && { questions: nestedQuestions }),
@@ -75,6 +85,10 @@ export function register(router) {
         _count: { select: { attempts: true } }
       },
     });
+
+    if (!quiz.is_draft) {
+      notifyQuizPublished(quiz, req.courseOffering.publicId);
+    }
 
     res.json(quiz);
   }));

@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { register as rTypes } from './route-types.js';
 import { register as r0 } from './route-00.js';
 import { register as r1 } from './route-01.js';
 import { register as r2 } from './route-02.js';
@@ -16,6 +17,7 @@ import { register as r13 } from './route-13.js';
 import { register as r14 } from './route-14.js';
 
 const router = Router();
+rTypes(router);
 r0(router);
 r1(router);
 r2(router);

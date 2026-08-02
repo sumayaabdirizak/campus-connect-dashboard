@@ -8,6 +8,7 @@ import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { auth } from './middleware/auth.js';
 import { csrfProtection } from './middleware/csrf.js';
+import { requireUploadAuth } from './middleware/requireUploadAuth.js';
 import { configureTrustProxy, getCorsAllowlist } from './config/env.js';
 import {
   announcementLinkRedirectLimiter,
@@ -30,8 +31,10 @@ app.use(express.json());
 app.use(requestLogger());
 
 // ─── Static uploads with fallback to object storage ─────────────────────────
+// Auth required for sensitive prefixes (submissions, assignments, chat, …).
+// covers/ + announcements/ stay public for <img> / OG without a session.
 // Raster images served inline; everything else forced to attachment (XSS defence).
-app.use('/uploads', (req, res, next) => {
+app.use('/uploads', requireUploadAuth, (req, res, next) => {
   const inlineSafe = /\.(png|jpe?g|webp|gif)$/i.test(req.path);
   res.setHeader('Content-Disposition', inlineSafe ? 'inline' : 'attachment');
   res.setHeader('X-Content-Type-Options', 'nosniff');

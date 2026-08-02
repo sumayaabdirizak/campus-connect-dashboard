@@ -1,5 +1,6 @@
 import { prisma } from '../db/prisma.js';
 import { scoreAnswer, persistAnswers } from './quizAttemptScoring.js';
+import { MAX_WARNINGS } from '../controllers/courses/quiz-taking/shared.js';
 
 /**
  * Save answers without finalizing the attempt — invoked by the autosave PUT
@@ -110,10 +111,10 @@ export async function finalizeAttempt({
     const storedWarnings = attempt.warnings_shown ?? 0;
     const effectiveWarnings = Math.max(
       storedWarnings,
-      effectiveViolations >= 3 ? 3 : effectiveViolations
+      effectiveViolations >= MAX_WARNINGS ? MAX_WARNINGS : effectiveViolations
     );
     const effectiveClosure =
-      closureReason ?? (effectiveViolations >= 3 ? 'violations' : null);
+      closureReason ?? (effectiveViolations >= MAX_WARNINGS ? 'violations' : null);
     const hasShortAnswer = attempt.quiz.questions.some(
       (q) => q.question_type === 'SHORT_ANSWER'
     );

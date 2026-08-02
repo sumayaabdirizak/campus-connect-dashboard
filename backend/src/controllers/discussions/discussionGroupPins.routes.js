@@ -7,16 +7,19 @@ import { requireActiveDiscussionMembership } from "../../features/discussions/di
 import { applyAnonymousSenderPolicy } from "../../features/discussions/discussionMessagePublic.js";
 import { toDiscussionAttachmentDto } from "../../features/discussions/discussionAttachments.js";
 import { pinBodySchema } from "../../features/discussions/validation/groupDiscussionSchemas.js";
+import { resolveServerRow } from "./serverShared.js";
+import { resolveMessageRow, toMessageDto, buildMessagePublicIdMap } from "./messageShared.js";
 
 const router = express.Router();
 
 router.get("/groups/:groupId/pins", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     const pins = await prisma.discussionPinnedMessage.findMany({
@@ -32,17 +35,18 @@ router.get("/groups/:groupId/pins", async (req, res) => {
         pinnedBy: { select: { id: true, full_name: true } },
       },
     });
+    const publicIdById = await buildMessagePublicIdMap(pins.filter((p) => p.message).map((p) => p.message));
     const results = pins
       .filter((p) => p.message && !p.message.deletedAt)
       .map((p) => {
         const msgRaw = {
-          ...p.message,
+          ...toMessageDto(p.message, publicIdById),
           attachments: (p.message.attachments || []).map((a) => toDiscussionAttachmentDto(req, a, userId)),
         };
         return {
           id: p.id,
-          groupId: p.groupId,
-          messageId: p.messageId,
+          groupId: groupRow.publicId,
+          messageId: publicIdById.get(p.messageId) ?? null,
           pinnedAt: p.pinnedAt,
           pinnedBy: p.pinnedBy,
           message: applyAnonymousSenderPolicy(msgRaw, userId, membership),
@@ -57,26 +61,25 @@ router.get("/groups/:groupId/pins", async (req, res) => {
 
 router.post("/groups/:groupId/pins", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     if (!membership.canModerate) {
       return res.status(403).json(apiErrorBody("Only moderators can pin messages", null));
     }
     const parsed = pinBodySchema.parse(req.body ?? {});
-    const message = await prisma.discussionMessage.findFirst({
-      where: { id: parsed.messageId, groupId, deletedAt: null },
-      select: { id: true },
-    });
+    const message = await resolveMessageRow(parsed.messageId, { groupId, deletedAt: null });
     if (!message) {
       return res.status(404).json(apiErrorBody("Message not found in this group", null));
     }
+    const messageId = message.id;
     const existing = await prisma.discussionPinnedMessage.findFirst({
-      where: { groupId, messageId: parsed.messageId, unpinnedAt: null },
+      where: { groupId, messageId, unpinnedAt: null },
     });
     if (existing) {
       return res.status(409).json(apiErrorBody("Message is already pinned", null));
@@ -84,7 +87,7 @@ router.post("/groups/:groupId/pins", async (req, res) => {
     const pin = await prisma.discussionPinnedMessage.create({
       data: {
         groupId,
-        messageId: parsed.messageId,
+        messageId,
         pinnedById: userId,
       },
       include: {
@@ -100,8 +103,8 @@ router.post("/groups/:groupId/pins", async (req, res) => {
     const io = getIo();
     if (io) {
       io.to(`discussion:group:${groupId}`).emit("message:pinned", {
-        groupId,
-        messageId: pin.messageId,
+        groupId: groupRow.publicId,
+        messageId: message.publicId,
         pinnedById: userId,
         pinnedAt: pin.pinnedAt,
       });
@@ -115,27 +118,28 @@ router.post("/groups/:groupId/pins", async (req, res) => {
         data: pinMembers.map((m) => ({
           userId: m.userId,
           groupId,
-          messageId: parsed.messageId,
+          messageId,
           type: "PIN",
           payload: {
-            groupId,
-            messageId: parsed.messageId,
+            groupId: groupRow.publicId,
+            messageId: message.publicId,
             pinnedById: userId,
             pinnedByName: pin.pinnedBy?.full_name ?? null,
           },
         })),
       });
     }
+    const pinMessagePublicIdById = pin.message ? await buildMessagePublicIdMap([pin.message]) : new Map();
     return res.status(201).json({
       pin: {
         id: pin.id,
-        groupId: pin.groupId,
-        messageId: pin.messageId,
+        groupId: groupRow.publicId,
+        messageId: message.publicId,
         pinnedAt: pin.pinnedAt,
         pinnedBy: pin.pinnedBy,
         message: pin.message
           ? {
-              ...pin.message,
+              ...toMessageDto(pin.message, pinMessagePublicIdById),
               attachments: (pin.message.attachments || []).map((a) => toDiscussionAttachmentDto(req, a, userId)),
             }
           : null,
@@ -152,12 +156,17 @@ router.post("/groups/:groupId/pins", async (req, res) => {
 
 router.delete("/groups/:groupId/pins/:messageId", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
-    const messageId = Number(req.params.messageId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId) || !Number.isFinite(messageId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
     }
+    const groupId = groupRow.id;
+    const messageRow = await resolveMessageRow(req.params.messageId, { groupId });
+    if (!messageRow) {
+      return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
+    }
+    const messageId = messageRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     if (!membership.canModerate) {
@@ -169,7 +178,10 @@ router.delete("/groups/:groupId/pins/:messageId", async (req, res) => {
     });
     const io = getIo();
     if (io && result.count) {
-      io.to(`discussion:group:${groupId}`).emit("message:unpinned", { groupId, messageId });
+      io.to(`discussion:group:${groupId}`).emit("message:unpinned", {
+        groupId: groupRow.publicId,
+        messageId: messageRow.publicId,
+      });
     }
     return res.json({ ok: true, updatedCount: result.count });
   } catch (error) {

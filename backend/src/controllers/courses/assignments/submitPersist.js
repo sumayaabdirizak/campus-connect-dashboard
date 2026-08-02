@@ -1,7 +1,13 @@
 import { prisma } from '../../../db/prisma.js';
+import {
+  clearSubmissionGrade,
+  submissionLateFields,
+} from '../../../features/assignments/submissionGrade.js';
+import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
 
 const studentInclude = {
   student: { select: { id: true, full_name: true, email: true, number: true } },
+  gradeRow: true,
 };
 
 export async function upsertOwnSubmission({
@@ -15,32 +21,34 @@ export async function upsertOwnSubmission({
     where: { assignmentId, studentId },
     select: { id: true },
   });
+  const lateFields = submissionLateFields(isLate);
   const data = {
     content_url,
-    is_late: isLate,
+    ...lateFields,
     submitted_at: new Date(),
-    grade: null,
-    feedback: null,
-    is_reviewed: false,
     ...(groupId != null && { groupId }),
   };
+  let row;
   if (existing) {
-    return prisma.submission.update({
+    row = await prisma.submission.update({
       where: { id: existing.id },
       data,
       include: studentInclude,
     });
+    await clearSubmissionGrade(existing.id);
+  } else {
+    row = await prisma.submission.create({
+      data: {
+        assignmentId,
+        studentId,
+        content_url,
+        ...lateFields,
+        ...(groupId != null && { groupId }),
+      },
+      include: studentInclude,
+    });
   }
-  return prisma.submission.create({
-    data: {
-      assignmentId,
-      studentId,
-      content_url,
-      is_late: isLate,
-      ...(groupId != null && { groupId }),
-    },
-    include: studentInclude,
-  });
+  return toSubmissionClient(row);
 }
 
 /** Fan-out leader submit to other group members. */
@@ -52,6 +60,7 @@ export async function fanOutGroupSubmissions({
   isLate,
   now,
 }) {
+  const lateFields = submissionLateFields(isLate);
   const members = await prisma.groupMember.findMany({
     where: { groupId },
     select: { memberId: true },
@@ -68,17 +77,21 @@ export async function fanOutGroupSubmissions({
           where: { id: memberSub.id },
           data: {
             content_url,
-            is_late: isLate,
+            ...lateFields,
             submitted_at: now,
             groupId,
-            grade: null,
-            feedback: null,
-            is_reviewed: false,
           },
         });
+        await clearSubmissionGrade(memberSub.id);
       } else {
         await prisma.submission.create({
-          data: { assignmentId, studentId: memberId, content_url, is_late: isLate, groupId },
+          data: {
+            assignmentId,
+            studentId: memberId,
+            content_url,
+            ...lateFields,
+            groupId,
+          },
         });
       }
     }),

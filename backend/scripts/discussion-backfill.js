@@ -157,14 +157,6 @@ function deriveDesiredRolesForUser(user) {
   for (const faculty of user.facultiesAsDean || []) {
     addDesiredRole(desired, DISCUSSION_SCOPE_TYPES.FACULTY, faculty.id, DISCUSSION_CONTEXT_ROLES.DEAN);
   }
-  if (user.facultyAdminProfile?.faculty_id) {
-    addDesiredRole(
-      desired,
-      DISCUSSION_SCOPE_TYPES.FACULTY,
-      user.facultyAdminProfile.faculty_id,
-      DISCUSSION_CONTEXT_ROLES.ADMIN
-    );
-  }
   if (user.lecturerProfile?.departmentId) {
     addDesiredRole(
       desired,
@@ -237,7 +229,6 @@ async function loadUsersForMembershipBackfill(options) {
       status: true,
       deanProfile: { select: { facultyId: true } },
       facultiesAsDean: { select: { id: true } },
-      facultyAdminProfile: { select: { faculty_id: true } },
       lecturerProfile: { select: { departmentId: true } },
       studentProfile: { select: { departmentId: true } },
       studentRegistrations: {

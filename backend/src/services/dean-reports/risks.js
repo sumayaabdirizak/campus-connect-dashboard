@@ -4,20 +4,14 @@ export function buildRiskSections({
   rankedDepartments,
 }) {
   const studentsAtRisk = studentReports
-    .filter((s) => s.status === 'At Risk' || s.gpa < 2.0 || s.attendance < 65)
+    .filter((s) => s.status === 'At Risk' || s.gpa < 2.0)
     .slice(0, 8)
     .map((s) => ({
       id: s.id,
       name: s.student,
       department: s.department,
       gpa: s.gpa,
-      attendance: s.attendance,
-      reason:
-        s.gpa < 2.0 && s.attendance < 65
-          ? 'Low GPA & poor attendance'
-          : s.gpa < 2.0
-            ? 'Low GPA'
-            : 'Poor attendance',
+      reason: 'Low GPA',
       priority: s.gpa < 1.5 ? 'high' : 'medium',
     }));
 

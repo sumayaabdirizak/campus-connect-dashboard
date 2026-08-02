@@ -2,7 +2,15 @@ import { prisma } from '../../../db/prisma.js';
 import { HttpError } from '../../../utils/httpError.js';
 import { namedListSuccess } from '../../../utils/apiEnvelope.js';
 import { parsePaginationQuery } from '../../../utils/pagination.js';
-import { loadThreadScoped, nextReference, MESSAGE_SELECT } from './helpers.js';
+import { emitOfficeMessageNew } from '../../../features/offices/emitOfficeMessageNew.js';
+import { markOfficeThreadRead } from '../../../features/offices/officeThreadRead.js';
+import {
+  loadThreadScoped,
+  nextReference,
+  MESSAGE_SELECT,
+  staffMembership,
+} from './helpers.js';
+import { assertStudentMayContactOffice } from './studentOfficeContactScope.js';
 
 export async function createThread(req, res) {
   const userId = Number(req.user.sub);
@@ -14,6 +22,16 @@ export async function createThread(req, res) {
   const office = await prisma.supportOffice.findUnique({ where: { slug: req.params.slug } });
   if (!office || !office.isActive) throw new HttpError(404, 'Office not found');
 
+  const membership = await staffMembership(userId, office.id);
+  if (membership) {
+    throw new HttpError(403, 'You are staff of this office — open the office inbox instead');
+  }
+
+  const contactGate = await assertStudentMayContactOffice(req, office);
+  if (!contactGate.ok) {
+    throw new HttpError(contactGate.status, contactGate.message);
+  }
+
   const reference = await nextReference(office);
   const thread = await prisma.officeThread.create({
     data: {
@@ -23,9 +41,29 @@ export async function createThread(req, res) {
       reference,
       messages: { create: { senderId: userId, content: message } }
     },
-    include: { office: { select: { name: true, slug: true } } }
+    include: {
+      office: { select: { name: true, slug: true } },
+      messages: {
+        orderBy: { createdAt: 'asc' },
+        take: 1,
+        select: MESSAGE_SELECT,
+      },
+    }
   });
-  res.status(201).json(thread);
+  const first = thread.messages?.[0] ?? null;
+  if (first) {
+    void emitOfficeMessageNew({
+      thread: {
+        id: thread.id,
+        officeId: thread.officeId,
+        studentId: thread.studentId,
+        office: thread.office,
+      },
+      message: first,
+    });
+  }
+  const { messages: _m, ...rest } = thread;
+  res.status(201).json(rest);
 }
 
 export async function listMyThreads(req, res) {
@@ -68,16 +106,21 @@ export async function listMyThreads(req, res) {
 
 export async function getThread(req, res) {
   const userId = Number(req.user.sub);
-  const { thread, isStaff } = await loadThreadScoped(Number(req.params.id), userId);
+  const { thread, isStaff, staffRole, isManager, isOfficeToOffice } = await loadThreadScoped(
+    Number(req.params.id),
+    userId,
+    req.user?.role
+  );
   const messages = await prisma.discussionMessage.findMany({
     where: {
       officeThreadId: thread.id,
-      ...(isStaff ? {} : { isInternalNote: false })
+      ...(isStaff && !isOfficeToOffice ? {} : { isInternalNote: false })
     },
     orderBy: { createdAt: 'asc' },
     select: MESSAGE_SELECT
   });
-  res.json({ ...thread, isStaff, messages });
+  void markOfficeThreadRead(userId, thread.id);
+  res.json({ ...thread, isStaff, staffRole, isManager, isOfficeToOffice, messages });
 }
 
 export async function createMessage(req, res) {
@@ -86,22 +129,43 @@ export async function createMessage(req, res) {
   const internal = Boolean(req.body?.isInternalNote);
   if (!content || content.length > 5000) throw new HttpError(400, 'Message is required (max 5000 chars)');
 
-  const { thread, isStaff } = await loadThreadScoped(Number(req.params.id), userId);
-  if (internal && !isStaff) throw new HttpError(403, 'Only office staff can add internal notes');
-  if (thread.status === 'RESOLVED' && !isStaff) {
+  const { thread, isStaff, isOfficeToOffice } = await loadThreadScoped(
+    Number(req.params.id),
+    userId,
+    req.user?.role
+  );
+  if (internal && (!isStaff || isOfficeToOffice)) {
+    throw new HttpError(403, 'Only office staff can add internal notes');
+  }
+  if (thread.status === 'RESOLVED' && !isStaff && !isOfficeToOffice) {
     throw new HttpError(400, 'This conversation is resolved — start a new one if you need more help.');
   }
 
   const created = await prisma.discussionMessage.create({
-    data: { officeThreadId: thread.id, senderId: userId, content, isInternalNote: internal },
+    data: {
+      officeThreadId: thread.id,
+      senderId: userId,
+      content,
+      isInternalNote: isOfficeToOffice ? false : internal,
+    },
     select: MESSAGE_SELECT
   });
 
-  if (!internal) {
+  if (!internal || isOfficeToOffice) {
     await prisma.officeThread.update({
       where: { id: thread.id },
-      data: { status: isStaff && thread.studentId !== userId ? 'AWAITING_STUDENT' : 'OPEN' }
+      data: isOfficeToOffice
+        ? { status: 'OPEN', resolvedAt: null }
+        : {
+            status:
+              isStaff && thread.studentId !== userId ? 'AWAITING_STUDENT' : 'OPEN',
+          },
     });
   }
+
+  if (!created.isInternalNote) {
+    void emitOfficeMessageNew({ thread, message: created });
+  }
+  void markOfficeThreadRead(userId, thread.id);
   res.status(201).json(created);
 }

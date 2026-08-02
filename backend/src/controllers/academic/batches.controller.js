@@ -2,59 +2,121 @@ import { prisma } from "../../db/prisma.js";
 import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
 import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
 import { refreshDiscussionMembershipsForScope } from "../../features/discussions/membershipSync.service.js";
+import { enrichBatchWithCohortSemester, getSemesterInYear } from "../../features/academic/academicCalendar.js";
+import { ensureAcademicYearForDate } from "../../features/academic/ensureAcademicYear.js";
+import { parseAcademicYearStartYear } from "../../features/academic/academicCalendarDefaults.js";
+import { graduateCompletedCohorts } from "../../features/academic/graduateCompletedCohorts.js";
 import { respondInternalError } from "../../utils/httpError.js";
 
-// Get all batches (filter by academicYearId/programId if needed)
+const batchIncludeSafe = {
+  program: {
+    include: {
+      department: {
+        include: { faculty: { select: { id: true, code: true, defaultDurationYears: true } } },
+      },
+    },
+  },
+  academicYear: true,
+};
+
+const batchInclude = {
+  ...batchIncludeSafe,
+  graduationAcademicYear: { select: { id: true, name: true } },
+};
+
 export const getAllBatches = async (req, res) => {
   try {
-    const { academicYearId, programId } = req.query;
+    try {
+      await graduateCompletedCohorts(new Date());
+    } catch (gradErr) {
+      console.error("graduateCompletedCohorts skipped on batches list", gradErr?.message);
+    }
+
+    const { academicYearId, programId, status } = req.query;
     const where = {};
     if (academicYearId) where.academicYearId = Number(academicYearId);
     if (programId) where.programId = Number(programId);
 
-    const batches = await prisma.batch.findMany({
-      where,
-      include: { program: true, academicYear: true }
+    let batches;
+    try {
+      if (status) where.status = String(status).toUpperCase();
+      batches = await prisma.batch.findMany({
+        where,
+        include: batchInclude,
+        orderBy: [{ status: "asc" }, { name: "asc" }],
+      });
+    } catch (err) {
+      // Stale Prisma client without EnrollmentStatus fields.
+      delete where.status;
+      batches = await prisma.batch.findMany({
+        where,
+        include: batchIncludeSafe,
+        orderBy: { name: "asc" },
+      });
+    }
+
+    res.json({
+      message: "Batches fetched",
+      batches: batches.map((batch) => enrichBatchWithCohortSemester(batch)),
     });
-    res.json({ message: "Batches fetched", batches });
   } catch (err) {
     respondInternalError(res, "Failed to fetch batches", err);
   }
 };
 
-// Get single batch
 export const getBatchById = async (req, res) => {
   const { id } = req.params;
   try {
     const batch = await prisma.batch.findUnique({
       where: { id: Number(id) },
-      include: { program: true, academicYear: true }
+      include: batchInclude,
     });
     if (!batch) return res.status(404).json({ message: "Batch not found" });
-    res.json({ message: "Batch fetched", batch });
+    res.json({ message: "Batch fetched", batch: enrichBatchWithCohortSemester(batch) });
   } catch (err) {
     respondInternalError(res, "Failed to fetch batch", err);
   }
 };
 
-// Create batch
 export const createBatch = async (req, res) => {
   const { name, academic_year, programId, academicYearId, semester_number } = req.body;
-  // Validate program and academicYear exist
-  const program = await prisma.program.findUnique({ where: { id: programId } });
+  const program = await prisma.program.findUnique({
+    where: { id: programId },
+    include: {
+      department: { include: { faculty: { select: { defaultDurationYears: true } } } },
+    },
+  });
   if (!program) return res.status(400).json({ message: "Invalid programId" });
-  const ay = await prisma.academicYear.findUnique({ where: { id: academicYearId } });
+
+  let ay = academicYearId
+    ? await prisma.academicYear.findUnique({ where: { id: Number(academicYearId) } })
+    : null;
+  if (!ay) {
+    const ensured = await ensureAcademicYearForDate(new Date());
+    ay = ensured.year;
+  }
   if (!ay) return res.status(400).json({ message: "Invalid academicYearId" });
+
+  const startYear = parseAcademicYearStartYear(ay.name) ?? Number(academic_year);
+  const initialSemester = Number(semester_number) || getSemesterInYear(new Date());
+  const maxSemesters =
+    (program.durationYears || program.department?.faculty?.defaultDurationYears || 4) * 2;
+  if (initialSemester > maxSemesters) {
+    return res.status(400).json({
+      message: `Semester ${initialSemester} exceeds program duration (${maxSemesters} semesters).`,
+    });
+  }
 
   try {
     const batch = await prisma.batch.create({
       data: {
         name,
-        academic_year,
+        academic_year: startYear,
         programId,
-        academicYearId,
-        semester_number: semester_number ?? 1
-      }
+        academicYearId: ay.id,
+        semester_number: initialSemester,
+      },
+      include: batchInclude,
     });
     try {
       await refreshDiscussionMembershipsForScope({
@@ -67,7 +129,10 @@ export const createBatch = async (req, res) => {
         error: error?.message,
       });
     }
-    res.status(201).json({ message: "Batch created", batch });
+    res.status(201).json({
+      message: "Batch created",
+      batch: enrichBatchWithCohortSemester(batch),
+    });
   } catch (err) {
     if (err.code === "P2002") {
       res.status(409).json({ message: "Batch already exists for this program and academic year" });
@@ -77,10 +142,10 @@ export const createBatch = async (req, res) => {
   }
 };
 
-// Update batch
 export const updateBatch = async (req, res) => {
   const { id } = req.params;
-  const { name, academic_year, programId, academicYearId, semester_number, advisorUserId } = req.body;
+  const { name, academic_year, programId, academicYearId, semester_number, advisorUserId } =
+    req.body;
   try {
     const batch = await prisma.batch.update({
       where: { id: Number(id) },
@@ -91,9 +156,11 @@ export const updateBatch = async (req, res) => {
         academicYearId,
         semester_number,
         ...(advisorUserId !== undefined && {
-          advisorUserId: advisorUserId === null || advisorUserId === "" ? null : Number(advisorUserId),
+          advisorUserId:
+            advisorUserId === null || advisorUserId === "" ? null : Number(advisorUserId),
         }),
-      }
+      },
+      include: batchInclude,
     });
     try {
       await refreshDiscussionMembershipsForScope({
@@ -106,13 +173,12 @@ export const updateBatch = async (req, res) => {
         error: error?.message,
       });
     }
-    res.json({ message: "Batch updated", batch });
+    res.json({ message: "Batch updated", batch: enrichBatchWithCohortSemester(batch) });
   } catch (err) {
     respondInternalError(res, "Failed to update batch", err);
   }
 };
 
-// Delete batch
 export const deleteBatch = async (req, res) => {
   const { id } = req.params;
   try {

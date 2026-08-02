@@ -61,7 +61,6 @@ export async function runDiscussionMembershipNightlySync(prismaClient = prisma) 
         { studentProfile: { isNot: null } },
         { lecturerProfile: { isNot: null } },
         { deanProfile: { isNot: null } },
-        { facultyAdminProfile: { isNot: null } },
       ],
     },
   });

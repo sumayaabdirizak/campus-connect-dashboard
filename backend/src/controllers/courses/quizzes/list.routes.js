@@ -1,24 +1,38 @@
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireCourseOfferingRead } from '../../../middleware/courseOfferingRbac.js';
+import { canManageOfferingContent } from '../../../utils/courseOfferingAccess.js';
+import { stripQuizAnswerKeys } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
   router.get('/:courseOfferingId', requireCourseOfferingRead(), asyncHandler(async (req, res) => {
     const cid = req.courseOffering.id;
+    const canManage = await canManageOfferingContent(req.user, req.courseOffering);
 
     const quizzes = await prisma.quiz.findMany({
-      where: { courseOfferingId: cid },
+      where: {
+        courseOfferingId: cid,
+        ...(canManage ? {} : { is_draft: false }),
+      },
       include: {
         questions: {
           include: { options: { orderBy: { order_index: 'asc' } } },
-          orderBy: { order_index: 'asc' }
+          orderBy: { order_index: 'asc' },
         },
         module: { select: { id: true, title: true, position: true, publishedAt: true } },
-        _count: { select: { attempts: true } }
+        _count: {
+          select: {
+            attempts: { where: { submitted_at: { not: null } } },
+          },
+        },
       },
       orderBy: { created_at: 'desc' },
     });
+
+    if (!canManage) {
+      return res.json(quizzes.map((q) => stripQuizAnswerKeys(q)));
+    }
 
     const quizIds = quizzes.map((q) => q.id);
     const pendingGroups = quizIds.length

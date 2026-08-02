@@ -1,4 +1,5 @@
 import { prisma } from '../../../db/prisma.js';
+import { attachClubMessageActivity } from './attach-activity.js';
 
 export async function getClubBySlug(slug, { includePending = false, viewerUserId = null } = {}) {
   const club = await prisma.club.findUnique({
@@ -52,5 +53,14 @@ export async function listClubsForUser(userId) {
     membershipRole: club.server?.memberships?.[0]?.role || 'MEMBER',
   }));
 
-  return { owned, memberOf, moderating: memberOf.filter((c) => c.membershipRole === 'MODERATOR') };
+  const [ownedWithActivity, memberWithActivity] = await Promise.all([
+    attachClubMessageActivity(owned, userId),
+    attachClubMessageActivity(memberOf, userId),
+  ]);
+
+  return {
+    owned: ownedWithActivity,
+    memberOf: memberWithActivity,
+    moderating: memberWithActivity.filter((c) => c.membershipRole === 'MODERATOR'),
+  };
 }

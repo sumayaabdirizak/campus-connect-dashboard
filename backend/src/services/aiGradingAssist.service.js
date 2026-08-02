@@ -103,7 +103,7 @@ async function buildSubmissionBlock(contentUrl) {
  *
  * @param {{
  *   assignment: { title: string; description: string | null; lateWindowMinutes: number },
- *   submission: { content_url: string; is_late: boolean; submitted_at: Date },
+ *   submission: { content_url: string; lateState?: string; is_late?: boolean; submitted_at: Date },
  *   student: { full_name: string }
  * }} args
  */
@@ -133,7 +133,7 @@ export async function suggestGradeForSubmission({ assignment, submission, studen
       `</assignment>\n\n` +
       `<context>\n<student-name>${student.full_name}</student-name>\n` +
       `<submitted-at>${new Date(submission.submitted_at).toISOString()}</submitted-at>\n` +
-      `<was-late>${submission.is_late ? 'yes' : 'no'}</was-late>\n</context>`,
+      `<was-late>${submission.lateState === 'LATE' || submission.is_late ? 'yes' : 'no'}</was-late>\n</context>`,
   });
   if (submissionBlock) {
     userBlocks.push(submissionBlock);

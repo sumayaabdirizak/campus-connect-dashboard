@@ -51,6 +51,7 @@ export async function computeAnnouncementAnalytics(prisma, announcementId, optio
       content: true,
       title: true,
       status: true,
+      createdById: true,
     },
   });
   if (!announcement) return null;
@@ -59,9 +60,15 @@ export async function computeAnnouncementAnalytics(prisma, announcementId, optio
   const eligibleRecipients = recipientIds.length;
 
   const since = announcement.publishedAt ?? announcement.createdAt;
+  // The author viewing their own announcement (e.g. scrolling their own feed)
+  // still marks it read — exclude that row so "readers" reflects the audience,
+  // not the person who wrote it.
+  const authorId = announcement.createdById;
 
   const [uniqueReaders, likes, linkClicks, acknowledgedCount] = await Promise.all([
-    prisma.announcementRead.count({ where: { announcementId } }),
+    prisma.announcementRead.count({
+      where: { announcementId, userId: { not: authorId } },
+    }),
     prisma.announcementReaction.count({
       where: { announcementId, emoji: ANNOUNCEMENT_LIKE_EMOJI },
     }),
@@ -81,6 +88,7 @@ export async function computeAnnouncementAnalytics(prisma, announcementId, optio
       FROM "AnnouncementRead" r
       WHERE r."announcementId" = ${announcementId}
         AND r."readAt" >= ${since}
+        AND r."userId" IS DISTINCT FROM ${authorId}
       GROUP BY 1
       ORDER BY 1 ASC
     `;

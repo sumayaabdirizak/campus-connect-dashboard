@@ -32,7 +32,7 @@ export async function createGroupMessageTransaction({
         keyVersion: parsed.e2e?.keyVersion ?? null,
         senderDeviceId: parsed.e2e?.senderDeviceId ?? null,
       },
-      include: { sender: { select: { id: true, full_name: true } } },
+      include: { sender: { select: { id: true, full_name: true, avatarUrl: true } } },
     });
 
     if (attachmentIds.length > 0) {
@@ -63,6 +63,11 @@ export async function createGroupMessageTransaction({
     const messageRecipients = recipientIds.filter((rid) => !mentionUserIds.has(rid));
     const senderName = anonymousSafeSenderName({ isAnonymous: isAnonymousFlag, sender: created.sender });
 
+    const groupPublicId = (await tx.discussionGroup.findUnique({
+      where: { id: groupId },
+      select: { publicId: true },
+    }))?.publicId;
+
     if (messageRecipients.length) {
       await tx.discussionNotification.createMany({
         data: messageRecipients.map((recipientId) => ({
@@ -70,7 +75,7 @@ export async function createGroupMessageTransaction({
           groupId,
           messageId: created.id,
           type: "MESSAGE",
-          payload: { groupId, messageId: created.id, senderId: userId, senderName },
+          payload: { groupId: groupPublicId, messageId: created.publicId, senderId: userId, senderName },
         })),
       });
     }
@@ -81,7 +86,7 @@ export async function createGroupMessageTransaction({
           groupId,
           messageId: created.id,
           type: "MENTION",
-          payload: { groupId, messageId: created.id, senderId: userId, senderName },
+          payload: { groupId: groupPublicId, messageId: created.publicId, senderId: userId, senderName },
         })),
       });
     }
@@ -100,6 +105,10 @@ export async function createGroupMessageTransaction({
           excludeUserId: userId,
         });
         if (threadTargets.length > 0) {
+          const rootPublicId = (await tx.discussionMessage.findUnique({
+            where: { id: rootId },
+            select: { publicId: true },
+          }))?.publicId;
           await tx.discussionNotification.createMany({
             data: threadTargets.map((uid) => ({
               userId: uid,
@@ -107,9 +116,9 @@ export async function createGroupMessageTransaction({
               messageId: created.id,
               type: "THREAD",
               payload: {
-                groupId,
-                messageId: created.id,
-                threadRootMessageId: rootId,
+                groupId: groupPublicId,
+                messageId: created.publicId,
+                threadRootMessageId: rootPublicId,
                 senderId: userId,
                 senderName,
               },

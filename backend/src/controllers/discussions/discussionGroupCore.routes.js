@@ -4,16 +4,23 @@ import { apiErrorBody } from "../../utils/apiEnvelope.js";
 import { requireActiveDiscussionMembership } from "../../features/discussions/discussionMembership.js";
 import { computeMemberPresence } from "../../features/discussions/discussionPresence.js";
 import { isDiscussionQaChannelNameKey } from "../../features/discussions/discussionMessagePublic.js";
+import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+import { resolveServerRow } from "./serverShared.js";
 
 const router = express.Router();
 
 router.get("/groups/:groupId", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupWhere = whereFromParam(req.params.groupId);
+    if (!groupWhere) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupRow = await prisma.discussionGroup.findFirst({ where: groupWhere, select: { id: true } });
+    if (!groupRow) {
+      return res.status(400).json(apiErrorBody("Invalid groupId", null));
+    }
+    const groupId = groupRow.id;
 
     const membership = await prisma.discussionGroupMembership.findFirst({
       where: {
@@ -27,6 +34,7 @@ router.get("/groups/:groupId", async (req, res) => {
         group: {
           select: {
             id: true,
+            publicId: true,
             groupKey: true,
             name: true,
             description: true,
@@ -64,7 +72,7 @@ router.get("/groups/:groupId", async (req, res) => {
       (muteRow.until == null || (muteRow.until instanceof Date && muteRow.until > now));
 
     return res.json({
-      id: g.id,
+      id: g.publicId,
       groupKey: g.groupKey,
       name: g.name,
       description: g.description,
@@ -95,11 +103,12 @@ router.get("/groups/:groupId", async (req, res) => {
 
 router.get("/groups/:groupId/members", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     const rows = await prisma.discussionGroupMembership.findMany({
@@ -145,11 +154,12 @@ router.get("/groups/:groupId/members", async (req, res) => {
 /** Member presence: session + last activity windows (online / away / offline / DND). */
 router.get("/groups/:groupId/presence", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
 
@@ -226,7 +236,7 @@ router.get("/groups/:groupId/presence", async (req, res) => {
       };
     });
 
-    return res.json({ groupId, results });
+    return res.json({ groupId: groupRow.publicId, results });
   } catch (error) {
     console.error("GET /discussions/groups/:groupId/presence failed", error);
     return res.status(500).json(apiErrorBody("Failed to load presence", null));

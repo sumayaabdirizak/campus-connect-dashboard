@@ -14,6 +14,7 @@ import {
 import { getDiscussionCallerUserId } from "../../../../features/discussions/discussionCaller.js";
 import { enrichDiscussionMessagesAttachments } from "../../../../features/discussions/discussionAttachments.js";
 import { CHANNEL_MSG_INCLUDE, buildChannelThreadPreviewMap } from "../shared.js";
+import { resolveMessageRow, buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 
 const router = express.Router();
 
@@ -27,7 +28,7 @@ router.get(
       const channelId = req.discussionChannelId;
       const channelForMember = await prisma.discussionChannel.findUnique({
         where: { id: channelId },
-        select: { serverId: true },
+        select: { serverId: true, server: { select: { publicId: true } } },
       });
       const channelMembership = channelForMember
         ? await prisma.discussionGroupMembership.findFirst({
@@ -36,14 +37,10 @@ router.get(
         : null;
       const limit = parseDiscussionHistoryLimit(req.query.limit);
       const cursor = decodeDiscussionCursor(req.query.cursor);
-      const threadRootRaw =
-        req.query.threadRoot != null
-          ? Number(req.query.threadRoot)
-          : req.query.parentId != null
-            ? Number(req.query.parentId)
-            : null;
-      const threadRoot =
-        Number.isInteger(threadRootRaw) && threadRootRaw > 0 ? threadRootRaw : null;
+      const threadRootIdentifier = req.query.threadRoot ?? req.query.parentId ?? null;
+      const threadRootRow =
+        threadRootIdentifier != null ? await resolveMessageRow(threadRootIdentifier, { channelId }) : null;
+      const threadRoot = threadRootRow?.id ?? null;
 
       if (threadRoot) {
         const root = await prisma.discussionMessage.findFirst({
@@ -51,7 +48,12 @@ router.get(
           include: CHANNEL_MSG_INCLUDE,
         });
         if (!root) {
-          return res.json({ results: [], nextCursor: null, hasMore: false, threadRoot });
+          return res.json({
+            results: [],
+            nextCursor: null,
+            hasMore: false,
+            threadRoot: threadRootRow.publicId,
+          });
         }
         const whereReplies = {
           channelId,
@@ -80,15 +82,20 @@ router.get(
             : null;
         const repliesAsc = slice.slice().reverse();
         const combined = cursor ? repliesAsc : [root, ...repliesAsc];
+        const publicIdById = await buildMessagePublicIdMap(combined);
         return res.json({
           results: mapChannelMessagesForViewer(
             enrichDiscussionMessagesAttachments(req, combined, userId),
             userId,
             channelMembership,
-          ),
+          ).map((m) => ({
+            ...toMessageDto(m, publicIdById),
+            channelId: req.discussionChannelPublicId,
+            groupId: channelForMember?.server?.publicId ?? m.groupId,
+          })),
           nextCursor,
           hasMore,
-          threadRoot,
+          threadRoot: threadRootRow.publicId,
         });
       }
 
@@ -130,12 +137,17 @@ router.get(
         }));
       }
 
+      const publicIdById = await buildMessagePublicIdMap(resultsPayload);
       return res.json({
         results: mapChannelMessagesForViewer(
           enrichDiscussionMessagesAttachments(req, resultsPayload, userId),
           userId,
           channelMembership,
-        ),
+        ).map((m) => ({
+          ...toMessageDto(m, publicIdById),
+          channelId: req.discussionChannelPublicId,
+          groupId: channelForMember?.server?.publicId ?? m.groupId,
+        })),
         nextCursor,
         hasMore,
         threadRoot: null,

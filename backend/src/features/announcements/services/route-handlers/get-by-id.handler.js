@@ -45,7 +45,6 @@ import {
 } from "../announcementLinkRedirect.service.js";
 import {
   loadAllVisibleDeadlineRows,
-  buildCalendarDeadlinesIcs,
   isAnnouncementDeadlineAllDayUtc,
 } from "../calendarDeadlines.service.js";
 import { announcementLog } from "../../announcementLogger.js";
@@ -113,8 +112,23 @@ export async function handleAnnouncementGetById(req, res) {
         },
       },
     });
+    let ackRow = null;
+    if (announcement.acknowledgementRequired) {
+      ackRow = await prisma.announcementAcknowledgement.findUnique({
+        where: {
+          announcementId_userId: { announcementId: id, userId: currentUserId },
+        },
+      });
+    }
     res.json(
-      toAnnouncementDto({ ...announcement, _likedByCurrentUser: Boolean(likedRow) }, currentUserId),
+      toAnnouncementDto(
+        {
+          ...announcement,
+          _likedByCurrentUser: Boolean(likedRow),
+          _acknowledgedByCurrentUser: Boolean(ackRow),
+        },
+        currentUserId,
+      ),
     );
   } catch (error) {
     announcementLog("error", "announcement.detail_failed", { message: error?.message ?? String(error) });

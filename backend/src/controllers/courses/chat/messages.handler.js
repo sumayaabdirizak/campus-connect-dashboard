@@ -35,7 +35,7 @@ export async function getChatRoomMessages(req, res) {
 export async function createMessage(req, res) {
   const courseOfferingId = req.courseOffering.id;
   const { content, replyToId } = req.body ?? {};
-  if (!content || typeof content !== 'string' || !content.trim()) {
+  if (typeof content !== 'string') {
     return res.status(400).json({ message: 'content is required' });
   }
   const senderId = req.user.id;
@@ -51,7 +51,9 @@ export async function createMessage(req, res) {
   }
 
   const trimmed = content.trim();
-  const mentionUserIds = await resolveMentions(trimmed, courseOfferingId, senderId);
+  const mentionUserIds = trimmed
+    ? await resolveMentions(trimmed, courseOfferingId, senderId)
+    : [];
 
   const message = await prisma.chatMessage.create({
     data: {

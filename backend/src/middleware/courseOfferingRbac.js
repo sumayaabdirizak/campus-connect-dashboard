@@ -5,8 +5,11 @@ export {
 export {
   requireAssignmentManage,
   requireAssignmentSubmissionsRead,
+  requireAssignmentCourseRead,
   requireStudentSubmission,
   requireSubmissionGrade,
+  requireAssignmentAttachmentRead,
+  requireSubmissionFileAccess,
 } from "./courseOfferingRbac/assignment.routes.js";
 export {
   requireQuizManage,

@@ -1,12 +1,30 @@
 import { prisma } from '../../db/prisma.js';
 import { safe } from './helpers.js';
 
-export async function fetchPeopleCollections({ facultyId, since, prevSince }) {
+export async function fetchPeopleCollections({ facultyId, since, prevSince, filters = {} }) {
+  const departmentId = filters.departmentId ? Number(filters.departmentId) : null;
+
+  const registrationScope = {
+    batchSection: {
+      batch: {
+        program: {
+          department: {
+            facultyId,
+            ...(departmentId ? { id: departmentId } : {}),
+          },
+        },
+      },
+    },
+  };
+
   const [studentProfiles, registrations, prevRegistrations, teachers] = await Promise.all([
     safe(
       () =>
         prisma.studentProfile.findMany({
-          where: { facultyId },
+          where: {
+            facultyId,
+            ...(departmentId ? { departmentId } : {}),
+          },
           select: {
             id: true,
             departmentId: true,
@@ -39,7 +57,7 @@ export async function fetchPeopleCollections({ facultyId, since, prevSince }) {
       () =>
         prisma.studentRegistration.findMany({
           where: {
-            batchSection: { batch: { program: { department: { facultyId } } } },
+            ...registrationScope,
             created_at: { gte: since },
           },
           select: { created_at: true },
@@ -50,7 +68,7 @@ export async function fetchPeopleCollections({ facultyId, since, prevSince }) {
       () =>
         prisma.studentRegistration.findMany({
           where: {
-            batchSection: { batch: { program: { department: { facultyId } } } },
+            ...registrationScope,
             created_at: { gte: prevSince, lt: since },
           },
           select: { created_at: true },
@@ -62,7 +80,10 @@ export async function fetchPeopleCollections({ facultyId, since, prevSince }) {
         prisma.user.findMany({
           where: {
             role: { name: 'TEACHER' },
-            lecturerProfile: { faculties: { some: { facultyId } } },
+            lecturerProfile: {
+              faculties: { some: { facultyId } },
+              ...(departmentId ? { departmentId } : {}),
+            },
           },
           select: {
             id: true,

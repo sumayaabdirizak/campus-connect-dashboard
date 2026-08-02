@@ -25,6 +25,11 @@ export async function createChannelThreadNotifications(tx, ctx) {
   });
   if (!threadTargets.length) return;
 
+  const rootRow = await tx.discussionMessage.findUnique({
+    where: { id: rootId },
+    select: { publicId: true },
+  });
+
   await tx.discussionNotification.createMany({
     data: threadTargets.map((uid) => ({
       userId: uid,
@@ -32,10 +37,10 @@ export async function createChannelThreadNotifications(tx, ctx) {
       messageId: created.id,
       type: "THREAD",
       payload: {
-        groupId: serverId,
-        channelId,
-        messageId: created.id,
-        threadRootMessageId: rootId,
+        groupId: channel.server.publicId,
+        channelId: channel.publicId,
+        messageId: created.publicId,
+        threadRootMessageId: rootRow?.publicId ?? null,
         senderId: Number(socketUser.id),
         senderName: anonymousSafeSenderName({
           isAnonymous: fields.isAnonymous,

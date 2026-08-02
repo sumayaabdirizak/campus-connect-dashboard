@@ -11,8 +11,8 @@ import {
   validatePublishedAtForScheduleUpsert,
   defaultTargetRolesForCreator,
   normalizeTargetRoles,
-  validateDeanTargetRoles,
-  validateDeanTargetType,
+  validateFacultyScopedTargetRoles,
+  validateFacultyScopedTargetType,
   normalizePublishedAt,
   validateExtraTargets,
   deriveInitialStatus,
@@ -25,7 +25,11 @@ export async function prepareCreateAnnouncementData(user, parsed) {
   const userId = Number(user.sub);
 
   if (!CREATE_ANNOUNCEMENT_ROLES.has(role)) {
-    return { ok: false, status: 403, message: "Only SUPER_ADMIN or DEAN may create announcements" };
+    return {
+      ok: false,
+      status: 403,
+      message: "Only SUPER_ADMIN, ACADEMIC_OFFICE, DEAN, or OFFICE_STAFF may create announcements",
+    };
   }
 
   const title = typeof parsed.title === "string" ? parsed.title.trim() : "";
@@ -38,12 +42,12 @@ export async function prepareCreateAnnouncementData(user, parsed) {
   }
 
   const targetType = parsed.targetType;
-  const deanTargetTypeCheck = validateDeanTargetType(role, targetType);
-  if (!deanTargetTypeCheck.ok) return deanTargetTypeCheck;
-
   const scopeResult = await resolveCreatorFacultyScope(prisma, role, userId, parsed);
   if (!scopeResult.ok) return scopeResult;
-  const { facultyIdForTargeting, facultyScope } = scopeResult;
+  const { facultyIdForTargeting, facultyScope, facultyScoped } = scopeResult;
+
+  const typeCheck = validateFacultyScopedTargetType(facultyScoped, targetType);
+  if (!typeCheck.ok) return typeCheck;
 
   let sanitizedTargeting;
   try {
@@ -55,7 +59,7 @@ export async function prepareCreateAnnouncementData(user, parsed) {
         batchId: parsed.batchId ?? null,
         sectionId: parsed.sectionId ?? null,
       },
-      facultyScope,
+      facultyScope
     );
   } catch (err) {
     if (err instanceof InvalidHierarchyError || err instanceof OutsideFacultyError) {
@@ -77,10 +81,10 @@ export async function prepareCreateAnnouncementData(user, parsed) {
 
   let targetRoles = normalizeTargetRoles(parsed.targetRoles ?? []);
   if (targetRoles.length === 0) {
-    targetRoles = defaultTargetRolesForCreator(role);
+    targetRoles = defaultTargetRolesForCreator(role, facultyScoped);
   }
-  const deanRoleCheck = validateDeanTargetRoles(role, targetRoles);
-  if (!deanRoleCheck.ok) return deanRoleCheck;
+  const roleCheck = validateFacultyScopedTargetRoles(facultyScoped, targetRoles);
+  if (!roleCheck.ok) return roleCheck;
 
   announcementLog("info", "announcement.prepare_create", {
     userId,
@@ -88,6 +92,7 @@ export async function prepareCreateAnnouncementData(user, parsed) {
     targetType,
     status: deriveInitialStatus(parsed),
     facultyScope: facultyScope ?? null,
+    facultyScoped,
   });
 
   return {
@@ -100,6 +105,7 @@ export async function prepareCreateAnnouncementData(user, parsed) {
       targetType,
       content,
       bodyHtml: sanitizeAnnouncementHtml(parsed.bodyHtml ?? null),
+      facultyScoped,
     }),
   };
 }

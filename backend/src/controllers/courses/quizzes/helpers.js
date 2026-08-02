@@ -18,11 +18,25 @@ export async function resolveModuleIdForOffering(rawModuleId, courseOfferingId) 
 export function assertQuizIsDraft(quiz) {
   if (!quiz.is_draft) {
     const err = new Error(
-      'Cannot add questions to a published quiz. Switch it back to draft first.'
+      'Cannot change questions on a published quiz. Switch it back to draft first.'
     );
     err.status = 400;
     throw err;
   }
+}
+
+/** Strip answer keys (and optionally explanations) from a quiz payload. */
+export function stripQuizAnswerKeys(quiz) {
+  return {
+    ...quiz,
+    questions: (quiz.questions ?? []).map((q) => {
+      const { correct_answer: _ca, explanation: _ex, options, ...rest } = q;
+      return {
+        ...rest,
+        options: (options ?? []).map(({ is_correct: _ic, ...opt }) => opt),
+      };
+    }),
+  };
 }
 
 export function csvEscape(value) {

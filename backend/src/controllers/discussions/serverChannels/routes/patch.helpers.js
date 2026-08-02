@@ -1,6 +1,7 @@
 import { prisma } from "../../../../db/prisma.js";
 import { getIo } from "../../../../socket/hub.js";
 import { recordDiscussionAuditLog } from "../../../../features/discussions/auditLog.js";
+import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
 
 export function normalizePatchTopic(topic) {
   if (topic === undefined || topic === null) return topic;
@@ -12,8 +13,10 @@ export function normalizePatchTopic(topic) {
 export async function resolvePatchCategory(categoryId, existing) {
   if (categoryId === undefined) return { categoryId: existing.categoryId };
   if (categoryId === null) return { categoryId: null };
-  const cat = await prisma.discussionChannelCategory.findUnique({
-    where: { id: categoryId },
+  const where = whereFromParam(categoryId);
+  if (!where) return { error: "categoryId does not belong to this server" };
+  const cat = await prisma.discussionChannelCategory.findFirst({
+    where,
     select: { id: true, serverId: true },
   });
   if (!cat || cat.serverId !== existing.serverId) {
@@ -44,6 +47,8 @@ export async function resolvePatchPosition({ position, categoryId, nextCategoryI
 export async function emitPatchChannelUpdate({
   channelId,
   channel,
+  channelDto,
+  serverPublicId,
   existing,
   categoryId,
   nextPosition,
@@ -53,7 +58,7 @@ export async function emitPatchChannelUpdate({
   try {
     const io = getIo();
     if (!io) return;
-    io.to(`channel:${channelId}`).emit("channel:update", { channelId, channel });
+    io.to(`channel:${channelId}`).emit("channel:update", { channelId: channelDto.id, channel: channelDto });
     if (
       categoryId !== undefined ||
       nextPosition !== undefined ||
@@ -61,8 +66,8 @@ export async function emitPatchChannelUpdate({
       slowModeSeconds !== undefined
     ) {
       io.to(`discussion:group:${existing.serverId}`).emit("server:channelsChanged", {
-        serverId: existing.serverId,
-        channelId,
+        serverId: serverPublicId,
+        channelId: channelDto.id,
       });
     }
   } catch (emitErr) {

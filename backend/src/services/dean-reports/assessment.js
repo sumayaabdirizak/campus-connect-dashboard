@@ -4,7 +4,15 @@ export function buildAssessmentReports({
   quizPassRate,
   gradedSubmissions,
   allQuizAttempts,
+  resourceCount = 0,
+  resourceViews = [],
 }) {
+  const viewers = new Set(resourceViews.map((v) => v.studentId)).size;
+  const completedViews = resourceViews.filter((v) => v.completed).length;
+  const watchPcts = resourceViews
+    .filter((v) => v.durationSeconds > 0)
+    .map((v) => Math.min(100, Math.round((v.watchedSeconds / v.durationSeconds) * 100)));
+
   return {
     assignments: {
       submissionRate:
@@ -33,10 +41,22 @@ export function buildAssessmentReports({
             )
           : 0,
     },
-    examinations: {
-      submissionRate: Math.min(100, Math.round(quizPassRate * 0.85)),
-      passRate: Math.max(0, quizPassRate - 5),
-      avgScore: Math.max(0, Math.round(quizPassRate * 0.9)),
+    resources: {
+      /** % of active students who viewed at least one resource */
+      submissionRate:
+        activeStudents > 0 ? Math.min(100, Math.round((viewers / activeStudents) * 100)) : 0,
+      /** % of resource views marked completed */
+      passRate:
+        resourceViews.length > 0
+          ? Math.min(100, Math.round((completedViews / resourceViews.length) * 100))
+          : 0,
+      /** Avg watch progress %, or resource count when no watch data */
+      avgScore:
+        watchPcts.length > 0
+          ? Math.round(watchPcts.reduce((s, n) => s + n, 0) / watchPcts.length)
+          : resourceCount,
+      resourceCount,
+      viewCount: resourceViews.length,
     },
   };
 }

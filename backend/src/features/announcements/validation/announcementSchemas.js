@@ -1,23 +1,22 @@
-import Joi from "joi";
 import { z } from "zod";
 import {
   normalizePublishedAt,
   validatePublishedAtForScheduleUpsert,
 } from "../services/announcementService.js";
 
-export const smsAuditListQuerySchema = Joi.object({
-  userId: Joi.number().integer().positive().optional(),
-  announcementId: Joi.number().integer().positive().optional(),
-  dateFrom: Joi.string().trim().max(40).optional(),
-  dateTo: Joi.string().trim().max(40).optional(),
-}).unknown(true);
+export const smsAuditListQuerySchema = z.object({
+  userId: z.coerce.number().int().positive().optional(),
+  announcementId: z.coerce.number().int().positive().optional(),
+  dateFrom: z.string().trim().max(40).optional(),
+  dateTo: z.string().trim().max(40).optional(),
+});
 
-export const ackListQuerySchema = Joi.object({
-  page: Joi.number().integer().min(1).optional(),
-  pageSize: Joi.number().integer().min(1).max(500).optional(),
-  filter: Joi.string().valid("all", "acked", "pending").optional(),
-  format: Joi.string().valid("json", "csv").optional(),
-}).unknown(true);
+export const ackListQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).optional(),
+  pageSize: z.coerce.number().int().min(1).max(500).optional(),
+  filter: z.enum(["all", "acked", "pending"]).optional(),
+  format: z.enum(["json", "csv"]).optional(),
+});
 
 export const trackableLinkBodySchema = z.object({
   url: z.string().url().max(4000),
@@ -133,10 +132,11 @@ export const updateAnnouncementSchema = z
     targets: z.array(announcementTargetRowSchema).max(50).optional(),
     bodyMarkdown: z.string().optional(),
     bodyHtml: z.string().optional(),
+    imageUrls: z.array(z.string().trim().min(1)).max(20).optional(),
     acknowledgementRequired: z.coerce.boolean().optional(),
     commentsEnabled: z.coerce.boolean().optional(),
   })
-  .strict();
+  .strip();
 
 export const readBulkSchema = z.object({
   ids: z.array(z.coerce.number().int().positive()).min(1).max(200),

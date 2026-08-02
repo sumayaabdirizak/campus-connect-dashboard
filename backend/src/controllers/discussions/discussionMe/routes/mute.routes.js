@@ -4,6 +4,7 @@ import { prisma } from "../../../../db/prisma.js";
 import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
 import { muteBodySchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { resolveServerRow } from "../../serverShared.js";
 
 const router = express.Router();
 
@@ -14,16 +15,16 @@ router.get("/me/groups/muted", async (req, res) => {
       where: { userId },
       include: {
         group: {
-          select: { id: true, name: true, groupKey: true, scopeType: true, scopeId: true },
+          select: { id: true, publicId: true, name: true, groupKey: true, scopeType: true, scopeId: true },
         },
       },
       orderBy: { createdAt: "desc" },
     });
     const results = rows.map((r) => ({
-      groupId: r.groupId,
+      groupId: r.group?.publicId ?? r.groupId,
       until: r.until,
       createdAt: r.createdAt,
-      group: r.group,
+      group: r.group ? { ...r.group, id: r.group.publicId } : r.group,
     }));
     return res.json({ results });
   } catch (error) {
@@ -35,10 +36,11 @@ router.get("/me/groups/muted", async (req, res) => {
 router.post("/me/groups/:groupId/mute", async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
-    const groupId = Number(req.params.groupId);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     const parsed = muteBodySchema.parse(req.body ?? {});
@@ -51,7 +53,7 @@ router.post("/me/groups/:groupId/mute", async (req, res) => {
       create: { userId, groupId, until },
       update: { until },
     });
-    return res.status(200).json({ ok: true, groupId, until: row.until, createdAt: row.createdAt });
+    return res.status(200).json({ ok: true, groupId: groupRow.publicId, until: row.until, createdAt: row.createdAt });
   } catch (error) {
     console.error("POST /discussions/me/groups/:groupId/mute failed", error);
     if (error instanceof z.ZodError) {
@@ -64,10 +66,11 @@ router.post("/me/groups/:groupId/mute", async (req, res) => {
 router.delete("/me/groups/:groupId/mute", async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
-    const groupId = Number(req.params.groupId);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     const result = await prisma.discussionMuteSetting.deleteMany({ where: { userId, groupId } });

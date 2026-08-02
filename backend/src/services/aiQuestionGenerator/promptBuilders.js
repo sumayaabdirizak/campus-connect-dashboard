@@ -104,11 +104,11 @@ export const SYSTEM_INSTRUCTION = `You are an expert educator helping a teacher 
 • Self-contained — the question stem must include everything needed to answer. Do not reference "the lecture", "the slide", "the figure above", or "this week's reading".
 • Topic-tagged consistently — when generating multiple questions in the same batch, reuse the same short topic label for related questions so the bank filter stays useful.
 
-When the teacher provides source material, ground every question in the material — do not invent facts the material doesn't support. When no material is provided, generate questions on the requested topic from your general knowledge, and prefer broadly-agreed-upon content (textbook definitions) over edge cases.
+Source material is ALWAYS provided and is the ONLY allowed knowledge source. Ground every question strictly in that material — do not invent facts, do not use general world knowledge, and do not introduce concepts the material does not support. If the material is too thin for the requested count, return fewer high-quality grounded questions rather than fabricating extras.
 
-For each question, write a short explanation (1-2 sentences) of why the correct answer is correct. This is shown to the student on the review screen after they submit, and helps them learn from mistakes.
+For each question, write a short explanation (1-2 sentences) of why the correct answer is correct, citing ideas from the source. This is shown to the student on the review screen after they submit, and helps them learn from mistakes.
 
-Always return the requested number of questions; if you cannot generate that many distinct, high-quality questions on the topic, return as many good ones as you can rather than padding with weak duplicates.`;
+Always prefer grounded quality over quantity; never pad with weak duplicates or unsupported content.`;
 
 // Assemble the prompt parameters
 export function buildUserTurn({ prompt, sourceMaterial, count, questionTypes, difficulty, courseTitle }) {
@@ -127,14 +127,12 @@ export function buildUserTurn({ prompt, sourceMaterial, count, questionTypes, di
   }
   parts.push("");
   parts.push(`Teacher's instructions:\n${prompt}`);
-  if (sourceMaterial && sourceMaterial.trim()) {
-    parts.push("");
-    parts.push(
-      "Source material — ground every question in this content; do not invent facts it doesn't support:"
-    );
-    parts.push("---");
-    parts.push(sourceMaterial.trim());
-    parts.push("---");
-  }
+  parts.push("");
+  parts.push(
+    "Source material (REQUIRED) — use ONLY this content. Do not use outside knowledge:"
+  );
+  parts.push("---");
+  parts.push(String(sourceMaterial || "").trim());
+  parts.push("---");
   return parts.join("\n");
 }

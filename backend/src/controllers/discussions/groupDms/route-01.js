@@ -36,13 +36,13 @@ export function register(router) {
               members: {
                 where: { leftAt: null },
                 take: 8,
-                include: { user: { select: { id: true, full_name: true } } },
+                include: { user: { select: { id: true, full_name: true, avatarUrl: true } } },
               },
               messages: {
                 take: 1,
                 orderBy: [{ createdAt: "desc" }, { id: "desc" }],
                 where: { deletedAt: null },
-                include: { sender: { select: { id: true, full_name: true } } },
+                include: { sender: { select: { id: true, full_name: true, avatarUrl: true } } },
               },
             },
           },
@@ -54,7 +54,7 @@ export function register(router) {
         const g = r.groupDm;
         const last = g.messages?.[0] ?? null;
         return {
-          id: g.id,
+          id: g.publicId,
           name: g.name,
           iconUrl: g.iconUrl,
           createdAt: g.createdAt,
@@ -62,6 +62,7 @@ export function register(router) {
           previewMembers: (g.members || []).map((m) => ({
             id: m.user.id,
             full_name: m.user.full_name,
+            avatarUrl: m.user.avatarUrl,
           })),
           lastMessage: last
             ? {

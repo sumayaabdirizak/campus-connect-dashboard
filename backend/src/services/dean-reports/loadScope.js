@@ -18,7 +18,11 @@ export async function loadReportScope({ facultyId, periodMonths = 6, filters = {
     select: { id: true, name: true, code: true },
     orderBy: { name: 'asc' },
   });
-  const deptIds = departments.map((d) => d.id);
+
+  const filterDeptId = filters.departmentId ? Number(filters.departmentId) : null;
+  const deptIds = filterDeptId
+    ? departments.filter((d) => d.id === filterDeptId).map((d) => d.id)
+    : departments.map((d) => d.id);
 
   const offerings = await prisma.courseOffering.findMany({
     where: offeringWhere(facultyId, filters),
@@ -66,5 +70,6 @@ export async function loadReportScope({ facultyId, periodMonths = 6, filters = {
     offerings,
     offeringIds,
     uniqueCourses,
+    filters,
   };
 }

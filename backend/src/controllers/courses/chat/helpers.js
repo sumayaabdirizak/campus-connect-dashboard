@@ -7,7 +7,7 @@ import { uploadExtensionFilter } from '../resources.js';
 
 export const MESSAGE_PAGE_SIZE = 50;
 export const CHAT_UPLOAD_DIR = './uploads/chat';
-export const CHAT_FILE_LIMIT = 10 * 1024 * 1024; // 10 MB
+export const CHAT_FILE_LIMIT = 50 * 1024 * 1024; // 50 MB
 
 const storage = multer.diskStorage({
   destination: (_req, _file, cb) => {

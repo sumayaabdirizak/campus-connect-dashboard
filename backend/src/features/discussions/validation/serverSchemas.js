@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+/** DiscussionMessage/DiscussionAttachment UUID publicId, or legacy numeric id. */
+const messageIdField = z.union([z.number().int().positive(), z.string().min(1)]);
+
 export const serverReactionBodySchema = z.object({
   emoji: z.string().trim().min(1).max(64),
 });
@@ -9,8 +12,9 @@ export const sendChannelMessageSchema = z.object({
   messageType: z.enum(["TEXT", "MEDIA", "SYSTEM", "QUESTION"]).default("TEXT"),
   postAsQuestion: z.boolean().optional().default(false),
   isAnonymous: z.boolean().optional().default(false),
-  attachmentIds: z.array(z.number().int().positive()).default([]),
-  parentMessageId: z.number().int().positive().optional().nullable(),
+  attachmentIds: z.array(messageIdField).default([]),
+  parentMessageId: messageIdField.optional().nullable(),
+  replyToMessageId: messageIdField.optional().nullable(),
   e2e: z
     .object({
       ciphertext: z.string().min(1),
@@ -29,7 +33,7 @@ export const patchChannelSchema = z
   .object({
     name: z.string().trim().min(1).max(191).optional(),
     topic: z.union([z.string(), z.null()]).optional(),
-    categoryId: z.union([z.number().int().positive(), z.null()]).optional(),
+    categoryId: z.union([z.number().int().positive(), z.string().min(1), z.null()]).optional(),
     position: z.number().int().min(0).max(10000).optional(),
     kind: z.enum(["TEXT", "ANNOUNCEMENT", "FORUM"]).optional(),
     isPrivate: z.boolean().optional(),
@@ -41,6 +45,6 @@ export const createChannelSchema = z
   .object({
     name: z.string().trim().min(1).max(191),
     topic: z.union([z.string(), z.null()]).optional(),
-    categoryId: z.number().int().positive().optional(),
+    categoryId: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
   })
   .strict();

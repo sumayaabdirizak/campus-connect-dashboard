@@ -3,7 +3,6 @@ export { handleAnnouncementAcknowledgementsList } from "./route-handlers/acknowl
 export { handleAnnouncementAnalytics } from "./route-handlers/analytics.handler.js";
 export { handleAnnouncementAudit } from "./route-handlers/audit.handler.js";
 export { handleAnnouncementCalendarDeadlines } from "./route-handlers/calendar-deadlines.handler.js";
-export { handleAnnouncementCalendarDeadlinesIcs } from "./route-handlers/calendar-ics.handler.js";
 export { handleAnnouncementCreate } from "./route-handlers/create.handler.js";
 export { handleAnnouncementDelete } from "./route-handlers/delete.handler.js";
 export { handleAnnouncementGetById } from "./route-handlers/get-by-id.handler.js";

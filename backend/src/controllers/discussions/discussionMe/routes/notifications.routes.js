@@ -8,6 +8,7 @@ import {
   markReadSchema,
   notificationsQuerySchema,
 } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { resolveServerRow } from "../../serverShared.js";
 
 const router = express.Router();
 
@@ -15,10 +16,11 @@ router.get("/me/notifications", async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
     const parsed = notificationsQuerySchema.parse(req.query ?? {});
+    const groupRow = parsed.groupId ? await resolveServerRow(parsed.groupId) : null;
     const where = {
       userId,
       ...(parsed.unreadOnly ? { readAt: null } : {}),
-      ...(parsed.groupId ? { groupId: parsed.groupId } : {}),
+      ...(groupRow ? { groupId: groupRow.id } : {}),
     };
     const notifications = await prisma.discussionNotification.findMany({
       where,
@@ -51,10 +53,11 @@ router.patch("/me/notifications/read", async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
     const parsed = markReadSchema.parse(req.body ?? {});
+    const groupRow = parsed.groupId ? await resolveServerRow(parsed.groupId) : null;
 
     const where = { userId };
     if (parsed.notificationIds?.length) where.id = { in: parsed.notificationIds };
-    if (parsed.groupId) where.groupId = parsed.groupId;
+    if (groupRow) where.groupId = groupRow.id;
     if (parsed.groupDmId) {
       where.groupId = null;
       where.payload = { path: ["groupDmId"], equals: parsed.groupDmId };
@@ -62,7 +65,7 @@ router.patch("/me/notifications/read", async (req, res) => {
     if (parsed.upToCreatedAt) where.createdAt = { lte: new Date(parsed.upToCreatedAt) };
     if (
       parsed.markAll !== true &&
-      !parsed.groupId &&
+      !groupRow &&
       !parsed.groupDmId &&
       !(parsed.notificationIds?.length)
     ) {

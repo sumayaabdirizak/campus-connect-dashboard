@@ -18,8 +18,12 @@ import {
   groupDmSendMessageSchema,
   addGroupDmMembersSchema,
 } from "../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { assertUserCanUseGroupDms } from "../../../features/discussions/groupDmEligibility.js";
+import { assertAllUsersDmEligible } from "../../../features/discussions/assertAllUsersDmEligible.js";
+import { assertAoDeanGroupMembers } from "../../../features/discussions/assertAoDeanGroupMembers.js";
+import { assertDeanFacultyGroupMembers } from "../../../features/discussions/assertDeanFacultyGroupMembers.js";
 
-import { getActiveMember } from './helpers.js';
+import { getActiveMember, MIN_TOTAL_MEMBERS, MAX_TOTAL_MEMBERS, toGroupDmDto } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -27,6 +31,13 @@ export function register(router) {
     try {
       const userId = getDiscussionCallerUserId(req);
       if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
+
+      const callerGate = await assertUserCanUseGroupDms(userId);
+      if (!callerGate.ok) {
+        return res
+          .status(callerGate.status)
+          .json(apiErrorBody(callerGate.message, { code: callerGate.code }));
+      }
   
       const parsed = createGroupDmSchema.safeParse(req.body);
       if (!parsed.success) {
@@ -46,13 +57,15 @@ export function register(router) {
           apiErrorBody(`At most ${MAX_TOTAL_MEMBERS} members are allowed`, { code: "GROUP_DM_MAX_MEMBERS" })
         );
       }
-  
-      const users = await prisma.user.findMany({
-        where: { id: { in: [...unique] }, status: "ACTIVE" },
-        select: { id: true },
-      });
-      if (users.length !== unique.size) {
-        return res.status(400).json(apiErrorBody("One or more users are invalid or inactive", null));
+
+      const roleGate =
+        callerGate.user.roleName === "ACADEMIC_OFFICE"
+          ? await assertAoDeanGroupMembers(userId, unique)
+          : callerGate.user.roleName === "DEAN"
+            ? await assertDeanFacultyGroupMembers(userId, unique)
+            : await assertAllUsersDmEligible(unique);
+      if (!roleGate.ok) {
+        return res.status(roleGate.status).json(apiErrorBody(roleGate.message, { code: roleGate.code }));
       }
   
       const created = await prisma.$transaction(async (tx) => {
@@ -77,24 +90,26 @@ export function register(router) {
           include: {
             members: {
               where: { leftAt: null },
-              include: { user: { select: { id: true, full_name: true, email: true } } },
+              include: { user: { select: { id: true, full_name: true, email: true, avatarUrl: true } } },
             },
           },
         });
       });
   
+      const createdDto = toGroupDmDto(created);
+
       try {
         const io = getIo();
         if (io && created) {
           for (const uid of unique) {
-            io.to(`user:${uid}`).emit("groupdm:new", { groupDm: created });
+            io.to(`user:${uid}`).emit("groupdm:new", { groupDm: createdDto });
           }
         }
       } catch (e) {
         console.warn("groupdm:new socket emit failed", e?.message);
       }
-  
-      return res.status(201).json({ groupDm: created });
+
+      return res.status(201).json({ groupDm: createdDto });
     } catch (error) {
       console.error("POST /discussions/group-dms failed", error);
       return res.status(500).json(apiErrorBody("Failed to create group DM", null));

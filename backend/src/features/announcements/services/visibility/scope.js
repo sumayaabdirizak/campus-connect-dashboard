@@ -36,7 +36,10 @@ export function normalizeAnnouncementScope(user) {
     departmentIds: toSet(user.departmentIds ?? user.departmentId),
     batchIds: toSet(user.batchIds ?? user.batchId),
     sectionIds: toSet(user.sectionIds ?? user.sectionId),
-    isSuperAdmin: user.role === "SUPER_ADMIN" || user.isSuperAdmin === true,
+    isSuperAdmin:
+      user.role === "SUPER_ADMIN" ||
+      user.role === "ACADEMIC_OFFICE" ||
+      user.isSuperAdmin === true,
   };
 }
 

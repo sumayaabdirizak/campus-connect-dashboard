@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentSubmissionsRead } from '../../../middleware/courseOfferingRbac.js';
+import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
 
 const router = Router();
 
@@ -11,12 +12,13 @@ router.get('/:assignmentId/submissions', requireAssignmentSubmissionsRead(), asy
   const submissions = await prisma.submission.findMany({
     where: { assignmentId: parseInt(assignmentId, 10) },
     include: {
-      student: { select: { id: true, full_name: true, email: true, number: true } }
+      student: { select: { id: true, full_name: true, email: true, number: true } },
+      gradeRow: true,
     },
     orderBy: { submitted_at: 'desc' },
   });
 
-  res.json(submissions);
+  res.json(submissions.map(toSubmissionClient));
 }));
 
 export default router;

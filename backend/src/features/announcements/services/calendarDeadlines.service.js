@@ -84,12 +84,12 @@ export async function loadVisibleCalendarDeadlineRows(prisma, visibilityUser, fr
  */
 export function buildVisibleOfferingWhere(loaded) {
   const role = loaded?.role;
-  if (role === 'SUPER_ADMIN') return {};
+  if (role === 'SUPER_ADMIN' || role === 'ACADEMIC_OFFICE') return {};
   if (role === 'TEACHER') return { teacherId: Number(loaded.userId) };
   if (role === 'STUDENT') {
     return { sectionId: { in: (loaded.sectionIds ?? []).map(Number) } };
   }
-  if (role === 'DEAN' || role === 'FACULTY_ADMIN') {
+  if (role === 'DEAN') {
     return {
       section: {
         batch: { program: { department: { facultyId: { in: (loaded.facultyIds ?? []).map(Number) } } } },
@@ -103,17 +103,24 @@ export function buildVisibleOfferingWhere(loaded) {
  * Academic deadlines (published assignment due-dates + quiz close-times) visible
  * to the caller within [from, to].
  *
+ * Teachers author these items — they do not receive quiz/assignment deadlines on
+ * their personal calendar (students and other scoped roles still do).
+ *
  * @param {import("@prisma/client").PrismaClient} prisma
  * @param {{ userId: number, role: string, facultyIds?: number[], sectionIds?: number[] }} loaded
  * @param {Date} fromRaw
  * @param {Date} toRaw
  */
 export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, toRaw) {
+  if (String(loaded?.role || '').toUpperCase() === 'TEACHER') {
+    return [];
+  }
+
   const courseOffering = buildVisibleOfferingWhere(loaded);
 
   const [assignments, quizzes] = await Promise.all([
     prisma.assignment.findMany({
-      where: { is_draft: false, due_date: { gte: fromRaw, lte: toRaw }, courseOffering },
+      where: { lifecycle: { publishStatus: 'PUBLISHED' }, due_date: { gte: fromRaw, lte: toRaw }, courseOffering },
       select: {
         id: true,
         title: true,
@@ -196,7 +203,3 @@ export async function loadAllVisibleDeadlineRows(prisma, loaded, visibilityUser,
     .filter((r) => r.deadlineAt)
     .sort((a, b) => new Date(a.deadlineAt).getTime() - new Date(b.deadlineAt).getTime());
 }
-
-// Re-export ICS builder from the dedicated module so callers can import from
-// either location without breaking.
-export { buildCalendarDeadlinesIcs } from './calendarIcs.service.js';

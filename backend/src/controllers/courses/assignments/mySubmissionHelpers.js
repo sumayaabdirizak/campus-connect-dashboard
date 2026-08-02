@@ -6,6 +6,7 @@ export async function loadMySubmissionContext(assignmentId, studentId) {
       where: { assignmentId, studentId },
       include: {
         student: { select: { id: true, full_name: true, email: true, number: true } },
+        gradeRow: true,
       },
     }),
     prisma.submissionExtension.findUnique({

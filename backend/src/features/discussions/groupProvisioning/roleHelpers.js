@@ -6,7 +6,6 @@ export function mapGlobalRoleToDiscussionRole(globalRoleName) {
       return DISCUSSION_CONTEXT_ROLES.DEAN;
     case "TEACHER":
       return DISCUSSION_CONTEXT_ROLES.LECTURER;
-    case "FACULTY_ADMIN":
     case "SUPER_ADMIN":
       return DISCUSSION_CONTEXT_ROLES.ADMIN;
     case "STUDENT":

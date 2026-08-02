@@ -6,7 +6,6 @@ import { env } from '../../config/env.js';
 import { issueCsrfCookie } from '../../middleware/csrf.js';
 import { newJti } from '../../utils/tokenRevocation.js';
 import { prisma } from '../../db/prisma.js';
-import { getFacultyIdForFacultyAdminUser } from '../../utils/facultyAccess.js';
 
 export const ACCESS_COOKIE = 'auth_token';
 export const REFRESH_COOKIE = 'refresh_token';
@@ -17,8 +16,14 @@ export function getIsProduction() {
   return process.env.NODE_ENV === 'production';
 }
 
-export async function buildPayload(user) {
-  const roleName = user.role?.name;
+/**
+ * @param {object} user
+ * @param {string} [overrideRoleName] Role to sign the token as, when different
+ *   from `user.role.name` (used by `POST /auth/switch-role`). Caller must
+ *   verify the user actually holds this role before passing it in.
+ */
+export async function buildPayload(user, overrideRoleName) {
+  const roleName = overrideRoleName ?? user.role?.name;
   /** @type {{ id: number; sub: number; role: string; email: string; full_name: string; facultyId: number | null; departmentId: number | null; programId: number | null; facultyIds: number[] }} */
   const payload = {
     id: user.id,
@@ -39,8 +44,6 @@ export async function buildPayload(user) {
       select: { facultyId: true },
     });
     payload.facultyId = deanProfile?.facultyId ?? null;
-  } else if (roleName === 'FACULTY_ADMIN') {
-    payload.facultyId = await getFacultyIdForFacultyAdminUser(user.id);
   } else if (roleName === 'TEACHER') {
     const lp = await prisma.lecturerProfile.findUnique({
       where: { userId: user.id },
@@ -64,6 +67,30 @@ export async function buildPayload(user) {
   }
 
   return payload;
+}
+
+/**
+ * Every role name a user may act as: their primary role plus any granted
+ * via `UserRole`. Used both to render the profile switcher and to verify a
+ * `switch-role` request isn't asking for a role the user doesn't hold.
+ * @param {number} userId
+ * @returns {Promise<string[]>}
+ */
+export async function listAvailableRoleNames(userId) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      role: { select: { name: true } },
+      additionalRoles: { select: { role: { select: { name: true } } } },
+    },
+  });
+  if (!user) return [];
+  const names = new Set();
+  if (user.role?.name) names.add(user.role.name);
+  for (const ur of user.additionalRoles) {
+    if (ur.role?.name) names.add(ur.role.name);
+  }
+  return [...names];
 }
 
 /**

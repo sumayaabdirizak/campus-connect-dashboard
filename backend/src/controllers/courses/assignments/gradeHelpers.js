@@ -1,26 +1,35 @@
 import { prisma } from '../../../db/prisma.js';
 import { pushToUser, pushToUsers } from '../../../services/pushNotifier.service.js';
 import { courseOfferingDashboardPath } from '../../../utils/courseOfferingAccess.js';
+import { upsertSubmissionGrade } from '../../../features/assignments/submissionGrade.js';
+import { toSubmissionClient } from '../../../features/assignments/submissionDto.js';
 
 const studentInclude = {
   student: { select: { id: true, full_name: true, email: true, number: true } },
+  gradeRow: true,
 };
 
-export async function applyGroupGrade({ existing, assignmentId, submissionId, data, grade }) {
+export async function applyGroupGrade({
+  existing,
+  assignmentId,
+  submissionId,
+  data,
+  grade,
+  gradedById,
+}) {
   const members = await prisma.groupMember.findMany({
     where: { groupId: existing.groupId },
     select: { memberId: true },
   });
   const memberIds = members.map((m) => m.memberId);
+  const score = grade !== undefined ? grade : data.grade;
+  const feedback = data.feedback;
+  const isReviewed = data.is_reviewed ?? true;
 
   await prisma.$transaction(async (tx) => {
-    await tx.submission.updateMany({
-      where: { assignmentId, groupId: existing.groupId },
-      data,
-    });
     const haveSubmissions = await tx.submission.findMany({
       where: { assignmentId, groupId: existing.groupId },
-      select: { studentId: true },
+      select: { id: true, studentId: true },
     });
     const have = new Set(haveSubmissions.map((s) => s.studentId));
     const missing = memberIds.filter((id) => !have.has(id));
@@ -31,9 +40,19 @@ export async function applyGroupGrade({ existing, assignmentId, submissionId, da
           studentId,
           groupId: existing.groupId,
           content_url: existing.content_url,
-          ...data,
         })),
       });
+    }
+    const allRows = await tx.submission.findMany({
+      where: { assignmentId, groupId: existing.groupId },
+      select: { id: true },
+    });
+    for (const row of allRows) {
+      await upsertSubmissionGrade(
+        row.id,
+        { score, feedback, gradedById, isReviewed },
+        tx,
+      );
     }
   });
 
@@ -56,17 +75,33 @@ export async function applyGroupGrade({ existing, assignmentId, submissionId, da
       }).catch(() => {});
     }
   }
-  return updated;
+  return toSubmissionClient(updated);
 }
 
-export async function applyIndividualGrade({ submissionId, data, grade, assignmentId }) {
-  const submission = await prisma.submission.update({
+export async function applyIndividualGrade({
+  submissionId,
+  data,
+  grade,
+  assignmentId,
+  gradedById,
+}) {
+  const score = grade !== undefined ? grade : data.grade;
+  const feedback = data.feedback;
+  const isReviewed = data.is_reviewed ?? true;
+
+  await upsertSubmissionGrade(submissionId, {
+    score,
+    feedback,
+    gradedById,
+    isReviewed,
+  });
+
+  const submission = await prisma.submission.findUnique({
     where: { id: submissionId },
-    data,
     include: studentInclude,
   });
 
-  if (grade !== undefined) {
+  if (grade !== undefined && submission) {
     const a = await prisma.assignment.findUnique({
       where: { id: assignmentId },
       select: { title: true, courseOffering: { select: { publicId: true } } },
@@ -80,5 +115,5 @@ export async function applyIndividualGrade({ submissionId, data, grade, assignme
       }).catch(() => {});
     }
   }
-  return submission;
+  return toSubmissionClient(submission);
 }

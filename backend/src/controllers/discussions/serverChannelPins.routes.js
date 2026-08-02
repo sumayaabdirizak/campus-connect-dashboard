@@ -20,6 +20,7 @@ import {
 import { emitDiscussionNotificationEvents } from "../../features/discussions/notificationEmit.js";
 import { recordDiscussionAuditLog } from "../../features/discussions/auditLog.js";
 import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+import { resolveMessageRow, toMessageDto, buildMessagePublicIdMap } from "./messageShared.js";
 
 const router = express.Router();
 
@@ -31,7 +32,7 @@ router.get(
       const channelId = req.discussionChannelId;
       const channel = await prisma.discussionChannel.findUnique({
         where: { id: channelId },
-        select: { serverId: true },
+        select: { serverId: true, server: { select: { publicId: true } } },
       });
       if (!channel) return res.status(404).json(apiErrorBody("Channel not found", null));
       const rows = await prisma.discussionPinnedMessage.findMany({
@@ -51,7 +52,16 @@ router.get(
           pinnedBy: { select: { id: true, full_name: true } },
         },
       });
-      return res.json({ results: rows });
+      const publicIdById = await buildMessagePublicIdMap(rows.filter((r) => r.message).map((r) => r.message));
+      const results = rows.map((r) => ({
+        ...r,
+        groupId: channel.server.publicId,
+        messageId: publicIdById.get(r.messageId) ?? null,
+        message: r.message
+          ? { ...toMessageDto(r.message, publicIdById), channelId: req.discussionChannelPublicId }
+          : r.message,
+      }));
+      return res.json({ results });
     } catch (error) {
       console.error("GET /discussions/channels/:channelId/pins failed", error);
       return res.status(500).json(apiErrorBody("Failed to load pins", null));
@@ -66,25 +76,25 @@ router.post(
     try {
       const userId = getDiscussionCallerUserId(req);
       const channelId = req.discussionChannelId;
-      const messageId = Number(req.body?.messageId);
-      if (!Number.isInteger(messageId) || messageId <= 0) {
-        return res.status(400).json(apiErrorBody("messageId is required", null));
-      }
       const channel = await prisma.discussionChannel.findUnique({
         where: { id: channelId },
-        select: { serverId: true, slug: true, name: true, scopeType: true, scopeId: true },
+        select: {
+          serverId: true,
+          slug: true,
+          name: true,
+          scopeType: true,
+          scopeId: true,
+          server: { select: { publicId: true } },
+        },
       });
       if (!channel) return res.status(404).json(apiErrorBody("Channel not found", null));
-      const msg = await prisma.discussionMessage.findFirst({
-        where: {
-          id: messageId,
-          channelId,
-          groupId: channel.serverId,
-          deletedAt: null,
-        },
-        select: { id: true },
+      const msg = await resolveMessageRow(req.body?.messageId, {
+        channelId,
+        groupId: channel.serverId,
+        deletedAt: null,
       });
       if (!msg) return res.status(404).json(apiErrorBody("Message not found in this channel", null));
+      const messageId = msg.id;
       const existing = await prisma.discussionPinnedMessage.findFirst({
         where: { messageId, unpinnedAt: null },
       });
@@ -102,10 +112,19 @@ router.post(
           pinnedBy: { select: { id: true, full_name: true } },
         },
       });
+      const pinPublicIdById = pin.message ? await buildMessagePublicIdMap([pin.message]) : new Map();
+      const pinDto = {
+        ...pin,
+        groupId: channel.server.publicId,
+        messageId: msg.publicId,
+        message: pin.message
+          ? { ...toMessageDto(pin.message, pinPublicIdById), channelId: req.discussionChannelPublicId }
+          : pin.message,
+      };
       try {
         const io = getIo();
         if (io) {
-          io.to(`channel:${channelId}`).emit("channel:pins:update", { channelId, action: "pin", pin });
+          io.to(`channel:${channelId}`).emit("channel:pins:update", { channelId: req.discussionChannelPublicId, action: "pin", pin: pinDto });
         }
       } catch (emitErr) {
         console.warn("channel pin socket emit failed", emitErr?.message);
@@ -133,10 +152,10 @@ router.post(
             messageId,
             type: "PIN",
             payload: {
-              groupId: channel.serverId,
-              channelId,
+              groupId: channel.server.publicId,
+              channelId: req.discussionChannelPublicId,
               channelSlug: channel.slug ?? null,
-              messageId,
+              messageId: msg.publicId,
               pinnedById: userId,
               pinnedByName,
             },
@@ -147,9 +166,9 @@ router.post(
             userId: m.userId,
             notification: {
               type: "PIN",
-              groupId: channel.serverId,
-              channelId,
-              messageId,
+              groupId: channel.server.publicId,
+              channelId: req.discussionChannelPublicId,
+              messageId: msg.publicId,
               pinnedById: userId,
               pinnedByName,
             },
@@ -168,7 +187,7 @@ router.post(
           after: { pinId: pin.id },
         });
       }
-      return res.status(201).json({ pin });
+      return res.status(201).json({ pin: pinDto });
     } catch (error) {
       console.error("POST /discussions/channels/:channelId/pins failed", error);
       return res.status(500).json(apiErrorBody("Failed to pin message", null));
@@ -183,15 +202,14 @@ router.delete(
     try {
       const userId = getDiscussionCallerUserId(req);
       const channelId = req.discussionChannelId;
-      const messageId = Number(req.params.messageId);
-      if (!Number.isInteger(messageId) || messageId <= 0) {
-        return res.status(400).json(apiErrorBody("Invalid messageId", null));
-      }
       const channel = await prisma.discussionChannel.findUnique({
         where: { id: channelId },
         select: { serverId: true },
       });
       if (!channel) return res.status(404).json(apiErrorBody("Channel not found", null));
+      const msg = await resolveMessageRow(req.params.messageId, { channelId });
+      if (!msg) return res.status(400).json(apiErrorBody("Invalid messageId", null));
+      const messageId = msg.id;
       const pinRow = await prisma.discussionPinnedMessage.findFirst({
         where: {
           groupId: channel.serverId,
@@ -212,9 +230,9 @@ router.delete(
         const io = getIo();
         if (io) {
           io.to(`channel:${channelId}`).emit("channel:pins:update", {
-            channelId,
+            channelId: req.discussionChannelPublicId,
             action: "unpin",
-            messageId,
+            messageId: msg.publicId,
           });
         }
       } catch (emitErr) {

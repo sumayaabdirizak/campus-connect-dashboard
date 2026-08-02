@@ -24,12 +24,12 @@ import {
   normalizeStorageKey,
 } from "../../../storage/objectStorage.js";
 
-import { resourceKeyFromUrl, verifyContentMatchesExtension, uploadExtensionFilter, enforceUploadContentSafety, upload, RESOURCE_STORAGE_PREFIX } from './helpers.js';
+import { resourceKeyFromUrl, verifyContentMatchesExtension, uploadExtensionFilter, enforceUploadContentSafety, resourceUploadSingle, RESOURCE_STORAGE_PREFIX } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
   router.post(
-    '/upload', uploadRateLimit, upload.single('file'),
+    '/upload', uploadRateLimit, resourceUploadSingle('file'),
     asyncHandler(async (req, res) => {
       if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
   

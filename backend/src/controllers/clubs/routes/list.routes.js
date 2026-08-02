@@ -1,48 +1,59 @@
 import express from 'express';
 import { prisma } from '../../../db/prisma.js';
-import { namedListSuccess } from '../../../utils/apiEnvelope.js';
-import { parsePaginationQuery } from '../../../utils/pagination.js';
-import { listClubsForUser } from '../../../features/clubs/club.service.js';
-import { userId, handleServiceError, formatClubForApi } from '../shared.js';
+import { formatClubForApi } from '../shared.js';
+import { attachViewerJoinState } from '../viewerJoinState.js';
+import { viewerClubDiscoveryWhere } from '../viewerClubDiscovery.js';
 
 const router = express.Router();
 
 router.get('/', async (req, res, next) => {
   try {
     const {
-      scope,        // FACULTY | UNIVERSITY | CROSS
-      facultyId,    // filter to a specific faculty
-      interest,     // comma-separated tag slugs
-      q,            // text search (name / tagline)
-      sort = 'popular',  // new | popular | active
-      cursor,       // last-seen club ID for keyset pagination
+      scope, // FACULTY | UNIVERSITY | CROSS
+      facultyId, // optional extra filter
+      interest,
+      q,
+      sort = 'popular',
+      cursor,
       limit = '20',
     } = req.query;
 
     const take = Math.min(Math.max(Number(limit) || 20, 1), 50);
 
-    const where = { status: 'APPROVED' };
-    if (scope) where.scopeKind = String(scope).toUpperCase();
-    if (facultyId) where.facultyId = Number(facultyId);
+    const and = [{ status: 'APPROVED' }];
+
+    const discovery = viewerClubDiscoveryWhere(req);
+    if (Object.keys(discovery).length > 0) and.push(discovery);
+
+    // Explicit query filters still apply (admin tooling / refined search).
+    if (scope) and.push({ scopeKind: String(scope).toUpperCase() });
+    const fid = Number(facultyId);
+    if (Number.isFinite(fid) && fid > 0) and.push({ facultyId: fid });
 
     if (interest) {
-      const slugs = String(interest).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean);
+      const slugs = String(interest)
+        .split(',')
+        .map((s) => s.trim().toLowerCase())
+        .filter(Boolean);
       if (slugs.length > 0) {
-        where.interests = { some: { tag: { slug: { in: slugs } } } };
+        and.push({ interests: { some: { tag: { slug: { in: slugs } } } } });
       }
     }
 
     if (q) {
       const term = String(q).trim();
       if (term.length >= 2) {
-        where.OR = [
-          { name: { contains: term, mode: 'insensitive' } },
-          { tagline: { contains: term, mode: 'insensitive' } },
-        ];
+        and.push({
+          OR: [
+            { name: { contains: term, mode: 'insensitive' } },
+            { tagline: { contains: term, mode: 'insensitive' } },
+          ],
+        });
       }
     }
 
-    // Sorting
+    const where = { AND: and };
+
     let orderBy;
     switch (sort) {
       case 'new':
@@ -56,20 +67,19 @@ router.get('/', async (req, res, next) => {
         orderBy = [{ memberCountCache: 'desc' }, { createdAt: 'desc' }];
     }
 
-    // Cursor-based pagination
     const findArgs = {
       where,
       orderBy,
-      take: take + 1, // fetch one extra to know if there's a next page
+      take: take + 1,
       include: {
         faculty: { select: { id: true, name: true } },
         interests: { include: { tag: { select: { slug: true, label: true } } } },
-        _count: { select: { joinRequests: { where: { status: 'PENDING' } } } },
+        _count: { select: { requests: { where: { status: 'PENDING' } } } },
       },
     };
     if (cursor) {
       findArgs.cursor = { id: Number(cursor) };
-      findArgs.skip = 1; // skip the cursor row itself
+      findArgs.skip = 1;
     }
 
     const clubs = await prisma.club.findMany(findArgs);
@@ -77,9 +87,12 @@ router.get('/', async (req, res, next) => {
     if (hasMore) clubs.pop();
 
     const nextCursor = hasMore ? clubs[clubs.length - 1]?.id : null;
+    const uid = Number(req.user?.id ?? req.user?.sub);
+    const formatted = clubs.map(formatClubForApi);
+    const withStatus = await attachViewerJoinState(formatted, uid);
 
     res.json({
-      clubs: clubs.map(formatClubForApi),
+      clubs: withStatus,
       nextCursor,
       hasMore,
     });
@@ -87,9 +100,5 @@ router.get('/', async (req, res, next) => {
     next(err);
   }
 });
-
-// ═════════════════════════════════════════════════════════════════════════════
-// GET /api/clubs/mine — my clubs
-// ═════════════════════════════════════════════════════════════════════════════
 
 export default router;

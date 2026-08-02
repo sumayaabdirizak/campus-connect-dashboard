@@ -1,9 +1,10 @@
 import { Router } from "express";
-import { getCsrf, postLogin, postLogout, postRefresh } from "./auth.controller.js";
+import { getCsrf, postLogin, postLogout, postRefresh, postSwitchRole } from "./auth.controller.js";
 import { loginRateLimit, loginRateLimitByAccount } from "../../middleware/loginRateLimit.js";
 import { refreshRateLimit } from "../../middleware/refreshRateLimit.js";
 import { validateBody } from "../../middleware/validateRequest.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
+import { auth } from "../../middleware/auth.js";
 import { loginBodySchema } from "../../validation/authSchemas.js";
 
 const router = Router();
@@ -12,6 +13,7 @@ router.post("/login", loginRateLimit, loginRateLimitByAccount, validateBody(logi
 router.post("/refresh", refreshRateLimit, postRefresh);
 router.get("/csrf", getCsrf);
 router.post("/logout", postLogout);
+router.post("/switch-role", auth, asyncHandler(postSwitchRole));
 
 
 export default router;

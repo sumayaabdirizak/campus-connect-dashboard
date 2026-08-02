@@ -8,7 +8,7 @@ export function userId(req) {
 export function handleServiceError(err, res) {
   if (err instanceof ClubServiceError) {
     return res.status(err.statusCode).json({
-      error: err.message,
+      message: err.message,
       code: err.code,
       details: err.details,
     });
@@ -21,9 +21,18 @@ export function formatClubForApi(club) {
   return {
     ...rest,
     interests: interests?.map((ci) => ci.tag) ?? [],
-    pendingRequestCount: _count?.joinRequests ?? undefined,
+    pendingRequestCount: _count?.requests ?? undefined,
   };
 }
+
+/** Absolute URL or host-stable `/uploads/...` path. */
+const optionalAssetUrl = z
+  .union([
+    z.string().url(),
+    z.string().regex(/^\/uploads\/[A-Za-z0-9._\-\/]+$/),
+  ])
+  .optional()
+  .nullable();
 
 export const createClubSchema = z.object({
   name: z.string().trim().min(3).max(80),
@@ -31,8 +40,8 @@ export const createClubSchema = z.object({
   tagline: z.string().trim().max(80).optional().nullable(),
   description: z.string().trim().max(500).optional().nullable(),
   rules: z.string().trim().max(4000).optional().nullable(),
-  iconUrl: z.string().url().optional().nullable(),
-  bannerUrl: z.string().url().optional().nullable(),
+  iconUrl: optionalAssetUrl,
+  bannerUrl: optionalAssetUrl,
   themeColor: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/, 'Must be a hex color like #1a2b3c')
@@ -54,8 +63,8 @@ export const editClubSchema = z.object({
   tagline: z.string().trim().max(80).optional().nullable(),
   description: z.string().trim().max(500).optional().nullable(),
   rules: z.string().trim().max(4000).optional().nullable(),
-  iconUrl: z.string().url().optional().nullable(),
-  bannerUrl: z.string().url().optional().nullable(),
+  iconUrl: optionalAssetUrl,
+  bannerUrl: optionalAssetUrl,
   themeColor: z
     .string()
     .regex(/^#[0-9a-fA-F]{6}$/)

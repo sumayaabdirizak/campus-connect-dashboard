@@ -25,15 +25,20 @@ import {
 } from "../../../storage/objectStorage.js";
 
 import { resourceKeyFromUrl, verifyContentMatchesExtension, uploadExtensionFilter, enforceUploadContentSafety } from './helpers.js';
+import { assertActiveResourceType } from '../../../features/resources/resourceTypeOptions.js';
+import { notifyResourcePublished } from './notifyStudents.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
   router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(async (req, res) => {
     const courseOfferingId = req.courseOffering.id;
+    const offeringPublicId = req.courseOffering.publicId;
     const { title, type, url, description, originalName, mimeType, moduleId } = req.body;
     // Block `javascript:`, `data:`, `vbscript:`, etc. before the URL ever
     // reaches the DB — every student would render this as `<a href={url}>`.
     assertSafeExternalUrl(url, 'url');
+    const typeOk = await assertActiveResourceType(type);
+    if (!typeOk.ok) return res.status(400).json({ message: typeOk.message });
     const teacherId = req.user.id;
   
     // Look up the underlying Course so the legacy courseId column stays
@@ -69,6 +74,9 @@ export function register(router) {
       },
       include: { teacher: { select: { id: true, full_name: true } } },
     });
+    if (resource.status === 'APPROVED') {
+      notifyResourcePublished(resource, offeringPublicId);
+    }
     res.json(resource);
   }));
 }

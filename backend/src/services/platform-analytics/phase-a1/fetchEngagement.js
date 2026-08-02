@@ -27,7 +27,7 @@ export async function fetchEngagementMetrics({ scopedFacultyId, offeringIds }) {
       () =>
         offeringIds.length
           ? prisma.submission.count({
-              where: { assignment: { courseOfferingId: { in: offeringIds } }, is_late: false },
+              where: { assignment: { courseOfferingId: { in: offeringIds } }, lateState: 'ON_TIME' },
             })
           : 0,
       0
@@ -54,10 +54,15 @@ export async function fetchEngagementMetrics({ scopedFacultyId, offeringIds }) {
     safe(
       () =>
         offeringIds.length
-          ? prisma.submission.findMany({
-              where: { assignment: { courseOfferingId: { in: offeringIds } }, grade: { not: null } },
-              select: { grade: true },
-            })
+          ? prisma.submission
+              .findMany({
+                where: {
+                  assignment: { courseOfferingId: { in: offeringIds } },
+                  gradeRow: { isNot: null, score: { not: null } },
+                },
+                select: { gradeRow: { select: { score: true } } },
+              })
+              .then((rows) => rows.map((s) => ({ grade: s.gradeRow?.score ?? null })))
           : [],
       []
     ),

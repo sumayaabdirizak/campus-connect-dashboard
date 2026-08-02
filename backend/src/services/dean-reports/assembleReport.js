@@ -14,9 +14,9 @@ export function assembleDeanReport({
   topCourses,
   bottomCourses,
   performanceDistribution,
-  dailyAttendance,
-  monthlyAttendance,
-  departmentAttendance,
+  dailyEngagement,
+  monthlyEngagement,
+  departmentEngagement,
   instructorPerformance,
   studentReports,
   instructorReports,
@@ -38,7 +38,7 @@ export function assembleDeanReport({
       generatedAt: new Date().toISOString(),
     },
     kpis: buildKpiSection({
-      departments,
+      departments: rankedDepartments.length ? rankedDepartments : departments,
       counts,
       kpis,
       offerings,
@@ -56,10 +56,13 @@ export function assembleDeanReport({
       topCourses,
       bottomCourses,
       performanceDistribution,
+      // Wire key stays `attendance` for frontend API compatibility, but the
+      // data is submission-timeliness engagement, not formal attendance —
+      // see engagementCharts.js.
       attendance: {
-        daily: dailyAttendance,
-        monthly: monthlyAttendance,
-        byDepartment: departmentAttendance,
+        daily: dailyEngagement,
+        monthly: monthlyEngagement,
+        byDepartment: departmentEngagement,
       },
       instructorPerformance,
     },

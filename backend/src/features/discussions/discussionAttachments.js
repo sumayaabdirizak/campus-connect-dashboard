@@ -106,23 +106,28 @@ export function parseDiscussionAttachmentToken(token) {
   }
 }
 
+/**
+ * @param {{id: number, publicId: string}} attachment resolved row — the
+ *   visible URL path uses `publicId`, the signed token still binds to the
+ *   internal int id (the token is what actually authorizes the download).
+ */
 export function buildDiscussionAttachmentAccessUrl(
   req,
-  attachmentId,
+  attachment,
   userId,
   ttlSeconds = DISCUSSION_ATTACHMENT_URL_TTL_SECONDS
 ) {
   const expiresAt = Date.now() + Math.max(60, ttlSeconds) * 1000;
-  const token = signDiscussionAttachmentToken({ attachmentId, userId, expiresAt });
-  return `${req.protocol}://${req.get('host')}/api/discussions/attachments/${attachmentId}/download?token=${token}`;
+  const token = signDiscussionAttachmentToken({ attachmentId: attachment.id, userId, expiresAt });
+  return `${req.protocol}://${req.get('host')}/api/discussions/attachments/${attachment.publicId}/download?token=${token}`;
 }
 
 export function toDiscussionAttachmentDto(req, attachment, userId) {
   return {
-    id: attachment.id,
+    id: attachment.publicId,
     groupId: attachment.groupId,
     url: attachment.url,
-    accessUrl: buildDiscussionAttachmentAccessUrl(req, attachment.id, userId),
+    accessUrl: buildDiscussionAttachmentAccessUrl(req, attachment, userId),
     fileType: attachment.fileType,
     mimeType: attachment.mimeType,
     size: Number(attachment.size),
@@ -140,8 +145,9 @@ export function enrichDiscussionMessagesAttachments(req, messages, userId) {
     ...m,
     attachments: (m.attachments ?? []).map((a) => ({
       ...a,
+      id: a.publicId,
       size: Number(a.size),
-      accessUrl: buildDiscussionAttachmentAccessUrl(req, a.id, uid),
+      accessUrl: buildDiscussionAttachmentAccessUrl(req, a, uid),
       isE2EE: Boolean(a.ciphertextHash != null || a.keyVersion != null),
     })),
   }));

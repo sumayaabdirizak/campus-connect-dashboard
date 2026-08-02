@@ -70,6 +70,7 @@ export function register(router) {
   }));
 
   router.patch('/questions/:questionId', requireQuizQuestionManage(), validateBody(patchQuestionBodySchema), asyncHandler(async (req, res) => {
+    assertQuizIsDraft(req.quiz);
     const qid = parseInt(req.params.questionId, 10);
     const { question_text, question_type, points, correct_answer, explanation, options } = req.body;
   
@@ -111,6 +112,7 @@ export function register(router) {
   }));
 
   router.delete('/questions/:questionId', requireQuizQuestionManage(), asyncHandler(async (req, res) => {
+    assertQuizIsDraft(req.quiz);
     const qid = parseInt(req.params.questionId, 10);
     await prisma.quizQuestion.delete({ where: { id: qid } });
     res.json({ success: true });

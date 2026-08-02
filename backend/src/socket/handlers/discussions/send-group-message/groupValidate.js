@@ -4,19 +4,22 @@ import {
   validatePendingAttachments,
   validateE2ePayload,
 } from "../discussion-send/contentAndValidation.js";
+import { resolveServerRow } from "../../../../controllers/discussions/serverShared.js";
+import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
 
 /** @param {object} args */
 export async function validateGroupMessagePreconditions(args) {
   const { socket, payload, ack, socketUser, ackOrEmitError, attachmentIds, e2e, getDiscussionMembership } = args;
 
-  const groupId = Number(payload?.groupId);
-  if (!Number.isFinite(groupId)) {
+  const groupRow = await resolveServerRow(payload?.groupId);
+  if (!groupRow) {
     return {
       ok: false,
       ack: () =>
         ackOrEmitError(socket, ack, "INVALID_GROUP", "groupId or channelId or groupDmId is required"),
     };
   }
+  const groupId = groupRow.id;
 
   const membership = await getDiscussionMembership(groupId, socketUser.id);
   if (!membership) {
@@ -26,17 +29,19 @@ export async function validateGroupMessagePreconditions(args) {
     return { ok: false, ack: () => ackOrEmitError(socket, ack, "FORBIDDEN", "Posting is disabled for this user") };
   }
 
-  const parentMessageId = Number.isFinite(Number(payload?.parentMessageId))
-    ? Number(payload.parentMessageId)
-    : null;
-  if (parentMessageId != null) {
-    const parent = await prisma.discussionMessage.findFirst({
-      where: { id: parentMessageId, groupId, deletedAt: null },
-      select: { id: true },
-    });
+  let parentMessageId = null;
+  if (payload?.parentMessageId != null) {
+    const parentWhere = whereFromParam(payload.parentMessageId);
+    const parent = parentWhere
+      ? await prisma.discussionMessage.findFirst({
+          where: { ...parentWhere, groupId, deletedAt: null },
+          select: { id: true },
+        })
+      : null;
     if (!parent) {
       return { ok: false, ack: () => ackOrEmitError(socket, ack, "INVALID_PARENT", "parentMessageId not found in this group") };
     }
+    parentMessageId = parent.id;
   }
 
   const e2eeEnabled = membership.group?.e2eeEnabled !== false;
@@ -66,5 +71,5 @@ export async function validateGroupMessagePreconditions(args) {
     return { ok: false, ack: () => ackOrEmitError(socket, ack, "INVALID_MESSAGE", "Question text is required") };
   }
 
-  return { ok: true, groupId, membership, parentMessageId, e2eeEnabled, fields, messageType };
+  return { ok: true, groupId, groupPublicId: groupRow.publicId, membership, parentMessageId, e2eeEnabled, fields, messageType };
 }

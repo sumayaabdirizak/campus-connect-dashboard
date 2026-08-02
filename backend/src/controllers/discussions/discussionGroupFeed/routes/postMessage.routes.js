@@ -15,23 +15,31 @@ import { buildUnreadSocketPayload } from "../../../../features/discussions/build
 import { toDiscussionAttachmentDto } from "../../../../features/discussions/discussionAttachments.js";
 import { sendMessageSchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
 import { createGroupMessageTransaction } from "./postMessage.helpers.js";
+import { resolveServerRow } from "../../serverShared.js";
+import { resolveMessageRow, resolveAttachmentIds, buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 
 const router = express.Router();
 
 router.post("/groups/:groupId/messages", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
     if (!membership.canPost) return res.status(403).json(apiErrorBody("Posting is disabled for this user", null));
 
     const parsed = sendMessageSchema.parse(req.body ?? {});
-    const attachmentIds = parsed.attachmentIds ?? [];
-    const parentMessageId = parsed.parentMessageId ?? null;
+    const attachmentIdentifiers = parsed.attachmentIds ?? [];
+    const parentMessageRow =
+      parsed.parentMessageId != null ? await resolveMessageRow(parsed.parentMessageId, { groupId }) : null;
+    if (parsed.parentMessageId != null && !parentMessageRow) {
+      return res.status(400).json(apiErrorBody("parentMessageId not found in this group", null));
+    }
+    const parentMessageId = parentMessageRow?.id ?? null;
 
     const derived = deriveQuestionFields({
       content: parsed.content ?? "",
@@ -40,6 +48,13 @@ router.post("/groups/:groupId/messages", async (req, res) => {
       isAnonymous: parsed.isAnonymous,
       parentMessageId,
     });
+    const attachmentIds = await resolveAttachmentIds(attachmentIdentifiers);
+    if (attachmentIds.length !== attachmentIdentifiers.length) {
+      return res
+        .status(400)
+        .json(apiErrorBody("Some attachments are invalid, already used, or not owned by user", null));
+    }
+
     const effectiveContent = derived.contentStored.trim();
     const hasText = effectiveContent.length > 0;
     let messageType = attachmentIds.length > 0 && !hasText ? "MEDIA" : derived.messageType;
@@ -60,16 +75,6 @@ router.post("/groups/:groupId/messages", async (req, res) => {
     }
     if (!hasText && attachmentIds.length === 0) {
       return res.status(400).json(apiErrorBody("Either content or attachmentIds is required", null));
-    }
-
-    if (parentMessageId != null) {
-      const parent = await prisma.discussionMessage.findFirst({
-        where: { id: parentMessageId, groupId, deletedAt: null },
-        select: { id: true },
-      });
-      if (!parent) {
-        return res.status(400).json(apiErrorBody("parentMessageId not found in this group", null));
-      }
     }
 
     if (attachmentIds.length > 0) {
@@ -105,12 +110,14 @@ router.post("/groups/:groupId/messages", async (req, res) => {
     const fullMessage = await prisma.discussionMessage.findUnique({
       where: { id: message.id },
       include: {
-        sender: { select: { id: true, full_name: true } },
+        sender: { select: { id: true, full_name: true, avatarUrl: true } },
         attachments: true,
       },
     });
+    const publicIdById = await buildMessagePublicIdMap([fullMessage]);
     const fullMessageDtoRaw = {
-      ...fullMessage,
+      ...toMessageDto(fullMessage, publicIdById),
+      groupId: groupRow.publicId,
       attachments: (fullMessage?.attachments || []).map((attachment) =>
         toDiscussionAttachmentDto(req, attachment, userId),
       ),

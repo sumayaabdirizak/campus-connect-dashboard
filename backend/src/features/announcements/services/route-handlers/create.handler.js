@@ -5,6 +5,7 @@ import { apiErrorBody } from "../../../../utils/apiEnvelope.js";
 import { toAnnouncementDto } from "../../dto/announcementDto.js";
 import { createAnnouncement, normalizeTargetRoles } from "../announcementService.js";
 import { sendAnnouncementSmsNotifications } from "../announcementSms.service.js";
+import { sendAnnouncementEmailNotifications } from "../announcementEmail.service.js";
 import { announcementLog } from "../../announcementLogger.js";
 import { attachLikedByCurrentUser } from "../announcementReactions.service.js";
 import { createAnnouncementSchema } from "../../validation/announcementSchemas.js";
@@ -45,6 +46,14 @@ export async function handleAnnouncementCreate(req, res) {
     if (parsed.notifySms === true && result.announcement) {
       void sendAnnouncementSmsNotifications(prisma, result.announcement, { notifySms: true }).catch((err) => {
         announcementLog("warn", "announcement.sms_async_failed", {
+          announcementId: result.announcement.id,
+          message: err?.message ?? String(err),
+        });
+      });
+    }
+    if (result.announcement && String(result.announcement.status ?? "").toUpperCase() === "PUBLISHED") {
+      void sendAnnouncementEmailNotifications(prisma, result.announcement).catch((err) => {
+        announcementLog("warn", "announcement.email_async_failed", {
           announcementId: result.announcement.id,
           message: err?.message ?? String(err),
         });

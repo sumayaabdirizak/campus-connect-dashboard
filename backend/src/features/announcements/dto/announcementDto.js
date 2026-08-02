@@ -33,6 +33,7 @@ export function isAnnouncementNew(announcement, userId) {
  *   targets?: import("@prisma/client").AnnouncementTarget[];
  *   _count?: { comments?: number; reactions?: number };
  *   _likedByCurrentUser?: boolean;
+ *   _acknowledgedByCurrentUser?: boolean;
  * }} announcement
  * @param {number} currentUserId
  */
@@ -46,6 +47,7 @@ export function toAnnouncementDto(announcement, currentUserId) {
   const likes = announcement._count?.reactions ?? 0;
   const commentsCount = announcement._count?.comments ?? 0;
   const likedByCurrentUser = Boolean(announcement._likedByCurrentUser);
+  const acknowledgedByCurrentUser = Boolean(announcement._acknowledgedByCurrentUser);
 
   return {
     id: announcement.id,
@@ -82,6 +84,7 @@ export function toAnnouncementDto(announcement, currentUserId) {
       : undefined,
     targetRoles: announcement.targetRoles ?? [],
     createdBy: {
+      id: announcement.createdById,
       userId: announcement.createdById,
       role: announcement.createdByRole,
       name: announcement.createdBy?.full_name,
@@ -96,6 +99,7 @@ export function toAnnouncementDto(announcement, currentUserId) {
     likes,
     commentsCount,
     likedByCurrentUser,
+    acknowledgedByCurrentUser,
   };
 }
 

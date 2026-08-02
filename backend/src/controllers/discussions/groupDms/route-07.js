@@ -18,8 +18,12 @@ import {
   groupDmSendMessageSchema,
   addGroupDmMembersSchema,
 } from "../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { loadDmUserRole } from "../../../features/discussions/groupDmEligibility.js";
+import { assertAllUsersDmEligible } from "../../../features/discussions/assertAllUsersDmEligible.js";
+import { assertUsersAreDeans } from "../../../features/discussions/assertAoDeanGroupMembers.js";
+import { assertUsersAreDeanGroupMembers } from "../../../features/discussions/assertDeanFacultyGroupMembers.js";
 
-import { getActiveMember } from './helpers.js';
+import { getActiveMember, MAX_TOTAL_MEMBERS, toGroupDmDto } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -27,17 +31,17 @@ export function register(router) {
     try {
       const userId = getDiscussionCallerUserId(req);
       if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
-      const groupDmId = Number(req.params.groupDmId);
       const parsed = addGroupDmMembersSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json(apiErrorBody("Invalid request body", parsed.error.issues));
       }
-  
-      const member = await getActiveMember(groupDmId, userId);
+
+      const member = await getActiveMember(req.params.groupDmId, userId);
       if (!member?.groupDm || member.groupDm.archivedAt) {
         return res.status(403).json(apiErrorBody("Forbidden", null));
       }
-  
+      const groupDmId = member.groupDm.id;
+
       const currentCount = await prisma.groupDmMember.count({
         where: { groupDmId, leftAt: null },
       });
@@ -45,13 +49,16 @@ export function register(router) {
       if (currentCount + newIds.length > MAX_TOTAL_MEMBERS) {
         return res.status(400).json(apiErrorBody("Member limit exceeded", null));
       }
-  
-      const users = await prisma.user.findMany({
-        where: { id: { in: newIds }, status: "ACTIVE" },
-        select: { id: true },
-      });
-      if (users.length !== new Set(newIds).size) {
-        return res.status(400).json(apiErrorBody("Invalid user ids", null));
+
+      const caller = await loadDmUserRole(userId);
+      const roleGate =
+        caller?.roleName === "ACADEMIC_OFFICE"
+          ? await assertUsersAreDeans(newIds)
+          : caller?.roleName === "DEAN"
+            ? await assertUsersAreDeanGroupMembers(newIds, prisma, userId)
+            : await assertAllUsersDmEligible(newIds);
+      if (!roleGate.ok) {
+        return res.status(roleGate.status).json(apiErrorBody(roleGate.message, { code: roleGate.code }));
       }
   
       for (const uid of new Set(newIds)) {
@@ -65,20 +72,25 @@ export function register(router) {
       const updated = await prisma.groupDm.findUnique({
         where: { id: groupDmId },
         include: {
-          members: { where: { leftAt: null }, include: { user: { select: { id: true, full_name: true } } } },
+          members: { where: { leftAt: null }, include: { user: { select: { id: true, full_name: true, avatarUrl: true } } } },
         },
       });
   
+      const updatedDto = toGroupDmDto(updated);
+
       try {
         const io = getIo();
         if (io) {
-          io.to(`groupdm:${groupDmId}`).emit("groupdm:member:add", { groupDmId, groupDm: updated });
+          io.to(`groupdm:${groupDmId}`).emit("groupdm:member:add", {
+            groupDmId: member.groupDm.publicId,
+            groupDm: updatedDto,
+          });
         }
       } catch (e) {
         console.warn("groupdm member socket emit failed", e?.message);
       }
-  
-      return res.json({ groupDm: updated });
+
+      return res.json({ groupDm: updatedDto });
     } catch (error) {
       console.error("POST /discussions/group-dms/:id/members failed", error);
       return res.status(500).json(apiErrorBody("Failed to add members", null));

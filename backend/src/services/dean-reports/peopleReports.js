@@ -6,6 +6,7 @@ export function buildStudentReports({
   gradedSubmissions,
   recentSubmissions,
   attendanceRate,
+  filters = {},
 }) {
   const studentGradesByUser = new Map();
   for (const g of gradedSubmissions) {
@@ -13,16 +14,22 @@ export function buildStudentReports({
     studentGradesByUser.get(g.studentId).push(Number(g.grade ?? 0));
   }
 
-  return studentProfiles.slice(0, 100).map((sp) => {
+  const levelFilter = filters.studentLevel
+    ? String(filters.studentLevel).toUpperCase().replace(/\s+/g, '_')
+    : null;
+  const statusFilter = filters.status ? String(filters.status) : null;
+
+  const rows = studentProfiles.slice(0, 200).map((sp) => {
     const grades = studentGradesByUser.get(sp.user.id) ?? [];
     const gpa =
       grades.length > 0
         ? Math.round((grades.reduce((s, g) => s + gradeToGpa(g), 0) / grades.length) * 100) / 100
         : 0;
     const dept = departments.find((d) => d.id === sp.departmentId);
-    const level =
+    const rawLevel =
       sp.user.studentRegistrations?.[0]?.batchSection?.batch?.program?.level ?? 'UNDERGRADUATE';
-    const lateCount = recentSubmissions.filter((s) => s.is_late).length;
+    const levelKey = String(rawLevel).toUpperCase().replace(/\s+/g, '_');
+    const lateCount = recentSubmissions.filter((s) => s.lateState === 'LATE').length;
     const attendance = Math.max(0, Math.min(100, attendanceRate - (lateCount > 5 ? 15 : 0)));
     let status = 'Good Standing';
     if (gpa < 2.0 || attendance < 60) status = 'At Risk';
@@ -32,12 +39,22 @@ export function buildStudentReports({
       id: sp.user.id,
       student: sp.user.full_name,
       department: dept?.name ?? '—',
-      level: String(level).replace(/_/g, ' '),
+      level: String(rawLevel).replace(/_/g, ' '),
+      levelKey,
       gpa,
       attendance,
       status,
     };
   });
+
+  return rows
+    .filter((r) => {
+      if (levelFilter && r.levelKey !== levelFilter) return false;
+      if (statusFilter && r.status !== statusFilter) return false;
+      return true;
+    })
+    .slice(0, 100)
+    .map(({ levelKey: _levelKey, ...row }) => row);
 }
 
 export function buildInstructorReports({ teachers, offerings, allQuizAttempts }) {

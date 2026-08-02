@@ -25,6 +25,7 @@ import {
 } from "../../../storage/objectStorage.js";
 
 import { resourceKeyFromUrl, verifyContentMatchesExtension, uploadExtensionFilter, enforceUploadContentSafety } from './helpers.js';
+import { assertActiveResourceType } from '../../../features/resources/resourceTypeOptions.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -36,7 +37,11 @@ export function register(router) {
     if (url !== undefined && url !== null) {
       assertSafeExternalUrl(url, 'url');
     }
-  
+    if (type !== undefined && type !== null) {
+      const typeOk = await assertActiveResourceType(type);
+      if (!typeOk.ok) return res.status(400).json({ message: typeOk.message });
+    }
+
     const resource = await prisma.resource.update({
       where: { id: parseInt(resourceId) },
       data: {

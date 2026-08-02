@@ -48,7 +48,9 @@ router.get(
         where: { channelId },
         orderBy: [{ targetType: "asc" }, { id: "asc" }],
       });
-      return res.json({ results: rows.map(overwriteRowToDto) });
+      return res.json({
+        results: rows.map((r) => ({ ...overwriteRowToDto(r), channelId: req.discussionChannelPublicId })),
+      });
     } catch (error) {
       console.error("GET /discussions/channels/:channelId/overwrites failed", error);
       return res
@@ -155,12 +157,16 @@ router.put(
           // VIEW_CHANNEL aren't in the channel room, so also fan out at the
           // group level so their sidebar relocates.
           io.to(`channel:${channelId}`).emit("channel:update", {
-            channelId,
-            overwrite: overwriteRowToDto(row),
+            channelId: req.discussionChannelPublicId,
+            overwrite: { ...overwriteRowToDto(row), channelId: req.discussionChannelPublicId },
           });
+          const serverPublicId = (await prisma.discussionGroup.findUnique({
+            where: { id: channel.serverId },
+            select: { publicId: true },
+          }))?.publicId;
           io.to(`discussion:group:${channel.serverId}`).emit(
             "server:channelsChanged",
-            { serverId: channel.serverId, channelId },
+            { serverId: serverPublicId, channelId: req.discussionChannelPublicId },
           );
         }
       } catch (emitErr) {
@@ -181,7 +187,7 @@ router.put(
         });
       }
 
-      return res.json({ overwrite: overwriteRowToDto(row) });
+      return res.json({ overwrite: { ...overwriteRowToDto(row), channelId: req.discussionChannelPublicId } });
     } catch (error) {
       console.error("PUT /discussions/channels/:channelId/overwrites failed", error);
       return res.status(500).json(apiErrorBody("Failed to save overwrite", null));
@@ -231,12 +237,16 @@ router.delete(
         const io = getIo();
         if (io) {
           io.to(`channel:${channelId}`).emit("channel:update", {
-            channelId,
-            overwriteRemoved: { channelId, targetType, targetId },
+            channelId: req.discussionChannelPublicId,
+            overwriteRemoved: { channelId: req.discussionChannelPublicId, targetType, targetId },
           });
+          const serverPublicId = (await prisma.discussionGroup.findUnique({
+            where: { id: channel.serverId },
+            select: { publicId: true },
+          }))?.publicId;
           io.to(`discussion:group:${channel.serverId}`).emit(
             "server:channelsChanged",
-            { serverId: channel.serverId, channelId },
+            { serverId: serverPublicId, channelId: req.discussionChannelPublicId },
           );
         }
       } catch (emitErr) {

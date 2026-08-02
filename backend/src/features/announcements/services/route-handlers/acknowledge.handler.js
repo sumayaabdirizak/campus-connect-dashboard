@@ -45,7 +45,6 @@ import {
 } from "../announcementLinkRedirect.service.js";
 import {
   loadAllVisibleDeadlineRows,
-  buildCalendarDeadlinesIcs,
   isAnnouncementDeadlineAllDayUtc,
 } from "../calendarDeadlines.service.js";
 import { announcementLog } from "../../announcementLogger.js";
@@ -103,7 +102,7 @@ export async function handleAnnouncementAcknowledge(req, res) {
       acknowledgedAt: new Date().toISOString(),
     });
     invalidateAnnouncementAnalyticsCache(announcementId);
-    res.json({ success: true });
+    res.json({ success: true, acknowledgedByCurrentUser: true });
   } catch (error) {
     announcementLog("error", "announcement.acknowledge_failed", {
       message: error?.message ?? String(error),

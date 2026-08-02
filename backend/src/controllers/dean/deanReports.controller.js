@@ -9,9 +9,11 @@ export async function getDeanReports(req, res, next) {
     const facultyId = Number(req.facultyId);
     const periodMonths = Number(req.query.period?.replace?.(/\D/g, '') ?? req.query.period ?? 6) || 6;
     const filters = {
-      departmentId: req.query.departmentId ?? null,
-      academicYearId: req.query.academicYearId ?? null,
-      semesterId: req.query.semesterId ?? null,
+      departmentId: req.query.departmentId || null,
+      academicYearId: req.query.academicYearId || null,
+      semesterId: req.query.semesterId || null,
+      studentLevel: req.query.studentLevel || null,
+      status: req.query.status || null,
     };
 
     const data = await buildDeanReports({ facultyId, periodMonths, filters });

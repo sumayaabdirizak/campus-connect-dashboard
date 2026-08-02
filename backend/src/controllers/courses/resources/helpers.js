@@ -124,7 +124,8 @@ export async function verifyContentMatchesExtension(filePath, ext) {
 export function uploadExtensionFilter(_req, file, cb) {
   const ext = path.extname(file.originalname).toLowerCase();
   if (!ALLOWED_EXTENSIONS.has(ext)) {
-    return cb(new Error(`File type not allowed: ${ext || '(no extension)'}`));
+    const label = ext || 'this file type';
+    return cb(new Error(`${label} files are not allowed`));
   }
   return cb(null, true);
 }
@@ -165,3 +166,16 @@ export const upload = multer({
   limits: { fileSize: RESOURCE_FILE_LIMIT },
   fileFilter: uploadExtensionFilter,
 });
+
+/** Multer wrapper — rejected extensions / size limits return 400/413, not 500. */
+export function resourceUploadSingle(field = 'file') {
+  return (req, res, next) => {
+    upload.single(field)(req, res, (err) => {
+      if (!err) return next();
+      if (err instanceof multer.MulterError && err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(413).json({ message: 'File is too large (max 100 MB)' });
+      }
+      return res.status(400).json({ message: err.message || 'Upload failed' });
+    });
+  };
+}

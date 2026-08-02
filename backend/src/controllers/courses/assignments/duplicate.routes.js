@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
+import { ensureLifecycle, enrichAssignmentDto } from '../../../features/assignments/lifecycleService.js';
 
 const router = Router();
 
@@ -9,6 +10,7 @@ router.post(
   '/:assignmentId/duplicate', requireAssignmentManage(),
   asyncHandler(async (req, res) => {
     const id = parseInt(req.params.assignmentId, 10);
+    const actorUserId = Number(req.user.id ?? req.user.sub) || null;
 
     const source = await prisma.assignment.findUnique({
       where: { id },
@@ -25,7 +27,6 @@ router.post(
           description: source.description,
           open_at: source.open_at,
           due_date: source.due_date,
-          is_draft: true, // always draft — protects against accidental publish
           courseOfferingId: source.courseOfferingId,
           workMode: source.workMode,
           gradingScope: source.gradingScope,
@@ -34,8 +35,19 @@ router.post(
         },
       });
 
-      // Clone attachment ROWS (file URLs are shared — the on-disk files
-      // are referenced, not copied, since both rows point to the same URL).
+      await ensureLifecycle(
+        fresh.id,
+        {
+          isDraft: true,
+          openAt: fresh.open_at,
+          dueDate: fresh.due_date,
+          lateWindowMinutes: fresh.lateWindowMinutes,
+          actorUserId,
+          eventType: 'DUPLICATED',
+        },
+        tx,
+      );
+
       if (source.attachments.length > 0) {
         await tx.assignmentAttachment.createMany({
           data: source.attachments.map((att) => ({
@@ -52,6 +64,7 @@ router.post(
       return tx.assignment.findUnique({
         where: { id: fresh.id },
         include: {
+          lifecycle: true,
           attachments: {
             orderBy: { created_at: 'asc' },
             include: { uploadedBy: { select: { id: true, full_name: true } } },
@@ -61,7 +74,7 @@ router.post(
       });
     });
 
-    res.status(201).json(created);
+    res.status(201).json(enrichAssignmentDto(created));
   })
 );
 

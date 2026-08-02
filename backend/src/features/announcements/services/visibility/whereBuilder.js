@@ -6,12 +6,15 @@
 export function buildScopeOrClauses(scope, userRole, includeTargetRows) {
   const toArray = (set) => Array.from(set);
   const or = [];
-  const isDean = String(userRole) === "DEAN";
+  const role = String(userRole || "").toUpperCase();
+  // Dean + faculty Dean's Office staff: university Everyone + own-faculty ALL.
+  const facultyPublisher = role === "DEAN" || (role === "OFFICE_STAFF" && scope.facultyIds.size > 0);
 
-  if (isDean) {
-    const deanFacultyId = toArray(scope.facultyIds)[0];
-    if (deanFacultyId != null) {
-      or.push({ AND: [{ targetType: "ALL" }, { facultyId: deanFacultyId }] });
+  if (facultyPublisher) {
+    const primaryFacultyId = toArray(scope.facultyIds)[0];
+    or.push({ AND: [{ targetType: "ALL" }, { facultyId: null }] });
+    if (primaryFacultyId != null) {
+      or.push({ AND: [{ targetType: "ALL" }, { facultyId: primaryFacultyId }] });
     }
   } else {
     or.push({ targetType: "ALL" });

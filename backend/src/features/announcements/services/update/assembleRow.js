@@ -37,5 +37,12 @@ export function assembleUpdateAnnouncementRow(input) {
       ? { acknowledgementRequired: Boolean(parsed.acknowledgementRequired) }
       : {}),
     ...(parsed.commentsEnabled != null ? { commentsEnabled: Boolean(parsed.commentsEnabled) } : {}),
+    ...(parsed.imageUrls !== undefined
+      ? {
+          imageUrls: Array.isArray(parsed.imageUrls)
+            ? parsed.imageUrls.filter((u) => typeof u === "string" && u.trim()).slice(0, 20)
+            : [],
+        }
+      : {}),
   };
 }

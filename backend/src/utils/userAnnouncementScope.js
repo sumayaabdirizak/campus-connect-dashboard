@@ -6,6 +6,9 @@
  * @param {number} userId
  * @returns {Promise<{ userId: number, full_name: string, role: string, status: string, facultyIds: number[], departmentIds: number[], batchIds: number[], sectionIds: number[] } | null>}
  */
+import { resolveOfficeStaffDmScope } from '../features/discussions/officeStaffDmScope.js';
+import { expandFacultyAnnouncementTree } from './expandFacultyAnnouncementTree.js';
+
 export async function loadUserAnnouncementScope(prisma, userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
@@ -36,54 +39,38 @@ export async function loadUserAnnouncementScope(prisma, userId) {
 
   if (!user) return null;
 
-  const facultyIds = new Set();
-  const departmentIds = new Set();
-  const batchIds = new Set();
-  const sectionIds = new Set();
+  const roleName = String(user.role?.name || '').toUpperCase();
 
-  if (user.role.name === "DEAN" && user.deanProfile?.facultyId) {
-    const deanFacultyId = user.deanProfile.facultyId;
-    facultyIds.add(deanFacultyId);
-
-    const departments = await prisma.department.findMany({
-      where: { facultyId: deanFacultyId },
-      select: { id: true },
-    });
-    for (const department of departments) departmentIds.add(department.id);
-
-    const departmentIdList = departments.map((d) => d.id);
-    if (departmentIdList.length > 0) {
-      const batches = await prisma.batch.findMany({
-        where: {
-          program: {
-            departmentId: { in: departmentIdList },
-          },
-        },
-        select: { id: true },
-      });
-      for (const batch of batches) batchIds.add(batch.id);
-
-      const batchIdList = batches.map((b) => b.id);
-      if (batchIdList.length > 0) {
-        const sections = await prisma.batchSection.findMany({
-          where: { batchId: { in: batchIdList } },
-          select: { id: true },
-        });
-        for (const section of sections) sectionIds.add(section.id);
-      }
-    }
-
+  if (roleName === 'DEAN' && user.deanProfile?.facultyId) {
+    const tree = await expandFacultyAnnouncementTree(prisma, [user.deanProfile.facultyId]);
     return {
       userId: user.id,
       full_name: user.full_name,
       role: user.role.name,
       status: user.status,
-      facultyIds: Array.from(facultyIds),
-      departmentIds: Array.from(departmentIds),
-      batchIds: Array.from(batchIds),
-      sectionIds: Array.from(sectionIds),
+      ...tree,
     };
   }
+
+  // Faculty Dean's Office staff — same tree as dean (not university desks).
+  if (roleName === 'OFFICE_STAFF') {
+    const desk = await resolveOfficeStaffDmScope(userId, prisma);
+    if (desk.kind === 'faculty') {
+      const tree = await expandFacultyAnnouncementTree(prisma, desk.facultyIds);
+      return {
+        userId: user.id,
+        full_name: user.full_name,
+        role: user.role.name,
+        status: user.status,
+        ...tree,
+      };
+    }
+  }
+
+  const facultyIds = new Set();
+  const departmentIds = new Set();
+  const batchIds = new Set();
+  const sectionIds = new Set();
 
   if (user.studentProfile?.facultyId) facultyIds.add(user.studentProfile.facultyId);
   if (user.studentProfile?.departmentId) departmentIds.add(user.studentProfile.departmentId);

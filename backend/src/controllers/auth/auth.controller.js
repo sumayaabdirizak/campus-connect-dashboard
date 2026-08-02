@@ -14,6 +14,7 @@ import {
   setAuthCookies,
   getIsProduction,
   issueCsrfCookie,
+  listAvailableRoleNames,
 } from './auth.helpers.js';
 
 export async function postLogin(req, res) {
@@ -55,6 +56,20 @@ export async function postLogin(req, res) {
   const refreshToken = issueRefreshToken(jwtPayload);
   setAuthCookies(res, accessToken, refreshToken);
   const csrfToken = issueCsrfCookie(req, res);
+  const availableRoles = await listAvailableRoleNames(user.id);
+
+  // Best-effort — powers the "User Logs" oversight report. Never blocks login.
+  prisma.userLoginLog
+    .create({
+      data: {
+        userId: user.id,
+        ipAddress: (req.headers['x-forwarded-for'] || req.ip || '').toString().slice(0, 64) || null,
+        userAgent: (req.headers['user-agent'] || '').toString().slice(0, 300) || null,
+      },
+    })
+    .catch((err) => {
+      console.error('[auth] login log write failed', { userId: user.id, message: err?.message });
+    });
 
   // Respond with user info only (token is in httpOnly cookie)
   res.json({
@@ -64,6 +79,57 @@ export async function postLogin(req, res) {
       email: user.email,
       full_name: user.full_name,
       role: user.role.name,
+      availableRoles,
+      scope: {
+        facultyId: jwtPayload.facultyId,
+        departmentId: jwtPayload.departmentId,
+        programId: jwtPayload.programId,
+        facultyIds: jwtPayload.facultyIds ?? [],
+      },
+    },
+  });
+}
+
+/**
+ * Re-issue the JWT under a different role the user holds (primary role or a
+ * granted `UserRole`). Requires an already-valid access token — this is a
+ * privilege *switch*, not an elevation, so it re-verifies membership
+ * server-side rather than trusting the request body.
+ */
+export async function postSwitchRole(req, res) {
+  const userId = Number(req.user?.sub ?? req.user?.id);
+  const targetRole = String(req.body?.role ?? '').toUpperCase();
+  if (!userId || !targetRole) {
+    throw new HttpError(400, 'role is required', null);
+  }
+
+  const availableRoles = await listAvailableRoleNames(userId);
+  if (!availableRoles.includes(targetRole)) {
+    throw new HttpError(403, 'You do not hold that role', null);
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: { role: true },
+  });
+  if (!user || user.status !== 'ACTIVE') {
+    throw new HttpError(401, 'Invalid session', null);
+  }
+
+  const jwtPayload = await buildPayload(user, targetRole);
+  const accessToken = issueAccessToken(jwtPayload);
+  const refreshToken = issueRefreshToken(jwtPayload);
+  setAuthCookies(res, accessToken, refreshToken);
+  const csrfToken = issueCsrfCookie(req, res);
+
+  res.json({
+    csrfToken,
+    user: {
+      id: user.id,
+      email: user.email,
+      full_name: user.full_name,
+      role: targetRole,
+      availableRoles,
       scope: {
         facultyId: jwtPayload.facultyId,
         departmentId: jwtPayload.departmentId,

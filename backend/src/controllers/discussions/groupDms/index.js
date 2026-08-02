@@ -10,6 +10,9 @@ import { register as r7 } from './route-07.js';
 import { register as r8 } from './route-08.js';
 import { register as r9 } from './route-09.js';
 import { register as r10 } from './route-10.js';
+import { register as r11 } from './route-11.js';
+import { register as r12 } from './route-12.js';
+import { register as r13 } from './route-13.js';
 
 const router = Router();
 r0(router);
@@ -23,5 +26,8 @@ r7(router);
 r8(router);
 r9(router);
 r10(router);
+r11(router);
+r12(router);
+r13(router);
 
 export default router;

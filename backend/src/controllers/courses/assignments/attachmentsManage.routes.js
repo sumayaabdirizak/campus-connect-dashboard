@@ -1,7 +1,10 @@
 import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
-import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
+import {
+  requireAssignmentAttachmentRead,
+  requireAssignmentManage,
+} from '../../../middleware/courseOfferingRbac.js';
 import {
   deleteStoredObject,
   sendStoredFile,
@@ -12,6 +15,7 @@ const router = Router();
 
 router.get(
   '/attachments/:attachmentId/download',
+  requireAssignmentAttachmentRead(),
   asyncHandler(async (req, res) => {
     const attachmentId = parseInt(req.params.attachmentId, 10);
     const att = await prisma.assignmentAttachment.findUnique({ where: { id: attachmentId } });

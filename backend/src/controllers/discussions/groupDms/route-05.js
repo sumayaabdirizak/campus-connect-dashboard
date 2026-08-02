@@ -20,6 +20,12 @@ import {
 } from "../../../features/discussions/validation/groupDiscussionSchemas.js";
 
 import { getActiveMember } from './helpers.js';
+import {
+  REPLY_TO_INCLUDE,
+  resolveReplyToMessageId,
+} from '../../../features/discussions/replyToMessage.js';
+import { toDiscussionAttachmentDto } from '../../../features/discussions/discussionAttachments.js';
+import { buildMessagePublicIdMap, toMessageDto } from '../messageShared.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -27,15 +33,13 @@ export function register(router) {
     try {
       const userId = getDiscussionCallerUserId(req);
       if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
-      const groupDmId = Number(req.params.groupDmId);
-      if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
-        return res.status(400).json(apiErrorBody("Invalid groupDmId", null));
-      }
-      const member = await getActiveMember(groupDmId, userId);
+      const member = await getActiveMember(req.params.groupDmId, userId);
       if (!member?.groupDm || member.groupDm.archivedAt) {
         return res.status(403).json(apiErrorBody("Forbidden", null));
       }
-  
+      const groupDmId = member.groupDm.id;
+      const groupDmPublicId = member.groupDm.publicId;
+
       const limit = parseDiscussionHistoryLimit(req.query.limit);
       const cursor = decodeDiscussionCursor(req.query.cursor);
       const where = {
@@ -56,9 +60,10 @@ export function register(router) {
         orderBy: [{ createdAt: "desc" }, { id: "desc" }],
         take: limit + 1,
         include: {
-          sender: { select: { id: true, full_name: true } },
+          sender: { select: { id: true, full_name: true, avatarUrl: true } },
           attachments: true,
           reactions: { include: { user: { select: { id: true, full_name: true } } } },
+          ...REPLY_TO_INCLUDE,
         },
       });
   
@@ -68,9 +73,19 @@ export function register(router) {
         hasMore && pageRows.length
           ? encodeDiscussionCursor(pageRows[pageRows.length - 1].createdAt, pageRows[pageRows.length - 1].id)
           : null;
-  
+
+      // `size` is a Prisma BigInt — not JSON-serializable as-is. `groupDmId`
+      // is the internal int FK Prisma auto-includes — swap for the UUID.
+      const reversed = pageRows.reverse();
+      const publicIdById = await buildMessagePublicIdMap(reversed);
+      const resultsOut = reversed.map((m) => ({
+        ...toMessageDto(m, publicIdById),
+        groupDmId: groupDmPublicId,
+        attachments: (m.attachments || []).map((a) => toDiscussionAttachmentDto(req, a, userId)),
+      }));
+
       return res.json({
-        results: pageRows.reverse(),
+        results: resultsOut,
         nextCursor,
         hasMore,
       });

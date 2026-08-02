@@ -19,7 +19,7 @@ import {
   addGroupDmMembersSchema,
 } from "../../../features/discussions/validation/groupDiscussionSchemas.js";
 
-import { getActiveMember } from './helpers.js';
+import { getActiveMember, toGroupDmDto } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -27,25 +27,22 @@ export function register(router) {
     try {
       const userId = getDiscussionCallerUserId(req);
       if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
-      const groupDmId = Number(req.params.groupDmId);
-      if (!Number.isInteger(groupDmId) || groupDmId <= 0) {
-        return res.status(400).json(apiErrorBody("Invalid groupDmId", null));
-      }
-      const member = await getActiveMember(groupDmId, userId);
+      const member = await getActiveMember(req.params.groupDmId, userId);
       if (!member?.groupDm || member.groupDm.archivedAt) {
         return res.status(404).json(apiErrorBody("Group DM not found", null));
       }
-  
+      const groupDmId = member.groupDm.id;
+
       const groupDm = await prisma.groupDm.findUnique({
         where: { id: groupDmId },
         include: {
           members: {
             where: { leftAt: null },
-            include: { user: { select: { id: true, full_name: true, email: true } } },
+            include: { user: { select: { id: true, full_name: true, email: true, avatarUrl: true } } },
           },
         },
       });
-      return res.json({ groupDm, myRole: member.role });
+      return res.json({ groupDm: toGroupDmDto(groupDm), myRole: member.role });
     } catch (error) {
       console.error("GET /discussions/group-dms/:id failed", error);
       return res.status(500).json(apiErrorBody("Failed to load group DM", null));

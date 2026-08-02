@@ -27,14 +27,14 @@ export function register(router) {
     try {
       const userId = getDiscussionCallerUserId(req);
       if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
-      const groupDmId = Number(req.params.groupDmId);
       const targetUserId = Number(req.params.targetUserId);
-  
-      const self = await getActiveMember(groupDmId, userId);
+
+      const self = await getActiveMember(req.params.groupDmId, userId);
       if (!self?.groupDm || self.groupDm.archivedAt) {
         return res.status(403).json(apiErrorBody("Forbidden", null));
       }
-  
+      const groupDmId = self.groupDm.id;
+
       const isSelf = targetUserId === userId;
       const isOwner = self.role === "OWNER";
       if (!isSelf && !isOwner) {
@@ -75,7 +75,10 @@ export function register(router) {
       try {
         const io = getIo();
         if (io) {
-          io.to(`groupdm:${groupDmId}`).emit("groupdm:member:remove", { groupDmId, userId: targetUserId });
+          io.to(`groupdm:${groupDmId}`).emit("groupdm:member:remove", {
+            groupDmId: self.groupDm.publicId,
+            userId: targetUserId,
+          });
         }
       } catch (e) {
         console.warn("groupdm remove socket emit failed", e?.message);

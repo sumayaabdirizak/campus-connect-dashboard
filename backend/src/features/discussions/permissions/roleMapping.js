@@ -10,8 +10,6 @@ export function mapGlobalRoleToSystemRoleKey(globalRoleName) {
       return SYSTEM_ROLE_KEYS.LECTURER;
     case "DEAN":
       return SYSTEM_ROLE_KEYS.DEAN;
-    case "FACULTY_ADMIN":
-      return SYSTEM_ROLE_KEYS.FACULTY_ADMIN;
     case "SUPER_ADMIN":
       return SYSTEM_ROLE_KEYS.FACULTY_ADMIN;
     default:

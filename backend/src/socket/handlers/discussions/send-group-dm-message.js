@@ -21,11 +21,13 @@ import {
   deriveQuestionFields,
 } from "../../../features/discussions/discussionMessagePublic.js";
 import { filterMembershipRowsByChannelScope } from "../../../features/discussions/channelScopeAccess.js";
+import { buildMessagePublicIdMap, toMessageDto } from "../../../controllers/discussions/messageShared.js";
+import { notifyOfflineOrMentionedByEmail } from "./discussion-send/emailNotify.js";
 
 /** @param {object} args */
 export async function sendGroupDmMessage(args) {
   const {
-    socket, payload, ack, groupDmId,
+    socket, payload, ack, groupDmId, groupDmPublicId,
     socketUser, fanout, ackOrEmitError, ackSuccess,
     discussionChannelRoom, discussionRoom, discussionGroupDmRoom,
     emitUnreadUpdateToUsers, isUserViewingChannel, isUserViewingGroup, isUserViewingGroupDm,
@@ -92,8 +94,8 @@ export async function sendGroupDmMessage(args) {
           messageId: created.id,
           type: "MESSAGE",
           payload: {
-            groupDmId,
-            messageId: created.id,
+            groupDmId: groupDmPublicId,
+            messageId: created.publicId,
             senderId: Number(socketUser.id),
             senderName: created.sender?.full_name ?? null,
           },
@@ -109,8 +111,8 @@ export async function sendGroupDmMessage(args) {
           messageId: created.id,
           type: "MENTION",
           payload: {
-            groupDmId,
-            messageId: created.id,
+            groupDmId: groupDmPublicId,
+            messageId: created.publicId,
             senderId: Number(socketUser.id),
             senderName: created.sender?.full_name ?? null,
           },
@@ -137,24 +139,47 @@ export async function sendGroupDmMessage(args) {
       popupRecipientIds,
       onlineNotViewingIds,
       offlineIds,
+      otherIds,
+      mentionUserIds: [...mentionUserIds],
     };
   });
   await touchDiscussionSession(socket);
-  const gdmOut = { ...gdmResult.message, groupDmId };
+  const publicIdById = await buildMessagePublicIdMap(gdmResult.message ? [gdmResult.message] : []);
+  const gdmOut = { ...toMessageDto(gdmResult.message, publicIdById), groupDmId: groupDmPublicId };
   fanout.emitToRoom(discussionGroupDmRoom(groupDmId), "message:new", gdmOut);
   fanout.emitToRoom(discussionGroupDmRoom(groupDmId), "groupdm:message:new", gdmOut);
   for (const recipientUserId of gdmResult.popupRecipientIds) {
     fanout.emitToUser(recipientUserId, "notification:new", {
       type: "MESSAGE",
       groupId: null,
-      groupDmId,
-      messageId: gdmResult.message?.id,
+      groupDmId: groupDmPublicId,
+      messageId: gdmOut.id,
       senderId: Number(socketUser.id),
       senderName: gdmResult.message?.sender?.full_name ?? null,
       createdAt: new Date().toISOString(),
     });
   }
   await emitUnreadUpdateToUsers(gdmResult.onlineNotViewingIds);
+
+  void (async () => {
+    const hasRecipients =
+      (gdmResult.offlineIds?.length ?? 0) > 0 || (gdmResult.mentionUserIds?.length ?? 0) > 0;
+    if (!hasRecipients) return;
+    const dmRow = await prisma.groupDm.findUnique({
+      where: { id: groupDmId },
+      select: { name: true },
+    });
+    await notifyOfflineOrMentionedByEmail({
+      memberUserIds: gdmResult.otherIds,
+      offlineIds: gdmResult.offlineIds,
+      mentionUserIds: gdmResult.mentionUserIds,
+      senderName: gdmResult.message?.sender?.full_name || "Someone",
+      conversationLabel: dmRow?.name || "your conversation",
+      plaintext: gdmResult.message?.content ?? "",
+      href: `/dashboard/messages?dm=${groupDmPublicId}`,
+    });
+  })().catch(() => {});
+
   metricTimerEnd("messages.send_total.ms", started);
   return ackSuccess(ack, {
     message: gdmOut,

@@ -8,6 +8,7 @@ import {
 import { requireQuizAttemptAccess } from '../../../middleware/courseOfferingRbac.js';
 import { quizViolationRateLimit } from '../../../middleware/perUserRateLimit.js';
 import { MAX_WARNINGS } from './shared.js';
+import { loadLifetimeViolations } from './startAttempt.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -22,37 +23,50 @@ export function register(router) {
 
     const current = await prisma.quizAttempt.findUnique({
       where: { id: attemptId },
-      select: { id: true, submitted_at: true, violations_count: true, warnings_shown: true }
+      select: {
+        id: true,
+        quizId: true,
+        submitted_at: true,
+        violations_count: true,
+        warnings_shown: true,
+      },
     });
     if (!current) return res.status(404).json({ message: 'Attempt not found' });
 
+    const { priorViolations } = await loadLifetimeViolations(current.quizId, studentId);
+
     if (current.submitted_at) {
       return res.json({
-        violations_count: current.violations_count,
-        warnings_shown: current.warnings_shown,
+        violations_count: priorViolations + (current.violations_count || 0),
+        warnings_shown: priorViolations + (current.warnings_shown || 0),
         auto_closed: true,
         max_warnings: MAX_WARNINGS,
       });
     }
 
-    const nextCount = (current.violations_count ?? 0) + 1;
-    const shouldClose = nextCount >= MAX_WARNINGS;
+    const nextOnAttempt = (current.violations_count ?? 0) + 1;
+    const lifetime = priorViolations + nextOnAttempt;
+    const shouldClose = lifetime >= MAX_WARNINGS;
     const quizIdForMonitor = req.quizAttempt?.quizId;
 
     if (shouldClose) {
       const finalized = await finalizeAttempt({
         attemptId,
-        violationsCount: nextCount,
+        violationsCount: nextOnAttempt,
         closureReason: 'violations',
       });
-      console.log(`[quiz] auto-closed attempt ${attemptId} for student ${studentId} after ${nextCount} violations (last: ${kind})`);
+      console.log(
+        `[quiz] auto-closed attempt ${attemptId} for student ${studentId} after ${lifetime} lifetime violations (last: ${kind})`
+      );
 
       if (quizIdForMonitor) {
         emitMonitorViolation({
           quizId: quizIdForMonitor,
-          attemptId, studentId,
-          violations_count: nextCount,
-          kind, auto_closed: true,
+          attemptId,
+          studentId,
+          violations_count: lifetime,
+          kind,
+          auto_closed: true,
         });
         if (finalized) {
           emitMonitorSubmitted({
@@ -64,7 +78,7 @@ export function register(router) {
       }
 
       return res.json({
-        violations_count: nextCount,
+        violations_count: lifetime,
         warnings_shown: MAX_WARNINGS,
         auto_closed: true,
         max_warnings: MAX_WARNINGS,
@@ -74,8 +88,8 @@ export function register(router) {
     const updated = await prisma.quizAttempt.update({
       where: { id: attemptId },
       data: {
-        violations_count: nextCount,
-        warnings_shown: nextCount,
+        violations_count: nextOnAttempt,
+        warnings_shown: nextOnAttempt,
       },
       select: { violations_count: true, warnings_shown: true },
     });
@@ -83,15 +97,17 @@ export function register(router) {
     if (quizIdForMonitor) {
       emitMonitorViolation({
         quizId: quizIdForMonitor,
-        attemptId, studentId,
-        violations_count: updated.violations_count,
-        kind, auto_closed: false,
+        attemptId,
+        studentId,
+        violations_count: lifetime,
+        kind,
+        auto_closed: false,
       });
     }
 
     res.json({
-      violations_count: updated.violations_count,
-      warnings_shown: updated.warnings_shown,
+      violations_count: lifetime,
+      warnings_shown: priorViolations + updated.warnings_shown,
       auto_closed: false,
       max_warnings: MAX_WARNINGS,
     });

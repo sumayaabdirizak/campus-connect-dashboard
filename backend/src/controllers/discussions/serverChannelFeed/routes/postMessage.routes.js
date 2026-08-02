@@ -13,10 +13,15 @@ import {
   deriveChannelMessageContent,
   loadChannelForSend,
   loadChannelMembership,
-  validateParentMessage,
-  validatePendingAttachments,
+  resolveParentMessage,
+  resolvePendingAttachmentIds,
 } from "./postMessagePrepare.helpers.js";
 import { createChannelMessageTransaction } from "./postMessageTx.helpers.js";
+import {
+  resolveReplyToMessageId,
+} from "../../../../features/discussions/replyToMessage.js";
+import { buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
+import { prisma } from "../../../../db/prisma.js";
 
 const router = express.Router();
 
@@ -47,20 +52,39 @@ router.post(
         );
       }
 
-      if (!(await validateParentMessage(channelId, body.parentMessageId))) {
+      const resolvedParentMessageId = await resolveParentMessage(channelId, body.parentMessageId);
+      if (resolvedParentMessageId === null) {
         return res
           .status(400)
           .json(apiErrorBody("parentMessageId must be a root message in this channel", null));
       }
+      body.parentMessageId = resolvedParentMessageId ?? null;
 
-      const contentFields = deriveChannelMessageContent(body, body.parentMessageId ?? null);
-      if (contentFields.error) return res.status(400).json(contentFields.error);
+      const replyToId = await resolveReplyToMessageId(prisma, {
+        replyToMessageId: body.replyToMessageId,
+        channelId,
+      });
+      if (body.replyToMessageId != null && replyToId == null) {
+        return res
+          .status(400)
+          .json(apiErrorBody("replyToMessageId must be a message in this channel", null));
+      }
+      body.replyToMessageId = replyToId;
 
-      if (!(await validatePendingAttachments(contentFields.attachmentIds, userId, channel.serverId))) {
+      const resolvedAttachmentIds = await resolvePendingAttachmentIds(
+        body.attachmentIds ?? [],
+        userId,
+        channel.serverId,
+      );
+      if (resolvedAttachmentIds === null) {
         return res
           .status(400)
           .json(apiErrorBody("Some attachments are invalid, already used, or not owned by user", null));
       }
+      body.attachmentIds = resolvedAttachmentIds;
+
+      const contentFields = deriveChannelMessageContent(body, body.parentMessageId ?? null);
+      if (contentFields.error) return res.status(400).json(contentFields.error);
 
       const slowModeResponse = await checkSlowMode({
         channel,
@@ -82,9 +106,16 @@ router.post(
       const notificationEvents = txResult?.notificationEvents ?? [];
       if (!message) return res.status(500).json(apiErrorBody("Failed to create message", null));
 
+      const publicIdById = await buildMessagePublicIdMap([message]);
       const rawOut = enrichDiscussionMessagesAttachments(
         req,
-        [{ ...message, channelId, serverId: channel.serverId }],
+        [
+          {
+            ...toMessageDto(message, publicIdById),
+            channelId: req.discussionChannelPublicId,
+            groupId: channel.server.publicId,
+          },
+        ],
         userId,
       )[0];
       const outPayload = applyAnonymousSenderPolicy(rawOut, userId, channelMembership);

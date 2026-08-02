@@ -11,19 +11,25 @@ import { parsePaginationQuery } from "../../utils/pagination.js";
 
 export const getAllFaculties = async (req, res) => {
   try {
-    const { search } = req.query;
+    const { search, withoutDean } = req.query;
+    const onlyWithoutDean = ["1", "true", "yes"].includes(
+      String(withoutDean ?? "").toLowerCase(),
+    );
     const { page, pageSize, skip } = parsePaginationQuery(req.query, {
       defaultPageSize: 50,
       maxPageSize: 200,
     });
-    const where = search
-      ? {
-          OR: [
-            { name: { contains: String(search), mode: "insensitive" } },
-            { code: { contains: String(search), mode: "insensitive" } },
-          ],
-        }
-      : {};
+    const where = {
+      ...(onlyWithoutDean ? { deanProfile: { is: null } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: String(search), mode: "insensitive" } },
+              { code: { contains: String(search), mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
 
     const [totalCount, faculties] = await Promise.all([
       prisma.faculty.count({ where }),
@@ -73,12 +79,21 @@ export const getFacultyById = async (req, res) => {
 
 export const createFaculty = async (req, res) => {
   try {
-    const { name, code } = req.body;
+    const { name, code, defaultDurationYears } = req.body;
     if (!name || !code) return res.status(400).json({ message: "Name and code are required" });
     const existing = await prisma.faculty.findUnique({ where: { code } });
     if (existing) return res.status(400).json({ message: "Faculty code already in use" });
 
-    const faculty = await prisma.faculty.create({ data: { name, code } });
+    const duration = Number(defaultDurationYears);
+    const faculty = await prisma.faculty.create({
+      data: {
+        name,
+        code,
+        ...(Number.isFinite(duration) && duration > 0
+          ? { defaultDurationYears: duration }
+          : {}),
+      },
+    });
     try {
       await refreshDiscussionMembershipsForScope({
         scopeType: DISCUSSION_SCOPE_TYPES.FACULTY,
@@ -99,10 +114,17 @@ export const createFaculty = async (req, res) => {
 export const updateFaculty = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code } = req.body;
+    const { name, code, defaultDurationYears } = req.body;
+    const duration = Number(defaultDurationYears);
     const faculty = await prisma.faculty.update({
       where: { id: Number(id) },
-      data: { name, code }
+      data: {
+        ...(name !== undefined && { name }),
+        ...(code !== undefined && { code }),
+        ...(Number.isFinite(duration) && duration > 0
+          ? { defaultDurationYears: duration }
+          : {}),
+      },
     });
     try {
       await refreshDiscussionMembershipsForScope({

@@ -11,6 +11,7 @@ import {
   resolvePatchCategory,
   resolvePatchPosition,
 } from "./patch.helpers.js";
+import { toChannelDto } from "../../serverShared.js";
 
 const router = express.Router();
 
@@ -108,12 +109,17 @@ router.patch(
       const channel = await prisma.discussionChannel.update({
         where: { id: channelId },
         data,
-        include: { category: true },
+        include: { category: true, server: { select: { publicId: true } } },
       });
+      const categoryMap = channel.category ? new Map([[channel.category.id, channel.category.publicId]]) : null;
+      const { server, category: _category, ...channelRow } = channel;
+      const channelDto = toChannelDto(channelRow, server.publicId, categoryMap);
 
       await emitPatchChannelUpdate({
         channelId,
         channel,
+        channelDto,
+        serverPublicId: server.publicId,
         existing,
         categoryId,
         nextPosition,
@@ -130,7 +136,7 @@ router.patch(
       });
 
       return res.json({
-        channel,
+        channel: channelDto,
         myPermissions: req.discussionChannelPermissions.toString(),
       });
     } catch (error) {

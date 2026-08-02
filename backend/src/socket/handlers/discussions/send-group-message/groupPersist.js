@@ -7,6 +7,7 @@ import {
 export async function persistGroupMessageInTx(tx, ctx) {
   const {
     groupId,
+    groupPublicId,
     socketUser,
     parentMessageId,
     e2eeEnabled,
@@ -59,10 +60,12 @@ export async function persistGroupMessageInTx(tx, ctx) {
   const notViewingIds = memberIds.filter((id) => !isUserViewingGroup(id, groupId));
   const plaintext = e2eeEnabled ? "" : fields.hasText ? fields.effectiveContent : "";
 
-  await createMemberMessageNotifications(tx, {
+  const { mentionUserIds } = await createMemberMessageNotifications(tx, {
     groupId,
     channelId: null,
     messageId: created.id,
+    groupPublicId,
+    messagePublicId: created.publicId,
     senderId: Number(socketUser.id),
     sender: created.sender,
     isAnonymous: fields.isAnonymous,
@@ -81,5 +84,5 @@ export async function persistGroupMessageInTx(tx, ctx) {
     where: { id: created.id },
     include: { sender: { select: { id: true, full_name: true } }, attachments: true },
   });
-  return { message: full, ...presence };
+  return { message: full, memberIds, mentionUserIds, plaintext, ...presence };
 }

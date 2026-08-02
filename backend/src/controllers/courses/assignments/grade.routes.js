@@ -13,6 +13,7 @@ router.patch(
     const assignmentId = parseInt(req.params.assignmentId, 10);
     const submissionId = parseInt(req.params.submissionId, 10);
     const { grade, feedback, is_reviewed } = req.body;
+    const gradedById = Number(req.user?.id ?? req.user?.sub) || null;
 
     const existing = await prisma.submission.findFirst({
       where: { id: submissionId, assignmentId },
@@ -35,11 +36,24 @@ router.patch(
     };
 
     if (existing.assignment?.gradingScope === 'GROUP' && existing.groupId != null) {
-      const updated = await applyGroupGrade({ existing, assignmentId, submissionId, data, grade });
+      const updated = await applyGroupGrade({
+        existing,
+        assignmentId,
+        submissionId,
+        data,
+        grade,
+        gradedById,
+      });
       return res.json(updated);
     }
 
-    const submission = await applyIndividualGrade({ submissionId, data, grade, assignmentId });
+    const submission = await applyIndividualGrade({
+      submissionId,
+      data,
+      grade,
+      assignmentId,
+      gradedById,
+    });
     res.json(submission);
   }),
 );

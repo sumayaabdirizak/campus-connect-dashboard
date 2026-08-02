@@ -1,20 +1,15 @@
 import { prisma } from "../../../../db/prisma.js";
-import {
-  validateHierarchy,
-  InvalidHierarchyError,
-  OutsideFacultyError,
-} from "../../../../utils/validateHierarchy.js";
 import { loadUserAnnouncementScope } from "../../../../utils/userAnnouncementScope.js";
 import { canUserSeeAnnouncement } from "../announcementVisibility.service.js";
 import { announcementLog } from "../../announcementLogger.js";
 import { emitAnnouncementUpdatedFanout } from "../announcementRealtime.service.js";
 import {
   CREATE_ANNOUNCEMENT_ROLES,
-  DEAN_SCOPE_FORBIDDEN,
   MAX_PINNED_PER_CREATOR,
 } from "../announcementService.helpers.js";
 import { writeAnnouncementAudit } from "../create/audit.js";
 import { visibilityUserFromLoaded } from "./listSort.js";
+import { assertAnnouncementAuthor } from "../assertAnnouncementAuthor.js";
 
 const PIN_LOCK_CLASSID = 91011;
 const PIN_LIMIT_EXCEEDED = Symbol("PIN_LIMIT_EXCEEDED");
@@ -24,7 +19,11 @@ export async function togglePin(announcementId, jwtUser) {
   const role = String(jwtUser.role);
 
   if (!CREATE_ANNOUNCEMENT_ROLES.has(role)) {
-    return { ok: false, status: 403, message: "Only SUPER_ADMIN or DEAN may pin announcements" };
+    return {
+      ok: false,
+      status: 403,
+      message: "Only SUPER_ADMIN, ACADEMIC_OFFICE, DEAN, or OFFICE_STAFF may pin announcements",
+    };
   }
 
   const loaded = await loadUserAnnouncementScope(prisma, userId);
@@ -37,33 +36,11 @@ export async function togglePin(announcementId, jwtUser) {
   });
   if (!announcement) return { ok: false, status: 404, message: "Announcement not found" };
 
+  const authorGate = assertAnnouncementAuthor(userId, announcement);
+  if (!authorGate.ok) return authorGate;
+
   if (!canUserSeeAnnouncement(visibilityUser, announcement)) {
     return { ok: false, status: 403, message: "Announcement is outside your visibility scope" };
-  }
-
-  if (role === "DEAN") {
-    const dean = await prisma.deanProfile.findUnique({
-      where: { userId },
-      select: { facultyId: true },
-    });
-    if (!dean) return { ok: false, status: 403, message: DEAN_SCOPE_FORBIDDEN };
-    try {
-      await validateHierarchy(
-        prisma,
-        {
-          facultyId: dean.facultyId,
-          departmentId: announcement.departmentId,
-          batchId: announcement.batchId,
-          sectionId: announcement.sectionId,
-        },
-        dean.facultyId,
-      );
-    } catch (err) {
-      if (err instanceof InvalidHierarchyError || err instanceof OutsideFacultyError) {
-        return { ok: false, status: err.status, message: err.message };
-      }
-      throw err;
-    }
   }
 
   let updated;

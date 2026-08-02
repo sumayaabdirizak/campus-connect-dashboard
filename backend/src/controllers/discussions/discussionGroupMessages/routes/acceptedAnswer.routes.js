@@ -6,17 +6,24 @@ import { getIo } from "../../../../socket/hub.js";
 import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
 import { isDiscussionQaChannelNameKey } from "../../../../features/discussions/discussionMessagePublic.js";
 import { acceptedAnswerBodySchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
+import { resolveServerRow } from "../../serverShared.js";
+import { resolveMessageRow } from "../../messageShared.js";
 
 const router = express.Router();
 
 router.post("/groups/:groupId/messages/:messageId/accepted-answer", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
-    const messageId = Number(req.params.messageId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId) || !Number.isFinite(messageId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
     }
+    const groupId = groupRow.id;
+    const messageRow = await resolveMessageRow(req.params.messageId, { groupId });
+    if (!messageRow) {
+      return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
+    }
+    const messageId = messageRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
 
@@ -48,7 +55,7 @@ router.post("/groups/:groupId/messages/:messageId/accepted-answer", async (req, 
     const parentId = msg.parentMessageId;
     const parentRoot = await prisma.discussionMessage.findFirst({
       where: { id: parentId, groupId, deletedAt: null },
-      select: { id: true, messageType: true },
+      select: { id: true, publicId: true, messageType: true },
     });
     const inQaChannel = isDiscussionQaChannelNameKey(group.groupKey, group.name);
     const parentIsQuestion = parentRoot?.messageType === "QUESTION";
@@ -81,22 +88,22 @@ router.post("/groups/:groupId/messages/:messageId/accepted-answer", async (req, 
 
     const winner = await prisma.discussionMessage.findFirst({
       where: { groupId, parentMessageId: parentId, deletedAt: null, isAcceptedAnswer: true },
-      select: { id: true },
+      select: { id: true, publicId: true },
     });
 
     const io = getIo();
     if (io) {
       io.to(`discussion:group:${groupId}`).emit("message:accepted-answer", {
-        groupId,
-        parentMessageId: parentId,
-        acceptedMessageId: winner?.id ?? null,
+        groupId: groupRow.publicId,
+        parentMessageId: parentRoot?.publicId ?? null,
+        acceptedMessageId: winner?.publicId ?? null,
       });
     }
 
     return res.json({
       ok: true,
-      parentMessageId: parentId,
-      acceptedMessageId: winner?.id ?? null,
+      parentMessageId: parentRoot?.publicId ?? null,
+      acceptedMessageId: winner?.publicId ?? null,
     });
   } catch (error) {
     console.error(

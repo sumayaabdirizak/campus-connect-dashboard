@@ -2,15 +2,6 @@ import { DISCUSSION_CONTEXT_ROLES, DISCUSSION_SCOPE_TYPES } from "../../policy.j
 import { addDesiredRole, validAcademicId } from "../helpers.js";
 
 export async function applyProfileScopes(tx, user, desiredByScope) {
-  if (user.facultyAdminProfile?.faculty_id && validAcademicId(user.facultyAdminProfile.faculty_id)) {
-    addDesiredRole(
-      desiredByScope,
-      DISCUSSION_SCOPE_TYPES.FACULTY,
-      user.facultyAdminProfile.faculty_id,
-      DISCUSSION_CONTEXT_ROLES.ADMIN
-    );
-  }
-
   if (user.lecturerProfile?.departmentId && validAcademicId(user.lecturerProfile.departmentId)) {
     addDesiredRole(
       desiredByScope,

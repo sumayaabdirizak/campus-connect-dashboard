@@ -4,171 +4,20 @@
  * - Scoped channels that match their faculty / department / batch / section
  *   (plus dean/faculty-admin coverage for their faculty tree, and lecturers for
  *   departments / batches / sections they teach).
+ *
+ * All allow/deny logic lives in {@link usersMayAccessDiscussionChannelScope}
+ * (the batched form). The single-user helper is a thin wrapper over it so
+ * there is exactly one place to update when scope rules change.
  */
 
 import { prisma } from "../../db/prisma.js";
 import { DISCUSSION_SCOPE_TYPES } from "./policy.js";
 
 /**
- * @param {{ userId: number, scopeType: string | null, scopeId: number | null, prismaClient?: object }} args
- */
-export async function userMayAccessDiscussionChannelScope({
-  userId,
-  scopeType,
-  scopeId,
-  prismaClient = prisma,
-}) {
-  if (scopeType == null || scopeId == null) return true;
-
-  const type = String(scopeType).toUpperCase();
-  const sid = Number(scopeId);
-  if (!Number.isInteger(sid) || sid <= 0) return false;
-
-  const user = await prismaClient.user.findUnique({
-    where: { id: userId },
-    select: {
-      role: { select: { name: true } },
-      studentProfile: { select: { facultyId: true, departmentId: true } },
-      lecturerProfile: {
-        select: {
-          departmentId: true,
-          faculties: { select: { facultyId: true } },
-        },
-      },
-      deanProfile: { select: { facultyId: true } },
-      facultyAdminProfile: { select: { faculty_id: true } },
-    },
-  });
-  if (!user) return false;
-
-  const globalRole = String(user.role?.name || "").toUpperCase();
-  if (globalRole === "SUPER_ADMIN") return true;
-
-  const deanFacultyId = user.deanProfile?.facultyId ?? null;
-  const adminFacultyId = user.facultyAdminProfile?.faculty_id ?? null;
-  const staffFacultyId = deanFacultyId ?? adminFacultyId;
-
-  if (type === DISCUSSION_SCOPE_TYPES.FACULTY) {
-    if (user.studentProfile?.facultyId === sid) return true;
-    const lectFac = user.lecturerProfile?.faculties?.map((f) => f.facultyId) ?? [];
-    if (lectFac.includes(sid)) return true;
-    if (deanFacultyId === sid) return true;
-    if (adminFacultyId === sid) return true;
-    return false;
-  }
-
-  if (type === DISCUSSION_SCOPE_TYPES.DEPARTMENT) {
-    if (user.studentProfile?.departmentId === sid) return true;
-    if (user.lecturerProfile?.departmentId === sid) return true;
-    if (staffFacultyId != null) {
-      const dept = await prismaClient.department.findUnique({
-        where: { id: sid },
-        select: { facultyId: true },
-      });
-      if (dept?.facultyId === staffFacultyId) return true;
-    }
-    return false;
-  }
-
-  if (type === DISCUSSION_SCOPE_TYPES.BATCH) {
-    const regs = await prismaClient.studentRegistration.findMany({
-      where: { studentId: userId },
-      select: { batchSection: { select: { batchId: true } } },
-    });
-    for (const r of regs) {
-      if (r.batchSection?.batchId === sid) return true;
-    }
-    const taught = await prismaClient.courseOffering.findFirst({
-      where: { teacherId: userId, section: { batchId: sid } },
-      select: { id: true },
-    });
-    if (taught) return true;
-    if (staffFacultyId != null) {
-      const batch = await prismaClient.batch.findUnique({
-        where: { id: sid },
-        select: {
-          program: {
-            select: {
-              department: {
-                select: { facultyId: true },
-              },
-            },
-          },
-        },
-      });
-      const fid = batch?.program?.department?.facultyId;
-      if (fid != null && fid === staffFacultyId) return true;
-    }
-    return false;
-  }
-
-  if (type === DISCUSSION_SCOPE_TYPES.SECTION) {
-    const regs = await prismaClient.studentRegistration.findMany({
-      where: { studentId: userId },
-      select: { batchSectionId: true },
-    });
-    for (const r of regs) {
-      if (r.batchSectionId === sid) return true;
-    }
-    const taughtSec = await prismaClient.courseOffering.findFirst({
-      where: { teacherId: userId, sectionId: sid },
-      select: { id: true },
-    });
-    if (taughtSec) return true;
-    if (staffFacultyId != null) {
-      const sec = await prismaClient.batchSection.findUnique({
-        where: { id: sid },
-        select: {
-          batch: {
-            select: {
-              program: {
-                select: {
-                  department: {
-                    select: { facultyId: true },
-                  },
-                },
-              },
-            },
-          },
-        },
-      });
-      const fid = sec?.batch?.program?.department?.facultyId;
-      if (fid != null && fid === staffFacultyId) return true;
-    }
-    return false;
-  }
-
-  return false;
-}
-
-/**
- * Filters server membership rows to users allowed in a channel's academic scope.
- * Common channels (no scope) pass through unchanged.
- *
- * @param {Array<{ userId: number }>} rows
- * @param {{ scopeType?: string | null, scopeId?: number | null } | null | undefined} channel
- * @param {object} [prismaClient]
- */
-export async function filterMembershipRowsByChannelScope(rows, channel, prismaClient = prisma) {
-  if (!channel?.scopeType || channel?.scopeId == null || rows.length === 0) return rows;
-  const allowed = await usersMayAccessDiscussionChannelScope({
-    userIds: rows.map((row) => row.userId),
-    scopeType: channel.scopeType,
-    scopeId: channel.scopeId,
-    prismaClient,
-  });
-  return rows.filter((row) => allowed.has(row.userId));
-}
-
-/**
- * Batched form of {@link userMayAccessDiscussionChannelScope}: given many
- * userIds and a SINGLE channel scope, returns the Set of userIds allowed to
- * see it. Uses a constant number of queries (one user fetch + at most a couple
- * of scope-resolution / membership fetches) instead of O(N) per-user lookups —
- * the per-user form was being called once per member via Promise.all, which
- * fanned out to ~3N round-trips on large channels.
- *
- * The allow/deny logic mirrors the per-user function exactly.
+ * Batched: given many userIds and a SINGLE channel scope, returns the Set of
+ * userIds allowed to see it. Uses a constant number of queries (one user
+ * fetch + at most a couple of scope-resolution / membership fetches) instead
+ * of O(N) per-user lookups.
  *
  * @param {{ userIds: number[], scopeType: string | null, scopeId: number | null, prismaClient?: object }} args
  * @returns {Promise<Set<number>>}
@@ -203,11 +52,10 @@ export async function usersMayAccessDiscussionChannelScope({
         },
       },
       deanProfile: { select: { facultyId: true } },
-      facultyAdminProfile: { select: { faculty_id: true } },
     },
   });
 
-  // Resolve the scope's owning faculty once (for dean / faculty-admin coverage).
+  // Resolve the scope's owning faculty once (for dean coverage).
   let scopeFacultyId = null;
   if (type === DISCUSSION_SCOPE_TYPES.FACULTY) {
     scopeFacultyId = sid;
@@ -269,8 +117,7 @@ export async function usersMayAccessDiscussionChannelScope({
     }
 
     const deanFacultyId = u.deanProfile?.facultyId ?? null;
-    const adminFacultyId = u.facultyAdminProfile?.faculty_id ?? null;
-    const staffFacultyId = deanFacultyId ?? adminFacultyId;
+    const staffFacultyId = deanFacultyId;
     const staffCoversScope =
       staffFacultyId != null && scopeFacultyId != null && scopeFacultyId === staffFacultyId;
 
@@ -280,8 +127,7 @@ export async function usersMayAccessDiscussionChannelScope({
       ok =
         u.studentProfile?.facultyId === sid ||
         lectFac.includes(sid) ||
-        deanFacultyId === sid ||
-        adminFacultyId === sid;
+        deanFacultyId === sid;
     } else if (type === DISCUSSION_SCOPE_TYPES.DEPARTMENT) {
       ok =
         u.studentProfile?.departmentId === sid ||
@@ -300,4 +146,46 @@ export async function usersMayAccessDiscussionChannelScope({
   }
 
   return allowed;
+}
+
+/**
+ * Single-user convenience wrapper around {@link usersMayAccessDiscussionChannelScope}.
+ * Prefer the batched form directly when checking many users against one scope
+ * (e.g. filtering a membership list) — this wrapper still does one query
+ * round-trip per call, it just avoids duplicating the allow/deny rules.
+ *
+ * @param {{ userId: number, scopeType: string | null, scopeId: number | null, prismaClient?: object }} args
+ */
+export async function userMayAccessDiscussionChannelScope({
+  userId,
+  scopeType,
+  scopeId,
+  prismaClient = prisma,
+}) {
+  const allowed = await usersMayAccessDiscussionChannelScope({
+    userIds: [userId],
+    scopeType,
+    scopeId,
+    prismaClient,
+  });
+  return allowed.has(Number(userId));
+}
+
+/**
+ * Filters server membership rows to users allowed in a channel's academic scope.
+ * Common channels (no scope) pass through unchanged.
+ *
+ * @param {Array<{ userId: number }>} rows
+ * @param {{ scopeType?: string | null, scopeId?: number | null } | null | undefined} channel
+ * @param {object} [prismaClient]
+ */
+export async function filterMembershipRowsByChannelScope(rows, channel, prismaClient = prisma) {
+  if (!channel?.scopeType || channel?.scopeId == null || rows.length === 0) return rows;
+  const allowed = await usersMayAccessDiscussionChannelScope({
+    userIds: rows.map((row) => row.userId),
+    scopeType: channel.scopeType,
+    scopeId: channel.scopeId,
+    prismaClient,
+  });
+  return rows.filter((row) => allowed.has(row.userId));
 }

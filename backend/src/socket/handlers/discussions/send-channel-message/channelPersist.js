@@ -65,10 +65,13 @@ export async function persistChannelMessageInTx(tx, ctx) {
   const notViewingIds = memberIds.filter((id) => !isUserViewingChannel(id, channelId));
   const plaintext = e2eeEnabled ? "" : fields.hasText ? fields.effectiveContent : "";
 
-  await createMemberMessageNotifications(tx, {
+  const { mentionUserIds } = await createMemberMessageNotifications(tx, {
     groupId: serverId,
     channelId,
     messageId: created.id,
+    groupPublicId: channel.server.publicId,
+    channelPublicId: channel.publicId,
+    messagePublicId: created.publicId,
     senderId: Number(socketUser.id),
     sender: created.sender,
     isAnonymous: fields.isAnonymous,
@@ -96,5 +99,5 @@ export async function persistChannelMessageInTx(tx, ctx) {
     where: { id: created.id },
     include: { sender: { select: { id: true, full_name: true } }, attachments: true },
   });
-  return { message: full, serverId, ...presence };
+  return { message: full, serverId, memberIds, mentionUserIds, plaintext, ...presence };
 }

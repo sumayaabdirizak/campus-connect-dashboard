@@ -83,6 +83,8 @@ export async function ensureChannelForLegacyScopeGroup(legacyGroup, prismaClient
             ? "BATCH_LEGACY"
             : "SECTION_LEGACY",
       parentServerId: facultyServer.id,
+      // Inbox / Messages open this channel (lives on the parent faculty server).
+      defaultChannelId: channel.id,
     },
   });
 

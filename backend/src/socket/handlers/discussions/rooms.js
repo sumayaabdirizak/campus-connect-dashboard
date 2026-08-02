@@ -21,6 +21,10 @@ export function createDiscussionRoomHelpers(io) {
     return `${DISCUSSION_GROUP_DM_ROOM_PREFIX}${Number(groupDmId)}`;
   }
 
+  function discussionOfficeThreadRoom(threadId) {
+    return `officeThread:${Number(threadId)}`;
+  }
+
   function rememberDiscussionRoom(userId, groupId) {
     const key = Number(userId);
     const set = userDiscussionRooms.get(key) ?? new Set();
@@ -89,6 +93,7 @@ export function createDiscussionRoomHelpers(io) {
     discussionRoom,
     discussionChannelRoom,
     discussionGroupDmRoom,
+    discussionOfficeThreadRoom,
     rememberDiscussionRoom,
     forgetDiscussionRoom,
     getRememberedDiscussionRooms,

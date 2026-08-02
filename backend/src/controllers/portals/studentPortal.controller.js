@@ -1,6 +1,7 @@
 import { prisma } from "../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../utils/publicAssetUrl.js";
 import { respondInternalError } from "../../utils/httpError.js";
+import { ensureSectionOfferings } from "../../features/academic/ensureSectionOfferings.js";
 
 function buildQuickLinks(resources = []) {
   const visible = resources.filter((r) => !r.is_draft && r.status === "APPROVED");
@@ -47,91 +48,121 @@ function computeOfferingProgress(offering) {
 
 /**
  * GET /api/student-portal/my-courses
- * Returns courses offered to the student's current registration section + semester
+ * Courses the student is taking: offerings for their ACTIVE section + current term.
+ * Missing offerings are auto-created from catalogue (semester match + teachers).
  */
 export const getMyCourses = async (req, res) => {
   try {
     const userId = Number(req.user.sub);
     if (!userId) {
-      return res.status(401).json({ message: 'Invalid user context' });
+      return res.status(401).json({ message: "Invalid user context" });
     }
 
-    // 1. Get student's current active registration
     const registration = await prisma.studentRegistration.findFirst({
-      where: { studentId: userId },
-      orderBy: { created_at: 'desc' },
+      where: { studentId: userId, status: "ACTIVE" },
+      orderBy: { created_at: "desc" },
       include: {
         batchSection: {
           include: {
-            batch: { include: { program: { include: { department: true } } } }
-          }
+            batch: {
+              include: {
+                program: { include: { department: true } },
+              },
+            },
+          },
         },
         currentAcademicYear: true,
-        currentSemester: true
-      }
+        currentSemester: true,
+      },
     });
 
     if (!registration) {
-      return res.status(200).json({ success: true, offerings: [] }); // Friendly empty state
+      return res.status(200).json({ success: true, offerings: [] });
     }
 
-    // 2. Find course offerings for this section
+    const facultyId = registration.batchSection.batch.program.department.facultyId;
+    const deptRows = await prisma.department.findMany({
+      where: { facultyId },
+      select: { id: true },
+    });
+    const departmentIds = deptRows.map((d) => d.id);
+
+    await ensureSectionOfferings({
+      sectionId: registration.batchSectionId,
+      academicYearId: registration.currentAcademicYearId,
+      semesterId: registration.currentSemesterId,
+      curriculumSemester: registration.batchSection.batch.semester_number,
+      departmentIds,
+      programDepartmentId: registration.batchSection.batch.program.departmentId,
+    });
+
     const offerings = await prisma.courseOffering.findMany({
       where: {
         sectionId: registration.batchSectionId,
         semesterId: registration.currentSemesterId,
-        academicYearId: registration.currentAcademicYearId
+        academicYearId: registration.currentAcademicYearId,
       },
       include: {
         course: {
           include: {
             department: true,
-          }
+            teacherAssignings: {
+              include: {
+                teacher: { select: { id: true, full_name: true } },
+              },
+              take: 3,
+              orderBy: { assigned_at: "asc" },
+            },
+          },
         },
         teacher: {
-          select: { id: true, full_name: true, email: true }
+          select: { id: true, full_name: true, email: true },
         },
         resources: {
-          where: { is_draft: false, status: 'APPROVED' },
+          where: { is_draft: false, status: "APPROVED" },
           select: {
             id: true,
             views: {
               where: { studentId: userId },
-              select: { completed: true }
-            }
-          }
+              select: { completed: true },
+            },
+          },
         },
         assignments: {
-          where: { is_draft: false },
+          where: { lifecycle: { publishStatus: 'PUBLISHED' } },
           include: {
             _count: {
               select: {
-                submissions: { where: { studentId: userId } }
-              }
-            }
-          }
+                submissions: { where: { studentId: userId } },
+              },
+            },
+          },
         },
         quizzes: {
           where: { is_draft: false },
           include: {
             _count: {
               select: {
-                attempts: { where: { studentId: userId } }
-              }
-            }
-          }
-        }
-      }
+                attempts: { where: { studentId: userId } },
+              },
+            },
+          },
+        },
+      },
     });
 
     const transformed = offerings.map((o) => {
       const metrics = computeOfferingProgress(o);
+      const fromAssignings = (o.course.teacherAssignings ?? [])
+        .map((ta) => ta.teacher?.full_name)
+        .filter(Boolean)
+        .join(", ");
 
       return {
         id: o.publicId,
         courseCode: o.course.code,
         courseName: o.course.name,
-        instructor: o.teacher?.full_name || 'TBA',
+        instructor: o.teacher?.full_name || fromAssignings || "TBA",
         department: o.course.department.name,
         section: registration.batchSection.name,
         thumbnail: resolveCourseThumbnail(o.course.thumbnail, o.course.code),
@@ -151,11 +182,11 @@ export const getMyCourses = async (req, res) => {
       registration: {
         batch: registration.batchSection.batch.name,
         section: registration.batchSection.name,
-        semester: registration.currentSemester.name
-      }
+        semester: registration.currentSemester.name,
+      },
     });
   } catch (e) {
-    respondInternalError(res, 'Failed to fetch student courses', e);
+    respondInternalError(res, "Failed to fetch student courses", e);
   }
 };
 
@@ -204,7 +235,7 @@ export const getCourseDetail = async (req, res) => {
           }
         },
         assignments: {
-          where: { is_draft: false },
+          where: { lifecycle: { publishStatus: 'PUBLISHED' } },
           orderBy: { due_date: 'asc' },
           include: {
             _count: {

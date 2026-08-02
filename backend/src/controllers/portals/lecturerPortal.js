@@ -4,11 +4,12 @@ import fs from 'fs';
 import path from 'path';
 import { requireRole } from "../../middleware/requireRole.js";
 import { getMyAssignments } from './lecturerPortal.controller.js';
-import { getMyCourses, getCourseDetail, updateCourseCover } from './teacherCourse.controller.js';
+import { getMyCourses, getCourseDetail, updateCourseCover } from './teacherCourse.controller/index.js';
 import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
 
 const router = Router();
-router.use(requireRole("TEACHER"));
+// Teacher owns most portal routes; deans may open a single course detail.
+router.use(requireRole("TEACHER", "DEAN", "SUPER_ADMIN"));
 
 // Cover-image uploads: images only, 5 MB cap, stored under /uploads/covers.
 const COVER_DIR = './uploads/covers';

@@ -6,6 +6,8 @@ import {
 import { prisma } from "../../../db/prisma.js";
 import { validateGroupMessagePreconditions } from "./send-group-message/groupValidate.js";
 import { persistGroupMessageInTx } from "./send-group-message/groupPersist.js";
+import { notifyOfflineOrMentionedByEmail } from "./discussion-send/emailNotify.js";
+import { buildMessagePublicIdMap, toMessageDto } from "../../../controllers/discussions/messageShared.js";
 
 /** @param {object} args */
 export async function sendGroupMessage(args) {
@@ -32,7 +34,8 @@ export async function sendGroupMessage(args) {
   );
 
   await touchDiscussionSession(socket);
-  const rawGroupMsg = result.message;
+  const publicIdById = await buildMessagePublicIdMap(result.message ? [result.message] : []);
+  const rawGroupMsg = { ...toMessageDto(result.message, publicIdById), groupId: pre.groupPublicId };
   const outGroupMsg = applyAnonymousSenderPolicy(rawGroupMsg, Number(socketUser.id), pre.membership);
   const wsGroupMsg = rawGroupMsg?.isAnonymous
     ? applyAnonymousSenderPolicy(rawGroupMsg, null, null, { broadcast: true })
@@ -44,8 +47,8 @@ export async function sendGroupMessage(args) {
   for (const recipientUserId of result.popupRecipientIds) {
     fanout.emitToUser(recipientUserId, "notification:new", {
       type: "MESSAGE",
-      groupId: pre.groupId,
-      messageId: result.message?.id,
+      groupId: pre.groupPublicId,
+      messageId: rawGroupMsg.id,
       senderId: Number(socketUser.id),
       senderName: anonymousSafeSenderName(rawGroupMsg),
       createdAt: new Date().toISOString(),
@@ -53,6 +56,26 @@ export async function sendGroupMessage(args) {
   }
 
   await emitUnreadUpdateToUsers(result.onlineNotViewingIds);
+
+  void (async () => {
+    const hasRecipients =
+      (result.offlineIds?.length ?? 0) > 0 || (result.mentionUserIds?.length ?? 0) > 0;
+    if (!hasRecipients) return;
+    const groupRow = await prisma.discussionGroup.findUnique({
+      where: { id: pre.groupId },
+      select: { name: true },
+    });
+    await notifyOfflineOrMentionedByEmail({
+      memberUserIds: result.memberIds,
+      offlineIds: result.offlineIds,
+      mentionUserIds: result.mentionUserIds,
+      senderName: result.message?.sender?.full_name || "Someone",
+      conversationLabel: groupRow?.name || "your conversation",
+      plaintext: result.message?.content ?? "",
+      href: `/dashboard/messages?server=${pre.groupId}`,
+    });
+  })().catch(() => {});
+
   metricTimerEnd("messages.send_total.ms", started);
   return ackSuccess(ack, {
     message: outGroupMsg,

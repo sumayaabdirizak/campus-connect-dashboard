@@ -9,3 +9,4 @@ export {
   createCourseOffering,
   deleteCourseOffering,
 } from "./courseManagement/offerings.js";
+export { generateCourseOfferings } from "./courseManagement/generateOfferings.js";

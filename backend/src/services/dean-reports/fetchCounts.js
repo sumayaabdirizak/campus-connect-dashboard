@@ -2,6 +2,11 @@ import { prisma } from '../../db/prisma.js';
 import { safe } from './helpers.js';
 
 export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since, prevSince }) {
+  const studentWhere = {
+    facultyId,
+    ...(deptIds.length === 1 ? { departmentId: deptIds[0] } : {}),
+  };
+
   const [
     totalStudents,
     totalInstructors,
@@ -11,13 +16,16 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
     onTimeSubmissions,
     inactiveStudents,
   ] = await Promise.all([
-    safe(() => prisma.studentProfile.count({ where: { facultyId } }), 0),
+    safe(() => prisma.studentProfile.count({ where: studentWhere }), 0),
     safe(
       () =>
         prisma.user.count({
           where: {
             role: { name: 'TEACHER' },
-            lecturerProfile: { faculties: { some: { facultyId } } },
+            lecturerProfile: {
+              faculties: { some: { facultyId } },
+              ...(deptIds.length === 1 ? { departmentId: deptIds[0] } : {}),
+            },
           },
         }),
       0
@@ -29,7 +37,7 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
         }),
       0
     ),
-    safe(() => prisma.studentProfile.count({ where: { facultyId } }), 0),
+    safe(() => prisma.studentProfile.count({ where: studentWhere }), 0),
     safe(
       () =>
         offeringIds.length
@@ -45,7 +53,7 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
           ? prisma.submission.count({
               where: {
                 assignment: { courseOfferingId: { in: offeringIds } },
-                is_late: false,
+                lateState: 'ON_TIME',
               },
             })
           : 0,
@@ -56,7 +64,7 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
         prisma.user.count({
           where: {
             status: { in: ['INACTIVE', 'SUSPENDED'] },
-            studentProfile: { facultyId },
+            studentProfile: studentWhere,
           },
         }),
       0

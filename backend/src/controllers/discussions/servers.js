@@ -29,6 +29,8 @@ import { getServerVisibleChannels } from "../../features/discussions/serverChann
 import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
 import { slugifyDiscussionChannelName } from "../../features/discussions/discussionChannelUtils.js";
 import { createChannelSchema } from "../../features/discussions/validation/serverSchemas.js";
+import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
+import { resolveServerRow, resolveCategoryRow, toServerDto, toCategoryDto, toChannelDto } from "./serverShared.js";
 import serverChannelsRouter from "./serverChannels.routes.js";
 import serverMembersRouter from "./serverMembers.routes.js";
 import serverChannelFeedRouter from "./serverChannelFeed.routes.js";
@@ -57,13 +59,14 @@ router.get("/servers", async (req, res) => {
         group: {
           select: {
             id: true,
+            publicId: true,
             name: true,
             scopeType: true,
             scopeId: true,
             kind: true,
             iconUrl: true,
             description: true,
-            defaultChannelId: true,
+            defaultChannel: { select: { publicId: true } },
             ownerId: true,
             e2eeEnabled: true,
           },
@@ -78,16 +81,7 @@ router.get("/servers", async (req, res) => {
       if (seen.has(m.groupId)) continue;
       seen.add(m.groupId);
       servers.push({
-        id: m.group.id,
-        name: m.group.name,
-        scopeType: m.group.scopeType,
-        scopeId: m.group.scopeId,
-        kind: m.group.kind,
-        iconUrl: m.group.iconUrl,
-        description: m.group.description,
-        defaultChannelId: m.group.defaultChannelId,
-        ownerId: m.group.ownerId,
-        e2eeEnabled: m.group.e2eeEnabled,
+        ...toServerDto(m.group),
         myMembershipRole: m.role,
       });
     }
@@ -104,22 +98,23 @@ router.get("/servers/:serverId", async (req, res) => {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
 
-    const serverId = Number(req.params.serverId);
-    if (!Number.isInteger(serverId) || serverId <= 0) {
+    const where = whereFromParam(req.params.serverId);
+    if (!where) {
       return res.status(400).json(apiErrorBody("Invalid serverId", null));
     }
 
     const server = await prisma.discussionGroup.findFirst({
-      where: { id: serverId, kind: { in: ["FACULTY_SERVER", "USER_SERVER"] } },
+      where: { ...where, kind: { in: ["FACULTY_SERVER", "USER_SERVER"] } },
       select: {
         id: true,
+        publicId: true,
         name: true,
         scopeType: true,
         scopeId: true,
         kind: true,
         iconUrl: true,
         description: true,
-        defaultChannelId: true,
+        defaultChannel: { select: { publicId: true } },
         ownerId: true,
         e2eeEnabled: true,
         e2eeCurrentKeyVersion: true,
@@ -128,6 +123,7 @@ router.get("/servers/:serverId", async (req, res) => {
       },
     });
     if (!server) return res.status(404).json(apiErrorBody("Server not found", null));
+    const serverId = server.id;
 
     const perms = await computeServerPermissions({ userId, serverId });
     if (!hasPermission(perms, PERMISSION_BITS.VIEW_CHANNEL)) {
@@ -152,10 +148,12 @@ router.get("/servers/:serverId", async (req, res) => {
       }),
     ]);
 
+    const categoryPublicIdById = new Map(categories.map((c) => [c.id, c.publicId]));
+
     return res.json({
-      server,
-      categories,
-      channels,
+      server: toServerDto(server),
+      categories: categories.map((c) => toCategoryDto(c, server.publicId)),
+      channels: channels.map((c) => toChannelDto(c, server.publicId, categoryPublicIdById)),
       roles: roles.map((r) => ({ ...r, permissions: r.permissions.toString() })),
       myServerPermissions: perms.toString(),
     });
@@ -170,12 +168,19 @@ router.get("/servers/:serverId/channels", async (req, res) => {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
 
-    const serverId = Number(req.params.serverId);
-    if (!Number.isInteger(serverId) || serverId <= 0) {
+    const serverRow = await resolveServerRow(req.params.serverId);
+    if (!serverRow) {
       return res.status(400).json(apiErrorBody("Invalid serverId", null));
     }
-    const channels = await getServerVisibleChannels(serverId, userId);
-    return res.json({ results: channels });
+    const channels = await getServerVisibleChannels(serverRow.id, userId);
+    const categories = await prisma.discussionChannelCategory.findMany({
+      where: { serverId: serverRow.id },
+      select: { id: true, publicId: true },
+    });
+    const categoryPublicIdById = new Map(categories.map((c) => [c.id, c.publicId]));
+    return res.json({
+      results: channels.map((c) => toChannelDto(c, serverRow.publicId, categoryPublicIdById)),
+    });
   } catch (error) {
     console.error("GET /discussions/servers/:serverId/channels failed", error);
     return res.status(500).json(apiErrorBody("Failed to list channels", null));
@@ -196,15 +201,15 @@ router.post(
       const topicRaw = parsed.data.topic;
       const topic =
         topicRaw === undefined || topicRaw === null ? null : String(topicRaw).trim().slice(0, 1024) || null;
-      const categoryId = Number(parsed.data.categoryId);
-      if (Number.isInteger(categoryId) && categoryId > 0) {
-        const category = await prisma.discussionChannelCategory.findUnique({
-          where: { id: categoryId },
-          select: { id: true, serverId: true },
-        });
+      let categoryId = null;
+      let categoryPublicId = null;
+      if (parsed.data.categoryId != null) {
+        const category = await resolveCategoryRow(parsed.data.categoryId);
         if (!category || category.serverId !== serverId) {
           return res.status(400).json(apiErrorBody("categoryId does not belong to this server", null));
         }
+        categoryId = category.id;
+        categoryPublicId = category.publicId;
       }
 
       const initialSlug = slugifyDiscussionChannelName(name);
@@ -226,12 +231,7 @@ router.post(
       }
 
       const maxPosRow = await prisma.discussionChannel.aggregate({
-        where: {
-          serverId,
-          ...(Number.isInteger(categoryId) && categoryId > 0
-            ? { categoryId }
-            : { categoryId: null }),
-        },
+        where: { serverId, categoryId },
         _max: { position: true },
       });
       const nextPosition = Number(maxPosRow?._max?.position ?? -1) + 1;
@@ -239,7 +239,7 @@ router.post(
       const channel = await prisma.discussionChannel.create({
         data: {
           serverId,
-          categoryId: Number.isInteger(categoryId) && categoryId > 0 ? categoryId : null,
+          categoryId,
           name,
           slug: finalSlug,
           topic,
@@ -248,7 +248,10 @@ router.post(
           position: nextPosition,
         },
       });
-      return res.status(201).json({ channel });
+      const categoryMap = categoryId != null ? new Map([[categoryId, categoryPublicId]]) : null;
+      return res
+        .status(201)
+        .json({ channel: toChannelDto(channel, req.discussionServerPublicId, categoryMap) });
     } catch (error) {
       console.error("POST /discussions/servers/:serverId/channels failed", error);
       return res.status(500).json(apiErrorBody("Failed to create channel", null));

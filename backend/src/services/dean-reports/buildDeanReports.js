@@ -1,6 +1,6 @@
 import { buildAssessmentReports } from './assessment.js';
 import { assembleDeanReport } from './assembleReport.js';
-import { buildAttendanceCharts, buildInstructorPerformanceChart } from './attendanceCharts.js';
+import { buildEngagementCharts, buildInstructorPerformanceChart } from './engagementCharts.js';
 import { buildCourseAnalytics } from './courseAnalytics.js';
 import { buildDepartmentAnalytics } from './departmentAnalytics.js';
 import { fetchReportCollections } from './fetchCollections.js';
@@ -32,9 +32,17 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     prevSince,
   } = scope;
 
+  const scopedDepartments = departments.filter((d) => scope.deptIds.includes(d.id));
+
   const [counts, collections] = await Promise.all([
     fetchReportCounts({ facultyId, deptIds: scope.deptIds, offeringIds, since, prevSince }),
-    fetchReportCollections({ facultyId, offeringIds, since, prevSince }),
+    fetchReportCollections({
+      facultyId,
+      offeringIds,
+      since,
+      prevSince,
+      filters: scope.filters ?? filters,
+    }),
   ]);
 
   const {
@@ -46,6 +54,8 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     teachers,
     courseAccessRows,
     recentSubmissions,
+    resourceCount,
+    resourceViews,
   } = collections;
 
   const kpis = computeKpis({
@@ -75,7 +85,7 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
   });
 
   const { departmentPerformance, rankedDepartments } = await buildDepartmentAnalytics({
-    departments,
+    departments: scopedDepartments,
     offerings,
     uniqueCourses,
     gradedSubmissions,
@@ -90,14 +100,15 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     gradedSubmissions,
     recentSubmissions,
     attendanceRate: kpis.attendanceRate,
+    filters: scope.filters ?? filters,
   });
 
   const instructorReports = buildInstructorReports({ teachers, offerings, allQuizAttempts });
 
-  const { dailyAttendance, monthlyAttendance, departmentAttendance } = buildAttendanceCharts({
+  const { dailyEngagement, monthlyEngagement, departmentEngagement } = buildEngagementCharts({
     recentSubmissions,
     months,
-    departmentPerformance,
+    offerings,
   });
 
   const instructorPerformance = buildInstructorPerformanceChart(instructorReports);
@@ -124,6 +135,8 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     quizPassRate: kpis.quizPassRate,
     gradedSubmissions,
     allQuizAttempts,
+    resourceCount: resourceCount ?? 0,
+    resourceViews: resourceViews ?? [],
   });
 
   return assembleDeanReport({
@@ -140,9 +153,9 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     topCourses,
     bottomCourses,
     performanceDistribution,
-    dailyAttendance,
-    monthlyAttendance,
-    departmentAttendance,
+    dailyEngagement,
+    monthlyEngagement,
+    departmentEngagement,
     instructorPerformance,
     studentReports,
     instructorReports,

@@ -15,6 +15,7 @@ import {
 } from "../../features/discussions/permissions.js";
 import { recordDiscussionAuditLog } from "../../features/discussions/auditLog.js";
 import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+import { resolveChannelRow } from "./serverShared.js";
 
 const router = express.Router();
 
@@ -68,14 +69,8 @@ router.post(
       let auditChannelIdMute = null;
       const acRaw = req.body?.auditChannelId;
       if (acRaw != null && acRaw !== "") {
-        const ac = Number(acRaw);
-        if (Number.isInteger(ac) && ac > 0) {
-          const ch = await prisma.discussionChannel.findUnique({
-            where: { id: ac },
-            select: { serverId: true },
-          });
-          if (ch && ch.serverId === serverId) auditChannelIdMute = ac;
-        }
+        const chRow = await resolveChannelRow(acRaw);
+        if (chRow && chRow.serverId === serverId) auditChannelIdMute = chRow.id;
       }
 
       const priorMembership = await prisma.discussionGroupMembership.findFirst({
@@ -94,7 +89,7 @@ router.post(
         const io = getIo();
         if (io) {
           io.to(`user:${targetUserId}`).emit("server:member:mute", {
-            serverId,
+            serverId: req.discussionServerPublicId,
             userId: targetUserId,
             mutedUntil: until ? until.toISOString() : null,
           });
@@ -139,14 +134,8 @@ router.delete(
       let auditChannelIdKick = null;
       const qAc = req.query?.auditChannelId;
       if (qAc != null && qAc !== "") {
-        const ac = Number(qAc);
-        if (Number.isInteger(ac) && ac > 0) {
-          const ch = await prisma.discussionChannel.findUnique({
-            where: { id: ac },
-            select: { serverId: true },
-          });
-          if (ch && ch.serverId === serverId) auditChannelIdKick = ac;
-        }
+        const chRow = await resolveChannelRow(qAc);
+        if (chRow && chRow.serverId === serverId) auditChannelIdKick = chRow.id;
       }
       // Refuse to kick the server owner — owners can only step down via a
       // separate transfer-ownership flow (not built yet).
@@ -170,7 +159,7 @@ router.delete(
         const io = getIo();
         if (io) {
           io.to(`user:${targetUserId}`).emit("server:member:remove", {
-            serverId,
+            serverId: req.discussionServerPublicId,
             userId: targetUserId,
           });
         }

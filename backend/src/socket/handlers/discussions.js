@@ -27,9 +27,11 @@ export function createDiscussionHandlers(io, { fanout, presenceStorePromise }) {
     client.data.discussionRooms = new Set();
     client.data.discussionChannelRooms = new Set();
     client.data.discussionGroupDmRooms = new Set();
+    client.data.discussionOfficeThreadRooms = new Set();
     client.data.activeDiscussionGroupId = null;
     client.data.activeDiscussionChannelId = null;
     client.data.activeDiscussionGroupDmId = null;
+    client.data.activeOfficeThreadId = null;
 
     const joinRoom = (prefix, value) => {
       if (value === undefined || value === null || !Number.isFinite(Number(value))) return;

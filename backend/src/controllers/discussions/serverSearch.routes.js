@@ -18,6 +18,7 @@ import {
 import { resolveServerMessageSearchFilters } from "../../features/discussions/serverMessageSearch.js";
 import { applyAnonymousSenderPolicy } from "../../features/discussions/discussionMessagePublic.js";
 import { getDiscussionCallerUserId } from "../../features/discussions/discussionCaller.js";
+import { buildMessagePublicIdMap, toMessageDto } from "./messageShared.js";
 
 const router = express.Router();
 
@@ -81,7 +82,7 @@ router.get(
         include: {
           sender: { select: { id: true, full_name: true } },
           attachments: true,
-          channel: { select: { id: true, name: true, slug: true } },
+          channel: { select: { id: true, publicId: true, name: true, slug: true } },
         },
       });
 
@@ -89,8 +90,17 @@ router.get(
         where: { groupId: serverId, userId, leftAt: null, isActive: true },
       });
 
+      const publicIdById = await buildMessagePublicIdMap(messages);
       const enriched = messages.map((m) =>
-        applyAnonymousSenderPolicy(m, userId, channelMembership)
+        applyAnonymousSenderPolicy(
+          {
+            ...toMessageDto(m, publicIdById),
+            channelId: m.channel?.publicId ?? null,
+            channel: m.channel ? { ...m.channel, id: m.channel.publicId } : null,
+          },
+          userId,
+          channelMembership
+        )
       );
       return res.json({
         results: enriched,
@@ -166,8 +176,13 @@ router.get(
         },
       });
 
+      const publicIdById = await buildMessagePublicIdMap(messages);
       const enriched = messages.map((m) =>
-        applyAnonymousSenderPolicy(m, userId, channelMembership)
+        applyAnonymousSenderPolicy(
+          { ...toMessageDto(m, publicIdById), channelId: req.discussionChannelPublicId },
+          userId,
+          channelMembership
+        )
       );
       return res.json({
         results: enriched,

@@ -34,11 +34,19 @@ export async function gatherUserIdsForDiscussionScopeRefresh(prismaClient, scope
   return [...ids];
 }
 
+/**
+ * Ensure a DiscussionGroup exists for an academic scope.
+ * Reactivates ARCHIVED rows when the scope is needed again (same scopeId).
+ * @param {{ skipDefaultMembers?: boolean }} [options]
+ *   When true, only ensure group + channel (user sync). Full member backfill
+ *   stays on refreshDiscussionMembershipsForScope / setup scripts.
+ */
 export async function ensureDiscussionGroupForScope({
   scopeType,
   scopeId,
   name,
   prismaClient = prisma,
+  skipDefaultMembers = false,
 }) {
   const normalizedScopeType = String(scopeType || "").toUpperCase();
   const numericScopeId = Number(scopeId);
@@ -51,27 +59,33 @@ export async function ensureDiscussionGroupForScope({
       scopeId: numericScopeId,
       groupKey,
       name,
+      status: "ACTIVE",
+      archivedAt: null,
     },
     update: {
       name,
       groupKey,
+      status: "ACTIVE",
+      archivedAt: null,
     },
   });
 
-  const defaultMembers = mergeMembersByHighestRole(
-    await getDefaultMembersForScope(client, {
-      scopeType: normalizedScopeType,
-      scopeId: numericScopeId,
-    })
-  );
+  if (!skipDefaultMembers) {
+    const defaultMembers = mergeMembersByHighestRole(
+      await getDefaultMembersForScope(client, {
+        scopeType: normalizedScopeType,
+        scopeId: numericScopeId,
+      })
+    );
 
-  for (const member of defaultMembers) {
-    await upsertMembership(client, {
-      groupId: group.id,
-      userId: member.userId,
-      role: member.role,
-      scopeType: normalizedScopeType,
-    });
+    for (const member of defaultMembers) {
+      await upsertMembership(client, {
+        groupId: group.id,
+        userId: member.userId,
+        role: member.role,
+        scopeType: normalizedScopeType,
+      });
+    }
   }
 
   if (normalizedScopeType === DISCUSSION_SCOPE_TYPES.FACULTY) {

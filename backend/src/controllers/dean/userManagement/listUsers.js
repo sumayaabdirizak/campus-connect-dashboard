@@ -51,6 +51,7 @@ export const getFacultyUsers = async (req, res) => {
               programId: true,
             },
           },
+          studentRegistrations: { select: { id: true }, take: 1 },
           lecturerProfile: {
             select: {
               specialty: true,
@@ -69,6 +70,8 @@ export const getFacultyUsers = async (req, res) => {
     const mapped = users.map((u) => ({
       ...u,
       role: u.role.name,
+      isAssigned: (u.studentRegistrations?.length ?? 0) > 0,
+      studentRegistrations: undefined,
     }));
 
     res.json(

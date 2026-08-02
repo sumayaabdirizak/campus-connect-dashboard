@@ -30,7 +30,9 @@ export function canUserSeeAnnouncement(user, announcement) {
   if (scope.isSuperAdmin) return true;
 
   const { facultyIds, departmentIds, batchIds, sectionIds } = scope;
-  const isDean = String(user.role) === "DEAN";
+  const role = String(user.role || "").toUpperCase();
+  const facultyPublisher =
+    role === "DEAN" || (role === "OFFICE_STAFF" && facultyIds.size > 0);
 
   const matchesTargets =
     Array.isArray(announcement.targets) &&
@@ -43,9 +45,10 @@ export function canUserSeeAnnouncement(user, announcement) {
     });
 
   if (announcement.targetType === "ALL") {
-    if (isDean) {
-      const deanFac = facultyIds.size ? Array.from(facultyIds)[0] : null;
-      return deanFac != null && announcement.facultyId === deanFac;
+    if (facultyPublisher) {
+      if (announcement.facultyId == null) return true;
+      const primaryFac = facultyIds.size ? Array.from(facultyIds)[0] : null;
+      return primaryFac != null && announcement.facultyId === primaryFac;
     }
     return true;
   }

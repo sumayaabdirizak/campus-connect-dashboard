@@ -26,7 +26,9 @@ router.delete(
         where: { id: channelId },
         select: {
           id: true,
+          publicId: true,
           serverId: true,
+          server: { select: { publicId: true } },
           archivedAt: true,
           isDefault: true,
           name: true,
@@ -69,13 +71,13 @@ router.delete(
         const io = getIo();
         if (io) {
           io.to(`channel:${channelId}`).emit("channel:update", {
-            channelId,
-            serverId: channel.serverId,
+            channelId: channel.publicId,
+            serverId: channel.server.publicId,
             deleted: true,
           });
           io.to(`discussion:group:${channel.serverId}`).emit("server:channelsChanged", {
-            serverId: channel.serverId,
-            channelId,
+            serverId: channel.server.publicId,
+            channelId: channel.publicId,
           });
         }
       } catch (emitErr) {

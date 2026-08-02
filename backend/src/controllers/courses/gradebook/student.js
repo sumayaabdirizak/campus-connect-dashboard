@@ -6,7 +6,7 @@ export async function getStudentGrades(req, res) {
 
   const [assignments, quizzes] = await Promise.all([
     prisma.assignment.findMany({
-      where: { courseOfferingId: offering.id, is_draft: false },
+      where: { courseOfferingId: offering.id, lifecycle: { publishStatus: 'PUBLISHED' } },
       select: { id: true, title: true, maxMarks: true, due_date: true },
       orderBy: { due_date: 'asc' },
     }),
@@ -26,9 +26,8 @@ export async function getStudentGrades(req, res) {
           where: { assignmentId: { in: assignmentIds }, studentId },
           select: {
             assignmentId: true,
-            grade: true,
-            is_late: true,
-            is_reviewed: true,
+            lateState: true,
+            gradeRow: { select: { score: true } },
           },
         })
       : Promise.resolve([]),
@@ -56,18 +55,19 @@ export async function getStudentGrades(req, res) {
   for (const a of assignments) {
     const sub = subByAssignment.get(a.id);
     const maxMarks = a.maxMarks || 100;
-    const pct = sub?.grade != null ? (sub.grade / maxMarks) * 100 : null;
+    const rawGrade = sub?.gradeRow?.score ?? null;
+    const pct = rawGrade != null ? (rawGrade / maxMarks) * 100 : null;
     if (pct != null) pcts.push(pct);
     items.push({
       kind: 'assignment',
       id: a.id,
       title: a.title,
       maxMarks,
-      grade: sub?.grade ?? null,
+      grade: rawGrade,
       pct,
       submitted: Boolean(sub),
-      late: sub?.is_late ?? false,
-      reviewed: sub?.is_reviewed ?? false,
+      late: sub?.lateState === 'LATE',
+      reviewed: sub?.gradeRow != null,
       dueAt: a.due_date,
     });
   }

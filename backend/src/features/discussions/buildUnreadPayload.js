@@ -13,9 +13,20 @@ export async function buildUnreadSocketPayload(userId) {
     where: { userId: uid, readAt: null },
     _count: { groupId: true },
   });
+  const groupIntIds = grouped.filter((row) => row.groupId != null).map((row) => Number(row.groupId));
+  const groupRows = groupIntIds.length
+    ? await prisma.discussionGroup.findMany({
+        where: { id: { in: groupIntIds } },
+        select: { id: true, publicId: true },
+      })
+    : [];
+  const groupPublicIdById = new Map(groupRows.map((g) => [g.id, g.publicId]));
   const byGroup = grouped
-    .filter((row) => row.groupId != null)
-    .map((row) => ({ groupId: Number(row.groupId), unreadCount: Number(row._count.groupId) }));
+    .filter((row) => row.groupId != null && groupPublicIdById.has(Number(row.groupId)))
+    .map((row) => ({
+      groupId: groupPublicIdById.get(Number(row.groupId)),
+      unreadCount: Number(row._count.groupId),
+    }));
   const gdmRows = await prisma.discussionNotification.findMany({
     where: { userId: uid, readAt: null, groupId: null },
     select: { payload: true },
@@ -23,8 +34,10 @@ export async function buildUnreadSocketPayload(userId) {
   const gdmMap = new Map();
   for (const row of gdmRows) {
     const p = row.payload && typeof row.payload === "object" ? row.payload : {};
-    const gid = Number(p.groupDmId);
-    if (!Number.isFinite(gid) || gid <= 0) continue;
+    // `groupDmId` in a stored notification payload is the GroupDm UUID
+    // publicId (see route-06.js / send-group-dm-message.js) — not numeric.
+    const gid = typeof p.groupDmId === "string" ? p.groupDmId : null;
+    if (!gid) continue;
     gdmMap.set(gid, (gdmMap.get(gid) ?? 0) + 1);
   }
   const byGroupDm = [...gdmMap.entries()].map(([groupDmId, unreadCount]) => ({

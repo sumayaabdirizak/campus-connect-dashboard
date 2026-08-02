@@ -3,6 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireQuizManage } from '../../../middleware/courseOfferingRbac.js';
 import { reorderQuestionsBodySchema } from '../../../validation/quizSchemas.js';
+import { assertQuizIsDraft } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -10,6 +11,7 @@ export function register(router) {
     '/:quizId/questions/reorder', requireQuizManage(),
     validateBody(reorderQuestionsBodySchema),
     asyncHandler(async (req, res) => {
+      assertQuizIsDraft(req.quiz);
       const qid = parseInt(req.params.quizId, 10);
       const items = req.body.items;
       const ownIds = new Set(

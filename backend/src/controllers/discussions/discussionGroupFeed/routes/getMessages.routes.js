@@ -10,12 +10,13 @@ import {
 import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
 import { toDiscussionAttachmentDto } from "../../../../features/discussions/discussionAttachments.js";
 import { buildGroupThreadPreviewMap } from "../shared.js";
+import { whereFromParam } from "../../../../features/discussions/publicIdResolution.js";
+import { buildMessagePublicIdMap, toMessageDto } from "../../messageShared.js";
 
 const router = express.Router();
 
 router.get("/groups/:groupId/messages", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
     const userId = Number(req.user?.sub);
     const limit = parseDiscussionHistoryLimit(req.query.limit);
     const rawCursor = req.query.cursor;
@@ -25,9 +26,15 @@ router.get("/groups/:groupId/messages", async (req, res) => {
     if (hasCursor && !cursor) {
       return res.status(400).json(apiErrorBody("Invalid or unreadable cursor", null));
     }
-    if (!Number.isFinite(groupId)) {
+    const groupWhere = whereFromParam(req.params.groupId);
+    if (!groupWhere) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }
+    const groupRowForId = await prisma.discussionGroup.findFirst({ where: groupWhere, select: { id: true, publicId: true } });
+    if (!groupRowForId) {
+      return res.status(400).json(apiErrorBody("Invalid groupId", null));
+    }
+    const groupId = groupRowForId.id;
 
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
@@ -38,10 +45,14 @@ router.get("/groups/:groupId/messages", async (req, res) => {
     });
 
     const parentIdRaw = req.query.parentId ?? req.query.parentMessageId;
-    const parentMessageId =
-      parentIdRaw != null && String(parentIdRaw).trim() !== "" ? Number(parentIdRaw) : null;
-    if (parentMessageId != null && !Number.isFinite(parentMessageId)) {
-      return res.status(400).json(apiErrorBody("Invalid parentId", null));
+    let parentMessageId = null;
+    if (parentIdRaw != null && String(parentIdRaw).trim() !== "") {
+      const parentRow = await prisma.discussionMessage.findFirst({
+        where: { ...(whereFromParam(parentIdRaw) ?? { id: -1 }), groupId, deletedAt: null },
+        select: { id: true },
+      });
+      if (!parentRow) return res.status(400).json(apiErrorBody("Invalid parentId", null));
+      parentMessageId = parentRow.id;
     }
 
     const whereParts = [{ groupId }, { deletedAt: null }];
@@ -72,7 +83,7 @@ router.get("/groups/:groupId/messages", async (req, res) => {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: limit + 1,
       include: {
-        sender: { select: { id: true, full_name: true } },
+        sender: { select: { id: true, full_name: true, avatarUrl: true } },
         attachments: true,
       },
     });
@@ -103,13 +114,18 @@ router.get("/groups/:groupId/messages", async (req, res) => {
         threadPreview: previewByRoot.get(m.id) ?? null,
       }));
     }
+    const publicIdById = await buildMessagePublicIdMap(resultsPayload);
+    resultsPayload = resultsPayload.map((m) => ({
+      ...toMessageDto(m, publicIdById),
+      groupId: groupRowForId.publicId,
+    }));
 
     return res.json({
       results: resultsPayload,
       meta: {
         nextCursor,
         hasMore,
-        parentMessageId: parentMessageId != null && Number.isFinite(parentMessageId) ? parentMessageId : null,
+        parentMessageId: parentMessageId != null ? (publicIdById.get(parentMessageId) ?? null) : null,
       },
     });
   } catch (error) {

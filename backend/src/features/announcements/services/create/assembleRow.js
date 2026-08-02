@@ -17,7 +17,15 @@ import {
  * @param {string} input.content
  */
 export function assembleCreateAnnouncementRow(input) {
-  const { role, parsed, sanitizedTargeting, extraTargets, targetType, content } = input;
+  const {
+    role,
+    parsed,
+    sanitizedTargeting,
+    extraTargets,
+    targetType,
+    content,
+    facultyScoped = false,
+  } = input;
   const title = typeof parsed.title === "string" ? parsed.title.trim() : "";
 
   const imageUrls = Array.isArray(parsed.imageUrls)
@@ -25,7 +33,7 @@ export function assembleCreateAnnouncementRow(input) {
     : [];
   let targetRoles = normalizeTargetRoles(parsed.targetRoles ?? []);
   if (targetRoles.length === 0) {
-    targetRoles = defaultTargetRolesForCreator(role);
+    targetRoles = defaultTargetRolesForCreator(role, facultyScoped);
   }
 
   const expiresAt = normalizeExpiresAt(parsed.expiresAt);

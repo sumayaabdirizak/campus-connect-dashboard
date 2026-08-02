@@ -4,7 +4,6 @@ export const userSyncSelect = {
   role: { select: { name: true } },
   deanProfile: { select: { facultyId: true } },
   facultiesAsDean: { select: { id: true } },
-  facultyAdminProfile: { select: { faculty_id: true } },
   lecturerProfile: {
     select: {
       departmentId: true,

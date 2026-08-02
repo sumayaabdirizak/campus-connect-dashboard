@@ -2,7 +2,8 @@ import express from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { apiErrorBody } from '../../../utils/apiEnvelope.js';
 import { getIo } from '../../../socket/hub.js';
-import { userId, handleServiceError, formatClubForApi } from '../shared.js';
+import { userId } from '../shared.js';
+import { canViewerJoinFacultyClub } from '../viewerClubDiscovery.js';
 
 const router = express.Router();
 
@@ -13,10 +14,25 @@ router.post('/:id/join', async (req, res, next) => {
 
     const club = await prisma.club.findUnique({
       where: { id: clubId },
-      select: { id: true, status: true, serverId: true, joinPolicy: true, ownerId: true, slug: true },
+      select: {
+        id: true,
+        status: true,
+        serverId: true,
+        joinPolicy: true,
+        ownerId: true,
+        slug: true,
+        scopeKind: true,
+        facultyId: true,
+      },
     });
     if (!club || club.status !== 'APPROVED') {
       return res.status(404).json(apiErrorBody('Club not found or not available'));
+    }
+    if (!canViewerJoinFacultyClub(req, club)) {
+      return res.status(403).json({
+        ...apiErrorBody('This club is limited to its faculty'),
+        code: 'CLUB_FACULTY_SCOPE',
+      });
     }
     if (!club.serverId) {
       return res.status(409).json(apiErrorBody('Club server not provisioned'));
@@ -27,20 +43,30 @@ router.post('/:id/join', async (req, res, next) => {
       where: { groupId: club.serverId, userId: uid, leftAt: null, isActive: true },
     });
     if (existing) {
-      return res.status(409).json({ error: 'Already a member', code: 'CLUB_ALREADY_MEMBER' });
+      return res.status(409).json({
+        ...apiErrorBody('Already a member'),
+        code: 'CLUB_ALREADY_MEMBER',
+      });
     }
 
     if (club.joinPolicy === 'INVITE_ONLY') {
-      return res.status(403).json({ error: 'This club is invite-only', code: 'CLUB_INVITE_ONLY' });
+      return res.status(403).json({
+        ...apiErrorBody('This club is invite-only'),
+        code: 'CLUB_INVITE_ONLY',
+      });
     }
 
     if (club.joinPolicy === 'BY_REQUEST') {
-      // Check if they already have a pending request
+      // Idempotent: already-pending is success, not a conflict.
       const pendingReq = await prisma.clubJoinRequest.findFirst({
         where: { clubId, userId: uid, status: 'PENDING' },
       });
       if (pendingReq) {
-        return res.status(409).json({ error: 'Request already pending', code: 'CLUB_REQUEST_PENDING' });
+        return res.status(200).json({
+          joinRequest: pendingReq,
+          status: 'PENDING',
+          alreadyPending: true,
+        });
       }
 
       const joinRequest = await prisma.$transaction(async (tx) => {

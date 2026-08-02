@@ -1,12 +1,16 @@
 import { z } from "zod";
 
+/** DiscussionMessage/DiscussionAttachment UUID publicId, or legacy numeric id. */
+const messageIdField = z.union([z.number().int().positive(), z.string().min(1)]);
+
 export const sendMessageSchema = z.object({
   content: z.string().trim().max(20000).optional().nullable(),
   messageType: z.enum(["TEXT", "MEDIA", "SYSTEM", "QUESTION"]).default("TEXT"),
   postAsQuestion: z.boolean().optional().default(false),
   isAnonymous: z.boolean().optional().default(false),
-  attachmentIds: z.array(z.number().int().positive()).default([]),
-  parentMessageId: z.number().int().positive().optional().nullable(),
+  attachmentIds: z.array(messageIdField).default([]),
+  parentMessageId: messageIdField.optional().nullable(),
+  replyToMessageId: messageIdField.optional().nullable(),
   e2e: z
     .object({
       ciphertext: z.string().min(1),
@@ -30,7 +34,7 @@ export const editMessageSchema = z.object({
 });
 
 export const pinBodySchema = z.object({
-  messageId: z.number().int().positive(),
+  messageId: messageIdField,
 });
 
 export const muteBodySchema = z.object({
@@ -43,8 +47,10 @@ export const reactionBodySchema = z.object({
 
 export const markReadSchema = z.object({
   notificationIds: z.array(z.number().int().positive()).optional(),
-  groupId: z.number().int().positive().optional(),
-  groupDmId: z.number().int().positive().optional(),
+  /** DiscussionGroup UUID publicId, or legacy numeric id — see publicIdResolution.js. */
+  groupId: z.union([z.number().int().positive(), z.string().min(1)]).optional(),
+  /** GroupDm UUID publicId — see features/discussions/publicIdResolution.js. */
+  groupDmId: z.string().uuid().optional(),
   markAll: z.boolean().optional(),
   upToCreatedAt: z.string().datetime().optional(),
 });
@@ -52,7 +58,7 @@ export const markReadSchema = z.object({
 export const notificationsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().max(100).default(30),
   unreadOnly: z.coerce.boolean().optional().default(false),
-  groupId: z.coerce.number().int().positive().optional(),
+  groupId: z.union([z.coerce.number().int().positive(), z.string().min(1)]).optional(),
 });
 
 export const registerDeviceSchema = z.object({
@@ -87,15 +93,26 @@ export const acceptedAnswerBodySchema = z.object({
 
 export const createGroupDmSchema = z.object({
   name: z.string().trim().max(120).optional().nullable(),
-  memberUserIds: z.array(z.number().int().positive()).min(2),
+  memberUserIds: z.array(z.number().int().positive()).min(2).max(49),
 });
 
 export const groupDmSendMessageSchema = z.object({
   content: z.string().trim().max(20000).optional().nullable(),
   messageType: z.enum(["TEXT", "MEDIA", "SYSTEM"]).default("TEXT"),
-  parentMessageId: z.number().int().positive().optional().nullable(),
+  parentMessageId: messageIdField.optional().nullable(),
+  replyToMessageId: messageIdField.optional().nullable(),
+  attachmentIds: z.array(messageIdField).max(10).optional(),
 });
 
 export const addGroupDmMembersSchema = z.object({
-  userIds: z.array(z.number().int().positive()).min(1),
+  userIds: z.array(z.number().int().positive()).min(1).max(49),
+});
+
+/** `name: null` (or "") clears back to the auto-generated member-list name. */
+export const renameGroupDmSchema = z.object({
+  name: z.string().trim().max(120).nullable(),
+});
+
+export const setGroupDmMemberCanPostSchema = z.object({
+  canPost: z.boolean(),
 });

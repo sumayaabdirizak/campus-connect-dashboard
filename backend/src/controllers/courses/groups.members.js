@@ -1,22 +1,20 @@
 /**
- * Course group member management handlers.
- * Add, remove, and promote members within a study group.
+ * Add a student to a course study group (teacher-only).
  */
 import { prisma } from '../../db/prisma.js';
+import { memberInclude } from './groups.member-include.js';
 
-export const memberInclude = {
-  member: { select: { id: true, full_name: true, number: true } },
-};
+export { memberInclude };
 
-/** POST /:groupId/members — add a student to a group (teacher-only) */
+/** POST /:groupId/members */
 export async function addGroupMember(req, res) {
   const { groupId } = req.params;
   const { studentId, role, transfer } = req.body;
-  const gid = parseInt(groupId);
+  const gid = parseInt(groupId, 10);
   const sid = parseInt(studentId, 10);
   const shouldTransfer = transfer === true;
 
-  if (!Number.isFinite(sid)) {
+  if (!Number.isInteger(gid) || !Number.isFinite(sid)) {
     return res.status(400).json({ message: 'Valid studentId is required' });
   }
 
@@ -33,7 +31,9 @@ export async function addGroupMember(req, res) {
     where: { studentId: sid, batchSectionId: group.courseOffering.sectionId },
   });
   if (!enrolled) {
-    return res.status(400).json({ message: 'Student is not enrolled in this course.' });
+    return res
+      .status(400)
+      .json({ message: 'Student is not enrolled in this course.' });
   }
 
   const assignRole = role === 'LEADER' ? 'LEADER' : 'MEMBER';
@@ -69,7 +69,12 @@ export async function addGroupMember(req, res) {
           throw err;
         }
         await tx.groupMember.delete({
-          where: { memberId_courseOfferingId: { memberId: sid, courseOfferingId: group.courseOfferingId } },
+          where: {
+            memberId_courseOfferingId: {
+              memberId: sid,
+              courseOfferingId: group.courseOfferingId,
+            },
+          },
         });
       }
 
@@ -81,13 +86,20 @@ export async function addGroupMember(req, res) {
       }
 
       return tx.groupMember.create({
-        data: { groupId: gid, memberId: sid, courseOfferingId: group.courseOfferingId, role: assignRole },
+        data: {
+          groupId: gid,
+          memberId: sid,
+          courseOfferingId: group.courseOfferingId,
+          role: assignRole,
+        },
         include: memberInclude,
       });
     });
   } catch (err) {
     if (err?.code === 'P2002') {
-      return res.status(409).json({ message: 'Student is already assigned to a group in this course.' });
+      return res.status(409).json({
+        message: 'Student is already assigned to a group in this course.',
+      });
     }
     if (err?.statusCode === 409) {
       return res.status(409).json({ message: err.message });
@@ -98,39 +110,7 @@ export async function addGroupMember(req, res) {
   return res.json(member);
 }
 
-/** DELETE /:groupId/members/:memberId — remove a student from a group */
-export async function removeGroupMember(req, res) {
-  const { groupId, memberId } = req.params;
-  await prisma.groupMember.deleteMany({
-    where: { groupId: parseInt(groupId), memberId: parseInt(memberId) },
-  });
-  return res.json({ success: true });
-}
-
-/** PATCH /:groupId/members/:memberId/role — change member role (LEADER ↔ MEMBER) */
-export async function updateGroupMemberRole(req, res) {
-  const { groupId, memberId } = req.params;
-  const { role } = req.body;
-  const gid = parseInt(groupId);
-  const mid = parseInt(memberId);
-
-  if (!['LEADER', 'MEMBER'].includes(role)) {
-    return res.status(400).json({ message: 'Role must be LEADER or MEMBER' });
-  }
-
-  // Demote current leader first (only one leader per group).
-  if (role === 'LEADER') {
-    await prisma.groupMember.updateMany({
-      where: { groupId: gid, role: 'LEADER' },
-      data: { role: 'MEMBER' },
-    });
-  }
-
-  const updated = await prisma.groupMember.update({
-    where: { groupId_memberId: { groupId: gid, memberId: mid } },
-    data: { role },
-    include: memberInclude,
-  });
-
-  return res.json(updated);
-}
+export {
+  removeGroupMember,
+  updateGroupMemberRole,
+} from './groups.member-ops.js';

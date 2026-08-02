@@ -2,9 +2,17 @@ import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
-import { pushToUsers } from '../../../services/pushNotifier.service.js';
-import { courseOfferingDashboardPath } from '../../../utils/courseOfferingAccess.js';
-import { attachmentInclude, normaliseModes, normaliseMaxMarks } from './shared.js';
+import { attachmentInclude, normaliseModes, normaliseMaxMarks, normaliseLateWindow } from './shared.js';
+import {
+  notifyAssignmentPublished,
+  notifyAssignmentUpdated,
+} from './notifyStudents.js';
+import {
+  ensureLifecycle,
+  enrichAssignmentDto,
+  publishStatusFromDraft,
+  transitionPublish,
+} from '../../../features/assignments/lifecycleService.js';
 
 const router = Router();
 
@@ -15,57 +23,102 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
   if (modes.error) return res.status(400).json({ message: modes.error });
   const marks = normaliseMaxMarks(maxMarks);
   if (marks.error) return res.status(400).json({ message: marks.error });
+  const late = normaliseLateWindow(lateWindowMinutes);
+  if (late.error) return res.status(400).json({ message: late.error });
 
-  // Snapshot the old draft state so we can detect publish transitions.
+  const id = parseInt(assignmentId, 10);
   const before = await prisma.assignment.findUnique({
-    where: { id: parseInt(assignmentId, 10) },
-    select: { is_draft: true },
-  });
-
-  const assignment = await prisma.assignment.update({
-    where: { id: parseInt(assignmentId, 10) },
-    data: {
-      ...(title && { title }),
-      ...(description !== undefined && { description }),
-      ...(open_at !== undefined && { open_at: open_at ? new Date(open_at) : null }),
-      ...(due_date && { due_date: new Date(due_date) }),
-      ...(is_draft !== undefined && { is_draft: Boolean(is_draft) }),
-      ...modes.data,
-      ...(Number.isInteger(lateWindowMinutes) && { lateWindowMinutes }),
-      ...marks.data,
-    },
-    include: {
-      submissions: true,
-      ...attachmentInclude,
-      _count: { select: { submissions: true } }
+    where: { id },
+    select: {
+      open_at: true,
+      due_date: true,
+      title: true,
+      lateWindowMinutes: true,
+      courseOffering: { select: { publicId: true } },
+      lifecycle: { select: { publishStatus: true } },
     },
   });
+  if (!before) return res.status(404).json({ message: 'Assignment not found' });
 
-  // ── Notify enrolled students when an assignment is published ─────────
-  // Only fires on the draft→published transition (not on every PATCH).
-  if (before?.is_draft && !assignment.is_draft) {
-    (async () => {
-      const offering = await prisma.courseOffering.findUnique({
-        where: { id: assignment.courseOfferingId },
-        select: {
-          publicId: true,
-          section: {
-            include: { studentRegistrations: { select: { studentId: true } } },
-          },
-        },
-      });
-      const studentIds = offering?.section?.studentRegistrations?.map((r) => r.studentId) ?? [];
-      if (studentIds.length === 0 || !offering?.publicId) return;
-      pushToUsers(studentIds, {
-        title: 'New assignment',
-        body: `${assignment.title} · due ${new Date(assignment.due_date).toLocaleDateString()}`,
-        url: courseOfferingDashboardPath(offering.publicId, 'assignments'),
-        tag: `assignment-new-${assignment.id}`,
-      }).catch(() => {});
-    })();
+  const nextOpen =
+    open_at !== undefined ? (open_at ? new Date(open_at) : null) : before.open_at;
+  const nextDue = due_date ? new Date(due_date) : before.due_date;
+
+  if (due_date && Number.isNaN(nextDue.getTime())) {
+    return res.status(400).json({ message: 'due_date is invalid' });
+  }
+  if (open_at && Number.isNaN(nextOpen?.getTime?.() ?? NaN)) {
+    return res.status(400).json({ message: 'open_at is invalid' });
+  }
+  if (nextOpen && nextDue && nextOpen.getTime() >= nextDue.getTime()) {
+    return res.status(400).json({ message: 'open_at must be before due_date' });
   }
 
-  res.json(assignment);
+  const actorUserId = Number(req.user?.id ?? req.user?.sub) || null;
+  const wasDraft = before.lifecycle?.publishStatus === 'DRAFT';
+
+  const assignment = await prisma.$transaction(async (tx) => {
+    const updated = await tx.assignment.update({
+      where: { id },
+      data: {
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
+        ...(open_at !== undefined && { open_at: open_at ? new Date(open_at) : null }),
+        ...(due_date && { due_date: new Date(due_date) }),
+        ...modes.data,
+        ...late.data,
+        ...marks.data,
+      },
+      include: {
+        submissions: true,
+        lifecycle: true,
+        ...attachmentInclude,
+        _count: { select: { submissions: true } },
+      },
+    });
+
+    if (is_draft !== undefined) {
+      await transitionPublish(
+        id,
+        publishStatusFromDraft(Boolean(is_draft)),
+        actorUserId,
+        tx,
+      );
+      updated.lifecycle = {
+        ...(updated.lifecycle ?? {}),
+        publishStatus: publishStatusFromDraft(Boolean(is_draft)),
+      };
+    } else {
+      await ensureLifecycle(
+        id,
+        {
+          isDraft: updated.lifecycle?.publishStatus === 'DRAFT',
+          openAt: updated.open_at,
+          dueDate: updated.due_date,
+          lateWindowMinutes: updated.lateWindowMinutes,
+          actorUserId,
+          eventType: 'SCHEDULE_CHANGED',
+        },
+        tx,
+      );
+    }
+    return updated;
+  });
+
+  const dto = enrichAssignmentDto(assignment);
+  const publicId = before.courseOffering?.publicId;
+  if (publicId && wasDraft && !dto.is_draft) {
+    notifyAssignmentPublished(assignment, publicId);
+  } else if (
+    publicId &&
+    !dto.is_draft &&
+    ((title && title !== before.title) ||
+      (due_date && new Date(due_date).getTime() !== before.due_date.getTime()))
+  ) {
+    notifyAssignmentUpdated(assignment, publicId);
+  }
+
+  res.json(dto);
 }));
 
 export default router;

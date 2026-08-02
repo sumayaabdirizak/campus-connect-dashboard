@@ -12,8 +12,13 @@ export async function findAnnouncementRecipientUserIds(prisma, row) {
   const roles = Array.isArray(row.targetRoles) && row.targetRoles.length > 0 ? row.targetRoles : null;
   if (!roles) return [];
 
+  const roleNames = new Set(roles.map((r) => String(r).toUpperCase()));
+  // Stored audience often uses TEACHER; older rows / accounts may still be LECTURER.
+  if (roleNames.has("TEACHER")) roleNames.add("LECTURER");
+  if (roleNames.has("LECTURER")) roleNames.add("TEACHER");
+
   const roleRecords = await prisma.role.findMany({
-    where: { name: { in: roles } },
+    where: { name: { in: Array.from(roleNames) } },
     select: { id: true },
   });
   const roleIds = roleRecords.map((r) => r.id);
@@ -44,13 +49,13 @@ async function buildScopeOverlapWhere(row, resolved) {
   switch (row.targetType) {
     case "ALL": {
       const fid = row.facultyId ?? resolved.facultyId;
-      if (fid == null) return null;
+      // University-wide: no faculty filter — any ACTIVE user with targetRoles.
+      if (fid == null) return {};
       return {
         OR: [
           { studentProfile: { facultyId: fid } },
           { deanProfile: { facultyId: fid } },
           { lecturerProfile: { faculties: { some: { facultyId: fid } } } },
-          { facultyAdminProfile: { faculty_id: fid } },
         ],
       };
     }
@@ -62,7 +67,6 @@ async function buildScopeOverlapWhere(row, resolved) {
           { studentProfile: { facultyId: fid } },
           { deanProfile: { facultyId: fid } },
           { lecturerProfile: { faculties: { some: { facultyId: fid } } } },
-          { facultyAdminProfile: { faculty_id: fid } },
         ],
       };
     }

@@ -29,14 +29,18 @@ import questionBankRouter from './controllers/courses/question-bank.js';
 import courseFeedRouter from './controllers/courses/course-feed.js';
 import courseAccessRouter from './controllers/courses/course-access.js';
 import gradebookRouter from './controllers/courses/gradebook.js';
+import courseActivityNotificationsRouter from './controllers/courses/course-activity-notifications.js';
 import announcementsRouter from './features/announcements/routes.announcements.js';
 import pushRouter from './features/announcements/routes.push.js';
 import debugRouter from './controllers/debug/announcement-test-users.js';
+import debugAgentLogRouter from './controllers/debugAgentLog.routes.js';
 import discussionsRouter from './controllers/discussions/discussions.js';
 import clubsRouter from './controllers/clubs/clubs.js';
 import officesRouter from './controllers/offices/offices.js';
 import inboxRouter from './controllers/inbox/inbox.js';
 import calendarRouter from './controllers/calendar/calendar.js';
+import rbacRouter from './controllers/rbac/rbac.routes.js';
+import rolesRouter from './controllers/rbac/roles.routes.js';
 import rateLimit from 'express-rate-limit';
 
 const discussionsRateLimit = rateLimit({
@@ -51,6 +55,8 @@ export function mountRoutes(app) {
   // Category 1: Auth & Users
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
+  app.use('/api/rbac', rbacRouter);
+  app.use('/api/roles', rolesRouter);
 
   // Category 2: Academic Structure
   app.use('/api/faculties', facultiesRouter);
@@ -81,6 +87,7 @@ export function mountRoutes(app) {
   app.use('/api/course-feed', courseFeedRouter);
   app.use('/api/course-access', courseAccessRouter);
   app.use('/api/gradebook', gradebookRouter);
+  app.use('/api/course-activity-notifications', courseActivityNotificationsRouter);
 
   // Category 6: Comms (announcements, calendar, discussions)
   app.use('/api/announcements', announcementsRouter);
@@ -95,6 +102,7 @@ export function mountRoutes(app) {
 
   // Debug helpers — never expose in production.
   if (process.env.NODE_ENV !== 'production') {
+    app.use('/api/debug', debugAgentLogRouter);
     app.use('/api/debug', debugRouter);
   }
 }

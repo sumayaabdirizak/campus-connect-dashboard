@@ -6,24 +6,24 @@ import { getIo } from "../../../../socket/hub.js";
 import { requireActiveDiscussionMembership } from "../../../../features/discussions/discussionMembership.js";
 import { reactionBodySchema } from "../../../../features/discussions/validation/groupDiscussionSchemas.js";
 import { groupReactionsByEmoji } from "../shared.js";
+import { resolveServerRow } from "../../serverShared.js";
+import { resolveMessageRow } from "../../messageShared.js";
 
 const router = express.Router();
 
 router.get("/groups/:groupId/messages/:messageId/reactions", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
-    const messageId = Number(req.params.messageId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId) || !Number.isFinite(messageId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
-    const msg = await prisma.discussionMessage.findFirst({
-      where: { id: messageId, groupId, deletedAt: null },
-      select: { id: true },
-    });
+    const msg = await resolveMessageRow(req.params.messageId, { groupId, deletedAt: null });
     if (!msg) return res.status(404).json(apiErrorBody("Message not found", null));
+    const messageId = msg.id;
     const rows = await prisma.discussionMessageReaction.findMany({
       where: { messageId },
       include: { user: { select: { id: true, full_name: true } } },
@@ -38,19 +38,17 @@ router.get("/groups/:groupId/messages/:messageId/reactions", async (req, res) =>
 
 router.post("/groups/:groupId/messages/:messageId/reactions", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
-    const messageId = Number(req.params.messageId);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(groupId) || !Number.isFinite(messageId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
     }
+    const groupId = groupRow.id;
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
-    const msg = await prisma.discussionMessage.findFirst({
-      where: { id: messageId, groupId, deletedAt: null },
-      select: { id: true },
-    });
+    const msg = await resolveMessageRow(req.params.messageId, { groupId, deletedAt: null });
     if (!msg) return res.status(404).json(apiErrorBody("Message not found", null));
+    const messageId = msg.id;
     const parsed = reactionBodySchema.parse(req.body ?? {});
     await prisma.discussionMessageReaction.upsert({
       where: { messageId_userId_emoji: { messageId, userId, emoji: parsed.emoji } },
@@ -78,8 +76,8 @@ router.post("/groups/:groupId/messages/:messageId/reactions", async (req, res) =
           messageId,
           type: "REACTION",
           payload: {
-            groupId,
-            messageId,
+            groupId: groupRow.publicId,
+            messageId: msg.publicId,
             reactorId: userId,
             reactorName: reactorRow?.full_name ?? null,
             emoji: parsed.emoji,
@@ -90,15 +88,15 @@ router.post("/groups/:groupId/messages/:messageId/reactions", async (req, res) =
     const io = getIo();
     if (io) {
       io.to(`discussion:group:${groupId}`).emit("reaction:update", {
-        groupId,
-        messageId,
+        groupId: groupRow.publicId,
+        messageId: msg.publicId,
         summary,
         emoji: parsed.emoji,
         userId,
         action: "add",
       });
     }
-    return res.status(201).json({ ok: true, messageId, emoji: parsed.emoji, summary });
+    return res.status(201).json({ ok: true, messageId: msg.publicId, emoji: parsed.emoji, summary });
   } catch (error) {
     console.error("POST reaction failed", error);
     if (error instanceof z.ZodError) {
@@ -110,23 +108,21 @@ router.post("/groups/:groupId/messages/:messageId/reactions", async (req, res) =
 
 router.delete("/groups/:groupId/messages/:messageId/reactions", async (req, res) => {
   try {
-    const groupId = Number(req.params.groupId);
-    const messageId = Number(req.params.messageId);
     const userId = Number(req.user?.sub);
     const emoji = String(req.query.emoji ?? "").trim();
-    if (!Number.isFinite(groupId) || !Number.isFinite(messageId)) {
+    const groupRow = await resolveServerRow(req.params.groupId);
+    if (!groupRow) {
       return res.status(400).json(apiErrorBody("Invalid groupId or messageId", null));
     }
+    const groupId = groupRow.id;
     if (!emoji) {
       return res.status(400).json(apiErrorBody("emoji query parameter is required", null));
     }
     const membership = await requireActiveDiscussionMembership(groupId, userId);
     if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
-    const msg = await prisma.discussionMessage.findFirst({
-      where: { id: messageId, groupId, deletedAt: null },
-      select: { id: true },
-    });
+    const msg = await resolveMessageRow(req.params.messageId, { groupId, deletedAt: null });
     if (!msg) return res.status(404).json(apiErrorBody("Message not found", null));
+    const messageId = msg.id;
     await prisma.discussionMessageReaction.deleteMany({
       where: { messageId, userId, emoji },
     });
@@ -138,15 +134,15 @@ router.delete("/groups/:groupId/messages/:messageId/reactions", async (req, res)
     const io = getIo();
     if (io) {
       io.to(`discussion:group:${groupId}`).emit("reaction:update", {
-        groupId,
-        messageId,
+        groupId: groupRow.publicId,
+        messageId: msg.publicId,
         summary,
         emoji,
         userId,
         action: "remove",
       });
     }
-    return res.json({ ok: true, messageId, emoji, summary });
+    return res.json({ ok: true, messageId: msg.publicId, emoji, summary });
   } catch (error) {
     console.error("DELETE reaction failed", error);
     return res.status(500).json(apiErrorBody("Failed to remove reaction", null));

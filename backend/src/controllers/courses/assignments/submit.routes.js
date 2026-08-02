@@ -4,6 +4,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireStudentSubmission } from '../../../middleware/courseOfferingRbac.js';
 import { resolveSubmitGroup, resolveEffectiveDue } from './submitWindow.js';
 import { upsertOwnSubmission, fanOutGroupSubmissions } from './submitPersist.js';
+import { getCloseAtMs } from '../../../features/assignments/lifecycleCore.js';
 
 const router = Router();
 
@@ -23,9 +24,22 @@ router.post('/:assignmentId/submissions', requireStudentSubmission(), asyncHandl
 
   const assignment = await prisma.assignment.findUnique({
     where: { id: assignmentId },
-    select: { id: true, open_at: true, due_date: true, lateWindowMinutes: true, workMode: true, courseOfferingId: true },
+    select: {
+      id: true,
+      open_at: true,
+      due_date: true,
+      lateWindowMinutes: true,
+      workMode: true,
+      courseOfferingId: true,
+      lifecycle: { select: { publishStatus: true } },
+    },
   });
   if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
+
+  const publishStatus = assignment.lifecycle?.publishStatus ?? 'DRAFT';
+  if (publishStatus !== 'PUBLISHED') {
+    return res.status(403).json({ message: 'Assignment is not open for submissions' });
+  }
 
   const group = await resolveSubmitGroup(assignment, selfId);
   if (group.error) return res.status(group.error.status).json({ message: group.error.message });
@@ -37,7 +51,7 @@ router.post('/:assignmentId/submissions', requireStudentSubmission(), asyncHandl
   }
 
   const effectiveDue = await resolveEffectiveDue(assignment, selfId, resolvedGroupId);
-  const closeWithGrace = new Date(effectiveDue.getTime() + assignment.lateWindowMinutes * 60_000);
+  const closeWithGrace = new Date(getCloseAtMs(effectiveDue, assignment.lateWindowMinutes));
   if (now > closeWithGrace) return res.status(403).json({ message: 'Submissions closed' });
   const isLate = now > effectiveDue;
 

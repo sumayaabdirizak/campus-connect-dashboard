@@ -13,6 +13,7 @@ import {
   loadReactionsForMessage,
   emitReactionSocket,
 } from '../../features/discussions/messageReactions.js';
+import { resolveMessageRow } from './messageShared.js';
 
 const router = express.Router();
 
@@ -21,10 +22,11 @@ router.get('/messages/:messageId/reactions', async (req, res) => {
   try {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody('Unauthorized', null));
-    const messageId = Number(req.params.messageId);
-    if (!Number.isInteger(messageId) || messageId <= 0) {
+    const msgRow = await resolveMessageRow(req.params.messageId);
+    if (!msgRow) {
       return res.status(400).json(apiErrorBody('Invalid messageId', null));
     }
+    const messageId = msgRow.id;
     try {
       await assertMessageReactionAllowed(userId, messageId);
     } catch (e) {
@@ -33,7 +35,10 @@ router.get('/messages/:messageId/reactions', async (req, res) => {
       if (code === 403) return res.status(403).json(apiErrorBody(e.message, null));
       throw e;
     }
-    const reactions = await loadReactionsForMessage(messageId);
+    const reactions = (await loadReactionsForMessage(messageId)).map((r) => ({
+      ...r,
+      messageId: msgRow.publicId,
+    }));
     return res.json({ reactions });
   } catch (error) {
     console.error('GET /discussions/messages/:messageId/reactions failed', error);
@@ -46,10 +51,11 @@ router.post('/messages/:messageId/reactions', async (req, res) => {
   try {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody('Unauthorized', null));
-    const messageId = Number(req.params.messageId);
-    if (!Number.isInteger(messageId) || messageId <= 0) {
+    const msgRow = await resolveMessageRow(req.params.messageId);
+    if (!msgRow) {
       return res.status(400).json(apiErrorBody('Invalid messageId', null));
     }
+    const messageId = msgRow.id;
     const parsed = serverReactionBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json(apiErrorBody('Invalid request body', parsed.error.issues));
@@ -71,10 +77,19 @@ router.post('/messages/:messageId/reactions', async (req, res) => {
       }
       throw err;
     }
-    const reactions = await loadReactionsForMessage(messageId);
+    const reactions = (await loadReactionsForMessage(messageId)).map((r) => ({
+      ...r,
+      messageId: msgRow.publicId,
+    }));
     const targetMsg = await prisma.discussionMessage.findUnique({
       where: { id: messageId },
-      select: { senderId: true, groupId: true, channelId: true },
+      select: {
+        senderId: true,
+        groupId: true,
+        channelId: true,
+        group: { select: { publicId: true } },
+        channel: { select: { publicId: true } },
+      },
     });
     const reactor = await prisma.user.findUnique({
       where: { id: userId },
@@ -88,9 +103,9 @@ router.post('/messages/:messageId/reactions', async (req, res) => {
           messageId,
           type: 'REACTION',
           payload: {
-            groupId: targetMsg.groupId,
-            channelId: targetMsg.channelId,
-            messageId,
+            groupId: targetMsg.group?.publicId ?? null,
+            channelId: targetMsg.channel?.publicId ?? null,
+            messageId: msgRow.publicId,
             reactorId: userId,
             reactorName: reactor?.full_name ?? null,
             emoji,
@@ -98,7 +113,7 @@ router.post('/messages/:messageId/reactions', async (req, res) => {
         },
       });
     }
-    await emitReactionSocket(messageId, 'reaction:update', { messageId, reactions, emoji, userId, action: 'add' });
+    await emitReactionSocket(messageId, 'reaction:update', { messageId: msgRow.publicId, reactions, emoji, userId, action: 'add' });
     return res.status(201).json({ reactions });
   } catch (error) {
     console.error('POST /discussions/messages/:messageId/reactions failed', error);
@@ -111,10 +126,11 @@ router.delete('/messages/:messageId/reactions/:emoji', async (req, res) => {
   try {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody('Unauthorized', null));
-    const messageId = Number(req.params.messageId);
-    if (!Number.isInteger(messageId) || messageId <= 0) {
+    const msgRow = await resolveMessageRow(req.params.messageId);
+    if (!msgRow) {
       return res.status(400).json(apiErrorBody('Invalid messageId', null));
     }
+    const messageId = msgRow.id;
     let emoji;
     try {
       emoji = decodeURIComponent(String(req.params.emoji ?? '')).trim();
@@ -131,8 +147,11 @@ router.delete('/messages/:messageId/reactions/:emoji', async (req, res) => {
       throw e;
     }
     await prisma.discussionMessageReaction.deleteMany({ where: { messageId, userId, emoji } });
-    const reactions = await loadReactionsForMessage(messageId);
-    await emitReactionSocket(messageId, 'reaction:update', { messageId, reactions, emoji, userId, action: 'remove' });
+    const reactions = (await loadReactionsForMessage(messageId)).map((r) => ({
+      ...r,
+      messageId: msgRow.publicId,
+    }));
+    await emitReactionSocket(messageId, 'reaction:update', { messageId: msgRow.publicId, reactions, emoji, userId, action: 'remove' });
     return res.json({ reactions });
   } catch (error) {
     console.error('DELETE /discussions/messages/:messageId/reactions/:emoji failed', error);
@@ -145,10 +164,11 @@ router.delete('/messages/:messageId/reactions', async (req, res) => {
   try {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody('Unauthorized', null));
-    const messageId = Number(req.params.messageId);
-    if (!Number.isInteger(messageId) || messageId <= 0) {
+    const msgRow = await resolveMessageRow(req.params.messageId);
+    if (!msgRow) {
       return res.status(400).json(apiErrorBody('Invalid messageId', null));
     }
+    const messageId = msgRow.id;
     const parsed = serverReactionBodySchema.safeParse(req.body);
     if (!parsed.success) {
       return res.status(400).json(apiErrorBody('Invalid request body', parsed.error.issues));
@@ -163,8 +183,11 @@ router.delete('/messages/:messageId/reactions', async (req, res) => {
       throw e;
     }
     await prisma.discussionMessageReaction.deleteMany({ where: { messageId, userId, emoji } });
-    const reactions = await loadReactionsForMessage(messageId);
-    await emitReactionSocket(messageId, 'reaction:update', { messageId, reactions, emoji, userId, action: 'remove' });
+    const reactions = (await loadReactionsForMessage(messageId)).map((r) => ({
+      ...r,
+      messageId: msgRow.publicId,
+    }));
+    await emitReactionSocket(messageId, 'reaction:update', { messageId: msgRow.publicId, reactions, emoji, userId, action: 'remove' });
     return res.json({ reactions });
   } catch (error) {
     console.error('DELETE /discussions/messages/:messageId/reactions failed', error);

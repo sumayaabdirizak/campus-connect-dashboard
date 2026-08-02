@@ -1,5 +1,6 @@
 import { SYSTEM_INSTRUCTION, JSON_SHAPE_HINT } from "../promptBuilders.js";
 import { parseQuestionsJson } from "../helpers.js";
+import { GROQ_MAX_COMPLETION_TOKENS } from "../fitSourceForGroq.js";
 
 const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
@@ -14,6 +15,7 @@ export async function generateWithGroq(userTurn) {
     throw err;
   }
   const model = (process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL).trim();
+  const systemContent = `${SYSTEM_INSTRUCTION}\n\n${JSON_SHAPE_HINT}`;
 
   let res;
   try {
@@ -26,10 +28,10 @@ export async function generateWithGroq(userTurn) {
       body: JSON.stringify({
         model,
         temperature: 0.7,
-        max_tokens: 8192,
+        max_tokens: GROQ_MAX_COMPLETION_TOKENS,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: `${SYSTEM_INSTRUCTION}\n\n${JSON_SHAPE_HINT}` },
+          { role: "system", content: systemContent },
           { role: "user", content: userTurn },
         ],
       }),
@@ -42,7 +44,19 @@ export async function generateWithGroq(userTurn) {
 
   if (!res.ok) {
     const bodyText = await res.text().catch(() => "");
-    const err = new Error(`Groq API error (${res.status}): ${bodyText || res.statusText}`);
+    if (
+      res.status === 413 ||
+      /rate_limit_exceeded|Request too large|tokens per minute/i.test(bodyText)
+    ) {
+      const err = new Error(
+        "Source material is too large for the AI model. Try a shorter document or excerpt, then generate again."
+      );
+      err.status = 413;
+      throw err;
+    }
+    const err = new Error(
+      `Groq API error (${res.status}): ${bodyText || res.statusText}`
+    );
     if (res.status === 429) err.status = 429;
     else err.status = 502;
     throw err;

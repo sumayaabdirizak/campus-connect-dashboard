@@ -1,6 +1,7 @@
 import { prisma } from '../../../db/prisma.js';
 import { isSafeExternalUrl } from '../../../utils/safeUrl.js';
 import { postInclude } from './helpers.js';
+import { notifyFeedPostCreated } from './notifyFeed.js';
 
 export async function listPosts(req, res) {
   const courseOfferingId = req.courseOffering.id;
@@ -45,6 +46,7 @@ export async function createPost(req, res) {
     include: postInclude,
   });
 
+  notifyFeedPostCreated(post, req.courseOffering.publicId);
   res.status(201).json(post);
 }
 

@@ -29,7 +29,7 @@ export async function getTeacherGradebook(req, res) {
       },
     }),
     prisma.assignment.findMany({
-      where: { courseOfferingId: offering.id, is_draft: false },
+      where: { courseOfferingId: offering.id, lifecycle: { publishStatus: 'PUBLISHED' } },
       select: { id: true, title: true, maxMarks: true, due_date: true },
       orderBy: { due_date: 'asc' },
     }),
@@ -51,9 +51,8 @@ export async function getTeacherGradebook(req, res) {
           select: {
             assignmentId: true,
             studentId: true,
-            grade: true,
-            is_late: true,
-            is_reviewed: true,
+            lateState: true,
+            gradeRow: { select: { score: true } },
           },
         })
       : Promise.resolve([]),
@@ -101,14 +100,15 @@ export async function getTeacherGradebook(req, res) {
         continue;
       }
       const maxMarks = maxMarksById.get(a.id) || 100;
-      const pct = sub.grade != null ? (sub.grade / maxMarks) * 100 : null;
+      const rawGrade = sub.gradeRow?.score ?? null;
+      const pct = rawGrade != null ? (rawGrade / maxMarks) * 100 : null;
       assignmentCells[a.id] = {
-        grade: sub.grade,
+        grade: rawGrade,
         maxMarks,
         pct,
         submitted: true,
-        late: sub.is_late,
-        reviewed: sub.is_reviewed,
+        late: sub.lateState === 'LATE',
+        reviewed: sub.gradeRow != null,
       };
       if (pct != null) pcts.push(pct);
     }

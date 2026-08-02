@@ -8,14 +8,21 @@ import { sanitizeAnnouncementHtml } from "../announcementHtml.js";
 import {
   MAX_PINNED_PER_CREATOR,
   normalizeTargetRoles,
-  validateDeanTargetRoles,
-  validateDeanTargetType,
+  validateFacultyScopedTargetRoles,
+  validateFacultyScopedTargetType,
   normalizeExpiresAt,
   validateExtraTargets,
 } from "../announcementService.helpers.js";
 import { parseExtraTargetsFromParsed } from "../create/prepareHelpers.js";
 import { resolveNextStatus } from "./scheduleFields.js";
 import { assembleUpdateAnnouncementRow } from "./assembleRow.js";
+
+function isFacultyScopedPublisher(role, loaded) {
+  const r = String(role || "").toUpperCase();
+  if (r === "DEAN") return true;
+  if (r === "OFFICE_STAFF" && (loaded.facultyIds?.length ?? 0) > 0) return true;
+  return false;
+}
 
 /**
  * @param {object} ctx
@@ -34,16 +41,19 @@ export async function buildAnnouncementUpdateData(ctx, parsed, schedule) {
     return { ok: false, status: 400, message: "At least one target role is required" };
   }
 
-  const deanRoleCheck = validateDeanTargetRoles(role, targetRoles);
-  if (!deanRoleCheck.ok) return deanRoleCheck;
+  const facultyScoped = isFacultyScopedPublisher(role, loaded);
+  const roleCheck = validateFacultyScopedTargetRoles(facultyScoped, targetRoles);
+  if (!roleCheck.ok) return roleCheck;
 
   const targetType = parsed.targetType ?? announcement.targetType;
-  const deanTargetTypeCheck = validateDeanTargetType(role, targetType);
-  if (!deanTargetTypeCheck.ok) return deanTargetTypeCheck;
+  const typeCheck = validateFacultyScopedTargetType(facultyScoped, targetType);
+  if (!typeCheck.ok) return typeCheck;
 
-  const deanFacultyId = role === "DEAN" ? (loaded.facultyIds?.[0] ?? null) : null;
-  const rawFaculty = role === "DEAN" ? deanFacultyId : (parsed.facultyId ?? announcement.facultyId ?? null);
-  const facultyScope = role === "DEAN" ? (loaded.facultyIds?.[0] ?? undefined) : undefined;
+  const scopedFacultyId = facultyScoped ? (loaded.facultyIds?.[0] ?? null) : null;
+  const rawFaculty = facultyScoped
+    ? scopedFacultyId
+    : (parsed.facultyId ?? announcement.facultyId ?? null);
+  const facultyScope = facultyScoped ? (loaded.facultyIds?.[0] ?? undefined) : undefined;
 
   let sanitizedTargeting;
   try {

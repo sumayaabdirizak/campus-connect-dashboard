@@ -23,6 +23,9 @@ import {
 import { sendChannelMessage } from "./send-channel-message.js";
 import { sendGroupDmMessage } from "./send-group-dm-message.js";
 import { sendGroupMessage } from "./send-group-message.js";
+import { resolveGroupDmRow } from "../../../controllers/discussions/groupDms/helpers.js";
+import { resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
+import { resolveAttachmentIds } from "../../../controllers/discussions/messageShared.js";
 
 /**
  * @param {import("socket.io").Socket} socket
@@ -39,10 +42,13 @@ export function registerMessageSendHandler(socket, ctx) {
   socket.on("message:send", async (payload = {}, ack) => {
     try {
       const started = metricTimerStart();
-      const channelId = Number(payload?.channelId);
-      const attachmentIds = Array.isArray(payload?.attachmentIds)
-        ? payload.attachmentIds.map((id) => Number(id)).filter((id) => Number.isFinite(id))
-        : [];
+      const channelRow = payload?.channelId != null ? await resolveChannelRow(payload.channelId) : null;
+      const channelId = channelRow?.id ?? null;
+      const attachmentIdentifiers = Array.isArray(payload?.attachmentIds) ? payload.attachmentIds : [];
+      const attachmentIds = await resolveAttachmentIds(attachmentIdentifiers);
+      if (attachmentIds.length !== attachmentIdentifiers.length) {
+        return ackOrEmitError(socket, ack, "INVALID_ATTACHMENT", "Some attachments are invalid or unavailable");
+      }
       const e2e = payload?.e2e ?? null;
       const messageTypeUpper =
         typeof payload?.messageType === "string" ? payload.messageType.toUpperCase() : "TEXT";
@@ -55,12 +61,19 @@ export function registerMessageSendHandler(socket, ctx) {
         started, attachmentIds, e2e, messageTypeUpper,
       };
 
-      if (Number.isFinite(channelId) && channelId > 0) {
-        return await sendChannelMessage({ ...shared, channelId });
+      if (channelId != null) {
+        return await sendChannelMessage({ ...shared, channelId, channelPublicId: channelRow.publicId });
       }
-      const groupDmId = Number(payload?.groupDmId);
-      if (Number.isFinite(groupDmId) && groupDmId > 0) {
-        return await sendGroupDmMessage({ ...shared, groupDmId });
+      if (payload?.groupDmId != null) {
+        const groupDmRow = await resolveGroupDmRow(payload.groupDmId);
+        if (!groupDmRow) {
+          return ackOrEmitError(socket, ack, "INVALID_GROUP_DM", "groupDmId is invalid");
+        }
+        return await sendGroupDmMessage({
+          ...shared,
+          groupDmId: groupDmRow.id,
+          groupDmPublicId: groupDmRow.publicId,
+        });
       }
       return await sendGroupMessage(shared);
     } catch (error) {

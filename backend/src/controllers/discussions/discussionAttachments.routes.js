@@ -11,6 +11,9 @@ import {
 } from "../../features/discussions/permissions.js";
 import { requireActiveDiscussionMembership } from "../../features/discussions/discussionMembership.js";
 import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
+import { getActiveMember } from "./groupDms/helpers.js";
+import { resolveChannelRow, resolveServerRow } from "./serverShared.js";
+import { whereFromParam } from "../../features/discussions/publicIdResolution.js";
 import {
   DISCUSSION_FILE_SIZE_LIMITS,
   discussionAttachmentUpload,
@@ -28,36 +31,52 @@ const router = express.Router();
 router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file"), async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
-    const groupIdRaw = Number(req.body?.groupId);
-    const channelIdRaw = Number(req.body?.channelId);
+    const channelIdentifier = req.body?.channelId;
+    const groupIdentifier = req.body?.groupId;
+    const groupDmIdentifier = req.body?.groupDmId;
     let resolvedGroupId = null;
+    let resolvedGroupDmId = null;
     let e2eeRequired = false;
 
-    if (Number.isInteger(channelIdRaw) && channelIdRaw > 0) {
+    if (channelIdentifier != null) {
+      const channelRow = await resolveChannelRow(channelIdentifier);
+      if (!channelRow) {
+        return res.status(404).json(apiErrorBody("Channel not found", null));
+      }
       const channel = await prisma.discussionChannel.findUnique({
-        where: { id: channelIdRaw },
+        where: { id: channelRow.id },
         select: {
           id: true,
           serverId: true,
           server: { select: { e2eeEnabled: true } },
         },
       });
-      if (!channel) {
-        return res.status(404).json(apiErrorBody("Channel not found", null));
-      }
-      const perms = await computeChannelPermissions({ userId, channelId: channelIdRaw });
+      const perms = await computeChannelPermissions({ userId, channelId: channelRow.id });
       if (!hasPermission(perms, PERMISSION_BITS.SEND_MESSAGES)) {
         return res.status(403).json(apiErrorBody("Forbidden", null));
       }
       resolvedGroupId = channel.serverId;
       e2eeRequired = channel.server?.e2eeEnabled !== false;
-    } else if (Number.isInteger(groupIdRaw) && groupIdRaw > 0) {
-      const membership = await requireActiveDiscussionMembership(groupIdRaw, userId);
+    } else if (groupIdentifier != null) {
+      const groupRow = await resolveServerRow(groupIdentifier);
+      if (!groupRow) return res.status(404).json(apiErrorBody("Group not found", null));
+      const membership = await requireActiveDiscussionMembership(groupRow.id, userId);
       if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
-      resolvedGroupId = groupIdRaw;
+      resolvedGroupId = groupRow.id;
       e2eeRequired = membership.group?.e2eeEnabled !== false;
+    } else if (groupDmIdentifier != null) {
+      const member = await getActiveMember(groupDmIdentifier, userId);
+      if (!member?.groupDm || member.groupDm.archivedAt) {
+        return res.status(403).json(apiErrorBody("Forbidden", null));
+      }
+      // Same gate as posting a text message in this conversation.
+      if (!member.canPost) {
+        return res.status(403).json(apiErrorBody("Posting is disabled for you in this group DM", null));
+      }
+      resolvedGroupDmId = member.groupDm.id;
+      e2eeRequired = false;
     } else {
-      return res.status(400).json(apiErrorBody("groupId or channelId is required", null));
+      return res.status(400).json(apiErrorBody("groupId, channelId, or groupDmId is required", null));
     }
 
     if (!(await checkDiscussionUploadRateLimit(userId))) {
@@ -126,6 +145,7 @@ router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file
       data: {
         uploadedById: userId,
         groupId: resolvedGroupId,
+        groupDmId: resolvedGroupDmId,
         url: committed.url,
         storageKey: committed.storageKey,
         fileType,
@@ -153,25 +173,30 @@ router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file
 
 router.get("/attachments/:id/access-url", async (req, res) => {
   try {
-    const attachmentId = Number(req.params.id);
+    const where = whereFromParam(req.params.id);
     const userId = Number(req.user?.sub);
-    if (!Number.isFinite(attachmentId)) {
+    if (!where) {
       return res.status(400).json(apiErrorBody("Invalid attachment id", null));
     }
-    const attachment = await prisma.discussionAttachment.findUnique({
-      where: { id: attachmentId },
-      select: { id: true, groupId: true, uploadedById: true },
+    const attachment = await prisma.discussionAttachment.findFirst({
+      where,
+      select: { id: true, publicId: true, groupId: true, groupDmId: true, uploadedById: true },
     });
     if (!attachment) return res.status(404).json(apiErrorBody("Attachment not found", null));
     if (attachment.groupId) {
       const membership = await requireActiveDiscussionMembership(attachment.groupId, userId);
       if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
+    } else if (attachment.groupDmId) {
+      const member = await getActiveMember(attachment.groupDmId, userId);
+      if (!member?.groupDm || member.groupDm.archivedAt) {
+        return res.status(403).json(apiErrorBody("Forbidden", null));
+      }
     } else if (attachment.uploadedById !== userId) {
       return res.status(403).json(apiErrorBody("Forbidden", null));
     }
     return res.json({
-      attachmentId,
-      accessUrl: buildAttachmentAccessUrl(req, attachmentId, userId),
+      attachmentId: attachment.publicId,
+      accessUrl: buildAttachmentAccessUrl(req, attachment, userId),
       expiresInSeconds: ATTACHMENT_URL_TTL_SECONDS,
     });
   } catch (error) {
@@ -182,25 +207,34 @@ router.get("/attachments/:id/access-url", async (req, res) => {
 
 router.get("/attachments/:id/download", async (req, res) => {
   try {
-    const attachmentId = Number(req.params.id);
+    const where = whereFromParam(req.params.id);
     const tokenPayload = parseDiscussionAttachmentToken(req.query?.token);
-    if (!Number.isFinite(attachmentId) || !tokenPayload || tokenPayload.attachmentId !== attachmentId) {
+    if (!where || !tokenPayload) {
       return res.status(401).json(apiErrorBody("Invalid or expired attachment token", null));
     }
-    const attachment = await prisma.discussionAttachment.findUnique({
-      where: { id: attachmentId },
+    const attachment = await prisma.discussionAttachment.findFirst({
+      where,
       select: {
         id: true,
+        publicId: true,
         groupId: true,
+        groupDmId: true,
         uploadedById: true,
         storageKey: true,
         mimeType: true,
       },
     });
-    if (!attachment) return res.status(404).json(apiErrorBody("Attachment not found", null));
+    if (!attachment || tokenPayload.attachmentId !== attachment.id) {
+      return res.status(401).json(apiErrorBody("Invalid or expired attachment token", null));
+    }
     if (attachment.groupId) {
       const membership = await requireActiveDiscussionMembership(attachment.groupId, tokenPayload.userId);
       if (!membership) return res.status(403).json(apiErrorBody("Forbidden", null));
+    } else if (attachment.groupDmId) {
+      const member = await getActiveMember(attachment.groupDmId, tokenPayload.userId);
+      if (!member?.groupDm || member.groupDm.archivedAt) {
+        return res.status(403).json(apiErrorBody("Forbidden", null));
+      }
     } else if (attachment.uploadedById !== tokenPayload.userId) {
       return res.status(403).json(apiErrorBody("Forbidden", null));
     }
@@ -208,6 +242,8 @@ router.get("/attachments/:id/download", async (req, res) => {
       return res.status(410).json(apiErrorBody("Attachment binary is unavailable", null));
     }
     const { sendStoredFile } = await import("../../storage/objectStorage.js");
+    // Allow <img> embeds from the Next.js origin (Helmet defaults CORP to same-origin).
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
     res.setHeader("Content-Type", attachment.mimeType || "application/octet-stream");
     return sendStoredFile(res, attachment.storageKey, {
       legacyPrefix: "discussions",

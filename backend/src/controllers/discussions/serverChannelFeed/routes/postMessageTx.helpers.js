@@ -2,6 +2,7 @@ import { prisma } from "../../../../db/prisma.js";
 import { filterMembershipRowsByChannelScope } from "../../../../features/discussions/channelScopeAccess.js";
 import { extractMentionHandles, resolveMentionUserIds } from "../../../../features/discussions/mentionResolution.js";
 import { anonymousSafeSenderName } from "../../../../features/discussions/discussionMessagePublic.js";
+import { REPLY_TO_INCLUDE } from "../../../../features/discussions/replyToMessage.js";
 
 export async function createChannelMessageTransaction({
   channel,
@@ -23,14 +24,16 @@ export async function createChannelMessageTransaction({
         messageType,
         isAnonymous: isAnonymousFlag,
         parentMessageId: body.parentMessageId ?? null,
+        replyToMessageId: body.replyToMessageId ?? null,
         keyVersion: body.e2e?.keyVersion ?? null,
         nonce: body.e2e?.nonce ?? null,
         ciphertext: body.e2e?.ciphertext ?? null,
         senderDeviceId: body.e2e?.senderDeviceId ?? null,
       },
       include: {
-        sender: { select: { id: true, full_name: true } },
+        sender: { select: { id: true, full_name: true, avatarUrl: true } },
         attachments: true,
+        ...REPLY_TO_INCLUDE,
       },
     });
 
@@ -68,7 +71,13 @@ export async function createChannelMessageTransaction({
           groupId: channel.serverId,
           messageId: created.id,
           type: "MESSAGE",
-          payload: { groupId: channel.serverId, channelId, messageId: created.id, senderId: userId, senderName },
+          payload: {
+            groupId: channel.server.publicId,
+            channelId: channel.publicId,
+            messageId: created.publicId,
+            senderId: userId,
+            senderName,
+          },
         })),
       });
     }
@@ -79,7 +88,13 @@ export async function createChannelMessageTransaction({
           groupId: channel.serverId,
           messageId: created.id,
           type: "MENTION",
-          payload: { groupId: channel.serverId, channelId, messageId: created.id, senderId: userId, senderName },
+          payload: {
+            groupId: channel.server.publicId,
+            channelId: channel.publicId,
+            messageId: created.publicId,
+            senderId: userId,
+            senderName,
+          },
         })),
       });
     }
@@ -89,9 +104,9 @@ export async function createChannelMessageTransaction({
         userId: uid,
         notification: {
           type: "MESSAGE",
-          groupId: channel.serverId,
-          channelId,
-          messageId: created.id,
+          groupId: channel.server.publicId,
+          channelId: channel.publicId,
+          messageId: created.publicId,
           senderId: userId,
           senderName,
         },
@@ -100,9 +115,9 @@ export async function createChannelMessageTransaction({
         userId: uid,
         notification: {
           type: "MENTION",
-          groupId: channel.serverId,
-          channelId,
-          messageId: created.id,
+          groupId: channel.server.publicId,
+          channelId: channel.publicId,
+          messageId: created.publicId,
           senderId: userId,
           senderName,
         },
@@ -112,8 +127,9 @@ export async function createChannelMessageTransaction({
     const saved = await tx.discussionMessage.findUnique({
       where: { id: created.id },
       include: {
-        sender: { select: { id: true, full_name: true } },
+        sender: { select: { id: true, full_name: true, avatarUrl: true } },
         attachments: true,
+        ...REPLY_TO_INCLUDE,
       },
     });
     return { message: saved, notificationEvents };

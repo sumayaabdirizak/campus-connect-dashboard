@@ -1,6 +1,7 @@
 import express from "express";
 import { requireRole } from "../../middleware/requireRole.js";
-import { validateQuery } from "../../middleware/validateRequest.js";
+import { ANNOUNCEMENT_MANAGER_ROLES } from "../../../../shared/roles.js";
+import { validateZod } from "../../middleware/validateRequest.js";
 import { announcementIdempotencyPost } from "./middleware/announcementIdempotency.js";
 import {
   announcementsCreateLimiter,
@@ -16,7 +17,6 @@ import {
   handleAnnouncementMeVisibility,
   handleAnnouncementCreate,
   handleAnnouncementSearch,
-  handleAnnouncementCalendarDeadlinesIcs,
   handleAnnouncementCalendarDeadlines,
   handleAnnouncementScheduledOverdue,
   handleAnnouncementSmsAuditList,
@@ -35,34 +35,34 @@ import {
 } from "./services/announcementRouteHandlers.js";
 
 const router = express.Router();
+const requireAnnouncementManager = requireRole(...ANNOUNCEMENT_MANAGER_ROLES);
 
 router.get("/", handleAnnouncementList);
 router.get("/unread-count", handleAnnouncementUnreadCount);
-router.get("/preview-recipients", requireRole("SUPER_ADMIN", "DEAN"), handleAnnouncementPreviewRecipients);
+router.get("/preview-recipients", requireAnnouncementManager, handleAnnouncementPreviewRecipients);
 router.get("/me/data-export", handleAnnouncementMeDataExport);
 router.get("/me-visibility", handleAnnouncementMeVisibility);
 router.post(
   "/",
-  requireRole("SUPER_ADMIN", "DEAN"),
+  requireAnnouncementManager,
   announcementsCreateLimiter,
   announcementIdempotencyPost,
   announcementImageUpload.array("images", 10),
   handleAnnouncementCreate
 );
 router.get("/search", handleAnnouncementSearch);
-router.get("/calendar-deadlines.ics", handleAnnouncementCalendarDeadlinesIcs);
 router.get("/calendar-deadlines", handleAnnouncementCalendarDeadlines);
-router.get("/admin/scheduled-overdue", requireRole("SUPER_ADMIN", "DEAN"), handleAnnouncementScheduledOverdue);
+router.get("/admin/scheduled-overdue", requireAnnouncementManager, handleAnnouncementScheduledOverdue);
 router.get(
   "/admin/sms-audit",
   requireRole("SUPER_ADMIN"),
-  validateQuery(smsAuditListQuerySchema),
+  validateZod(smsAuditListQuerySchema, "query"),
   handleAnnouncementSmsAuditList
 );
 router.get("/:id/analytics", handleAnnouncementAnalytics);
 router.get(
   "/:id/acknowledgements",
-  validateQuery(ackListQuerySchema),
+  validateZod(ackListQuerySchema, "query"),
   handleAnnouncementAcknowledgementsList
 );
 router.post("/:id/trackable-link", handleAnnouncementTrackableLink);
@@ -70,10 +70,14 @@ router.get("/:id/audit", handleAnnouncementAudit);
 router.post("/:id/acknowledge", handleAnnouncementAcknowledge);
 router.post("/:id/like", handleAnnouncementLike);
 router.post("/read-bulk", announcementsReadBulkLimiter, handleAnnouncementReadBulk);
-router.delete("/:id", requireRole("SUPER_ADMIN", "DEAN"), handleAnnouncementDelete);
+router.delete("/:id", requireAnnouncementManager, handleAnnouncementDelete);
 router.get("/:id", handleAnnouncementGetById);
-router.patch("/:id", handleAnnouncementPatch);
-router.patch("/:id/pin", requireRole("SUPER_ADMIN", "DEAN"), handleAnnouncementPin);
+router.patch(
+  "/:id",
+  announcementImageUpload.array("images", 10),
+  handleAnnouncementPatch
+);
+router.patch("/:id/pin", requireAnnouncementManager, handleAnnouncementPin);
 router.post("/:id/read", handleAnnouncementMarkRead);
 
 export default router;

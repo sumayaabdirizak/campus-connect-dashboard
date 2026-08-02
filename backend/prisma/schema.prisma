@@ -13,6 +13,12 @@ enum AccountStatus {
   SUSPENDED
 }
 
+enum EnrollmentStatus {
+  ACTIVE
+  INACTIVE
+  GRADUATED
+}
+
 enum ProgramLevel {
   UNDERGRADUATE
   POSTGRADUATE
@@ -113,6 +119,7 @@ enum ClubModerationAction {
   APPROVE
   REJECT
   SUSPEND
+  RESTORE
   ARCHIVE
   EDIT
   TRANSFER
@@ -207,7 +214,26 @@ model Role {
   id   Int    @id @default(autoincrement())
   name String @unique
 
-  users User[]
+  users     User[]
+  userRoles UserRole[]
+}
+
+/// A secondary role a user may switch into (e.g. a Dean who also teaches).
+/// The primary role stays on `User.roleId`; this table only ever holds
+/// *additional* roles, granted by a Super Admin. `POST /auth/switch-role`
+/// re-issues the JWT with a different `role` claim after checking the
+/// requested role is either the primary role or a row here.
+model UserRole {
+  id     Int @id @default(autoincrement())
+  userId Int
+  roleId Int
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([userId, roleId])
 }
 
 /// Deny-list for JWT IDs (jti) revoked before their natural expiry. Every
@@ -236,12 +262,30 @@ model RevokedToken {
   @@index([expiresAt])
 }
 
+/// One row per successful sign-in — powers the "User Logs" oversight report
+/// (dean/admin). Deliberately separate from `last_login_at` (which only
+/// tracks the most recent login) so history is preserved.
+model UserLoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  loginAt   DateTime @default(now())
+  ipAddress String?
+  userAgent String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, loginAt])
+  @@index([loginAt])
+}
+
 model User {
   id                   Int           @id @default(autoincrement())
   full_name            String
   email                String        @unique
   number               String        @unique
   phone                String?
+  /// Public path under `/uploads/avatars/...` (optional profile photo).
+  avatarUrl            String?
   password_hash        String
   status               AccountStatus @default(ACTIVE)
   /// Bumped by `revokeAllForUser` so every previously issued JWT (access + refresh) is rejected.
@@ -253,11 +297,13 @@ model User {
 
   roleId Int
   role   Role @relation(fields: [roleId], references: [id])
+  /// Extra roles this user may switch into (beyond the primary `role`).
+  additionalRoles UserRole[]
+  loginLogs       UserLoginLog[]
 
   studentProfile       StudentProfile?
   lecturerProfile      LecturerProfile?
   deanProfile          DeanProfile?
-  facultyAdminProfile FacultyAdminProfile?
 
   batchesCreated  Batch[]   @relation("BatchCreator")
   batchesModified Batch[]   @relation("BatchModifier")
@@ -287,10 +333,13 @@ model User {
   submissionExtensionsReceived SubmissionExtension[] @relation("SubmissionExtensionStudent")
   submissionExtensionsGranted  SubmissionExtension[] @relation("SubmissionExtensionGranter")
   assignmentAttachmentsUploaded AssignmentAttachment[]
+  assignmentLifecycleEvents     AssignmentLifecycleEvent[] @relation("AssignmentLifecycleEventActor")
+  submissionGradesGiven         SubmissionGrade[]          @relation("SubmissionGradeGrader")
   discussionMemberships DiscussionGroupMembership[]
   discussionMessagesSent DiscussionMessage[]         @relation("DiscussionMessageSender")
   discussionReadReceipts DiscussionReadReceipt[]
   discussionNotifications DiscussionNotification[]
+  courseActivityNotifications CourseActivityNotification[]
   discussionSessions DiscussionSession[]
   discussionMuteSettings DiscussionMuteSetting[]
   discussionMessageReactions DiscussionMessageReaction[]
@@ -306,6 +355,7 @@ model User {
   officeStaffMemberships SupportOfficeStaff[]
   officeThreadsAsStudent OfficeThread[]       @relation("OfficeThreadStudent")
   officeThreadsAssigned  OfficeThread[]       @relation("OfficeThreadAssignee")
+  officeThreadReads      OfficeThreadRead[]
 
   clubsOwned            Club[]                 @relation("ClubOwner")
   clubJoinRequests      ClubJoinRequest[]      @relation("ClubJoinRequester")
@@ -483,42 +533,35 @@ model Department {
 }
 
 model Faculty {
-  id         Int      @id @default(autoincrement())
-  name       String
-  code       String   @unique
-  deanId     Int?
-  dean       User?    @relation("FacultyDean", fields: [deanId], references: [id])
-  created_at DateTime @default(now())
-  updated_at DateTime @updatedAt
+  id                   Int      @id @default(autoincrement())
+  name                 String
+  code                 String   @unique
+  /// Default program length in years (e.g. 4 vs 6). Programs inherit unless overridden.
+  defaultDurationYears Int      @default(4)
+  deanId               Int?
+  dean                 User?    @relation("FacultyDean", fields: [deanId], references: [id])
+  created_at           DateTime @default(now())
+  updated_at           DateTime @updatedAt
 
   departments           Department[]
   lecturerAffiliates     LecturerFaculty[]
   deanProfile             DeanProfile?
-  facultyAdminProfiles    FacultyAdminProfile[]
   announcements         Announcement[]
   clubs                 Club[]
-}
-
-/// Faculty-scoped administrator (manages student/lecturer profiles within one faculty).
-model FacultyAdminProfile {
-  faculty_admin_id Int @id @default(autoincrement())
-  user_id          Int @unique
-  faculty_id       Int
-
-  user    User    @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  faculty Faculty @relation(fields: [faculty_id], references: [id])
-
-  @@index([faculty_id])
+  /// Faculty-scoped Dean's Office desk (Messages), if ensured.
+  deanSupportOffice     SupportOffice?
 }
 
 model Program {
-  id           Int          @id @default(autoincrement())
-  name         String
-  code         String       @unique
-  level        ProgramLevel
-  departmentId Int
-  created_at   DateTime     @default(now())
-  updated_at   DateTime     @updatedAt
+  id            Int          @id @default(autoincrement())
+  name          String
+  code          String       @unique
+  level         ProgramLevel
+  departmentId  Int
+  /// Program length in years (Medicine often 6, Computing often 4). Max semesters = years × 2.
+  durationYears Int          @default(4)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
 
   department Department @relation(fields: [departmentId], references: [id])
   batches    Batch[]
@@ -534,8 +577,10 @@ model AcademicYear {
 
   semesters                       Semester[]
   batches                         Batch[]
+  graduatedBatches                Batch[]                   @relation("BatchGraduationYear")
   registrationsAsRegistrationYear StudentRegistration[] @relation("RegistrationYear")
   registrationsAsCurrentYear      StudentRegistration[] @relation("CurrentYear")
+  graduationsAsGraduationYear     StudentRegistration[] @relation("GraduationYear")
   courseOfferings                 CourseOffering[]
 }
 
@@ -553,12 +598,16 @@ model Semester {
 }
 
 model Batch {
-  id              Int      @id @default(autoincrement())
+  id              Int              @id @default(autoincrement())
   name            String
   academic_year   Int
   programId       Int
   academicYearId  Int
-  semester_number Int      @default(1)
+  semester_number Int              @default(1)
+  /// ACTIVE while studying; INACTIVE when cohort finished (students marked GRADUATED).
+  status          EnrollmentStatus @default(ACTIVE)
+  graduatedAt     DateTime?
+  graduationAcademicYearId Int?
   /// Optional batch advisor (moderator alongside dean in batch discussion).
   advisorUserId   Int?
   created_by_id   Int?
@@ -566,16 +615,19 @@ model Batch {
   created_at      DateTime @default(now())
   updated_at      DateTime @updatedAt
 
-  program       Program       @relation(fields: [programId], references: [id])
-  academicYear  AcademicYear  @relation(fields: [academicYearId], references: [id])
-  createdBy     User?         @relation("BatchCreator", fields: [created_by_id], references: [id])
-  modifiedBy    User?        @relation("BatchModifier", fields: [modified_by_id], references: [id])
-  advisor       User?         @relation("BatchAdvisor", fields: [advisorUserId], references: [id])
+  program                  Program       @relation(fields: [programId], references: [id])
+  academicYear             AcademicYear  @relation(fields: [academicYearId], references: [id])
+  graduationAcademicYear   AcademicYear? @relation("BatchGraduationYear", fields: [graduationAcademicYearId], references: [id])
+  createdBy                User?         @relation("BatchCreator", fields: [created_by_id], references: [id])
+  modifiedBy               User?         @relation("BatchModifier", fields: [modified_by_id], references: [id])
+  advisor                  User?         @relation("BatchAdvisor", fields: [advisorUserId], references: [id])
 
   sections       BatchSection[] @relation("BatchToBatchSection")
   announcements  Announcement[]
 
   @@index([advisorUserId])
+  @@index([status])
+  @@index([graduationAcademicYearId])
 }
 
 model BatchSection {
@@ -599,21 +651,28 @@ model BatchSection {
 }
 
 model StudentRegistration {
-  id                         Int @id @default(autoincrement())
+  id                         Int              @id @default(autoincrement())
   studentId                  Int
   batchSectionId             Int
   registrationAcademicYearId Int
   currentAcademicYearId      Int
   currentSemesterId          Int
+  status                     EnrollmentStatus @default(ACTIVE)
+  graduatedAt                DateTime?
+  graduationAcademicYearId   Int?
 
   student                  User         @relation(fields: [studentId], references: [id])
   batchSection             BatchSection @relation(fields: [batchSectionId], references: [id])
   registrationAcademicYear AcademicYear @relation("RegistrationYear", fields: [registrationAcademicYearId], references: [id])
   currentAcademicYear      AcademicYear @relation("CurrentYear", fields: [currentAcademicYearId], references: [id])
   currentSemester          Semester     @relation(fields: [currentSemesterId], references: [id])
+  graduationAcademicYear   AcademicYear? @relation("GraduationYear", fields: [graduationAcademicYearId], references: [id])
 
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
+
+  @@index([status])
+  @@index([graduationAcademicYearId])
 }
 
 // ─── COURSE SYSTEM ────────────────────────────────────────────────────────────
@@ -625,6 +684,8 @@ model Course {
   code         String   @unique
   description  String?
   credits      Int      @default(3)
+  /// Curriculum semester when this course is typically taken (1…12).
+  semesterNumber Int?
   departmentId Int
   created_at   DateTime @default(now())
   updated_at   DateTime @updatedAt
@@ -634,6 +695,8 @@ model Course {
   teacherAssignings TeacherAssigning[]
   offerings         CourseOffering[]
   resources         Resource[]
+
+  @@index([semesterNumber])
 }
 
 /// Assigns a teacher to a course (Teacher ↔ Course, not Section)
@@ -679,6 +742,7 @@ model CourseOffering {
   resources      Resource[]
   modules        CourseModule[]
   bankQuestions  Question[]
+  activityNotifications CourseActivityNotification[]
 
   @@unique([courseId, sectionId, semesterId, academicYearId])
   @@index([courseId])
@@ -700,6 +764,32 @@ enum AssignmentGradingScope {
   GROUP
 }
 
+enum AssignmentPublishStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum AssignmentScheduleStatus {
+  SCHEDULED
+  OPEN
+  CLOSED
+}
+
+enum AssignmentLifecycleEventType {
+  CREATED
+  PUBLISHED
+  UNPUBLISHED
+  ARCHIVED
+  SCHEDULE_CHANGED
+  DUPLICATED
+}
+
+enum SubmissionLateState {
+  ON_TIME
+  LATE
+}
+
 model Assignment {
   id               Int       @id @default(autoincrement())
   title            String
@@ -710,21 +800,55 @@ model Assignment {
   courseOfferingId Int
   created_at       DateTime  @default(now())
   updated_at       DateTime  @updatedAt
-  is_draft         Boolean   @default(false)
 
   workMode           AssignmentWorkMode     @default(INDIVIDUAL)
   gradingScope       AssignmentGradingScope @default(INDIVIDUAL)
   /// Grace window after `due_date` during which submissions are still accepted
-  /// (recorded with is_late=true). Zero disables the grace window.
+  /// (recorded with lateState=LATE). Zero disables the grace window.
   lateWindowMinutes  Int                    @default(0)
   /// Total marks for this assignment. Grades are validated 0..maxMarks.
   /// Default 100 preserves the existing percentage-based grading behaviour.
   maxMarks           Int                    @default(100)
 
-  courseOffering CourseOffering        @relation(fields: [courseOfferingId], references: [id])
+  courseOffering CourseOffering         @relation(fields: [courseOfferingId], references: [id])
   submissions    Submission[]
   extensions     SubmissionExtension[]
   attachments    AssignmentAttachment[]
+  lifecycle      AssignmentLifecycle?
+  lifecycleEvents AssignmentLifecycleEvent[]
+}
+
+/// Current publish (+ cached schedule) for an assignment.
+model AssignmentLifecycle {
+  assignmentId   Int                       @id
+  publishStatus  AssignmentPublishStatus   @default(DRAFT)
+  /// Cached schedule hint; always recompute for student-scoped extensions.
+  scheduleStatus AssignmentScheduleStatus  @default(OPEN)
+  computedAt     DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  @@index([publishStatus])
+  @@index([scheduleStatus])
+}
+
+/// Append-only audit of publish / schedule transitions.
+model AssignmentLifecycleEvent {
+  id           Int                           @id @default(autoincrement())
+  assignmentId Int
+  eventType    AssignmentLifecycleEventType
+  fromStatus   String?
+  toStatus     String?
+  actorUserId  Int?
+  meta         Json?
+  createdAt    DateTime                      @default(now())
+
+  assignment Assignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  actor      User?      @relation("AssignmentLifecycleEventActor", fields: [actorUserId], references: [id])
+
+  @@index([assignmentId, createdAt])
+  @@index([actorUserId])
 }
 
 /// Files a teacher attaches when creating/editing an assignment (spec PDF,
@@ -750,19 +874,17 @@ model Submission {
   id           Int      @id @default(autoincrement())
   assignmentId Int
   studentId    Int
-  /// Set when this submission was made as part of a group (gradingMode=GROUP).
+  /// Set when this submission was made as part of a group (gradingScope=GROUP).
   /// All members of `groupId` share the same grade/feedback via fan-out.
   groupId      Int?
   content_url  String
   submitted_at DateTime @default(now())
-  grade        Float?
-  feedback     String?
-  is_reviewed  Boolean  @default(false)
-  is_late      Boolean  @default(false)
+  lateState    SubmissionLateState @default(ON_TIME)
 
-  assignment Assignment   @relation(fields: [assignmentId], references: [id])
-  student    User         @relation(fields: [studentId], references: [id])
-  group      CourseGroup? @relation(fields: [groupId], references: [id])
+  assignment Assignment      @relation(fields: [assignmentId], references: [id])
+  student    User            @relation(fields: [studentId], references: [id])
+  group      CourseGroup?    @relation(fields: [groupId], references: [id])
+  gradeRow   SubmissionGrade?
 
   @@unique([assignmentId, studentId])
   @@index([assignmentId])
@@ -770,9 +892,25 @@ model Submission {
   @@index([groupId])
 }
 
-/// Per-assignment deadline extension. Either `studentId` OR `groupId` is set,
-/// depending on the assignment's gradingMode. `newDueAt` overrides
-/// Assignment.due_date for that target.
+/// Normalized grade row (1:1 with Submission).
+/// `score` null = reviewed without a numeric grade (legacy is_reviewed).
+model SubmissionGrade {
+  submissionId Int      @id
+  score        Float?
+  feedback     String?
+  gradedById   Int?
+  gradedAt     DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  submission Submission @relation(fields: [submissionId], references: [id], onDelete: Cascade)
+  gradedBy   User?      @relation("SubmissionGradeGrader", fields: [gradedById], references: [id])
+
+  @@index([gradedAt])
+  @@index([gradedById])
+}
+
+/// Per-assignment deadline extension. Either `studentId` OR `groupId` is set
+/// (XOR enforced in DB). `newDueAt` overrides Assignment.due_date for that target.
 model SubmissionExtension {
   id           Int      @id @default(autoincrement())
   assignmentId Int
@@ -802,6 +940,14 @@ model Quiz {
   open_at          DateTime?
   close_at         DateTime?
   is_draft         Boolean  @default(false)
+  /// When true and still a draft, a background job publishes the quiz
+  /// (`is_draft = false`) as soon as `open_at` is reached. Requires `open_at`.
+  auto_publish_at_open Boolean @default(false)
+  /// Set when QUIZ_OPENING reminder was sent (or suppressed because publish
+  /// already covered an open window). Null = still due when open_at passes.
+  open_notified_at     DateTime?
+  /// Set when QUIZ_CLOSING_SOON reminder was sent. Cleared if schedule moves.
+  closing_notified_at  DateTime?
   shuffle_questions Boolean  @default(false)
   shuffle_answers  Boolean  @default(false)
   max_attempts     Int       @default(1)
@@ -831,6 +977,7 @@ model Quiz {
 
   @@index([courseOfferingId])
   @@index([moduleId])
+  @@index([is_draft, auto_publish_at_open, open_at])
 }
 
 model QuizOption {
@@ -934,6 +1081,11 @@ model QuizAttempt {
   violations_count Int   @default(0)
   warnings_shown   Int   @default(0)
 
+  /// Frozen question/option order for this attempt:
+  /// `[{ questionId, optionIds: number[] }, ...]`. Built at first start so
+  /// shuffle + later teacher edits cannot reshuffle mid-attempt.
+  questions_snapshot Json?
+
   @@index([expires_at])
 
   // Cascade: deleting a quiz drops attempts (and via QuizAnswer cascade,
@@ -988,6 +1140,20 @@ enum ResourceType {
   AUDIO
   EXTERNAL_LINK
   OTHER
+}
+
+/// Selectable labels for Resource.type — driven from DB so UI filters/forms
+/// do not hardcode the catalog. `code` must match ResourceType enum values.
+model ResourceTypeOption {
+  id        Int          @id @default(autoincrement())
+  code      ResourceType @unique
+  label     String
+  sortOrder Int          @default(0)
+  isActive  Boolean      @default(true)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  @@index([isActive, sortOrder])
 }
 
 model Resource {
@@ -1300,6 +1466,8 @@ model SmsAuditLog {
 
 model DiscussionGroup {
   id         Int                 @id @default(autoincrement())
+  /// External identifier for URLs, API paths, and socket rooms (never expose numeric id to clients).
+  publicId   String              @unique @default(uuid()) @db.Uuid
   scopeType  DiscussionScopeType
   scopeId    Int
   groupKey   String              @unique
@@ -1346,6 +1514,8 @@ model DiscussionGroup {
 
 model DiscussionChannelCategory {
   id        Int      @id @default(autoincrement())
+  /// External identifier for URLs and API paths (never expose numeric id to clients).
+  publicId  String   @unique @default(uuid()) @db.Uuid
   serverId  Int
   systemKey String
   name      String
@@ -1362,6 +1532,8 @@ model DiscussionChannelCategory {
 
 model DiscussionChannel {
   id             Int                   @id @default(autoincrement())
+  /// External identifier for URLs, API paths, and socket rooms (never expose numeric id to clients).
+  publicId       String                @unique @default(uuid()) @db.Uuid
   serverId       Int
   categoryId     Int?
   name           String
@@ -1454,7 +1626,10 @@ model SupportOffice {
   codePrefix  String   @default("OFC")
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
+  /// When set, this desk is that faculty's Dean's Office (one per faculty).
+  facultyId   Int?     @unique
 
+  faculty Faculty? @relation(fields: [facultyId], references: [id], onDelete: Cascade)
   staff   SupportOfficeStaff[]
   threads OfficeThread[]
 }
@@ -1504,14 +1679,31 @@ model OfficeThread {
   student    User          @relation("OfficeThreadStudent", fields: [studentId], references: [id], onDelete: Cascade)
   assignedTo User?         @relation("OfficeThreadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
   messages   DiscussionMessage[]
+  reads      OfficeThreadRead[]
 
   @@index([officeId, status, updatedAt])
   @@index([studentId, updatedAt])
   @@index([assignedToId, status])
 }
 
+/// Per-user read cursor for office chats (student tickets + AO↔desk DMs).
+model OfficeThreadRead {
+  id         Int      @id @default(autoincrement())
+  threadId   Int
+  userId     Int
+  lastReadAt DateTime @default(now())
+
+  thread OfficeThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+  @@index([userId])
+}
+
 model GroupDm {
   id          Int       @id @default(autoincrement())
+  /// External identifier for URLs, API paths, and socket rooms (never expose numeric id to clients).
+  publicId    String    @unique @default(uuid()) @db.Uuid
   name        String?
   iconUrl     String?
   createdById Int
@@ -1522,6 +1714,7 @@ model GroupDm {
   createdBy User            @relation("GroupDmCreator", fields: [createdById], references: [id], onDelete: Cascade)
   members   GroupDmMember[]
   messages  DiscussionMessage[]
+  attachments DiscussionAttachment[]
 
   @@index([createdById])
   @@index([archivedAt])
@@ -1569,6 +1762,8 @@ model DiscussionGroupMembership {
 
 model DiscussionMessage {
   id            Int                   @id @default(autoincrement())
+  /// External identifier for URLs and API paths (never expose numeric id to clients).
+  publicId      String                @unique @default(uuid()) @db.Uuid
   groupId       Int?
   channelId     Int?
   groupDmId     Int?
@@ -1582,6 +1777,8 @@ model DiscussionMessage {
   editedAt      DateTime?
   deletedAt     DateTime?
   parentMessageId Int?
+  /// WhatsApp-style quote in the same timeline (not a Discord thread).
+  replyToMessageId Int?
   isAcceptedAnswer Boolean              @default(false)
   isAnonymous     Boolean              @default(false)
   keyVersion    Int?
@@ -1596,6 +1793,8 @@ model DiscussionMessage {
   sender       User?                     @relation("DiscussionMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
   parentMessage DiscussionMessage?       @relation("DiscussionMessageThread", fields: [parentMessageId], references: [id], onDelete: SetNull)
   replies      DiscussionMessage[]       @relation("DiscussionMessageThread")
+  replyTo      DiscussionMessage?        @relation("DiscussionMessageQuote", fields: [replyToMessageId], references: [id], onDelete: SetNull)
+  quoteReplies DiscussionMessage[]       @relation("DiscussionMessageQuote")
   attachments  DiscussionAttachment[]
   readReceipts DiscussionReadReceipt[]
   reactions    DiscussionMessageReaction[]
@@ -1614,13 +1813,17 @@ model DiscussionMessage {
   // existing [channelId, createdAt] index forced row-level filtering on
   // every chat open. This index covers both predicates directly.
   @@index([channelId, parentMessageId, createdAt])
+  @@index([replyToMessageId])
 }
 
 model DiscussionAttachment {
   id         Int                      @id @default(autoincrement())
+  /// External identifier for URLs and API paths (never expose numeric id to clients).
+  publicId   String                   @unique @default(uuid()) @db.Uuid
   messageId  Int?
   uploadedById Int
   groupId    Int?
+  groupDmId  Int?
   url        String
   fileType   DiscussionAttachmentType
   mimeType   String
@@ -1635,10 +1838,12 @@ model DiscussionAttachment {
   message    DiscussionMessage? @relation(fields: [messageId], references: [id], onDelete: Cascade)
   uploadedBy User              @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
   group      DiscussionGroup?  @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  groupDm    GroupDm?          @relation(fields: [groupDmId], references: [id], onDelete: SetNull)
 
   @@index([messageId])
   @@index([uploadedById, status])
   @@index([groupId, createdAt])
+  @@index([groupDmId, createdAt])
 }
 
 model DiscussionReadReceipt {
@@ -1672,6 +1877,37 @@ model DiscussionNotification {
 
   @@index([userId, readAt])
   @@index([groupId, createdAt])
+}
+
+enum CourseActivityKind {
+  ASSIGNMENT_PUBLISHED
+  ASSIGNMENT_UPDATED
+  QUIZ_PUBLISHED
+  QUIZ_OPENING
+  QUIZ_CLOSING_SOON
+  QUIZ_GRADED
+  RESOURCE_PUBLISHED
+  FEED_POST
+}
+
+/// Durable in-app notification for course content changes (assignments, quizzes, etc.).
+model CourseActivityNotification {
+  id               Int                @id @default(autoincrement())
+  userId           Int
+  courseOfferingId Int?
+  kind             CourseActivityKind
+  title            String
+  body             String             @db.Text
+  href             String
+  createdAt        DateTime           @default(now())
+  readAt           DateTime?
+
+  user           User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseOffering CourseOffering? @relation(fields: [courseOfferingId], references: [id], onDelete: SetNull)
+
+  @@index([userId, readAt])
+  @@index([userId, createdAt])
+  @@index([courseOfferingId, createdAt])
 }
 
 model DiscussionSession {

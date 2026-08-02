@@ -22,3 +22,19 @@ export function normaliseMaxMarks(maxMarks) {
   }
   return { data: { maxMarks } };
 }
+
+/** Coerce late window to int minutes; omit when undefined/null. */
+export function normaliseLateWindow(lateWindowMinutes) {
+  if (lateWindowMinutes === undefined || lateWindowMinutes === null) {
+    return { data: {} };
+  }
+  const n = Number(lateWindowMinutes);
+  if (!Number.isFinite(n)) {
+    return { error: 'lateWindowMinutes must be a number' };
+  }
+  const minutes = Math.trunc(n);
+  if (minutes < 0 || minutes > 10080) {
+    return { error: 'lateWindowMinutes must be between 0 and 10080' };
+  }
+  return { data: { lateWindowMinutes: minutes } };
+}
