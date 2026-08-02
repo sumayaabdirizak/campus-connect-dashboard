@@ -1,5 +1,6 @@
 import { prisma } from "../../../db/prisma.js";
 import { resolveServerRow, resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
+import { isDoNotDisturbStatus } from "../../../services/discussions/discussionPresence.js";
 
 async function publicIdsForGroupIds(groupIds) {
   const ids = Array.from(groupIds);
@@ -16,6 +17,7 @@ export function registerPresenceDisconnectHandlers(socket, ctx) {
     socketUser, fanout, ackOrEmitError, ackSuccess,
     discussionChannelRoom, discussionRoom,
     touchDiscussionSession, closeDiscussionSession,
+    pulseDiscussionPresenceHeartbeat,
   } = ctx;
 
       socket.on("presence:ping", async (payload = {}, ack) => {

@@ -1,5 +1,3 @@
-import { appendFileSync } from 'node:fs';
-import path from 'node:path';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
@@ -10,50 +8,10 @@ import {
   isAiEnabled,
 } from '../../../services/aiQuestionGenerator.service.js';
 
-// #region agent log
-function routeDbg(message, data) {
-  const line = JSON.stringify({
-    sessionId: 'c4b419',
-    runId: 'ui-verify',
-    hypothesisId: 'A',
-    location: 'generate.routes.js',
-    message,
-    data,
-    timestamp: Date.now(),
-  });
-  try {
-    appendFileSync(path.resolve(process.cwd(), '../debug-c4b419.log'), `${line}\n`);
-  } catch {
-    /* ignore */
-  }
-  fetch('http://127.0.0.1:7804/ingest/31870779-47f0-4312-b278-1c6da891de23', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Debug-Session-Id': 'c4b419',
-    },
-    body: line,
-  }).catch(() => {});
-}
-// #endregion
-
 /** @param {import('express').Router} router */
 export function register(router) {
   router.post(
     '/:courseOfferingId/generate',
-    // #region agent log
-    (req, _res, next) => {
-      const sourceLen = String(req.body?.sourceMaterial || '').length;
-      console.log(
-        `[generate] pre-auth offering=${req.params.courseOfferingId} sourceLen=${sourceLen}`
-      );
-      routeDbg('generate pre-auth', {
-        offeringId: req.params.courseOfferingId,
-        sourceLen,
-      });
-      next();
-    },
-    // #endregion
     requireCourseOfferingManage(),
     // Clamp before Joi — large PDF extracts can exceed the schema max and
     // would 400 before fitSourceForGroq can trim for Groq TPM.
@@ -111,26 +69,12 @@ export function register(router) {
           courseTitle,
         });
 
-        // #region agent log
-        routeDbg('generate ok', {
-          n: result.questions?.length ?? 0,
-          truncated: !!result.sourceTruncated,
-          usage: result.usage || null,
-        });
-        // #endregion
-
         res.json({
           questions: result.questions,
           usage: result.usage,
           sourceTruncated: !!result.sourceTruncated,
         });
       } catch (e) {
-        // #region agent log
-        routeDbg('generate fail', {
-          status: e.status || 500,
-          message: String(e.message || e).slice(0, 240),
-        });
-        // #endregion
         const status = e.status || 500;
         res.status(status).json({
           message: e.message || 'AI generation failed',

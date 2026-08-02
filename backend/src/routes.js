@@ -33,7 +33,6 @@ import courseActivityNotificationsRouter from './controllers/courses/course-acti
 import announcementsRouter from './controllers/announcements/routes.announcements.js';
 import pushRouter from './controllers/announcements/routes.push.js';
 import debugRouter from './controllers/debug/announcement-test-users.js';
-import debugAgentLogRouter from './controllers/debugAgentLog.routes.js';
 import discussionsRouter from './controllers/discussions/discussions.js';
 import clubsRouter from './controllers/clubs/clubs.js';
 import officesRouter from './controllers/offices/offices.js';
@@ -102,7 +101,6 @@ export function mountRoutes(app) {
 
   // Debug helpers — never expose in production.
   if (process.env.NODE_ENV !== 'production') {
-    app.use('/api/debug', debugAgentLogRouter);
     app.use('/api/debug', debugRouter);
   }
 }

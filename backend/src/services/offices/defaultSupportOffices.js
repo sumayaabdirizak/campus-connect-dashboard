@@ -43,7 +43,7 @@ export function deanOfficeDefForFaculty(faculty) {
   return {
     name: `Dean's Office — ${faculty.name}`,
     slug: `deans-office-${slugCode || faculty.id}`,
-    codePrefix: (`D${code}` || 'DEAN').slice(0, 6),
+    codePrefix: (code ? `D${code}` : 'DEAN').slice(0, 6),
     description: `Faculty dean inquiries for ${faculty.name}.`,
     facultyId: faculty.id,
   };

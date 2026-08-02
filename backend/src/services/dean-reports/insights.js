@@ -54,28 +54,6 @@ export function buildRecentActivity({ faculty, studentsAtRisk, coursesAtRisk }) 
       description: `${c.course} shows ${c.failureRate}% failure indicators.`,
       timestamp: new Date(Date.now() - 7200000).toISOString(),
     })),
-    // Added Teacher logs in Dean and Academic reports recent activities
-    {
-      id: 'teach-act-1',
-      type: 'enrollment',
-      title: 'Course materials uploaded',
-      description: 'Dr. Sarah Jenkins published new resource guides to Course Materials.',
-      timestamp: new Date(Date.now() - 1800000).toISOString(),
-    },
-    {
-      id: 'teach-act-2',
-      type: 'quiz',
-      title: 'Midterm quizzes graded',
-      description: 'Prof. Marcus Vance completed grading for Midterm Assessment attempts.',
-      timestamp: new Date(Date.now() - 5400000).toISOString(),
-    },
-    {
-      id: 'teach-act-3',
-      type: 'discussion',
-      title: 'Dean Review complete',
-      description: 'Instructor portfolios updated for review by academic leadership.',
-      timestamp: new Date(Date.now() - 10800000).toISOString(),
-    }
   ];
 
   return activities.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
