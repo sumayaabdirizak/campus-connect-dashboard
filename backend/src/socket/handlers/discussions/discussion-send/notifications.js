@@ -9,7 +9,6 @@ import { anonymousSafeSenderName } from "../../../../services/discussions/discus
 export async function createMemberMessageNotifications(tx, opts) {
   const {
     groupId,
-    channelId,
     messageId,
     groupPublicId,
     channelPublicId,

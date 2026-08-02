@@ -12,8 +12,8 @@ import { buildMessagePublicIdMap, toMessageDto } from "../../../controllers/disc
 /** @param {object} args */
 export async function sendGroupMessage(args) {
   const {
-    socket, payload, ack,
-    socketUser, fanout, ackOrEmitError, ackSuccess,
+    socket, ack,
+    socketUser, fanout, ackSuccess,
     discussionRoom,
     emitUnreadUpdateToUsers, touchDiscussionSession,
     started, attachmentIds, e2e,

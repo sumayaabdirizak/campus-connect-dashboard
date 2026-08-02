@@ -1,26 +1,7 @@
 import { prisma } from "../../../db/prisma.js";
-import { metricCount, metricTimerEnd, metricTimerStart } from "../../../services/discussions/reliability/metrics.js";
-import {
-  computeChannelPermissions,
-  hasPermission,
-  PERMISSION_BITS,
-} from "../../../services/discussions/permissions.js";
+import { metricTimerEnd } from "../../../services/discussions/reliability/metrics.js";
 import { extractMentionHandles, resolveMentionUserIds } from "../../../services/discussions/mentionResolution.js";
-import {
-  excludeDoNotDisturbUserIds,
-  getDiscussionPresenceWindowMs,
-  isDoNotDisturbStatus,
-} from "../../../services/discussions/discussionPresence.js";
-import {
-  collectThreadParticipantSenderIds,
-  resolveThreadRootMessageId,
-} from "../../../services/discussions/threadParticipants.js";
-import {
-  anonymousSafeSenderName,
-  applyAnonymousSenderPolicy,
-  deriveQuestionFields,
-} from "../../../services/discussions/discussionMessagePublic.js";
-import { filterMembershipRowsByChannelScope } from "../../../services/discussions/channelScopeAccess.js";
+import { excludeDoNotDisturbUserIds } from "../../../services/discussions/discussionPresence.js";
 import { buildMessagePublicIdMap, toMessageDto } from "../../../controllers/discussions/messageShared.js";
 import { notifyOfflineOrMentionedByEmail } from "./discussion-send/emailNotify.js";
 
@@ -29,10 +10,10 @@ export async function sendGroupDmMessage(args) {
   const {
     socket, payload, ack, groupDmId, groupDmPublicId,
     socketUser, fanout, ackOrEmitError, ackSuccess,
-    discussionChannelRoom, discussionRoom, discussionGroupDmRoom,
-    emitUnreadUpdateToUsers, isUserViewingChannel, isUserViewingGroup, isUserViewingGroupDm,
-    getActiveDiscussionUserIdSet, getDiscussionMembership, touchDiscussionSession,
-    started, attachmentIds, e2e, messageTypeUpper,
+    discussionGroupDmRoom,
+    emitUnreadUpdateToUsers, isUserViewingGroupDm,
+    getActiveDiscussionUserIdSet, touchDiscussionSession,
+    started, messageTypeUpper,
   } = args;
 
   const content = typeof payload?.content === "string" ? payload.content.trim() : "";

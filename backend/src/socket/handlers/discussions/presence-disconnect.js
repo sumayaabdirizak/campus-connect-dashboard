@@ -17,12 +17,11 @@ export function registerPresenceDisconnectHandlers(socket, ctx) {
     socketUser, fanout, ackOrEmitError, ackSuccess,
     discussionChannelRoom, discussionRoom,
     touchDiscussionSession, closeDiscussionSession,
-    pulseDiscussionPresenceHeartbeat,
   } = ctx;
 
       socket.on("presence:ping", async (payload = {}, ack) => {
         try {
-          await pulseDiscussionPresenceHeartbeat(socket);
+          await touchDiscussionSession(socket);
           if (payload?.activeGroupId != null) {
             const row = await resolveServerRow(payload.activeGroupId);
             if (row) socket.data.activeDiscussionGroupId = row.id;

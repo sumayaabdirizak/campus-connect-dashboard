@@ -12,8 +12,8 @@ import { buildMessagePublicIdMap, toMessageDto } from "../../../controllers/disc
 /** @param {object} args */
 export async function sendChannelMessage(args) {
   const {
-    socket, payload, ack, channelId, channelPublicId,
-    socketUser, fanout, ackOrEmitError, ackSuccess,
+    socket, ack, channelId, channelPublicId,
+    socketUser, fanout, ackSuccess,
     discussionChannelRoom, discussionRoom,
     emitUnreadUpdateToUsers, touchDiscussionSession,
     started, attachmentIds, e2e,

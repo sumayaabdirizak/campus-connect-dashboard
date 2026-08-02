@@ -1,25 +1,4 @@
-import { prisma } from "../../../db/prisma.js";
-import { metricCount, metricTimerEnd, metricTimerStart } from "../../../services/discussions/reliability/metrics.js";
-import {
-  computeChannelPermissions,
-  hasPermission,
-  PERMISSION_BITS,
-} from "../../../services/discussions/permissions.js";
-import { extractMentionHandles, resolveMentionUserIds } from "../../../services/discussions/mentionResolution.js";
-import {
-  excludeDoNotDisturbUserIds,
-  getDiscussionPresenceWindowMs,
-  isDoNotDisturbStatus,
-} from "../../../services/discussions/discussionPresence.js";
-import {
-  collectThreadParticipantSenderIds,
-  resolveThreadRootMessageId,
-} from "../../../services/discussions/threadParticipants.js";
-import {
-  anonymousSafeSenderName,
-  applyAnonymousSenderPolicy,
-  deriveQuestionFields,
-} from "../../../services/discussions/discussionMessagePublic.js";
+import { metricCount, metricTimerStart } from "../../../services/discussions/reliability/metrics.js";
 import { sendChannelMessage } from "./send-channel-message.js";
 import { sendGroupDmMessage } from "./send-group-dm-message.js";
 import { sendGroupMessage } from "./send-group-message.js";
