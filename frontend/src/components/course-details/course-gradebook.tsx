@@ -1,11 +1,6 @@
-'use client'
+'use client';
 
-export interface CourseGradebookProps {
-  courseId: string;
-}
+import { CourseGradebook } from './course-gradebook/course-gradebook';
 
-export function Coursegradebook({ courseId }: CourseGradebookProps) {
-  return <div className="p-4">Coursegradebook</div>
-}
-
-export default Coursegradebook
+export { CourseGradebook };
+export default CourseGradebook;

@@ -43,7 +43,6 @@ export function useCourseDetailPage(offeringId: string): UseCourseDeatilPageRetu
     roster: 0,
     grades: 0,
     reviews: 0,
-    gradebook: 0,
     chat: 0,
   });
   const [reviewItems] = useState<ReviewQueueItem[]>([]);
