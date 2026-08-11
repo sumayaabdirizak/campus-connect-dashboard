@@ -1,2 +1,2 @@
 // Re-export modal components from src/components/modal/
-export { default as AlertModal } from '@/components/modal/alert-modal'
+export * from '@/components/modal/alert-modal'

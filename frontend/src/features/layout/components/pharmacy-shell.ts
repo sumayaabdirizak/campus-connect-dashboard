@@ -1,1 +1,1 @@
-export * from '@/components/layout/pharmacy-shell'
+export * from '@/components/layout/pharmacy/pharmacy-shell'

@@ -38,7 +38,9 @@ vi.mock('next/navigation', () => ({
 vi.mock('next/image', () => ({
   __esModule: true,
   default: (props: any) => {
-    return <img {...props} />
+    const img = document.createElement('img')
+    Object.assign(img, props)
+    return img
   },
 }))
 
