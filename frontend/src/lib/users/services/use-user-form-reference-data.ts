@@ -24,8 +24,13 @@ export function useUserFormReferenceData(open: boolean) {
     enabled: open
   });
 
+  const sections = (sectionsData?.sections ?? []).map((s: any) => ({
+    ...s,
+    batchId: s.batch?.id ?? s.batchId ?? 0
+  }));
+
   return {
-    sections: sectionsData?.sections ?? [],
+    sections,
     academicYears: academicYearsData?.academicYears ?? [],
     departments: departmentsData?.departments ?? [],
     departmentsLoading,

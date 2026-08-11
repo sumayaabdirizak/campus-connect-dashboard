@@ -54,6 +54,13 @@ export function BulkStudentsModal({ open, onOpenChange }: Props) {
     enabled: open
   });
 
+  const normalizedSections = useMemo(() => {
+    return (sectionsData?.sections ?? []).map((s: any) => ({
+      ...s,
+      batchId: s.batch?.id ?? s.batchId ?? 0
+    }));
+  }, [sectionsData?.sections]);
+
   useEffect(() => {
     if (!open) return;
     setEnrollment({ ...EMPTY_USER_FORM, role: 'STUDENT' });
@@ -128,7 +135,7 @@ export function BulkStudentsModal({ open, onOpenChange }: Props) {
           departments={departmentsData?.departments ?? []}
           programs={programsData?.programs ?? []}
           batches={(batchesData?.batches ?? []) as never}
-          sections={sectionsData?.sections ?? []}
+          sections={normalizedSections as any}
           academicYears={(academicYearsData?.academicYears ?? []) as never}
         />
 
