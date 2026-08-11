@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import * as RTL from '@testing-library/react'
-
-const screen = RTL.screen as any
 import { SuperAdminDashboard } from './super-admin-dashboard'
 import * as authStore from '@/lib/auth-store'
 import * as adminQueries from '@/lib/admin-queries'
+
+const screen = RTL.screen as any
 
 vi.mock('@/lib/auth-store')
 vi.mock('@/lib/admin-queries')

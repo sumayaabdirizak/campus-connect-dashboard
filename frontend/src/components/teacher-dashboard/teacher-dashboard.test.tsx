@@ -1,11 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render } from '@testing-library/react'
 import * as RTL from '@testing-library/react'
-
-const screen = RTL.screen as any
 import { TeacherDashboard } from './teacher-dashboard'
 import * as authStore from '@/lib/auth-store'
 import * as teacherCoursesQueries from '@/lib/teacher-courses/queries'
+
+const screen = RTL.screen as any
 
 vi.mock('@/lib/auth-store')
 vi.mock('@/lib/teacher-courses/queries')
