@@ -101,11 +101,18 @@ export async function getResourceAnalytics(
   });
 }
 
-export function resourceDownloadUrl(resourceId: number): string {
+export function resourceDownloadUrl(
+  resourceId: number,
+  options?: { forceDownload?: boolean }
+): string {
   // Return a same-origin path that next.config.ts rewrites to the backend.
   // Same-origin requests carry cookies automatically — no CORS preflight,
   // no credentials juggling, no proxy Route Handler needed.
-  return `/api/download/${resourceId}`;
+  let url = `/api/download/${resourceId}`;
+  if (options?.forceDownload) {
+    url += '?download=1';
+  }
+  return url;
 }
 
 // ─── Modules ────────────────────────────────────────────────────────────────

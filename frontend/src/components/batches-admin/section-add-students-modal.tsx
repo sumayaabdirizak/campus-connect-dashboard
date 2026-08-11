@@ -40,7 +40,7 @@ export function SectionAddStudentsModal({ section, open, onOpenChange }: Props) 
 
   const studentsQuery = useQuery({
     queryKey: ['users', 'STUDENT', 'section-pick'],
-    queryFn: () => fetchUsers({ roles: 'STUDENT', limit: 200, page: 1 }),
+    queryFn: () => fetchUsers(),
     enabled: open
   });
 
@@ -51,7 +51,7 @@ export function SectionAddStudentsModal({ section, open, onOpenChange }: Props) 
 
   const candidates = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (studentsQuery.data?.users ?? []).filter((u) => {
+    return (studentsQuery.data?.users ?? []).filter((u: any) => {
       if (enrolledIds.has(u.id)) return false;
       if (!q) return true;
       return [u.full_name, u.email, u.number].filter(Boolean).join(' ').toLowerCase().includes(q);
@@ -101,7 +101,7 @@ export function SectionAddStudentsModal({ section, open, onOpenChange }: Props) 
                 No available students to add.
               </p>
             ) : (
-              candidates.map((student) => (
+              candidates.map((student: any) => (
                 <label
                   key={student.id}
                   className='flex cursor-pointer items-center gap-3 rounded-md px-2 py-2 hover:bg-muted/60'

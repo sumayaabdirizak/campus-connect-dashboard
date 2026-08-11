@@ -16,7 +16,7 @@ interface UseCourseDeatilPageReturn {
   } | null;
   headerCompact: boolean;
   setHeaderCompact: (compact: boolean) => void;
-  tabPanelRef: React.RefObject<HTMLDivElement>;
+  tabPanelRef: React.RefObject<HTMLDivElement | null>;
   tabBadges: Record<CourseTabId, number>;
   handleTabChange: (tab: CourseTabId) => void;
   reviewItems: ReviewQueueItem[];

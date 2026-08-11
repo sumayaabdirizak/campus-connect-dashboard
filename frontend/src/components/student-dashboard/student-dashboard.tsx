@@ -232,7 +232,7 @@ export function StudentDashboard() {
                   thumbnail: course.thumbnail,
                   totalStudents: 0,
                   totalLessons: course.totalLessons,
-                  schedule: course.schedule,
+                  schedule: Array.isArray(course.schedule) ? course.schedule.map((s: any) => ({ ...s, day: String(s.day) })) : undefined,
                   status: course.status
                 }}
               />
@@ -272,7 +272,7 @@ export function StudentDashboard() {
                     <Badge variant='outline' className='mb-2 ml-4'>
                       {assignment.kind}
                     </Badge>
-                    <p className='text-sm text-muted-foreground'>Due {formatDate(assignment.dueAt)}</p>
+                    <p className='text-sm text-muted-foreground'>Due {formatDate(assignment.dueAt ?? undefined)}</p>
                   </div>
                 </CardContent>
               </Card>

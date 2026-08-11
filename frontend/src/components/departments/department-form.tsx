@@ -21,7 +21,7 @@ export default function DepartmentForm({
 }) {
   const form = useAppForm({
     defaultValues: {
-      facultyId: initialData?.facultyId ?? facultyOptions[0].value,
+      facultyId: initialData?.facultyId ?? String(facultyOptions[0].value),
       name: initialData?.name ?? '',
       code: initialData?.code ?? '',
       description: initialData?.description ?? '',

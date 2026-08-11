@@ -25,13 +25,12 @@ import { MonthCalendar } from './month-calendar'
 
 export function AdminDashboard({ user }: { user: { full_name?: string; role?: string } }) {
   const isDean = user?.role === 'DEAN'
-  const firstName = user?.full_name?.split(' ')[0] || user?.name?.split(' ')[0]
+  const firstName = user?.full_name?.split(' ')[0] ?? 'Admin'
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false)
 
-  const { data: reportsData, isLoading: reportsLoading, refetch, isFetching } = useDeanReports(
-    { period: '6m' },
-    { enabled: isDean }
-  )
+  const { data: reportsData, isLoading: reportsLoading, refetch, isFetching } = useDeanReports({
+    period: '6m'
+  })
   const { data: announcementsData } = useAnnouncements()
   const announcements = announcementsData ?? []
 
@@ -41,9 +40,9 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   }
 
   // Map dean reports to DreamsPOS metric structure
-  const totalCourses = reportsData?.kpis.totalCourses ?? 0
-  const activeStudents = reportsData?.kpis.totalStudents ?? 0
-  const totalFaculty = reportsData?.kpis.totalFacultyMembers ?? 0
+  const totalCourses = reportsData?.totalCourses ?? 0
+  const activeStudents = reportsData?.totalStudents ?? 0
+  const totalFaculty = reportsData?.totalInstructors ?? 0
   const passRate = reportsData?.kpis.courseCompletionRate ?? 0
   const attendanceRate = reportsData?.kpis.attendanceRate ?? 0
 
@@ -90,7 +89,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
         <HeroMetricCard
           label='Faculty Active Students'
           value={activeStudents.toLocaleString()}
-          trend={{ value: 12, isPositive: true }}
+          trend={12}
         />
         <div className='grid grid-cols-2 gap-3'>
           <PlatformCountTile

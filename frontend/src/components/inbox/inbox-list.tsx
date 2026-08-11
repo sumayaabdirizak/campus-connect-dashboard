@@ -62,25 +62,25 @@ export function InboxList({
   const { data, isLoading } = useInbox();
   const rows = data?.rows ?? [];
   const visibleRows = useMemo(
-    () => (officeOnly ? rows.filter((r) => !isClubOrGroupRow(r)) : rows),
+    () => (officeOnly ? rows.filter((r: any) => !isClubOrGroupRow(r)) : rows),
     [rows, officeOnly]
   );
 
   const counts = useMemo(
     () => ({
       all: visibleRows.length,
-      unread: visibleRows.filter((r) => r.unreadCount > 0).length,
-      group: visibleRows.filter((r) => r.type === 'group' && !isClubInboxRow(r)).length,
-      club: visibleRows.filter((r) => isClubInboxRow(r)).length,
-      dm: visibleRows.filter((r) => r.type === 'dm').length,
-      office: visibleRows.filter((r) => r.type === 'office').length
+      unread: visibleRows.filter((r: any) => r.unreadCount > 0).length,
+      group: visibleRows.filter((r: any) => r.type === 'group' && !isClubInboxRow(r)).length,
+      club: visibleRows.filter((r: any) => isClubInboxRow(r)).length,
+      dm: visibleRows.filter((r: any) => r.type === 'dm').length,
+      office: visibleRows.filter((r: any) => r.type === 'office').length
     }),
     [visibleRows]
   );
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    return visibleRows.filter((r) => {
+    return visibleRows.filter((r: any) => {
       if (
         needle &&
         !r.title.toLowerCase().includes(needle) &&
