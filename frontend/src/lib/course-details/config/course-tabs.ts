@@ -12,7 +12,9 @@ export type CourseTabId =
   | 'feed'
   | 'roster'
   | 'groups'
-  | 'chat';
+  | 'chat'
+  | 'grades'
+  | 'reviews';
 
 export interface CourseTabDef {
   id: CourseTabId;

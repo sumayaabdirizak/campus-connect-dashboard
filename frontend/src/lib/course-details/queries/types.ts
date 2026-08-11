@@ -2,25 +2,8 @@
  * Course details query types and interfaces
  */
 
-export type CourseTabId =
-  | 'overview'
-  | 'feed'
-  | 'assignments'
-  | 'quizzes'
-  | 'resources'
-  | 'groups'
-  | 'roster'
-  | 'grades'
-  | 'reviews';
-
-export interface CourseTabDef {
-  id: CourseTabId;
-  label: string;
-  icon?: string;
-  badge?: number;
-  disabled?: boolean;
-  visible?: boolean;
-}
+// Import CourseTabId and CourseTabDef from the canonical config source
+export type { CourseTabId, CourseTabDef } from '@/lib/course-details/config/course-tabs';
 
 export interface ReviewQueueItem {
   id: string;

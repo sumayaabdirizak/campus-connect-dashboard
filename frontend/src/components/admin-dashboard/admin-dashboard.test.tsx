@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render } from '@testing-library/react'
-import * as RTL from '@testing-library/react'
+// @ts-ignore - screen/waitFor exported from dom which isn't in types
+import { screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdminDashboard } from './admin-dashboard'
 import * as authStore from '@/lib/auth-store'
 import * as adminQueries from '@/lib/admin-queries'
-
-const screen = RTL.screen as any
 
 vi.mock('@/lib/auth-store')
 vi.mock('@/lib/admin-queries')

@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, render } from '@testing-library/react';
-import * as RTL from '@testing-library/react'
+// @ts-ignore - screen/waitFor exported from dom which isn't in types
+import { screen, waitFor } from '@testing-library/react';
 import { useAuthStore } from '@/lib/auth-store';
 import { RoleGuard } from './role-guard';
-
-const screen = RTL.screen as any
-const waitFor = RTL.waitFor as any
 
 const push = vi.fn();
 let pathname = '/dashboard';

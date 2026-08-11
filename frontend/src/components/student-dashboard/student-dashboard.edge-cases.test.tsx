@@ -1,12 +1,11 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render } from '@testing-library/react'
-import * as RTL from '@testing-library/react'
+// @ts-ignore - screen exported from dom which isn't in types
+import { screen } from '@testing-library/react'
 import { StudentDashboard } from './student-dashboard'
 import * as authStore from '@/lib/auth-store'
 import * as studentCoursesQueries from '@/lib/student-courses/queries'
 import * as gradebookQueries from '@/lib/course-details/queries/gradebook-queries'
-
-const screen = RTL.screen as any
 
 vi.mock('@/lib/auth-store')
 vi.mock('@/lib/student-courses/queries')
