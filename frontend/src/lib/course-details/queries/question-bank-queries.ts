@@ -18,7 +18,7 @@ import type {
 } from '../types';
 import { quizKeys } from './quizzes-queries';
 
-export { ReviewQueueItem } from './types';
+export type { ReviewQueueItem } from './types';
 
 export const bankKeys = {
   all: ['question-bank'] as const,

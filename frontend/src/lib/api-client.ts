@@ -28,7 +28,12 @@ function handleAuthFailure(): void {
   }
 }
 
-async function tryRefreshAccessToken(): Promise<boolean> {
+/**
+ * Refreshes the access cookie. Exported so the Socket.IO layers can recover
+ * from an expired-token handshake rejection — they share this promise so three
+ * sockets failing at once still only fire one `/auth/refresh`.
+ */
+export async function tryRefreshAccessToken(): Promise<boolean> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
       const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {

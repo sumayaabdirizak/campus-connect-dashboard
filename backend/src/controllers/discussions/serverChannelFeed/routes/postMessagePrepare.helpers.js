@@ -50,8 +50,8 @@ export async function resolveParentMessage(channelId, parentMessageId) {
 export function deriveChannelMessageContent(body, parentMessageId) {
   const isEncrypted = !!body.e2e;
   const attachmentIds = body.attachmentIds ?? [];
-  let effectiveContent = "";
-  let messageType = "TEXT";
+  let effectiveContent;
+  let messageType;
   let isAnonymousFlag = false;
 
   if (isEncrypted) {

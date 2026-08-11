@@ -81,7 +81,7 @@ export async function computeAnnouncementAnalytics(prisma, announcementId, optio
   const readRate = eligibleRecipients > 0 ? uniqueReaders / eligibleRecipients : null;
 
   /** @type {{ bucketStart: string; newReaders: number; cumulativeReaders: number }[]} */
-  let readTimeSeries = [];
+  let readTimeSeries;
   try {
     const rows = await prisma.$queryRaw`
       SELECT date_trunc('hour', r."readAt") AS "bucket", COUNT(*)::int AS "cnt"

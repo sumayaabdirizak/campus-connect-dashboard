@@ -7,6 +7,7 @@ import { apiClient } from '@/lib/api-client';
 
 export const batchesKeys = {
   all: ['batches'] as const,
+  list: () => [...batchesKeys.all, 'list'] as const,
   sections: (batchId?: string) => [...batchesKeys.all, 'sections', batchId ?? 'all'] as const,
   students: (sectionId?: string) =>
     [...batchesKeys.all, 'students', sectionId ?? 'all'] as const,
@@ -30,4 +31,10 @@ export const useBatchesStudents = (sectionId?: string) =>
         sectionId ? `/sections/${sectionId}/students` : '/sections/students'
       ),
     enabled: !!sectionId,
+  });
+
+export const useAdminBatches = () =>
+  useQuery({
+    queryKey: batchesKeys.list(),
+    queryFn: () => apiClient<{ batches: unknown[] }>('/batches'),
   });

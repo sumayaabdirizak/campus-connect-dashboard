@@ -182,25 +182,35 @@ process.on("SIGTERM", async () => {
     const t = globalThis.__announcementExpireFallbackTimer;
     if (t != null) clearInterval(t);
     globalThis.__announcementExpireFallbackTimer = undefined;
-  } catch {}
+  } catch {
+    // ignore cleanup error
+  }
   try {
     const t = globalThis.__quizAutoSubmitTimer;
     if (t != null) clearInterval(t);
     globalThis.__quizAutoSubmitTimer = undefined;
-  } catch {}
+  } catch {
+    // ignore cleanup error
+  }
   try {
     const t = globalThis.__tokenCleanTimer;
     if (t != null) clearInterval(t);
     globalThis.__tokenCleanTimer = undefined;
-  } catch {}
+  } catch {
+    // ignore cleanup error
+  }
   try {
     const stop = globalThis.__announcementWorkersStop;
     if (typeof stop === "function") await stop();
-  } catch {}
+  } catch {
+    // ignore cleanup error
+  }
   try {
     const presenceStore = await presenceStorePromise;
     await presenceStore.shutdown();
-  } catch {}
+  } catch {
+    // ignore cleanup error
+  }
 });
 
 export { io, prisma };

@@ -108,7 +108,9 @@ router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file
     if (req.file.size > maxSize) {
       try {
         fs.unlinkSync(req.file.path);
-      } catch {}
+      } catch {
+        // ignore cleanup error
+      }
       return res
         .status(413)
         .json(apiErrorBody(`File too large for ${fileType}. Max ${Math.round(maxSize / 1024 / 1024)}MB`, null));
@@ -118,7 +120,9 @@ router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file
     if (!scanResult.clean) {
       try {
         fs.unlinkSync(req.file.path);
-      } catch {}
+      } catch {
+        // ignore cleanup error
+      }
       return res.status(400).json(apiErrorBody("Uploaded file failed security scan", null));
     }
 
@@ -136,7 +140,9 @@ router.post("/uploads", uploadRateLimit, discussionAttachmentUpload.single("file
     } catch (err) {
       try {
         fs.unlinkSync(req.file.path);
-      } catch {}
+      } catch {
+        // ignore cleanup error
+      }
       console.error("discussion upload storage commit failed", err);
       return res.status(500).json(apiErrorBody("Failed to store attachment", null));
     }

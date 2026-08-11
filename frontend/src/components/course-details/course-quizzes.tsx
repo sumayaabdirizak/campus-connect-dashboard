@@ -1,6 +1,11 @@
 'use client'
 
-export function Coursequizzes() {
+export interface CourseQuizzesProps {
+  courseId: string;
+  isStudent: boolean;
+}
+
+export function Coursequizzes({ courseId, isStudent }: CourseQuizzesProps) {
   return <div className="p-4">Coursequizzes</div>
 }
 

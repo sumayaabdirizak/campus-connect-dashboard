@@ -96,7 +96,7 @@ export async function startOrContinueOversightOfficeDm(req, res) {
   });
 
   const existed = Boolean(thread);
-  let createdMessage = null;
+  let createdMessage;
 
   if (!thread) {
     const reference = await nextReference(office);

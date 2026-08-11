@@ -168,7 +168,7 @@ export function createChatHandlers(io) {
         }
 
         let mentionUserIds = [];
-        const matches = Array.from(trimmedContent.matchAll(/@([a-z0-9][\w.\-]{0,40})/gi)).map((m) =>
+        const matches = Array.from(trimmedContent.matchAll(/@([a-z0-9][\w.-]{0,40})/gi)).map((m) =>
           m[1].toLowerCase()
         );
         if (matches.length > 0) {

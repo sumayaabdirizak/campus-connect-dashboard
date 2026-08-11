@@ -17,11 +17,15 @@ export async function uploadAttachments(req, res) {
     include: { room: { select: { courseOffering: { select: { publicId: true } } } } },
   });
   if (!message) {
-    for (const f of files) try { fs.unlinkSync(f.path); } catch {}
+    for (const f of files) try { fs.unlinkSync(f.path); } catch {
+      // ignore cleanup error
+    }
     return res.status(404).json({ message: 'Message not found' });
   }
   if (message.senderId !== req.user.id) {
-    for (const f of files) try { fs.unlinkSync(f.path); } catch {}
+    for (const f of files) try { fs.unlinkSync(f.path); } catch {
+      // ignore cleanup error
+    }
     return res.status(403).json({ message: 'Only the sender can attach files' });
   }
 
@@ -47,10 +51,14 @@ export async function uploadAttachments(req, res) {
       );
     } catch (err) {
       for (const c of committed) {
-        try { await deleteStoredObject(c.storageKey); } catch {}
+        try { await deleteStoredObject(c.storageKey); } catch {
+          // ignore cleanup error
+        }
       }
       for (const leftover of files) {
-        try { fs.unlinkSync(leftover.path); } catch {}
+        try { fs.unlinkSync(leftover.path); } catch {
+          // ignore cleanup error
+        }
       }
       console.error('chat attachment storage commit failed', err);
       return res.status(500).json({ message: 'Failed to store attachment' });

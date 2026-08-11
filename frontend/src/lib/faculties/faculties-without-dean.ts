@@ -1,6 +1,6 @@
 import { useQuery } from '@/lib/async-query';
 export { fetchFacultiesWithoutDean } from './services';
-export { FacultyOption } from './types';
+export type { FacultyOption } from './types';
 
 export const useFacultiesWithoutDean = (search?: string) =>
   useQuery({

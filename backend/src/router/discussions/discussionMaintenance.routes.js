@@ -64,7 +64,9 @@ router.post(
             try {
               fs.unlinkSync(absolutePath);
               removedFiles += 1;
-            } catch {}
+            } catch {
+              // ignore cleanup error
+            }
           }
         }
       }

@@ -53,7 +53,7 @@ export async function ensureRoom(courseOfferingId) {
 }
 
 export async function resolveMentions(content, courseOfferingId, senderId) {
-  const matches = Array.from(content.matchAll(/@([a-z0-9][\w.\-]{0,40})/gi)).map((m) =>
+  const matches = Array.from(content.matchAll(/@([a-z0-9][\w.-]{0,40})/gi)).map((m) =>
     m[1].toLowerCase()
   );
   if (matches.length === 0) return [];

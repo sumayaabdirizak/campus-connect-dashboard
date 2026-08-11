@@ -29,7 +29,7 @@ export function formatClubForApi(club) {
 const optionalAssetUrl = z
   .union([
     z.string().url(),
-    z.string().regex(/^\/uploads\/[A-Za-z0-9._\-\/]+$/),
+    z.string().regex(/^\/uploads\/[A-Za-z0-9._/-]+$/),
   ])
   .optional()
   .nullable();

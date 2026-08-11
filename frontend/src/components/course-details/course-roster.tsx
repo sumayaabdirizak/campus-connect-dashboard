@@ -1,6 +1,10 @@
 'use client'
 
-export function Courseroster() {
+export interface CourseRosterProps {
+  courseId: string;
+}
+
+export function Courseroster({ courseId }: CourseRosterProps) {
   return <div className="p-4">Courseroster</div>
 }
 

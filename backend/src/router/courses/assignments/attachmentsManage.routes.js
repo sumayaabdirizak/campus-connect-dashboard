@@ -45,7 +45,9 @@ router.delete(
     try {
       const key = keyFromUploadUrl(att.url, 'assignments');
       if (key) await deleteStoredObject(key, 'assignments');
-    } catch {}
+    } catch {
+      // ignore cleanup error
+    }
     res.json({ success: true });
   }),
 );

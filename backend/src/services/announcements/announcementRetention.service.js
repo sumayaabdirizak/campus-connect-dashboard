@@ -144,7 +144,7 @@ export async function applyStaleDraftRetention(opts = {}) {
     updatedAt: { lt: cutoff },
   };
 
-  let affected = 0;
+  let affected;
   try {
     if (policy === "delete") {
       const r = await prisma.announcement.deleteMany({ where });

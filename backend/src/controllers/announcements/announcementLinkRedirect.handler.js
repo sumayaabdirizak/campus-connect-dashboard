@@ -32,7 +32,7 @@ export async function announcementLinkRedirectHandler(req, res) {
     return res.status(404).type("text/plain").send("Not found");
   }
 
-  let token = rawToken;
+  let token;
   try {
     token = decodeURIComponent(rawToken);
   } catch {

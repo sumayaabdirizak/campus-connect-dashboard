@@ -11,11 +11,15 @@ export async function uploadAttachments(req, res) {
   }
   const post = await prisma.coursePost.findUnique({ where: { id: postId } });
   if (!post) {
-    for (const f of files) try { fs.unlinkSync(f.path); } catch {}
+    for (const f of files) try { fs.unlinkSync(f.path); } catch {
+      // ignore cleanup error
+    }
     return res.status(404).json({ message: 'Post not found' });
   }
   if (post.authorId !== req.user.id) {
-    for (const f of files) try { fs.unlinkSync(f.path); } catch {}
+    for (const f of files) try { fs.unlinkSync(f.path); } catch {
+      // ignore cleanup error
+    }
     return res.status(403).json({ message: 'Only the author can attach files' });
   }
 
@@ -41,10 +45,14 @@ export async function uploadAttachments(req, res) {
       );
     } catch (err) {
       for (const c of committed) {
-        try { await deleteStoredObject(c.storageKey); } catch {}
+        try { await deleteStoredObject(c.storageKey); } catch {
+          // ignore cleanup error
+        }
       }
       for (const leftover of files) {
-        try { fs.unlinkSync(leftover.path); } catch {}
+        try { fs.unlinkSync(leftover.path); } catch {
+          // ignore cleanup error
+        }
       }
       console.error('course-feed attachment storage commit failed', err);
       return res.status(500).json({ message: 'Failed to store attachment' });
@@ -81,6 +89,8 @@ export async function deleteAttachment(req, res) {
   try {
     const key = keyFromUploadUrl(att.url, 'course-feed');
     if (key) await deleteStoredObject(key, 'course-feed');
-  } catch {}
+  } catch {
+    // ignore cleanup error
+  }
   res.json({ success: true });
 }

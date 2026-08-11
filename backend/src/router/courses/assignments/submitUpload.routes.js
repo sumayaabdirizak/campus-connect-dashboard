@@ -24,7 +24,9 @@ router.post(
         hostBase,
       });
     } catch (err) {
-      try { fs.unlinkSync(req.file.path); } catch {}
+      try { fs.unlinkSync(req.file.path); } catch {
+        // ignore cleanup error
+      }
       console.error('submission upload storage commit failed', err);
       return res.status(500).json({ message: 'Failed to store file' });
     }

@@ -25,7 +25,9 @@ router.post(
       select: { id: true },
     });
     if (!assignment) {
-      for (const f of files) try { fs.unlinkSync(f.path); } catch {}
+      for (const f of files) try { fs.unlinkSync(f.path); } catch {
+        // ignore cleanup error
+      }
       return res.status(404).json({ message: 'Assignment not found' });
     }
     const uploadedById = req.user.id ?? req.user.sub;
@@ -45,10 +47,14 @@ router.post(
         );
       } catch (err) {
         for (const c of committed) {
-          try { await deleteStoredObject(c.storageKey); } catch {}
+          try { await deleteStoredObject(c.storageKey); } catch {
+            // ignore cleanup error
+          }
         }
         for (const leftover of files) {
-          try { fs.unlinkSync(leftover.path); } catch {}
+          try { fs.unlinkSync(leftover.path); } catch {
+            // ignore cleanup error
+          }
         }
         console.error('assignment attachment storage commit failed', err);
         return res.status(500).json({ message: 'Failed to store attachment' });

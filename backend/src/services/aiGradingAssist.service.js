@@ -169,7 +169,7 @@ export async function suggestGradeForSubmission({ assignment, submission, studen
   try {
     parsed = JSON.parse(textBlock.text);
   } catch (e) {
-    throw new Error(`AI returned unparseable JSON: ${e.message}`);
+    throw new Error(`AI returned unparseable JSON: ${e.message}`, { cause: e });
   }
 
   return {

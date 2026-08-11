@@ -121,7 +121,7 @@ export async function usersMayAccessDiscussionChannelScope({
     const staffCoversScope =
       staffFacultyId != null && scopeFacultyId != null && scopeFacultyId === staffFacultyId;
 
-    let ok = false;
+    let ok;
     if (type === DISCUSSION_SCOPE_TYPES.FACULTY) {
       const lectFac = u.lecturerProfile?.faculties?.map((f) => f.facultyId) ?? [];
       ok =

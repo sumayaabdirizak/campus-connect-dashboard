@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatDate } from '@/lib/format';
 import { pastelFor, PASTEL_SLOTS } from '@/lib/pastel';
-import { resourceDownloadUrl } from '@/lib/course-details/resources-service';
+import { resourceDownloadUrl } from '@/lib/course-details/services/resources-service';
 
 describe('formatDate', () => {
   it('returns empty for falsy input', () => {

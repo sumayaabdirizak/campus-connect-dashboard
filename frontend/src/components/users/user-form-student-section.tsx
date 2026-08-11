@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 import { Label } from '@/features/ui/components/label';
 import { SearchSelect } from '@/features/ui/components/search-select';
-import type { AdminBatch } from '@/components/batches-admin/api/service';
 import type { Department } from '@/lib/departments/service';
 import type { FacultyOption } from '@/lib/faculties/faculty-list';
 import type { Program } from '@/lib/programs/service';
@@ -23,13 +22,23 @@ type SectionOption = {
   batchId: number;
 };
 
+type BatchOption = {
+  id: number;
+  name: string;
+  programId?: number;
+  academicYearId?: number;
+  academicYear?: { id: number; name: string };
+  currentAcademicYearName?: string;
+  status?: string;
+};
+
 type Props = {
   form: UserFormState;
   onChange: (patch: Partial<UserFormState>) => void;
   faculties: FacultyOption[];
   departments: Department[];
   programs: Program[];
-  batches: AdminBatch[];
+  batches: BatchOption[];
   sections: SectionOption[];
   academicYears: AcademicYearOption[];
 };
