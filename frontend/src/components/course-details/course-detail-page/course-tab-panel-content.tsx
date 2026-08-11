@@ -39,7 +39,6 @@ export function CourseTabPanelContent({
           data={data}
           isStudent={isStudent}
           onOpenTab={onTabChange}
-          courseCode={data.course.code}
           courseId={offeringId}
         />
       )}
