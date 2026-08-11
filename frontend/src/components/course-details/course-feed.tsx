@@ -1,12 +1,6 @@
-'use client'
+'use client';
 
-export interface CourseFeedProps {
-  courseId: string;
-  isStudent: boolean;
-}
+import { CourseFeed } from './course-feed/course-feed';
 
-export function Coursefeed({ courseId, isStudent }: CourseFeedProps) {
-  return <div className="p-4">Coursefeed</div>
-}
-
-export default Coursefeed
+export { CourseFeed };
+export default CourseFeed;
