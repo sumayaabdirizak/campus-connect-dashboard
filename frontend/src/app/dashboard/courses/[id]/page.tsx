@@ -68,13 +68,16 @@ export default function CourseDetailPage() {
         aria-labelledby={`course-tab-${activeTab}`}
         className='mt-4 h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto [overflow-anchor:none] sm:mt-5'
       >
-        <CourseTabPanelContent
-          activeTab={activeTab}
-          offeringId={offeringId}
-          isStudent={isStudent}
-          reviewItems={reviewItems}
-          onTabChange={handleTabChange}
-        />
+        {data && (
+          <CourseTabPanelContent
+            activeTab={activeTab}
+            offeringId={offeringId}
+            isStudent={isStudent}
+            data={data as any}
+            reviewItems={reviewItems}
+            onTabChange={handleTabChange}
+          />
+        )}
       </div>
     </div>
   );

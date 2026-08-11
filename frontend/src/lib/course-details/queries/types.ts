@@ -4,15 +4,14 @@
 
 export type CourseTabId =
   | 'overview'
-  | 'announcements'
+  | 'feed'
   | 'assignments'
   | 'quizzes'
   | 'resources'
-  | 'gradebook'
-  | 'feed'
-  | 'roster'
   | 'groups'
-  | 'chat';
+  | 'roster'
+  | 'grades'
+  | 'reviews';
 
 export interface CourseTabDef {
   id: CourseTabId;

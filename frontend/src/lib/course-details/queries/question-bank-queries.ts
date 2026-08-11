@@ -18,6 +18,8 @@ import type {
 } from '../types';
 import { quizKeys } from './quizzes-queries';
 
+export { ReviewQueueItem } from './types';
+
 export const bankKeys = {
   all: ['question-bank'] as const,
   list: (courseOfferingId: string, filters?: BankQuestionFilters) =>
