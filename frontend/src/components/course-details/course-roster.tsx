@@ -1,11 +1,6 @@
-'use client'
+'use client';
 
-export interface CourseRosterProps {
-  courseId: string;
-}
+import { CourseRoster } from './course-roster/course-roster';
 
-export function Courseroster({ courseId }: CourseRosterProps) {
-  return <div className="p-4">Courseroster</div>
-}
-
-export default Courseroster
+export { CourseRoster };
+export default CourseRoster;

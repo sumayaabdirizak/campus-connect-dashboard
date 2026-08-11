@@ -1,20 +1,23 @@
-/**
- * Simple data table types
- */
+import type { ColumnDef, SortingState } from '@tanstack/react-table';
 
-export interface SimpleDataTableProps {
-  columns: Array<any>;
-  data: Array<any>;
-  striped?: boolean;
-  hoverable?: boolean;
-  bordered?: boolean;
-  compact?: boolean;
-  loading?: boolean;
-  empty?: boolean;
-  emptyMessage?: string;
+export interface SimpleDataTableProps<TData> {
+  data: TData[];
+  columns: ColumnDef<TData, unknown>[];
+  searchPlaceholder?: string;
+  csvFileName?: string;
+  initialSorting?: SortingState;
   pageSize?: number;
+  onRowClick?: (row: TData) => void;
+  toolbarRight?: React.ReactNode;
+  mobilePrimaryColumn?: string | false;
+  /** Hide built-in search/export toolbar (e.g. when parent shell provides it). */
   hideToolbar?: boolean;
-  embedded?: boolean;
+  globalFilter?: string;
+  onGlobalFilterChange?: (value: string) => void;
+  /** Sticky column headers while the table body scrolls. Default true. */
+  stickyHeader?: boolean;
+  /** Classes for the scrollable table region. */
   scrollContainerClassName?: string;
-  mobilePrimaryColumn?: string;
+  /** Tighter layout when nested inside CoursePageShell. */
+  embedded?: boolean;
 }
