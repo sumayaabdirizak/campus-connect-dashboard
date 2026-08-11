@@ -1,12 +1,6 @@
-'use client'
+'use client';
 
-export interface CourseResourcesProps {
-  courseId: string;
-  isStudent: boolean;
-}
+import { CourseResources } from './course-resources/course-resources';
 
-export function Courseresources({ courseId, isStudent }: CourseResourcesProps) {
-  return <div className="p-4">Courseresources</div>
-}
-
-export default Courseresources
+export { CourseResources };
+export default CourseResources;
