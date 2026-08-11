@@ -1,12 +1,6 @@
-'use client'
+'use client';
 
-export interface CourseGroupsProps {
-  courseId: string;
-  isStudent: boolean;
-}
+import { CourseGroups } from './course-groups/course-groups';
 
-export function Coursegroups({ courseId, isStudent }: CourseGroupsProps) {
-  return <div className="p-4">Coursegroups</div>
-}
-
-export default Coursegroups
+export { CourseGroups };
+export default CourseGroups;
