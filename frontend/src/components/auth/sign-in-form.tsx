@@ -77,7 +77,7 @@ export function SignInForm() {
     <div className='animate-fade-up mx-auto flex w-full flex-col justify-center'>
       <SignInFormHeader />
 
-      <form onSubmit={handleLogin} className='space-y-4' noValidate>
+      <form onSubmit={handleLogin} className='space-y-4' noValidate autoComplete='off'>
         <div className='space-y-2'>
           <Label htmlFor='email'>
             University Email <span className='text-destructive'>*</span>
@@ -87,7 +87,7 @@ export function SignInForm() {
             name='email'
             type='email'
             inputMode='email'
-            autoComplete='username'
+            autoComplete='off'
             placeholder='name@jazeera.edu'
             value={email}
             onChange={(event) => {
@@ -99,6 +99,7 @@ export function SignInForm() {
             aria-invalid={Boolean(fieldErrors.email)}
             aria-describedby={fieldErrors.email ? 'email-error' : undefined}
             className='h-12 rounded-lg bg-background px-3.5'
+            spellCheck='false'
           />
           {fieldErrors.email ? (
             <p id='email-error' className='text-sm text-destructive'>
@@ -118,6 +119,7 @@ export function SignInForm() {
             }
           }}
           onToggleVisibility={() => setShowPassword((visible) => !visible)}
+          autoComplete='off'
         />
 
         <div className='flex items-center justify-between gap-4 pt-1 text-sm'>

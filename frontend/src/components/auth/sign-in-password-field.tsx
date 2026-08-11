@@ -11,6 +11,7 @@ type SignInPasswordFieldProps = {
   error?: string;
   onChange: (value: string) => void;
   onToggleVisibility: () => void;
+  autoComplete?: string;
 };
 
 export function SignInPasswordField({
@@ -18,7 +19,8 @@ export function SignInPasswordField({
   showPassword,
   error,
   onChange,
-  onToggleVisibility
+  onToggleVisibility,
+  autoComplete = 'current-password'
 }: SignInPasswordFieldProps) {
   return (
     <div className='space-y-2'>
@@ -36,13 +38,14 @@ export function SignInPasswordField({
           id='password'
           name='password'
           type={showPassword ? 'text' : 'password'}
-          autoComplete='current-password'
+          autoComplete={autoComplete}
           placeholder='Enter your password'
           value={value}
           onChange={(event) => onChange(event.target.value)}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? 'password-error' : undefined}
           className='h-full flex-1 rounded-none border-0 bg-transparent px-3.5 shadow-none focus-visible:ring-0'
+          spellCheck='false'
         />
         <button
           type='button'
