@@ -1,7 +1,3 @@
 'use client'
 
-export function AdminDashboard() {
-  return <div className="p-4">Admin Dashboard</div>
-}
-
-export default AdminDashboard
+export { default, AdminDashboard } from '@/components/admin-dashboard/admin-dashboard'
