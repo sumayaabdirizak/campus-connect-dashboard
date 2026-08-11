@@ -40,9 +40,9 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   }
 
   // Map dean reports to DreamsPOS metric structure
-  const totalCourses = reportsData?.totalCourses ?? 0
-  const activeStudents = reportsData?.totalStudents ?? 0
-  const totalFaculty = reportsData?.totalInstructors ?? 0
+  const totalCourses = reportsData?.kpis.totalCourses ?? 0
+  const activeStudents = reportsData?.kpis.totalStudents ?? 0
+  const totalFaculty = reportsData?.kpis.totalInstructors ?? 0
   const passRate = reportsData?.kpis.courseCompletionRate ?? 0
   const attendanceRate = reportsData?.kpis.attendanceRate ?? 0
 

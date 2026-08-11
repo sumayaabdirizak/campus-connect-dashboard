@@ -232,7 +232,9 @@ export function StudentDashboard() {
                   thumbnail: course.thumbnail,
                   totalStudents: 0,
                   totalLessons: course.totalLessons,
-                  schedule: Array.isArray(course.schedule) ? course.schedule.map((s: any) => ({ ...s, day: String(s.day) })) : undefined,
+                  schedule: Array.isArray(course.schedule) && course.schedule[0]
+                    ? { day: String(course.schedule[0].day), time: course.schedule[0].time || '', location: '' }
+                    : undefined,
                   status: course.status
                 }}
               />
