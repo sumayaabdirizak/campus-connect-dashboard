@@ -3,13 +3,8 @@
  */
 
 export interface SimpleDataTableProps {
-  columns: Array<{
-    key: string;
-    label: string;
-    align?: 'left' | 'center' | 'right';
-    render?: (value: unknown, row: Record<string, unknown>) => React.ReactNode;
-  }>;
-  data: Record<string, unknown>[];
+  columns: Array<any>;
+  data: Array<any>;
   striped?: boolean;
   hoverable?: boolean;
   bordered?: boolean;
@@ -17,4 +12,9 @@ export interface SimpleDataTableProps {
   loading?: boolean;
   empty?: boolean;
   emptyMessage?: string;
+  pageSize?: number;
+  hideToolbar?: boolean;
+  embedded?: boolean;
+  scrollContainerClassName?: string;
+  mobilePrimaryColumn?: string;
 }

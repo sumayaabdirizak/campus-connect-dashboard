@@ -9,7 +9,7 @@ import type { DeadlineRow } from '@/components/calendar/lib'
 import { timelineHrefFor } from './timeline-block/types'
 import { InsightListItem } from './insight-list-motion'
 
-function formatDue(iso: string | null) {
+function formatDue(iso: string | null | undefined) {
   if (!iso) return ''
   const d = new Date(iso)
   if (d.toDateString() === new Date().toDateString()) {

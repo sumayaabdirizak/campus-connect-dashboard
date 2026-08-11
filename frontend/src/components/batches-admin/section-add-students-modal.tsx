@@ -51,7 +51,7 @@ export function SectionAddStudentsModal({ section, open, onOpenChange }: Props) 
 
   const candidates = useMemo(() => {
     const q = search.trim().toLowerCase();
-    return (studentsQuery.data?.users ?? []).filter((u: any) => {
+    return (studentsQuery.data ?? []).filter((u: any) => {
       if (enrolledIds.has(u.id)) return false;
       if (!q) return true;
       return [u.full_name, u.email, u.number].filter(Boolean).join(' ').toLowerCase().includes(q);

@@ -47,7 +47,7 @@ export function StudentDashboardHero({
             kicker={`Hi${firstName ? ` ${firstName}` : ''} â€” up next`}
             title={
               nextUp
-                ? nextUp.title
+                ? nextUp.title || 'Untitled'
                 : lessonsTotal > 0
                   ? `${overallPct}% of your semester done`
                   : 'All clear â€” nothing due'

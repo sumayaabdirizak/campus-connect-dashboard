@@ -14,10 +14,10 @@ export default function FacultyDeanReportsPage() {
   const [filters, setFilters] = useState<FacultyReportFilterState>(defaultFacultyReportFilters);
 
   const queryParams = useMemo(() => {
-    const params: Record<string, string> = { period: filters.period };
-    if (filters.departmentId !== 'all') params.departmentId = filters.departmentId;
-    if (filters.studentLevel !== 'all') params.studentLevel = filters.studentLevel;
-    if (filters.status !== 'all') params.status = filters.status;
+    const params: Record<string, string> = { period: filters.period || '6m' };
+    if ((filters.departmentId || 'all') !== 'all') params.departmentId = filters.departmentId || '';
+    if ((filters.studentLevel || 'all') !== 'all') params.studentLevel = filters.studentLevel || '';
+    if ((filters.status || 'all') !== 'all') params.status = filters.status || '';
     return params;
   }, [filters.period, filters.departmentId, filters.studentLevel, filters.status]);
 

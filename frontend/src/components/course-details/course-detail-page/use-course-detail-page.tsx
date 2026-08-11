@@ -2,15 +2,17 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react';
 import type { CourseTabId, ReviewQueueItem } from '@/lib/course-details/queries/types';
+import type { CourseTabDef } from '@/lib/course-details/config/course-tabs';
+import { TEACHER_COURSE_TABS, STUDENT_COURSE_TABS } from '@/lib/course-details/config/course-tabs';
 
 interface UseCourseDeatilPageReturn {
   isStudent: boolean;
-  visibleTabs: CourseTabId[];
+  visibleTabs: CourseTabDef[];
   activeTab: CourseTabId;
   isLoading: boolean;
   error: string | null;
   data: {
-    course: { id: string; code: string; title: string };
+    course: { code: string; name: string; department: { name: string }; thumbnail?: string | null };
     section: { id: string; name: string };
     batch: { id: string; name: string };
   } | null;
@@ -27,11 +29,12 @@ export function useCourseDetailPage(offeringId: string): UseCourseDeatilPageRetu
   const [headerCompact, setHeaderCompact] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [data, setData] = useState<{ course: { id: string; code: string; title: string }; section: { id: string; name: string }; batch: { id: string; name: string } } | null>(null);
+  const [data, setData] = useState<{ course: { code: string; name: string; department: { name: string }; thumbnail?: string | null }; section: { id: string; name: string }; batch: { id: string; name: string } } | null>(null);
   const [isStudent, setIsStudent] = useState(false);
   const tabPanelRef = useRef<HTMLDivElement | null>(null);
   const [tabBadges] = useState<Record<CourseTabId, number>>({
     overview: 0,
+    announcements: 0,
     feed: 0,
     assignments: 0,
     quizzes: 0,
@@ -40,6 +43,8 @@ export function useCourseDetailPage(offeringId: string): UseCourseDeatilPageRetu
     roster: 0,
     grades: 0,
     reviews: 0,
+    gradebook: 0,
+    chat: 0,
   });
   const [reviewItems] = useState<ReviewQueueItem[]>([]);
 
@@ -48,7 +53,7 @@ export function useCourseDetailPage(offeringId: string): UseCourseDeatilPageRetu
     // setIsLoading(true);
     // Placeholder - prevents TypeScript errors
     setData({
-      course: { id: offeringId, code: '', title: '' },
+      course: { code: '', name: '', department: { name: '' } },
       section: { id: '', name: '' },
       batch: { id: '', name: '' },
     });
@@ -59,9 +64,7 @@ export function useCourseDetailPage(offeringId: string): UseCourseDeatilPageRetu
     setActiveTab(tab);
   }, []);
 
-  const visibleTabs: CourseTabId[] = isStudent
-    ? ['overview', 'feed', 'assignments', 'quizzes', 'resources', 'groups']
-    : ['overview', 'feed', 'assignments', 'quizzes', 'resources', 'groups', 'roster', 'grades', 'reviews'];
+  const visibleTabs: CourseTabDef[] = isStudent ? STUDENT_COURSE_TABS : TEACHER_COURSE_TABS;
 
   return {
     isStudent,
