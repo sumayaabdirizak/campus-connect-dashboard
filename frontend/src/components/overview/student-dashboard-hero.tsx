@@ -5,7 +5,7 @@ import { Skeleton } from '@/features/ui/components/skeleton'
 import { HeroTile, StatCard } from './stat-card'
 import type { DeadlineRow } from '@/components/calendar/lib'
 
-/** C3 â€” same HeroTile / StatCard language as teacher dashboard. */
+/** C3 — same HeroTile / StatCard language as teacher dashboard. */
 export function StudentDashboardHero({
   firstName,
   coursesLoading,
@@ -44,17 +44,17 @@ export function StudentDashboardHero({
         <>
           <HeroTile
             className='sm:col-span-2'
-            kicker={`Hi${firstName ? ` ${firstName}` : ''} â€” up next`}
+            kicker={`Hi${firstName ? ` ${firstName}` : ''} — up next`}
             title={
               nextUp
                 ? nextUp.title || 'Untitled'
                 : lessonsTotal > 0
                   ? `${overallPct}% of your semester done`
-                  : 'All clear â€” nothing due'
+                  : 'All clear — nothing due'
             }
             meta={
               nextUp?.deadlineAt
-                ? `${nextUp.kind === 'quiz' ? 'Quiz' : 'Assignment'} Â· due ${new Date(
+                ? `${nextUp.kind === 'quiz' ? 'Quiz' : 'Assignment'} · due ${new Date(
                     nextUp.deadlineAt
                   ).toLocaleDateString([], {
                     weekday: 'short',

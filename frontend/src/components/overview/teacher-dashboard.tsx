@@ -19,7 +19,7 @@ import { StudentDashboardDeadlines } from './student-dashboard-deadlines'
 
 type CourseFilter = 'all' | 'active' | 'completed'
 
-/** Teacher home â€” Moodle-like: banner, calendar focus, rail, courses. */
+/** Teacher home — Moodle-like: banner, calendar focus, rail, courses. */
 export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
   const [filter, setFilter] = useState<CourseFilter>('all')
   const [search, setSearch] = useState('')

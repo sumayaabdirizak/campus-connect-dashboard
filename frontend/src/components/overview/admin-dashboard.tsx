@@ -48,7 +48,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
 
   return (
     <div className='w-full space-y-3 pb-6'>
-      {/* Welcome bar â€” DreamsPOS sales-dashboard "welcome" row */}
+      {/* Welcome bar — DreamsPOS sales-dashboard "welcome" row */}
       <div className='flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-2'>
           <Image src='/assets/dashboard-icons/hi.svg' alt='' width={28} height={28} className='shrink-0' />

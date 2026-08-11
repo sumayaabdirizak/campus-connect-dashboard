@@ -13,12 +13,12 @@ function formatDue(iso: string | null | undefined) {
   if (!iso) return ''
   const d = new Date(iso)
   if (d.toDateString() === new Date().toDateString()) {
-    return `Today Â· ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    return `Today · ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
   }
   return d.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })
 }
 
-/** Right-rail deadlines â€” Pharmacy card + light enter motion. */
+/** Right-rail deadlines — Pharmacy card + light enter motion. */
 export function StudentDashboardDeadlines({
   items,
   loading,
@@ -65,7 +65,7 @@ export function StudentDashboardDeadlines({
                     </p>
                     <p className='truncate text-xs text-muted-foreground'>
                       {item.kind === 'quiz' ? 'Quiz' : 'Assignment'}
-                      {item.courseCode ? ` Â· ${item.courseCode}` : ''}
+                      {item.courseCode ? ` · ${item.courseCode}` : ''}
                     </p>
                   </div>
                   <span className='shrink-0 text-xs text-muted-foreground'>
