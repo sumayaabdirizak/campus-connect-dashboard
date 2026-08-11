@@ -1,10 +1,10 @@
 'use client';
 
 import { useAuthStore } from '@/lib/auth-store';
-import { AdminDashboard } from '@/components/overview/components/admin-dashboard';
-import { SuperAdminDashboard } from '@/components/overview/components/super-admin-dashboard';
-import { TeacherDashboard } from '@/components/overview/components/teacher-dashboard';
-import { StudentDashboard } from '@/components/overview/components/student-dashboard';
+import { AdminDashboard } from '@/components/overview/admin-dashboard';
+import { SuperAdminDashboard } from '@/components/overview/super-admin-dashboard';
+import { TeacherDashboard } from '@/components/overview/teacher-dashboard';
+import { StudentDashboard } from '@/components/overview/student-dashboard';
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);
@@ -13,16 +13,16 @@ export default function DashboardPage() {
 
   switch (user.role) {
     case 'STUDENT':
-      return <StudentDashboard />;
+      return <StudentDashboard user={user} />;
     case 'TEACHER':
-      return <TeacherDashboard />;
+      return <TeacherDashboard user={user} />;
     case 'DEAN':
-      return <AdminDashboard />;
+      return <AdminDashboard user={user} />;
     case 'ACADEMIC_OFFICE':
-      return <AdminDashboard />;
+      return <AdminDashboard user={user} />;
     case 'SUPER_ADMIN':
-      return <SuperAdminDashboard />;
+      return <SuperAdminDashboard user={user} />;
     default:
-      return <AdminDashboard />;
+      return <AdminDashboard user={user} />;
   }
 }
