@@ -13,16 +13,16 @@ export default function DashboardPage() {
 
   switch (user.role) {
     case 'STUDENT':
-      return <StudentDashboard user={user} />;
+      return <StudentDashboard />;
     case 'TEACHER':
-      return <TeacherDashboard user={user} />;
+      return <TeacherDashboard />;
     case 'DEAN':
-      return <AdminDashboard user={user} />;
+      return <AdminDashboard />;
     case 'ACADEMIC_OFFICE':
-      return <AdminDashboard user={user} />;
+      return <AdminDashboard />;
     case 'SUPER_ADMIN':
-      return <SuperAdminDashboard user={user} />;
+      return <SuperAdminDashboard />;
     default:
-      return <AdminDashboard user={user} />;
+      return <AdminDashboard />;
   }
 }
