@@ -91,8 +91,8 @@ export function DashboardRecentUsersTable({
 
   return (
     <SimpleDataTable
-      data={users}
-      columns={userColumns}
+      data={users as any}
+      columns={userColumns as any}
       pageSize={5}
       hideToolbar
       embedded

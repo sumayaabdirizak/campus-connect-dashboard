@@ -106,8 +106,8 @@ export function DashboardRecentCoursesTable({
 
   return (
     <SimpleDataTable
-      data={rows}
-      columns={courseColumns}
+      data={rows as any}
+      columns={courseColumns as any}
       pageSize={5}
       hideToolbar
       embedded

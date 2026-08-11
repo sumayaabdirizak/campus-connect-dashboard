@@ -3,10 +3,10 @@ import { render } from '@testing-library/react'
 import * as RTL from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { AdminDashboard } from './admin-dashboard'
-
-const screen = RTL.screen as any
 import * as authStore from '@/lib/auth-store'
 import * as adminQueries from '@/lib/admin-queries'
+
+const screen = RTL.screen as any
 
 vi.mock('@/lib/auth-store')
 vi.mock('@/lib/admin-queries')
