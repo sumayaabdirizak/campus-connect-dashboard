@@ -56,6 +56,8 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
       setIsLoading(false);
     }
 
+    // Only successful responses honor staleTime. Cached errors always refetch
+    // so a transient 403/500 does not stick as an empty UI for the stale window.
     if (staleTime > 0) {
       const cachedAt = getLastFetchedAt(serialized);
       if (cachedAt != null && Date.now() - cachedAt < staleTime) {
@@ -65,12 +67,6 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
           setError(null);
           setIsLoading(false);
           return cached;
-        }
-        const cachedError = getCachedError(serialized);
-        if (cachedError) {
-          setError(cachedError);
-          setIsLoading(false);
-          return null;
         }
       }
     }

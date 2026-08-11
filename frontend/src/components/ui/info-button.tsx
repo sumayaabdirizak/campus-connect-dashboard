@@ -2,8 +2,8 @@
 
 import * as React from 'react';
 import { Icons } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import { useInfobar, type InfobarContent } from '@/components/ui/infobar';
+import { Button } from '@/features/ui/components/button';
+import { useInfobar, type InfobarContent } from '@/features/ui/components/infobar';
 import { cn } from '@/lib/utils';
 
 interface InfoButtonProps extends Omit<React.ComponentProps<typeof Button>, 'content'> {

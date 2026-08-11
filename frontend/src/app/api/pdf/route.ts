@@ -55,25 +55,32 @@ export async function GET(request: NextRequest) {
     return new NextResponse('Only https:// URLs are allowed', { status: 400 });
   }
 
-  const isBackend = targetUrl.origin === API_ORIGIN;
+  const isBackendOrigin = targetUrl.origin === API_ORIGIN;
+  // Same-origin Next rewrite: /uploads/* → backend (auth cookies must go to API origin).
+  const isAppUpload =
+    targetUrl.origin === request.nextUrl.origin &&
+    targetUrl.pathname.startsWith('/uploads/');
+  const isPrivateBackendAsset = isBackendOrigin || isAppUpload;
 
-  // ── 2. Auth check for backend URLs ───────────────────────────────────────
-  if (isBackend && !request.cookies.get('auth_token')) {
+  // ── 2. Auth check for backend / gated upload URLs ─────────────────────────
+  if (isPrivateBackendAsset && !request.cookies.get('auth_token')) {
     return new NextResponse('Unauthorized', { status: 401 });
   }
 
   // ── 3. Server-side fetch ──────────────────────────────────────────────────
   const fetchHeaders: Record<string, string> = {};
-  if (isBackend) {
-    // Forward all browser cookies so the backend auth middleware passes.
+  if (isPrivateBackendAsset) {
     const cookieHeader = request.headers.get('cookie');
     if (cookieHeader) fetchHeaders['cookie'] = cookieHeader;
   }
-  // External: fetch without credentials — we're just grabbing bytes.
+
+  const upstreamUrl = isAppUpload
+    ? `${API_ORIGIN}${targetUrl.pathname}${targetUrl.search}`
+    : targetUrl.toString();
 
   let upstream: Response;
   try {
-    upstream = await fetch(targetUrl.toString(), {
+    upstream = await fetch(upstreamUrl, {
       headers: fetchHeaders,
       cache: 'no-store',
     });
@@ -87,8 +94,7 @@ export async function GET(request: NextRequest) {
   }
 
   // ── 4. Content-type guard for external URLs ───────────────────────────────
-  // Refuse to proxy arbitrary content — only PDF or generic binary streams.
-  if (!isBackend) {
+  if (!isPrivateBackendAsset) {
     const ct = upstream.headers.get('content-type') ?? '';
     if (!ct.includes('pdf') && !ct.includes('octet-stream')) {
       return new NextResponse('Remote resource is not a PDF', { status: 415 });

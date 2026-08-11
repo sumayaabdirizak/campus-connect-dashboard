@@ -1,7 +1,7 @@
 import React from 'react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea, ScrollBar } from '@/features/ui/components/scroll-area';
 import { Heading } from '../ui/heading';
-import type { InfobarContent } from '@/components/ui/infobar';
+import type { InfobarContent } from '@/features/ui/components/infobar';
 
 function PageSkeleton() {
   return (
@@ -61,9 +61,9 @@ export default function PageContainer({
   const inner = fill ? (
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>{content}</div>
   ) : (
-    <div className='flex flex-1 flex-col p-4 md:px-6'>
+    <div className='flex min-w-0 w-full flex-1 flex-col p-4 md:px-6'>
       {hasHeader && (
-        <div className='bg-background sticky top-0 z-10 mb-4 flex items-start justify-between gap-4 pb-4'>
+        <div className='bg-background sticky top-0 z-10 mb-4 flex min-w-0 items-start justify-between gap-4 pb-4'>
           <Heading
             title={pageTitle ?? ''}
             description={pageDescription ?? ''}
@@ -72,7 +72,7 @@ export default function PageContainer({
           {pageHeaderAction && <div className='shrink-0'>{pageHeaderAction}</div>}
         </div>
       )}
-      {content}
+      <div className='min-w-0 w-full'>{content}</div>
     </div>
   );
 

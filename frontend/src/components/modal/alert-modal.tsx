@@ -9,8 +9,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle
-} from '@/components/ui/alert-dialog';
-import { buttonVariants } from '@/components/ui/button';
+} from '@/features/ui/components/alert-dialog';
+import { buttonVariants } from '@/features/ui/components/button';
 import { cn } from '@/lib/utils';
 
 interface AlertModalProps {

@@ -65,7 +65,7 @@ async function assertUserRegistrationAllowed({ email, number, role, facultyId })
 export function buildUserCreateData({
   full_name, email, number, password_hash, roleId, role,
   facultyId, departmentId, programId, specialty,
-  batchSectionId, academicYearId, semesterId, courseIds,
+  batchSectionId, academicYearId, semesterId, courseIds, secondaryFacultyId,
 }) {
   return {
     full_name,
@@ -99,7 +99,16 @@ export function buildUserCreateData({
         create: {
           specialty: specialty || 'General',
           departmentId: Number(departmentId),
-          faculties: facultyId ? { create: { facultyId: Number(facultyId) } } : undefined,
+          faculties: facultyId
+            ? {
+                create: [
+                  { facultyId: Number(facultyId) },
+                  ...(secondaryFacultyId && Number(secondaryFacultyId) !== Number(facultyId)
+                    ? [{ facultyId: Number(secondaryFacultyId) }]
+                    : []),
+                ],
+              }
+            : undefined,
         },
       },
       ...(courseIds && Array.isArray(courseIds) ? {
@@ -121,7 +130,7 @@ export async function registerUserByAdmin(req, res) {
   const {
     full_name, email, password, role: rawRole, departmentCode, facultyId: bodyFacultyId, number,
     programId: bodyProgramId, specialty, batchSectionId, academicYearId, semesterId, courseIds,
-    officeId: bodyOfficeId, officeStaffRole: bodyOfficeStaffRole,
+    officeId: bodyOfficeId, officeStaffRole: bodyOfficeStaffRole, secondaryFacultyId,
   } = req.body;
 
   const role = normalizeRoleName(rawRole);
@@ -230,7 +239,7 @@ export async function registerUserByAdmin(req, res) {
     data: buildUserCreateData({
       full_name, email, number: universityId, password_hash, roleId: roleObj.id, role,
       facultyId, departmentId, programId, specialty,
-      batchSectionId, academicYearId, semesterId, courseIds,
+      batchSectionId, academicYearId, semesterId, courseIds, secondaryFacultyId,
     }),
     include: {
       role: { select: { name: true } },

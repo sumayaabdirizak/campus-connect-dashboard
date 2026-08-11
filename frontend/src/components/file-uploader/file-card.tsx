@@ -2,8 +2,8 @@
 
 import Image from 'next/image';
 import { Icons } from '@/components/icons';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
+import { Button } from '@/features/ui/components/button';
+import { Progress } from '@/features/ui/components/progress';
 import { formatBytes } from '@/lib/utils';
 import { isFileWithPreview } from './types';
 

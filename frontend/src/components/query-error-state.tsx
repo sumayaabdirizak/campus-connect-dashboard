@@ -1,5 +1,5 @@
 import { AlertCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/features/ui/components/button';
 import { cn } from '@/lib/utils';
 
 interface QueryErrorStateProps {

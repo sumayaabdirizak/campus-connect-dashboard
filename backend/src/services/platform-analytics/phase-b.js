@@ -6,6 +6,7 @@ export async function runAnalyticsPhaseB(ctx) {
     scopedFacultyId,
     offeringIds,
     since,
+    monthsCount,
     messageScopeFilter,
     submissionsByCourse,
     totalSubmissions,
@@ -109,35 +110,54 @@ export async function runAnalyticsPhaseB(ctx) {
       []
     ),
     safe(async () => {
-      const dayStart = new Date();
-      dayStart.setDate(dayStart.getDate() - 13);
-      dayStart.setHours(0, 0, 0, 0);
+      // Bucket size scales with the selected period so the chart stays
+      // readable: 3m -> daily points, 6m -> weekly, 12m -> monthly. `since`
+      // and `monthsCount` come from the same period selector as every other
+      // chart on this endpoint, so this now actually changes with the
+      // period dropdown instead of always showing a fixed last-14-days.
+      const rangeStart = new Date(since);
+      rangeStart.setHours(0, 0, 0, 0);
+      const bucketDays = monthsCount <= 3 ? 1 : monthsCount <= 6 ? 7 : 30;
+      // Span from `since` to *today*, not a fixed monthsCount*30 estimate —
+      // `since` snaps to a calendar-month boundary (periodStart), so a flat
+      // day-count guess drifts past today and renders fake future buckets.
+      const totalDaysToToday = Math.max(
+        1,
+        Math.ceil((Date.now() - rangeStart.getTime()) / (24 * 60 * 60 * 1000))
+      );
+      const bucketCount = Math.max(1, Math.ceil(totalDaysToToday / bucketDays));
+
       const rows = scopedFacultyId
         ? await prisma.discussionMessage.findMany({
             where: {
               deletedAt: null,
-              createdAt: { gte: dayStart },
+              createdAt: { gte: rangeStart },
               ...messageScopeFilter,
             },
             select: { createdAt: true },
           })
         : await prisma.discussionMessage.findMany({
-            where: { deletedAt: null, createdAt: { gte: dayStart } },
+            where: { deletedAt: null, createdAt: { gte: rangeStart } },
             select: { createdAt: true },
           });
-      const byDay = {};
+
+      const bucketOf = (date) =>
+        Math.floor((date.getTime() - rangeStart.getTime()) / (bucketDays * 24 * 60 * 60 * 1000));
+
+      const counts = new Array(bucketCount).fill(0);
       for (const r of rows) {
-        const k = r.createdAt.toISOString().slice(0, 10);
-        byDay[k] = (byDay[k] ?? 0) + 1;
+        const idx = bucketOf(r.createdAt);
+        if (idx >= 0 && idx < bucketCount) counts[idx] += 1;
       }
-      return Array.from({ length: 14 }, (_, i) => {
-        const d = new Date(dayStart);
-        d.setDate(d.getDate() + i);
-        const key = d.toISOString().slice(0, 10);
-        return {
-          day: d.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }),
-          visits: byDay[key] ?? 0,
-        };
+
+      return counts.map((visits, i) => {
+        const bucketStart = new Date(rangeStart);
+        bucketStart.setDate(bucketStart.getDate() + i * bucketDays);
+        const label =
+          bucketDays === 1
+            ? bucketStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+            : bucketStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        return { day: label, visits };
       });
     }, []),
   ]);

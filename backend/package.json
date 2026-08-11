@@ -16,6 +16,9 @@
     "db:reset-seed": "prisma migrate reset --force",
     "db:migrate": "prisma migrate deploy",
     "db:sync-chat": "prisma migrate deploy && npm run discussions:setup",
+    "lint": "eslint src scripts tests",
+    "lint:fix": "eslint src scripts tests --fix",
+    "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.js\" \"tests/**/*.js\"",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:unit": "vitest run tests/unit",
@@ -63,8 +66,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.8.0",
     "kill-port": "^2.0.1",
     "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
     "prisma": "^6.19.2",
     "socket.io-client": "^4.8.1",
     "supertest": "^7.1.4",

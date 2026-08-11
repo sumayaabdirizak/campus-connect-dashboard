@@ -1,5 +1,6 @@
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/features/ui/components/avatar';
 import { cn } from '@/lib/utils';
+import { resolvePublicAssetUrl } from '@/lib/resolve-public-asset-url';
 import type { User } from '@/lib/auth-store';
 
 interface UserAvatarProfileProps {
@@ -24,10 +25,14 @@ export function UserAvatarProfile({ className, showInfo = false, user }: UserAva
   if (!user) return null;
 
   const displayName = user.full_name || user.name || user.email;
+  const avatarSrc = resolvePublicAssetUrl(user.avatarUrl);
 
   return (
     <div className='flex min-w-0 items-center gap-2'>
       <Avatar className={cn('size-8 border border-border', className)}>
+        {avatarSrc ? (
+          <AvatarImage src={avatarSrc} alt={displayName} />
+        ) : null}
         <AvatarFallback className='bg-primary/10 text-xs font-semibold text-primary'>
           {initials(user)}
         </AvatarFallback>

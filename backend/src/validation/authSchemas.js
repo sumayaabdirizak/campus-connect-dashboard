@@ -15,6 +15,8 @@ export const registerUserBodySchema = Joi.object({
   number: Joi.string().trim().max(64).empty('').optional().allow(null),
   departmentCode: Joi.string().trim().max(32).empty('').optional(),
   facultyId: Joi.number().integer().positive().optional(),
+  /** Teacher: additional faculty affiliation beyond their department's own faculty. */
+  secondaryFacultyId: Joi.number().integer().positive().optional(),
   programId: Joi.number().integer().positive().optional(),
   specialty: Joi.string().trim().max(200).empty('').optional(),
   batchSectionId: Joi.number().integer().positive().optional(),

@@ -1,4 +1,5 @@
 import { prisma } from '../../db/prisma.js';
+import { whereUsersInFaculty } from '../../utils/scopeWhere.js';
 import { safe } from './helpers.js';
 
 export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since, prevSince }) {
@@ -15,6 +16,7 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
     totalSubmissions,
     onTimeSubmissions,
     inactiveStudents,
+    totalFacultyMembers,
   ] = await Promise.all([
     safe(() => prisma.studentProfile.count({ where: studentWhere }), 0),
     safe(
@@ -69,6 +71,7 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
         }),
       0
     ),
+    safe(() => prisma.user.count({ where: whereUsersInFaculty(facultyId) }), 0),
   ]);
 
   return {
@@ -79,5 +82,6 @@ export async function fetchReportCounts({ facultyId, deptIds, offeringIds, since
     totalSubmissions,
     onTimeSubmissions,
     inactiveStudents,
+    totalFacultyMembers,
   };
 }

@@ -1,5 +1,5 @@
-import { InfoButton } from '@/components/ui/info-button';
-import type { InfobarContent } from '@/components/ui/infobar';
+import { InfoButton } from '@/features/ui/components/info-button';
+import type { InfobarContent } from '@/features/ui/components/infobar';
 
 interface HeadingProps {
   title: string;

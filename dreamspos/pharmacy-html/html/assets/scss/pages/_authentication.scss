@@ -1,0 +1,67 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+.auth-wrap{
+    background-image: url(../img/authentication/auth-bg.jpg);
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+}
+.auth-content{
+    padding: 25px 0;
+    .form-label{
+        margin-bottom: 0;
+        margin-left: 20px;
+        margin-bottom: -19px;
+        vertical-align: middle; 
+        z-index: 10;
+        position: relative;
+        background-color: $white;
+    }
+    .form-control{
+        border-radius: 10px;
+        height: 44px;
+    }
+    .input-group-text{
+        border-radius: 10px;
+        color: $gray-900;
+    }
+    .btn{
+        height: 42px;
+        border-radius: 10px;
+    }
+    .login-or::before {
+        width: 100%;
+        content: "";
+        border-top: 1px solid $border-color;
+        position: absolute;
+        top: 50%;
+        left: 0;
+    }
+    .login-or::after {
+        width: 100%;
+        content: "";
+        border-top: 1px solid $border-color;
+        position: absolute;
+        top: 50%;
+        right: 0;
+    }
+    .auth-logo{
+        position: absolute;
+        left: 50%;
+        transform: translateX(-50%);
+        top: 10px;
+    }
+    .otp-input input {
+        width: 90px !important;
+        height: 90px;
+        border: 1px solid $border-color;
+        @include respond-below(sm) {
+            width: 60px !important;
+            height: 60px;
+        }
+    }
+}
+.w-80 {
+    width: 80px;
+}

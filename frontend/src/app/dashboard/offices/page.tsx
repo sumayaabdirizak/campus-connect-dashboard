@@ -1,42 +1,58 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { parseAsInteger, parseAsString, useQueryState } from 'nuqs';
-import PageContainer from '@/components/layout/page-container';
-import { OfficeDirectory } from '@/features/offices/components/office-directory';
-import { OfficeThreadView } from '@/features/offices/components/office-thread-view';
-import { OfficeInbox } from '@/features/offices/components/office-inbox';
+import PageContainer from '@/features/layout/components/page-container';
+import { OfficeDirectory } from '@/components/offices/office-directory';
+import { OfficeInbox } from '@/components/offices/office-inbox';
+import { useOfficeMessageSocket } from '@/lib/offices/queries';
+import { messagesOfficeThreadHref } from '@/lib/inbox/services/messages-href';
 
 /**
- * Office communication hub. URL-driven views (nuqs):
- *  - default        → office directory + my conversations
- *  - ?inbox=slug    → staff shared inbox for that office
- *  - ?thread=id     → one conversation (student or staff)
+ * Office directory / staff inbox. Conversation threads open in Messages
+ * (Chats), same shell as DMs.
  */
 export default function OfficesPage() {
+  const router = useRouter();
   const [threadId, setThreadId] = useQueryState('thread', parseAsInteger);
   const [inboxSlug, setInboxSlug] = useQueryState('inbox', parseAsString);
+  useOfficeMessageSocket(true);
+
+  useEffect(() => {
+    if (threadId != null && threadId > 0) {
+      router.replace(messagesOfficeThreadHref(threadId));
+    }
+  }, [threadId, router]);
+
+  if (threadId != null && threadId > 0) {
+    return (
+      <div className='flex flex-1 items-center justify-center text-sm text-[#667085]'>
+        Opening chat…
+      </div>
+    );
+  }
 
   return (
     <PageContainer
       pageTitle='Offices'
-      pageDescription='Message the academic, exam, and other university offices — replies land right here.'
+      pageDescription='Message the academic, exam, and other university offices — replies open in Messages.'
     >
-      {threadId != null ? (
-        <div className='h-[calc(100dvh-14rem)] min-h-[420px] w-full'>
-          <OfficeThreadView threadId={threadId} onBack={() => void setThreadId(null)} />
-        </div>
-      ) : inboxSlug ? (
+      {inboxSlug ? (
         <div className='w-full'>
           <OfficeInbox
             slug={inboxSlug}
             onBack={() => void setInboxSlug(null)}
-            onOpenThread={(id) => void setThreadId(id)}
+            onOpenThread={(id) => {
+              void setThreadId(null);
+              router.push(messagesOfficeThreadHref(id));
+            }}
           />
         </div>
       ) : (
         <div className='w-full'>
           <OfficeDirectory
-            onOpenThread={(id) => void setThreadId(id)}
+            onOpenThread={(id) => router.push(messagesOfficeThreadHref(id))}
             onOpenInbox={(slug) => void setInboxSlug(slug)}
           />
         </div>

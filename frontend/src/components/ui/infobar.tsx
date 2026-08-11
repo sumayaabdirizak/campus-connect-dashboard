@@ -1,17 +1,17 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
+import { Button } from '@/features/ui/components/button';
+import { Input } from '@/features/ui/components/input';
+import { Separator } from '@/features/ui/components/separator';
 import {
   Sheet,
   SheetContent,
   SheetDescription,
   SheetHeader,
   SheetTitle
-} from '@/components/ui/sheet';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+} from '@/features/ui/components/sheet';
+import { Skeleton } from '@/features/ui/components/skeleton';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/features/ui/components/tooltip';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
 import { Slot } from '@radix-ui/react-slot';

@@ -2,14 +2,14 @@
 
 import { useStore } from '@tanstack/react-form';
 import { FileUploader } from '@/components/file-uploader';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
   FormFieldError,
   createFormField
-} from '@/components/ui/form-context';
+} from '@/features/ui/components/form-context';
 
 interface FileUploadFieldProps {
   label: string;

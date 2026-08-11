@@ -59,7 +59,7 @@ export const getMyCourses = async (req, res) => {
     }
 
     const registration = await prisma.studentRegistration.findFirst({
-      where: { studentId: userId, status: "ACTIVE" },
+      where: { studentId: userId },
       orderBy: { created_at: "desc" },
       include: {
         batchSection: {
@@ -80,21 +80,25 @@ export const getMyCourses = async (req, res) => {
       return res.status(200).json({ success: true, offerings: [] });
     }
 
-    const facultyId = registration.batchSection.batch.program.department.facultyId;
-    const deptRows = await prisma.department.findMany({
-      where: { facultyId },
-      select: { id: true },
-    });
-    const departmentIds = deptRows.map((d) => d.id);
+    const isGraduated = registration.status === "GRADUATED";
 
-    await ensureSectionOfferings({
-      sectionId: registration.batchSectionId,
-      academicYearId: registration.currentAcademicYearId,
-      semesterId: registration.currentSemesterId,
-      curriculumSemester: registration.batchSection.batch.semester_number,
-      departmentIds,
-      programDepartmentId: registration.batchSection.batch.program.departmentId,
-    });
+    if (!isGraduated) {
+      const facultyId = registration.batchSection.batch.program.department.facultyId;
+      const deptRows = await prisma.department.findMany({
+        where: { facultyId },
+        select: { id: true },
+      });
+      const departmentIds = deptRows.map((d) => d.id);
+
+      await ensureSectionOfferings({
+        sectionId: registration.batchSectionId,
+        academicYearId: registration.currentAcademicYearId,
+        semesterId: registration.currentSemesterId,
+        curriculumSemester: registration.batchSection.batch.semester_number,
+        departmentIds,
+        programDepartmentId: registration.batchSection.batch.program.departmentId,
+      });
+    }
 
     const offerings = await prisma.courseOffering.findMany({
       where: {
@@ -179,6 +183,8 @@ export const getMyCourses = async (req, res) => {
     res.json({
       success: true,
       offerings: transformed,
+      isGraduated,
+      graduatedAt: registration.graduatedAt,
       registration: {
         batch: registration.batchSection.batch.name,
         section: registration.batchSection.name,
@@ -187,6 +193,67 @@ export const getMyCourses = async (req, res) => {
     });
   } catch (e) {
     respondInternalError(res, "Failed to fetch student courses", e);
+  }
+};
+
+/**
+ * GET /api/student-portal/semester-history
+ * Every semester the student's section has offered courses in (past + present),
+ * each with a summary of the courses taken. Works for both active and graduated
+ * students since it's keyed off the section, not the live registration status.
+ */
+export const getSemesterHistory = async (req, res) => {
+  try {
+    const userId = Number(req.user.sub);
+    if (!userId) {
+      return res.status(401).json({ message: "Invalid user context" });
+    }
+
+    const registration = await prisma.studentRegistration.findFirst({
+      where: { studentId: userId },
+      orderBy: { created_at: "desc" },
+      select: { batchSectionId: true },
+    });
+
+    if (!registration) {
+      return res.status(200).json({ success: true, semesters: [] });
+    }
+
+    const offerings = await prisma.courseOffering.findMany({
+      where: { sectionId: registration.batchSectionId },
+      include: {
+        course: { select: { code: true, name: true, credits: true } },
+        semester: { select: { id: true, name: true, sequence: true } },
+        academicYear: { select: { id: true, name: true } },
+      },
+      orderBy: [{ semester: { sequence: "desc" } }],
+    });
+
+    const bySemester = new Map();
+    for (const o of offerings) {
+      const key = `${o.semesterId}-${o.academicYearId}`;
+      if (!bySemester.has(key)) {
+        bySemester.set(key, {
+          semesterId: o.semester.id,
+          semesterName: o.semester.name,
+          academicYearName: o.academicYear.name,
+          sequence: o.semester.sequence,
+          courses: [],
+        });
+      }
+      bySemester.get(key).courses.push({
+        code: o.course.code,
+        name: o.course.name,
+        credits: o.course.credits,
+      });
+    }
+
+    res.json({
+      success: true,
+      semesters: [...bySemester.values()].sort((a, b) => b.sequence - a.sequence),
+    });
+  } catch (e) {
+    respondInternalError(res, "Failed to fetch semester history", e);
   }
 };
 

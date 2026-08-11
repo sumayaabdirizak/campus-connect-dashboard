@@ -103,8 +103,9 @@ export function buildVisibleOfferingWhere(loaded) {
  * Academic deadlines (published assignment due-dates + quiz close-times) visible
  * to the caller within [from, to].
  *
- * Teachers author these items — they do not receive quiz/assignment deadlines on
- * their personal calendar (students and other scoped roles still do).
+ * Teachers author these items and Deans oversee at the faculty level, not the
+ * individual-course level — neither receives quiz/assignment deadlines on their
+ * personal calendar (students and other scoped roles still do).
  *
  * @param {import("@prisma/client").PrismaClient} prisma
  * @param {{ userId: number, role: string, facultyIds?: number[], sectionIds?: number[] }} loaded
@@ -112,7 +113,8 @@ export function buildVisibleOfferingWhere(loaded) {
  * @param {Date} toRaw
  */
 export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, toRaw) {
-  if (String(loaded?.role || '').toUpperCase() === 'TEACHER') {
+  const role = String(loaded?.role || '').toUpperCase();
+  if (role === 'TEACHER' || role === 'DEAN') {
     return [];
   }
 

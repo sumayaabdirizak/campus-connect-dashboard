@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Expenses | Pharmacy POS - Bootstrap 5 Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dreams POS is a powerful Bootstrap based Inventory Management Admin Template designed for businesses, offering seamless invoicing, project tracking, and estimates.">
+    <meta name="keywords"
+        content="inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system">
+    <meta name="author" content="Dreams Technologies">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.png">
+
+    <!-- Apple Icon -->
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/plugins/fontawesome/fontawesome.min.css">
+
+    <!-- Lucide Icon CSS -->
+    <link rel="stylesheet" href="assets/plugins/lucide/lucide.css">
+
+    <!-- Simplebar CSS -->
+    <link rel="stylesheet" href="assets/plugins/simplebar/simplebar.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="assets/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Rangeslider CSS -->
+    <link rel="stylesheet" href="assets/plugins/ion-rangeslider/css/ion.rangeSlider.min.css">
+
+    <!-- Datatable CSS -->
+    <link rel="stylesheet" href="assets/css/dataTables.bootstrap5.min.css">
+
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" href="assets/plugins/select2/css/select2.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Begin Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Topbar Start -->
+
+        <!-- Topbar End -->
+
+        <!-- Two Col Sidebar -->
+
+        <!-- End Two Col Sidebar -->
+
+        <!-- ========================
+			Start Page Content
+		========================= -->
+
+        <div class="page-wrapper">
+
+            <!-- Start Content -->
+            <div class="content">
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="index.html"> <span><i class="icon-house"></i></span>
+                                    Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Expenses</li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+                            data-bs-original-title="Refresh"><i class="icon-refresh-ccw"></i></a>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Maximize"
+                            data-bs-original-title="Maximize"><i class="icon-maximize"></i></a>
+                        <a href="#" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                            data-bs-target="#add_expense"> <i class="icon-plus"></i> Add New</a>
+                    </div>
+                </div>
+
+                <!-- start card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                            <div class="d-inline-flex align-items-center flex-wrap flex-sm-nowrap gap-2">
+                                <div class="table-search d-flex align-items-center mb-0">
+                                    <div class="search-input" id="tablefilter">
+                                        <a href="javascript:void(0);" class="btn-searchset"><i
+                                                class="icon-search"></i></a>
+                                    </div>
+                                </div>
+                                <div class="input-group position-relative w-fit">
+                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                        <i class="icon-calendar-fold"></i>
+                                    </span>
+                                    <input type="text" class="form-control date-range bookingrange rounded-end">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+
+                                <!-- Filter -->
+                                <a href="#" class="btn btn-white btn-icon" data-bs-toggle="offcanvas"
+                                    data-bs-target="#add_filter" aria-controls="add_filter"><i
+                                        class="icon-funnel"></i></a>
+                                <!-- column -->
+                                <div class="dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="column">
+                                        <i class="icon-columns-3"></i> Columns
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-start dropdown-menu-md">
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />ID</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Expense Name</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Date</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Category</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Description</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Amount</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Payment Type</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Reference No</span>
+                                                </label>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Created By</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Status</span>
+                                                </label>
+                                            </li>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- sort by -->
+                                <div class="dropdown sortby-dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown">
+                                        <i class="icon-arrow-down-wide-narrow"></i> Sort by
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="list-unstyled mb-0">
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded text-dark d-flex align-items-center justify-content-between">Expense
+                                                    Name <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded text-dark d-flex align-items-center justify-content-between">Expense
+                                                    Name <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Category
+                                                    <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Category
+                                                    <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Date-Ascending
+                                                    <span>1-9</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Date-Descending
+                                                    <span>9-1</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- Export -->
+                                <div class="gap-3 d-flex align-items-center flex-wrap">
+                                    <div class="dropdown">
+                                        <a href="javascript:void(0);"
+                                            class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-arrow-up-to-line"></i>Export
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    PDF</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    Excel</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+
+                        <!-- start table -->
+                        <div class="table-responsive table-nowrap">
+                            <table class="table mb-0 datatable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Expense Name</th>
+                                        <th>Date</th>
+                                        <th class="no-sort">Category</th>
+                                        <th>Description</th>
+                                        <th class="no-sort">Amount</th>
+                                        <th>Payment Type</th>
+                                        <th>Reference No</th>
+                                        <th>Created By</th>
+                                        <th class="no-sort">Status</th>
+                                        <th class="no-sort"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP016</a></td>
+                                        <td>Electricity Bill</td>
+                                        <td>24 Apr 2026</td>
+                                        <td>Utilities</td>
+                                        <td>Electricity charges</td>
+                                        <td>$100</td>
+                                        <td>Debit Card</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-1.jpg"
+                                                        alt="user" class="rounded-circle"></span> Mervin
+                                                Nesmith </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP015</a></td>
+                                        <td>POS Software Renewal</td>
+                                        <td>20 Apr 2026</td>
+                                        <td>Software</td>
+                                        <td>Annual POS license</td>
+                                        <td>$150</td>
+                                        <td>UPI</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF015</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-2.jpg"
+                                                        alt="user" class="rounded-circle"></span> Joyce Kerns </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP014</a></td>
+                                        <td>Medicine Transport Charge</td>
+                                        <td>10 Apr 2026</td>
+                                        <td>Logistics</td>
+                                        <td>Stock delivery charges</td>
+                                        <td>$400</td>
+                                        <td>Credit Card</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF014</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-3.jpg"
+                                                        alt="user" class="rounded-circle"></span> John Baxter </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP013</a></td>
+                                        <td>Internet Charges</td>
+                                        <td>21 Mar 2026</td>
+                                        <td>Utilities</td>
+                                        <td>Internet for POS system</td>
+                                        <td>$200</td>
+                                        <td>Bank Transfer</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF013</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-4.jpg"
+                                                        alt="user" class="rounded-circle"></span> Mervin
+                                                Nesmith </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Pending</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP012</a></td>
+                                        <td>Plumbing Service</td>
+                                        <td>18 Mar 2026</td>
+                                        <td>Repairs & Maintenance</td>
+                                        <td>Monthly plumbing service</td>
+                                        <td>$120</td>
+                                        <td>Debit Card</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF012</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-5.jpg"
+                                                        alt="user" class="rounded-circle"></span> Margaret Fehr </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP011</a></td>
+                                        <td>Shop Rent</td>
+                                        <td>06 Mar 2026</td>
+                                        <td>Utilities</td>
+                                        <td>Monthly rent</td>
+                                        <td>$700</td>
+                                        <td>UPI</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF011</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-6.jpg"
+                                                        alt="user" class="rounded-circle"></span> Elizabeth Porter </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Pending</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP010</a></td>
+                                        <td>Billing Paper Rolls</td>
+                                        <td>26 Feb 2026</td>
+                                        <td>Stationery</td>
+                                        <td>Thermal paper for POS printer</td>
+                                        <td>$160</td>
+                                        <td>Debit Card</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF010</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-7.jpg"
+                                                        alt="user" class="rounded-circle"></span> Freddie Brown </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP009</a></td>
+                                        <td>AC Repair Service</td>
+                                        <td>17 Feb 20266</td>
+                                        <td>Repairs & Maintenance</td>
+                                        <td>Monthly AC service</td>
+                                        <td>$210</td>
+                                        <td>UPI</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF009</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-8.jpg"
+                                                        alt="user" class="rounded-circle"></span> Dawn Peterson </h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Pending</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP008</a></td>
+                                        <td>Printer Toner Purchase</td>
+                                        <td>20 Jan 2026</td>
+                                        <td>Stationery</td>
+                                        <td>Billing printer toner</td>
+                                        <td>$100</td>
+                                        <td>Bank Transfer</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF008</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-9.jpg"
+                                                        alt="user" class="rounded-circle"></span>James Howard</h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="edit-medicines.html" class="text-info">#EXP007</a></td>
+                                        <td>Refrigerator Maintenance</td>
+                                        <td>12 Jan 2026</td>
+                                        <td>Repairs & Maintenance</td>
+                                        <td>Monthly plumbing service</td>
+                                        <td>$240</td>
+                                        <td>Debit Card</td>
+                                        <td><a href="edit-medicines.html" class="text-info">#REF007</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2"> <span
+                                                    class="avatar avatar-xs"><img src="assets/img/staffs/staff-10.jpg"
+                                                        alt="user" class="rounded-circle"></span>Doris Crosby</h4>
+                                        </td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_expense"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 pt-0">
+                                <div id="tableinfo"></div>
+                                <div id="tablepage"></div>
+                                <div id="tablelength"></div>
+                            </div>
+
+                            <!-- end table -->
+
+                        </div>
+                    </div>
+                    <!-- end card -->
+
+                </div>
+                <!-- End Content -->
+
+            </div>
+
+            <!-- ========================
+			End Page Content
+		========================= -->
+
+        </div>
+        <!-- End Wrapper -->
+
+        <!-- Start Add Expense Modal -->
+
+        <div class="modal fade" id="add_expense">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title d-flex align-items-center gap-2"><span
+                                class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                    class="icon-badge-dollar-sign"></i></span>Create New Expense</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i
+                                class="icon-x"></i></button>
+                    </div>
+                    <div class="modal-body pt-0">
+
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Expense Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control">
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>Utilities</option>
+                                        <option>Software</option>
+                                        <option>Logistics</option>
+                                        <option>Maintenance</option>
+                                        <option>Stationery</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Date <span class="text-danger"> *</span></label>
+                                    <div class="input-group w-auto input-group-flat">
+                                        <input type="text" class="form-control" data-provider="flatpickr"
+                                            data-date-format="d/m/Y" placeholder="dd/mm/yyyy">
+                                        <span class="input-group-text">
+                                            <i class="icon-calendar-days"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="form-label">Reason</label>
+                                <textarea class="form-control rounded-3 resize-none" rows="4"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                        <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </a>
+                        <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"> <i class="icon-plus"></i> Create New </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Add Expense Modal -->
+
+        <!-- Start Edit Expense Modal -->
+
+        <div class="modal fade" id="edit_expense">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title d-flex align-items-center gap-2"><span
+                                class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                    class="icon-badge-dollar-sign"></i></span>Edit Expense</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i
+                                class="icon-x"></i></button>
+                    </div>
+                    <div class="modal-body pt-0">
+
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Expense Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="Electricity Bill">
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Category <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>Utilities</option>
+                                        <option>Software</option>
+                                        <option>Logistics</option>
+                                        <option>Maintenance</option>
+                                        <option>Stationery</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Date <span class="text-danger"> *</span></label>
+                                    <div class="input-group w-auto input-group-flat">
+                                        <input type="text" class="form-control" data-provider="flatpickr"
+                                            data-date-format="d/m/Y" placeholder="dd/mm/yyyy" value="24/04/2026">
+                                        <span class="input-group-text">
+                                            <i class="icon-calendar-days"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Reason</label>
+                                <textarea class="form-control rounded-3 resize-none" rows="4"></textarea>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                        <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </a>
+                        <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"> <i class="icon-save"></i> Save Changes </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Edit Expense Modal -->
+
+        <!-- Start Delete Modal -->
+        <div class="modal fade" id="delete_modal">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center">
+                        <span class="avatar avatar-xl rounded-circle bg-soft-danger mb-3">
+                            <i class="icon-trash-2"></i>
+                        </span>
+                        <h4 class="mb-2">Delete Confirmation</h4>
+                        <p class="mb-4">Are you sure you want to delete?</p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="#" class="btn btn-light d-flex align-items-center" data-bs-dismiss="modal"><i
+                                    class="icon-x me-1"></i> Cancel</a>
+                            <a href="#" class="btn btn-danger d-flex align-items-center" data-bs-dismiss="modal"><i
+                                    class="icon-trash-2 me-1"></i>Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Delete Modal -->
+
+        <!-- start offcanvas -->
+        <div class="offcanvas offcanvas-offset offcanvas-end" tabindex="-1" id="add_filter">
+            <div class="offcanvas-header d-block border-0">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h4 class="title d-flex align-items-center gap-2 mb-0"> <span
+                            class="avatar avatar-sm bg-primary rounded-circle fs-16"><i class="icon-funnel"></i></span>
+                        Filter</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"><i
+                            class="icon-x"></i></button>
+                </div>
+            </div>
+            <div class="offcanvas-body pt-0">
+                <div class="filter-sidebar">
+                    <div class="filter-body">
+
+                        <!-- Category -->
+                        <div class="filter-item">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#category"
+                                        aria-expanded="false">
+                                        Category
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="category" class="card-collapse collapse show">
+                                <div>
+                                    <div class="input-icon input-icon-start position-relative mb-3">
+                                        <span class="input-icon-addon text-dark"><i class="icon-search"></i></span>
+                                        <input type="text" class="form-control" placeholder="Search">
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_09">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_09">
+                                            Utilities
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_10">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_10">
+                                            Software
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_11">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_11">
+                                            Logistics
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_13">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_13">
+                                            Maintenance
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_14">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_14">
+                                            Stationery
+                                        </label>
+                                    </div>
+                                    <div class="more-menu2">
+                                        <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                            <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                                id="check_15">
+                                            <label
+                                                class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                                for="check_15">
+                                                Refreshments
+                                            </label>
+                                        </div>
+                                        <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                            <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                                id="check_16">
+                                            <label
+                                                class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                                for="check_16">
+                                                IT Equipments
+                                            </label>
+                                        </div>
+                                        <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                            <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                                id="check_17">
+                                            <label
+                                                class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                                for="check_17">
+                                                Fuel Expenses
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="view-all mt-3">
+                                        <a href="#" class="viewall2-button text-primary font-medium">View More</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Price Items -->
+                        <div class="filter-item">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#stock-value"
+                                        aria-expanded="false">
+                                        Amount
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="stock-value" class="card-collapse collapse show price-range">
+                                <div>
+                                    <div id="price" class="card-collapse collapse show">
+                                        <div>
+                                            <div class="filter-range">
+                                                <input type="text" id="range_03" aria-label="Price Range">
+                                                <p class="mb-0 text-body fs-14">Price : <span
+                                                        class="text-dark fw-semibold">$200 - $5695</span></p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Methods -->
+                        <div class="filter-item">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse"
+                                        data-bs-target="#stock-status" aria-expanded="false">
+                                        Payment Methods
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="stock-status" class="card-collapse collapse show">
+                                <div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_34">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_34">
+                                            <span class="badge badge-soft-pink d-inline-flex align-items-center">Cash
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_35">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_35">
+                                            <span class="badge badge-soft-orange d-inline-flex align-items-center">UPI
+                                            </span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_36">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_36">
+                                            <span class="badge badge-soft-cyan d-inline-flex align-items-center">Card
+                                            </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Items -->
+                        <div class="filter-item mb-0 pb-0 border-0">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#status"
+                                        aria-expanded="false">
+                                        Status
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="status" class="card-collapse collapse show">
+                                <div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_37">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_37">
+                                            <span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid </span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_38">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_38">
+                                            <span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Pending </span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="offcanvas-footer d-flex align-items-center justify-content-between gap-2 flex-wrap ">
+                <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2" data-bs-dismiss="offcanvas"><i
+                        class="icon-x"></i>Cancel </a>
+                <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"> <i class="icon-pocket"></i>
+                    Apply Filter </a>
+            </div>
+        </div>
+        <!-- end offcanvas -->
+
+        <!-- jQuery -->
+        <script src="assets/js/jquery-4.0.0.min.js"></script>
+
+        <!-- Bootstrap Core JS -->
+        <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Simplebar JS -->
+        <script src="assets/plugins/simplebar/simplebar.min.js"></script>
+
+        <!-- Apexcharts JS -->
+        <script src="assets/plugins/apexchart/apexcharts.min.js"></script>
+        <script src="assets/plugins/apexchart/chart-data.js"></script>
+
+        <!-- Select2 Js -->
+        <script src="assets/plugins/select2/js/select2.min.js"></script>
+
+        <!-- Daterangepikcer JS -->
+        <script src="assets/js/moment.min.js"></script>
+        <script src="assets/plugins/daterangepicker/daterangepicker.js"></script>
+
+        <!-- Range slider JS -->
+        <script src="assets/plugins/ion-rangeslider/js/custom-rangeslider.js"></script>
+        <script src="assets/plugins/ion-rangeslider/js/ion.rangeSlider.min.js"></script>
+
+        <!-- Datatable JS -->
+        <script src="assets/js/jquery.dataTables.min.js"></script>
+        <script src="assets/js/dataTables.bootstrap5.min.js"></script>
+
+        <!-- Main JS -->
+        <script src="assets/js/script.js"></script>
+
+</body>
+
+</html>

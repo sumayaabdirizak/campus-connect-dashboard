@@ -151,6 +151,106 @@ export const createCourseOffering = async (req, res) => {
   }
 };
 
+/**
+ * Bulk-assign a set of courses to one section/semester/academicYear in a single
+ * action (the "Assign Course" checklist flow). Courses may come from the dean's
+ * own faculty, or from an explicit secondaryFacultyId (cross-faculty electives) —
+ * the section itself must still belong to the dean's own faculty.
+ */
+export const createCourseOfferingsBulk = async (req, res) => {
+  try {
+    const { facultyId } = req;
+    const { courseIds, sectionId, semesterId, academicYearId, secondaryFacultyId } = req.body;
+
+    if (!Array.isArray(courseIds) || courseIds.length === 0) {
+      return res.status(400).json({ message: "courseIds must be a non-empty array." });
+    }
+    if (!sectionId || !semesterId || !academicYearId) {
+      return res
+        .status(400)
+        .json({ message: "sectionId, semesterId, academicYearId are required." });
+    }
+
+    const deptIds = await getFacultyDepartmentIds(facultyId);
+    const secondaryDeptIds = secondaryFacultyId
+      ? await getFacultyDepartmentIds(Number(secondaryFacultyId))
+      : [];
+    const allowedDeptIds = new Set([...deptIds, ...secondaryDeptIds]);
+
+    const section = await prisma.batchSection.findFirst({
+      where: {
+        id: Number(sectionId),
+        batch: { program: { departmentId: { in: deptIds } } },
+      },
+      include: { batch: { include: { program: true } } },
+    });
+    if (!section) {
+      return res.status(403).json({ message: "Section does not belong to your faculty." });
+    }
+
+    const courses = await prisma.course.findMany({
+      where: { id: { in: courseIds.map(Number) } },
+      include: { teacherAssignings: { select: { teacherId: true } } },
+    });
+
+    let created = 0;
+    const skipped = [];
+    const teacherIds = new Set();
+
+    for (const courseId of courseIds.map(Number)) {
+      const course = courses.find((c) => c.id === courseId);
+      if (!course) {
+        skipped.push({ courseId, reason: "Course not found." });
+        continue;
+      }
+      if (!allowedDeptIds.has(course.departmentId)) {
+        skipped.push({ courseId, reason: "Course is outside the selected faculty scope." });
+        continue;
+      }
+
+      try {
+        await prisma.courseOffering.create({
+          data: {
+            courseId,
+            sectionId: Number(sectionId),
+            semesterId: Number(semesterId),
+            academicYearId: Number(academicYearId),
+          },
+        });
+        created += 1;
+        for (const t of course.teacherAssignings) teacherIds.add(t.teacherId);
+      } catch (e) {
+        if (e.code === "P2002") {
+          skipped.push({ courseId, reason: "Already offered to this section/semester." });
+        } else {
+          throw e;
+        }
+      }
+    }
+
+    if (teacherIds.size > 0) {
+      try {
+        await syncDiscussionMembershipsForUsers([...teacherIds]);
+      } catch (error) {
+        console.error("Failed to sync memberships after bulk-assigning offerings", {
+          error: error?.message,
+        });
+      }
+    }
+
+    res.status(created > 0 ? 201 : 200).json({
+      message:
+        created === 0
+          ? "No offerings created."
+          : `Assigned ${created} course(s) to ${section.name}.`,
+      created,
+      skipped,
+    });
+  } catch (e) {
+    respondInternalError(res, "Failed to bulk-assign course offerings", e);
+  }
+};
+
 export const deleteCourseOffering = async (req, res) => {
   try {
     const { id } = req.params;

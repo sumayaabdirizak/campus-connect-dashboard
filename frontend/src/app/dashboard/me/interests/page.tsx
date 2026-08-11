@@ -2,17 +2,17 @@
 
 import { useState, useMemo, useEffect } from 'react'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
+import { Button } from '@/features/ui/components/button'
+import { Badge } from '@/features/ui/components/badge'
+import { Skeleton } from '@/features/ui/components/skeleton'
 import { Icons } from '@/components/icons'
-import { ScrollArea } from '@/components/ui/scroll-area'
+import { ScrollArea } from '@/features/ui/components/scroll-area'
 import {
   useInterestTags,
   useMyInterests,
   useUpdateMyInterests
-} from '@/features/clubs/api/queries'
-import type { InterestTag } from '@/features/clubs/api/types'
+} from '@/lib/clubs/queries'
+import type { InterestTag } from '@/lib/clubs/types'
 
 export default function MyInterestsPage() {
   const { data: tagsData, isLoading: tagsLoading } = useInterestTags()
@@ -75,7 +75,7 @@ export default function MyInterestsPage() {
       {/* Header */}
       <div className='flex items-center justify-between border-b px-6 py-4'>
         <div className='flex items-center gap-3'>
-          <Link href='/dashboard/clubs'>
+          <Link href='/dashboard/messages?discover=1'>
             <Button variant='ghost' size='sm' className='h-8 w-8 p-0'>
               <Icons.chevronLeft className='h-4 w-4' />
             </Button>

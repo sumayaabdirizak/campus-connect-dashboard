@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { Icons } from '@/components/icons';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/features/ui/components/avatar';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -12,7 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger
-} from '@/components/ui/dropdown-menu';
+} from '@/features/ui/components/dropdown-menu';
 import { apiClient } from '@/lib/api-client';
 import { useAuthStore, type User } from '@/lib/auth-store';
 import { confirmLogout, showToast } from '@/lib/notifications';
@@ -52,6 +52,7 @@ export function UserProfileMenu({
   contentClassName
 }: UserProfileMenuProps) {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const logout = useAuthStore((state) => state.logout);
   const router = useRouter();
 
@@ -68,7 +69,26 @@ export function UserProfileMenu({
     }
   };
 
+  const handleSwitchRole = async (role: string) => {
+    if (!user || role === user.role) return;
+    try {
+      const data = await apiClient<{ user: User }>('/auth/switch-role', {
+        method: 'POST',
+        body: JSON.stringify({ role })
+      });
+      setUser(data.user);
+      showToast('success', `Switched to ${formatRole(role)}`);
+      // Full reload: every role-gated nav item / query needs to refetch
+      // against the new role, not just this menu's local state.
+      window.location.href = '/dashboard';
+    } catch (err) {
+      showToast('error', err instanceof Error ? err.message : 'Failed to switch role');
+    }
+  };
+
   if (!user) return null;
+
+  const otherRoles = (user.availableRoles ?? []).filter((r) => r !== user.role);
 
   return (
     <DropdownMenu>
@@ -102,6 +122,22 @@ export function UserProfileMenu({
             Notifications
           </DropdownMenuItem>
         </DropdownMenuGroup>
+        {otherRoles.length > 0 ? (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuLabel className='px-2 pb-1 pt-0 text-[11px] font-medium uppercase tracking-wide text-muted-foreground'>
+              Switch role
+            </DropdownMenuLabel>
+            <DropdownMenuGroup>
+              {otherRoles.map((role) => (
+                <DropdownMenuItem key={role} onSelect={() => handleSwitchRole(role)}>
+                  <Icons.refresh />
+                  {formatRole(role)}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </>
+        ) : null}
         <DropdownMenuSeparator />
         <DropdownMenuItem variant='destructive' onSelect={handleLogout}>
           <Icons.logout />

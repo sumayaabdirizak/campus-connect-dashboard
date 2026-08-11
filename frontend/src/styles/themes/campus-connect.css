@@ -1,47 +1,56 @@
 /*
- * "Campus Connect" professional theme.
- * Source palette: Primary Blue #0468CE, Secondary Green #0C8806,
- * Dark Accent #062056, Text #000000, Background #FFFFFF.
- * Hex values converted to OKLCH (see hexToOklch conversion) to match
- * this app's token format.
+ * Campus Connect - Jazeera University official brand palette.
+ * Brand source: C:/Users/abdir/Downloads/Ju-color-code.pdf
  */
 [data-theme='campus-connect'] {
-  --background: #FFFFFF;
-  --foreground: #111111;
-  --card: #FFFFFF;
-  --card-foreground: #111111;
-  --popover: #FFFFFF;
-  --popover-foreground: #111111;
-  --primary: #1A8C72;
-  --primary-foreground: #FFFFFF;
-  --secondary: #E8F5F1;
-  --secondary-foreground: #111111;
-  --muted: #F4F6F9;
-  --muted-foreground: #555555;
-  --accent: #E8F5F1;
-  --accent-foreground: #1A8C72;
-  --destructive: oklch(0.63 0.19 23.03);
-  --destructive-foreground: oklch(1 0 0);
-  --border: #D8EDE8;
-  --input: #F0F7F5;
-  --ring: #1A8C72;
-  --chart-1: #1A8C72;
-  --chart-2: #0066CC;
-  --chart-3: #F4D03F;
-  --chart-4: oklch(0.81 0.17 75.35);
-  --chart-5: oklch(0.56 0 0);
-  --sidebar: #FFFFFF;
-  --sidebar-foreground: #111111;
-  --sidebar-primary: #1A8C72;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #E8F5F1;
-  --sidebar-accent-foreground: #1A8C72;
-  --sidebar-border: #D8EDE8;
-  --sidebar-ring: #1A8C72;
+  --background: #ffffff;
+  --foreground: #101828;
+  --card: #ffffff;
+  --card-foreground: #101828;
+  --popover: #ffffff;
+  --popover-foreground: #101828;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #dbeafe;
+  --secondary-foreground: #1e40af;
+  --muted: #f8fafc;
+  --muted-foreground: #6a7282;
+  --accent: #dbeafe;
+  --accent-foreground: #1e40af;
+  --content-area: #f8fafc;
+  --destructive: #d42314;
+  --destructive-foreground: #ffffff;
+  --border: #bfdbfe;
+  --input: #f8fafc;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
+  --chart-3: #1a56db;
+  --chart-4: #1e40af;
+  --chart-5: #6a7282;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0d0d40;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0d0d40;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #3b82f6;
+  --sidebar-icon: #0d0d40;
+  --sidebar-muted: #64748b;
+  --warning: #d97f06;
+  --warning-foreground: #101828;
+  --warning-muted: #fdf4ec;
+  --success: #10b981;
+  --success-foreground: #ffffff;
+  --success-muted: #ecfdf5;
+  --info: #3b82f6;
+  --info-foreground: #ffffff;
+  --info-muted: #dbeafe;
   --font-sans: var(--font-inter), 'Noto Color Emoji', system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains-mono), Geist Mono, monospace;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 2px;
@@ -60,50 +69,56 @@
   --spacing: 0.25rem;
 }
 
-/* Dark-mode tokens, duplicated under two selectors:
- * 1) `[data-theme='campus-connect'].dark` — when this theme is applied at
- *    the document root (full-app adoption) and dark mode is toggled there.
- * 2) `.dark [data-theme='campus-connect']` — when this theme is scoped to a
- *    subtree (e.g. just the discussions module) via a wrapper div, while the
- *    site's dark-mode class lives on a different (ancestor) element. */
 [data-theme='campus-connect'].dark,
 .dark [data-theme='campus-connect'] {
-  --background: #0D2E25;
-  --foreground: #FFFFFF;
-  --card: #0A2419;
-  --card-foreground: #FFFFFF;
-  --popover: #0A2419;
-  --popover-foreground: #FFFFFF;
-  --primary: #22B08E;
-  --primary-foreground: #FFFFFF;
-  --secondary: #133D31;
-  --secondary-foreground: #E8F5F1;
-  --muted: #133D31;
-  --muted-foreground: #E8F5F1;
-  --accent: #133D31;
-  --accent-foreground: #FFFFFF;
-  --destructive: oklch(0.69 0.2 23.91);
-  --destructive-foreground: oklch(0 0 0);
-  --border: #1A4D3D;
-  --input: #1A4D3D;
-  --ring: #22B08E;
-  --chart-1: #22B08E;
-  --chart-2: #0066CC;
-  --chart-3: #F4D03F;
-  --chart-4: oklch(0.44 0 0);
-  --chart-5: oklch(0.92 0 0);
-  --sidebar: #0A2419;
-  --sidebar-foreground: #FFFFFF;
-  --sidebar-primary: #22B08E;
-  --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1A4D3D;
-  --sidebar-accent-foreground: #FFFFFF;
-  --sidebar-border: #1A4D3D;
-  --sidebar-ring: #22B08E;
+  --background: #0b0d0e;
+  --foreground: #f9fafb;
+  --card: #101828;
+  --card-foreground: #f9fafb;
+  --popover: #101828;
+  --popover-foreground: #f9fafb;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e2939;
+  --secondary-foreground: #dbeafe;
+  --muted: #1e2939;
+  --muted-foreground: #99a1af;
+  --accent: rgba(59, 130, 246, 0.18);
+  --accent-foreground: #dbeafe;
+  --content-area: #0b0d0e;
+  --destructive: #d42314;
+  --destructive-foreground: #ffffff;
+  --border: #364153;
+  --input: #1e2939;
+  --ring: #3b82f6;
+  --chart-1: #3b82f6;
+  --chart-2: #10b981;
+  --chart-3: #1a56db;
+  --chart-4: #dbeafe;
+  --chart-5: #99a1af;
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0d0d40;
+  --sidebar-primary: #3b82f6;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #f1f5f9;
+  --sidebar-accent-foreground: #0d0d40;
+  --sidebar-border: #e2e8f0;
+  --sidebar-ring: #3b82f6;
+  --sidebar-icon: #0d0d40;
+  --sidebar-muted: #64748b;
+  --warning: #d97f06;
+  --warning-foreground: #fdf4ec;
+  --warning-muted: rgba(217, 127, 6, 0.15);
+  --success: #10b981;
+  --success-foreground: #ecfdf5;
+  --success-muted: rgba(16, 185, 129, 0.2);
+  --info: #3b82f6;
+  --info-foreground: #dbeafe;
+  --info-muted: rgba(59, 130, 246, 0.18);
   --font-sans: var(--font-inter), 'Noto Color Emoji', system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains-mono), Geist Mono, monospace;
-  --radius: 0.5rem;
+  --radius: 0.75rem;
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 2px;
@@ -154,6 +169,9 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --color-content-area: var(--content-area);
+    --color-sidebar-icon: var(--sidebar-icon);
+    --color-sidebar-muted: var(--sidebar-muted);
     --font-sans: var(--font-sans);
     --font-mono: var(--font-mono);
     --font-serif: var(--font-serif);

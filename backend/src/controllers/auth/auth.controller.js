@@ -140,6 +140,12 @@ export async function postSwitchRole(req, res) {
   });
 }
 
+function clearAuthCookies(res) {
+  const isProduction = getIsProduction();
+  res.clearCookie(ACCESS_COOKIE, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+  res.clearCookie(REFRESH_COOKIE, { httpOnly: true, secure: isProduction, sameSite: 'lax', path: '/' });
+}
+
 export async function postRefresh(req, res) {
   const refreshToken = readCookie(req, REFRESH_COOKIE);
   if (!refreshToken) {
@@ -149,6 +155,7 @@ export async function postRefresh(req, res) {
   try {
     const payload = jwt.verify(refreshToken, env.JWT_SECRET);
     if (payload.tokenType !== 'refresh') {
+      clearAuthCookies(res);
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
 
@@ -157,6 +164,7 @@ export async function postRefresh(req, res) {
     // token revoked on logout or by rotation would still mint fresh access
     // tokens.
     if (payload.jti && (await isJtiRevoked(payload.jti))) {
+      clearAuthCookies(res);
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
 
@@ -165,13 +173,16 @@ export async function postRefresh(req, res) {
       include: { role: true },
     });
     if (!user) {
+      clearAuthCookies(res);
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
     if (user.status !== 'ACTIVE') {
+      clearAuthCookies(res);
       return res.status(403).json({ message: 'Account is not active' });
     }
     // Session bust: password change / admin disable increments tokenVersion.
     if (payload.tv != null && Number(payload.tv) !== Number(user.tokenVersion ?? 0)) {
+      clearAuthCookies(res);
       return res.status(401).json({ message: 'Invalid refresh token' });
     }
 
@@ -202,6 +213,12 @@ export async function postRefresh(req, res) {
 
     return res.json({ success: true, csrfToken });
   } catch {
+    // Expired/malformed refresh token — clear it so the browser stops
+    // presenting a dead cookie as "you have a session" to middleware,
+    // which would otherwise ping-pong the user between /dashboard and
+    // /auth/sign-in forever (middleware sees the cookie and allows
+    // /dashboard; the client can't actually use it and bounces back).
+    clearAuthCookies(res);
     return res.status(401).json({ message: 'Invalid refresh token' });
   }
 }

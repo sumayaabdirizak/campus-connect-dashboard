@@ -19,7 +19,7 @@ export function buildStudentReports({
     : null;
   const statusFilter = filters.status ? String(filters.status) : null;
 
-  const rows = studentProfiles.slice(0, 200).map((sp) => {
+  const rows = studentProfiles.map((sp) => {
     const grades = studentGradesByUser.get(sp.user.id) ?? [];
     const gpa =
       grades.length > 0

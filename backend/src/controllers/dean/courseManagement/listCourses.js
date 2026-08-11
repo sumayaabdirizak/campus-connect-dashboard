@@ -6,15 +6,22 @@ import { assertFacultyCourse, getFacultyDepartmentIds } from "./helpers.js";
 export const getFacultyCourses = async (req, res) => {
   try {
     const { facultyId } = req;
-    const { search, departmentId } = req.query;
+    const { search, departmentId, secondaryFacultyId, year } = req.query;
     const deptIds = await getFacultyDepartmentIds(facultyId);
+    const secondaryDeptIds = secondaryFacultyId
+      ? await getFacultyDepartmentIds(Number(secondaryFacultyId))
+      : [];
+    const scopeDeptIds = departmentId
+      ? [Number(departmentId), ...secondaryDeptIds]
+      : [...deptIds, ...secondaryDeptIds];
     const { page, pageSize, skip } = parsePaginationQuery(req.query, {
       defaultPageSize: 50,
       maxPageSize: 200,
     });
 
     const where = {
-      departmentId: departmentId ? Number(departmentId) : { in: deptIds },
+      departmentId: { in: scopeDeptIds },
+      ...(year ? { year: Number(year) } : {}),
       ...(search
         ? {
             OR: [
@@ -68,7 +75,7 @@ export const getCourseById = async (req, res) => {
       where: { id: Number(id) },
       include: {
         department: true,
-        teacherAssigning: {
+        teacherAssignings: {
           include: {
             teacher: {
               select: {

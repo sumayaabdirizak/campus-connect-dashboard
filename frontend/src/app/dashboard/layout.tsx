@@ -1,69 +1,68 @@
-'use client';
+﻿'use client';
 
 import KBar from '@/components/kbar';
-import AppSidebar from '@/components/layout/app-sidebar';
-import Header from '@/components/layout/header';
-import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
+import { PharmacyShell } from '@/features/layout/components/pharmacy/pharmacy-shell';
 import { RoleGuard } from '@/components/auth/role-guard';
 import { usePathname } from 'next/navigation';
-import { useAnnouncementSocket } from '@/features/announcements/api/use-announcement-socket';
+import { useAnnouncementSocket } from '@/lib/announcements/queries/use-announcement-socket';
 
-import { InfobarProvider } from '@/components/ui/infobar';
+import { InfobarProvider } from '@/features/ui/components/infobar';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const isChatRoute = pathname?.startsWith('/dashboard/chat');
+  const isMessagesRoute = pathname === '/dashboard/messages';
   const isAnnouncementsRoute = pathname?.startsWith('/dashboard/announcements');
   const isCourseDetailRoute = Boolean(pathname?.match(/^\/dashboard\/courses\/[^/]+$/));
   const isAuditLogsRoute = pathname === '/dashboard/audit-logs';
   const isDeanUsersRoute = pathname === '/dashboard/dean/users';
+  const isDeanClubsRoute = pathname === '/dashboard/dean/clubs';
+  const isClubsDiscoverRoute = pathname === '/dashboard/clubs';
+  const isClubDetailRoute = Boolean(pathname?.match(/^\/dashboard\/clubs\/[^/]+$/));
+  const isClubManageRoute = Boolean(pathname?.match(/^\/dashboard\/clubs\/[^/]+\/manage$/));
   const isViewportFitRoute =
-    isChatRoute ||
+    isMessagesRoute ||
     isAnnouncementsRoute ||
     isCourseDetailRoute ||
     isAuditLogsRoute ||
-    isDeanUsersRoute;
+    isDeanUsersRoute ||
+    isDeanClubsRoute ||
+    isClubsDiscoverRoute ||
+    isClubDetailRoute ||
+    isClubManageRoute;
 
   useAnnouncementSocket({ enabled: true, playSound: false });
 
   return (
     <KBar>
       <RoleGuard>
-        <SidebarProvider defaultOpen={true}>
-          <AppSidebar />
-          <SidebarInset
+        <PharmacyShell>
+          <main
             className={
-              isViewportFitRoute
-                ? 'h-dvh max-h-dvh min-h-0 min-w-0 overflow-hidden'
-                : 'min-w-0'
+              isMessagesRoute
+                ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-2 md:p-3'
+                : isAuditLogsRoute
+                  ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-1 md:p-1.5'
+                  : isViewportFitRoute
+                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-5'
+                    : 'min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-5'
             }
           >
-            <Header />
-            <main
+            <InfobarProvider
               className={
-                isChatRoute
-                  ? 'flex min-h-0 min-w-0 flex-1 overflow-hidden p-2 md:p-3'
-                  : isAuditLogsRoute
-                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-1 md:p-1.5'
-                  : isViewportFitRoute
-                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-6'
-                    : 'min-w-0 overflow-x-hidden overflow-y-auto p-4 md:p-6'
+                isAuditLogsRoute
+                  ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden !min-h-0'
+                  : isViewportFitRoute && !isMessagesRoute
+                    ? 'flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 flex-col overflow-hidden !min-h-0'
+                    : isMessagesRoute
+                      ? 'flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 flex-col overflow-hidden !min-h-0'
+                      : 'min-w-0 w-full'
               }
             >
-              <InfobarProvider
-                className={
-                  isAuditLogsRoute
-                    ? 'flex h-full min-h-0 w-full flex-col overflow-hidden !min-h-0'
-                    : isViewportFitRoute && !isChatRoute
-                      ? 'flex h-0 min-h-0 w-full flex-1 basis-0 flex-col overflow-hidden !min-h-0'
-                      : undefined
-                }
-              >
-                {children}
-              </InfobarProvider>
-            </main>
-          </SidebarInset>
-        </SidebarProvider>
+              {children}
+            </InfobarProvider>
+          </main>
+        </PharmacyShell>
       </RoleGuard>
     </KBar>
   );
 }
+

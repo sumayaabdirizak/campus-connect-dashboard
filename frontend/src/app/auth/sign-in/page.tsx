@@ -1,5 +1,5 @@
 import { Metadata } from 'next';
-import SignInViewPage from '@/features/auth/components/sign-in-view';
+import SignInViewPage from '@/components/auth/sign-in-view';
 
 export const metadata: Metadata = {
   title: 'Sign In | Campus Connect',

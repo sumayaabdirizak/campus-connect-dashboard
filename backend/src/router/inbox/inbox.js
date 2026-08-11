@@ -44,6 +44,7 @@ router.get(
       : await Promise.all([
           prisma.discussionGroupMembership.findMany({
             where: { userId, leftAt: null, isActive: true, group: { status: "ACTIVE" } },
+            take: 300,
             select: {
               group: {
                 select: {

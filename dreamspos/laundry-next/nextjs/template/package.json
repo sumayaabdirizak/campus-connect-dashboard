@@ -1,0 +1,47 @@
+{
+  "name": "laundory-pos",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "@hello-pangea/dnd": "^18.0.1",
+    "antd": "^5.27.5",
+    "apexcharts": "^5.3.6",
+    "bootstrap": "^5.3.8",
+    "bootstrap-daterangepicker": "^3.1.0",
+    "js-cookie": "^3.0.5",
+    "next": "16.1.1",
+    "react": "19.2.3",
+    "react-apexcharts": "^1.9.0",
+    "react-bootstrap": "^2.10.10",
+    "react-bootstrap-daterangepicker": "^8.0.0",
+    "react-countup": "^6.5.3",
+    "react-dom": "19.2.3",
+    "react-select": "^5.10.2",
+    "react-simple-wysiwyg": "^3.4.1",
+    "react-slick": "^0.31.0",
+    "react-window": "^1.8.11",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "sass": "^1.97.2",
+    "slick-carousel": "^1.8.1",
+    "sweetalert2": "^11.26.17",
+    "swiper": "^12.0.3",
+    "yet-another-react-lightbox": "^3.28.0"
+  },
+  "devDependencies": {
+    "@types/js-cookie": "^3.0.6",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/react-window": "^1.8.8",
+    "babel-plugin-react-compiler": "1.0.0",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.1",
+    "typescript": "^5"
+  }
+}

@@ -1,11 +1,12 @@
-import Providers from '@/components/layout/providers';
-import { Toaster } from '@/components/ui/sonner';
-import { fontVariables } from '@/components/themes/font.config';
-import { DEFAULT_THEME, THEMES } from '@/components/themes/theme.config';
-import ThemeProvider from '@/components/themes/theme-provider';
+import Providers from '@/features/layout/components/providers';
+import { Toaster } from '@/features/ui/components/sonner';
+import { fontVariables } from '@/features/themes/components/font.config';
+import { DEFAULT_THEME, THEMES } from '@/features/themes/components/theme.config';
+import ThemeProvider from '@/features/themes/components/theme-provider';
 import { cn } from '@/lib/utils';
 import type { Metadata, Viewport } from 'next';
 import { cookies } from 'next/headers';
+import Script from 'next/script';
 import NextTopLoader from 'nextjs-toploader';
 import { NuqsAdapter } from 'nuqs/adapters/next/app';
 import '../styles/globals.css';
@@ -31,6 +32,27 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const isValidTheme = THEMES.some((t) => t.value === activeThemeValue);
   const themeToApply = isValidTheme ? activeThemeValue! : DEFAULT_THEME;
 
+  // #region agent log
+  fetch('http://127.0.0.1:7804/ingest/31870779-47f0-4312-b278-1c6da891de23', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Debug-Session-Id': 'c4b419' },
+    body: JSON.stringify({
+      sessionId: 'c4b419',
+      runId: 'post-fix',
+      hypothesisId: 'E',
+      location: 'layout.tsx:RootLayout',
+      message: 'RootLayout render; using next/script for theme-color',
+      data: {
+        themeToApply,
+        usesNativeScript: false,
+        usesNextScript: true,
+        scriptPurpose: 'meta-theme-color'
+      },
+      timestamp: Date.now()
+    })
+  }).catch(() => {});
+  // #endregion
+
   return (
     <html lang='en' suppressHydrationWarning data-theme={themeToApply}>
       <head>
@@ -43,18 +65,6 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           rel='stylesheet'
           href='https://fonts.googleapis.com/css2?family=Noto+Color+Emoji&display=swap'
         />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                // Set meta theme color
-                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-                  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '${META_THEME_COLORS.dark}')
-                }
-              } catch (_) {}
-            `
-          }}
-        />
       </head>
       <body
         suppressHydrationWarning
@@ -63,6 +73,18 @@ export default async function RootLayout({ children }: { children: React.ReactNo
           fontVariables
         )}
       >
+        {/* #region agent log */}
+        <Script id='meta-theme-color' strategy='beforeInteractive'>
+          {`
+              try {
+                fetch('http://127.0.0.1:7804/ingest/31870779-47f0-4312-b278-1c6da891de23',{method:'POST',headers:{'Content-Type':'application/json','X-Debug-Session-Id':'c4b419'},body:JSON.stringify({sessionId:'c4b419',runId:'post-fix',hypothesisId:'E',location:'layout.tsx:next-script',message:'next/script theme-color executed',data:{executed:true,via:'next/script'},timestamp:Date.now()})}).catch(function(){});
+                if (localStorage.theme === 'dark' || ((!('theme' in localStorage) || localStorage.theme === 'system') && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '${META_THEME_COLORS.dark}')
+                }
+              } catch (_) {}
+            `}
+        </Script>
+        {/* #endregion */}
         <NextTopLoader color='var(--primary)' showSpinner={false} />
         <NuqsAdapter>
           <ThemeProvider

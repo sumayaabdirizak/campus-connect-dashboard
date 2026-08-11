@@ -92,6 +92,7 @@ export function buildKpiSection({
     totalSubmissions: submissionCount,
     onTimeSubmissions,
     activeStudents,
+    totalFacultyMembers,
   } = counts;
   const { avgGpa, attendanceRate, courseCompletionRate, enrollmentTrend } = kpis;
 
@@ -99,6 +100,7 @@ export function buildKpiSection({
     totalDepartments: departments.length,
     totalStudents,
     totalInstructors,
+    totalFacultyMembers,
     totalCourses,
     activeCourses: offerings.length,
     assignmentsSubmitted: submissionCount,

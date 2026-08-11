@@ -7,15 +7,15 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue
-} from '@/components/ui/select';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+} from '@/features/ui/components/select';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
   FormFieldError,
   createFormField
-} from '@/components/ui/form-context';
+} from '@/features/ui/components/form-context';
 
 type Option = { value: string; label: string };
 

@@ -8,6 +8,9 @@ export interface User {
   name?: string;
   email: string;
   role: Role;
+  /** Every role this user may switch into (primary role + any granted secondary roles). */
+  availableRoles?: Role[];
+  avatarUrl?: string | null;
   /** Explicit consent for campus announcement SMS (TCPA-style). */
   smsOptIn?: boolean;
 }
@@ -43,14 +46,14 @@ export const useAuthStore = create<AuthState>()(
         })),
       validateSession: async () => {
         try {
-          const response = await fetch(`${API_BASE_URL}/users/me`, {
-            credentials: 'include'
-          });
-          if (!response.ok) {
-            set({ user: null, isAuthenticated: false, isSessionChecked: true });
-            return false;
-          }
-          const userData = (await response.json()) as Partial<User> & { role?: unknown };
+          // A plain fetch here never attempts the silent-refresh flow, so a
+          // merely-expired (but still refreshable) access token looked
+          // identical to "truly logged out" — the caller would clear auth
+          // and redirect to sign-in even though the refresh token was still
+          // good. Route through apiClient so the same 401→refresh→retry
+          // logic every other call gets is applied here too.
+          const { apiClient } = await import('@/lib/api-client');
+          const userData = await apiClient<Partial<User> & { role?: unknown }>('/users/me');
           if (!userData || !isRole(userData.role)) {
             set({ user: null, isAuthenticated: false, isSessionChecked: true });
             return false;

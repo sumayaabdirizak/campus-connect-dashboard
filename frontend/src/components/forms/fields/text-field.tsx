@@ -1,16 +1,16 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
-import { Input } from '@/components/ui/input';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Input } from '@/features/ui/components/input';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
   FormFieldError,
   createFormField
-} from '@/components/ui/form-context';
-import { Spinner } from '@/components/ui/spinner';
+} from '@/features/ui/components/form-context';
+import { Spinner } from '@/features/ui/components/spinner';
 
 interface TextFieldProps extends Omit<
   React.ComponentProps<'input'>,

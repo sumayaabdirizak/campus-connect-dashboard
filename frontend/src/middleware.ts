@@ -1,61 +1,44 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
-
-const ACCESS_COOKIE = 'auth_token';
-
-function apiOrigin(): string | null {
-  const raw = process.env.NEXT_PUBLIC_API_URL;
-  if (!raw) return null;
-  try {
-    return new URL(raw).origin;
-  } catch {
-    return null;
-  }
-}
+﻿import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * Cookie soft-gate for /dashboard. Only enforces when the HttpOnly
- * `auth_token` is expected on this page origin (same host as API, or
- * localhost / 127.0.0.1 any-port). Cross-origin API+app without a shared
- * cookie domain still relies on client RoleGuard + API auth.
+ * Middleware to protect authenticated routes.
+ * Redirects unauthenticated requests to /auth/sign-in.
  */
-function sessionCookieVisibleOnPage(request: NextRequest): boolean {
-  const api = apiOrigin();
-  if (!api) return true;
-  try {
-    const pageHost = request.nextUrl.hostname;
-    const apiHost = new URL(api).hostname;
-    if (api === request.nextUrl.origin) return true;
-    if (pageHost === 'localhost' && apiHost === 'localhost') return true;
-    if (pageHost === '127.0.0.1' && apiHost === '127.0.0.1') return true;
-    return false;
-  } catch {
-    return false;
-  }
-}
-
 export function middleware(request: NextRequest) {
-  if (!sessionCookieVisibleOnPage(request)) {
+  const pathname = request.nextUrl.pathname;
+
+  // Routes that don't require authentication
+  const publicRoutes = ['/auth/sign-in', '/auth/sign-up', '/about', '/'];
+
+  // Check if route is public
+  const isPublicRoute = publicRoutes.some(
+    (route) => pathname === route || pathname.startsWith(route + '/')
+  );
+
+  if (isPublicRoute) {
     return NextResponse.next();
   }
 
-  const { pathname } = request.nextUrl;
-  const hasSession = Boolean(request.cookies.get(ACCESS_COOKIE)?.value);
+  // Check for auth token (httpOnly cookie)
+  const hasAuthToken = request.cookies.has('auth_token');
 
-  if (pathname.startsWith('/dashboard') && !hasSession) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/auth/sign-in';
-    url.searchParams.set('next', pathname);
-    return NextResponse.redirect(url);
-  }
-
-  if (pathname === '/auth/sign-in' && hasSession) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (!hasAuthToken && pathname.startsWith('/dashboard')) {
+    return NextResponse.redirect(new URL('/auth/sign-in', request.url));
   }
 
   return NextResponse.next();
 }
 
+// Configure which routes the middleware applies to
 export const config = {
-  matcher: ['/dashboard/:path*', '/auth/sign-in']
+  matcher: [
+    /*
+     * Match all request paths except:
+     * - _next/static (static files)
+     * - _next/image (image optimization)
+     * - favicon.ico (favicon file)
+     * - public assets
+     */
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'
+  ]
 };

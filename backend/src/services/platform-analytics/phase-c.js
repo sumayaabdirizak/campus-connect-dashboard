@@ -117,7 +117,10 @@ export async function runAnalyticsPhaseC(ctx) {
       announcements: platformAnnouncements,
     },
     kpis: {
-      activeUsers: activeStudents,
+      // All-roles active-users count (login or created this month) — was
+      // wired to `activeStudents` (students only), which mislabeled the
+      // "Active users" card platform-wide.
+      activeUsers: activeUsersThisMonth,
       totalUsers,
       activeUsersThisMonth,
       totalCourses: uniqueCourses.length,

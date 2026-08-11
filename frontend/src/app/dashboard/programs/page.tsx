@@ -1,15 +1,9 @@
-import PageContainer from '@/components/layout/page-container';
-import ProgramsListingPage from '@/features/programs/components/programs-listing';
-import { ProgramAddButton } from '@/features/programs/components/ProgramAddButton';
+import ProgramsListingPage from '@/components/programs/programs-listing';
+
+export const metadata = {
+  title: 'Dashboard: Programs'
+};
 
 export default function Page() {
-  return (
-    <PageContainer
-      pageTitle='Programs'
-      pageDescription='Manage academic programs.'
-      pageHeaderAction={<ProgramAddButton />}
-    >
-      <ProgramsListingPage />
-    </PageContainer>
-  );
+  return <ProgramsListingPage />;
 }

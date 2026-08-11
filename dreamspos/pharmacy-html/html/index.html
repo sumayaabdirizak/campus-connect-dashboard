@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Dashboard | Pharmacy POS - Bootstrap 5 Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dreams POS is a powerful Bootstrap based Inventory Management Admin Template designed for businesses, offering seamless invoicing, project tracking, and estimates.">
+    <meta name="keywords"
+        content="inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system">
+    <meta name="author" content="Dreams Technologies">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.png">
+
+    <!-- Apple Icon -->
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/plugins/fontawesome/fontawesome.min.css">
+
+    <!-- Lucide Icon CSS -->
+    <link rel="stylesheet" href="assets/plugins/lucide/lucide.css">
+
+    <!-- Simplebar CSS -->
+    <link rel="stylesheet" href="assets/plugins/simplebar/simplebar.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="assets/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Begin Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Topbar Start -->
+        <header class="navbar-header">
+            <div class="page-container topbar-menu">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Sidebar Mobile Button -->
+                    <a id="mobile_btn" class="mobile-btn" href="#sidebar">
+                        <i class="icon-menu fs-24"></i>
+                    </a>
+                    <!-- Logo -->
+                    <a href="index.html" class="logo">
+
+                        <!-- Logo Normal -->
+                        <span class="logo-light">
+                            <span class="logo-lg"><img src="assets/img/logo.svg" alt="logo"></span>
+                        </span>
+
+                        <!-- Logo Dark -->
+                        <span class="logo-dark">
+                            <span class="logo-lg"><img src="assets/img/logo-dark.svg" alt="dark logo"></span>
+                        </span>
+
+                        <!-- Logo Sm -->
+                        <span class="logo-small">
+                            <span class="logo-lg"><img src="assets/img/logo-small.svg" alt="small logo"></span>
+                        </span>
+                    </a>
+
+                    <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn2">
+                        <i class="ti ti-arrow-bar-to-right"></i>
+                    </button>
+
+                    <div class="d-none d-lg-flex">
+                        <h4 class="mb-0">Dashboard</h4>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <div class="dropdown me-1 d-xl-flex d-none">
+                        <a href="javascript:void(0);"
+                            class="dropdown-toggle btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-toggle="dropdown">
+                            <i class="icon-map-pin-house"></i>Newyork
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Newyork</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Los Angeles</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Diego</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Dallas</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Antonio</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="d-flex align-items-center header-search d-lg-flex d-none">
+                        <!-- Search -->
+                        <div class="input-icon position-relative me-1">
+                            <span class="input-icon-addon"><i class="icon-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Search">
+                            <span class="input-icon-addon d-inline-flex p-0 header-search-icon"><i
+                                    class="icon-command"></i>K</span>
+                        </div>
+                    </div>
+                    <!-- /Search -->
+
+
+                    <!-- Notification Dropdown -->
+                    <div class="header-item">
+                        <div class="dropdown notification-dropdown me-1">
+
+                            <button class="topbar-link btn topbar-link dropdown-toggle drop-arrow-none"
+                                data-bs-toggle="dropdown" data-bs-offset="0,15" type="button" aria-haspopup="false"
+                                aria-expanded="false">
+                                <i class="icon-bell animate-ring"></i>
+                                <span class="notification-badge"></span>
+                            </button>
+
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg p-3"
+                                style="min-height: 300px;">
+
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h5 class="m-0">Notifications</h5>
+                                    <a href="#" class="fw-medium text-decoration-underline">Mark all as read</a>
+                                </div>
+
+                                <!-- Notification Body -->
+                                <div class="notification-body position-relative z-2 rounded-0" data-simplebar>
+
+                                    <div class="vstack gap-3">
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-1">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-orange border border-orange-200">
+                                                    <i class="icon-layers-2"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Low Stock Alert</p>
+                                                    <p class="mb-2 text-wrap">Paracetamol 500mg is running low (5 items
+                                                        left)</p>
+                                                    <p class="fs-13 mb-0">2 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-2">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-info border border-info-200">
+                                                    <i class="icon-inbox"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Stock Updated</p>
+                                                    <p class="mb-2 text-wrap">Inventory for Ibuprofen 200mg has been
+                                                        successfully updated.</p>
+                                                    <p class="fs-13 mb-0">10 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-3">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-warning border border-warning-200">
+                                                    <i class="icon-clock-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Medicine Expiry Reminder</p>
+                                                    <p class="mb-2 text-wrap">Amoxicillin Capsules will expire in 7
+                                                        days.</p>
+                                                    <p class="fs-13 mb-0">5 hours ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-4">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-danger border border-danger-200">
+                                                    <i class="icon-triangle-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Out of Stock</p>
+                                                    <p class="mb-2 text-wrap">Vitamin C Tablets are currently out of
+                                                        stock. </p>
+                                                    <p class="fs-13 mb-0">1 day ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <!-- View All-->
+                                <div class="pt-3">
+                                    <a href="#" class="btn btn-white d-flex align-items-center justify-content-center">
+                                        View All<i class="icon-arrow-right ms-2"></i>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="header-item">
+                        <div class="me-1">
+                            <a href="business-settings.html" class="btn topbar-link" aria-label="Settings"><i
+                                    class="icon-settings"></i></a>
+                        </div>
+                    </div>
+                    <!-- Settings -->
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
+                        <a href="javascript:void(0);"
+                            class="topbar-link dropdown-toggle drop-arrow-none position-relative"
+                            data-bs-toggle="dropdown" data-bs-offset="0,15" aria-haspopup="false" aria-expanded="false"
+                            data-bs-auto-close="outside">
+                            <img src="assets/img/profiles/avatar-28.jpg" width="36" class="rounded-circle d-flex"
+                                alt="user">
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-3">
+
+                            <div class="d-flex align-items-center bg-light rounded p-3 mb-2">
+                                <div class="avatar flex-shrink-0">
+                                    <img src="assets/img/profiles/avatar-28.jpg" class="rounded-circle" alt="user">
+                                </div>
+                                <div class="ms-2">
+                                    <p class="fw-medium text-dark mb-0">Robert Ordway</p>
+                                    <span class="d-block fs-13">Administrator</span>
+                                </div>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="profile-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-user-cog me-2"></i>Profile Settings
+                            </a>
+
+                            <!-- Item -->
+                            <a href="reports.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-proportions me-2"></i>Reports
+                            </a>
+
+                            <!-- Item-->
+                            <div
+                                class="form-check form-switch form-check-reverse d-flex align-items-center justify-content-between dropdown-item mb-0">
+                                <label class="form-check-label d-flex align-items-center" for="notify"><i
+                                        class="icon-bell me-2"></i>Notifications</label>
+                                <input class="form-check-input me-0" type="checkbox" role="switch" id="notify" checked>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="business-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-settings me-2"></i>Settings
+                            </a>
+
+                            <!-- Item-->
+                            <div class="pt-2 mt-2 border-top">
+                                <a href="sign-in.html" class="dropdown-item d-flex align-items-center text-danger">
+                                    <i class="icon-log-out me-2"></i>Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+        <!-- Topbar End -->
+
+        <!-- Sidenav Menu Start -->
+        <div class="sidebar" id="sidebar">
+
+            <!-- Start Logo -->
+            <div class="sidebar-logo">
+                <div>
+                    <!-- Logo Normal -->
+                    <a href="index.html" class="logo logo-normal">
+                        <img src="assets/img/logo.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Small -->
+                    <a href="index.html" class="logo-small">
+                        <img src="assets/img/logo-small.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Dark -->
+                    <a href="index.html" class="dark-logo">
+                        <img src="assets/img/logo-dark.svg" alt="Logo">
+                    </a>
+                </div>
+                <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn">
+                    <i class="icon-chevron-left"></i>
+                </button>
+
+                <!-- Sidebar Menu Close -->
+                <button class="sidebar-close">
+                    <i class="icon-x align-middle"></i>
+                </button>
+            </div>
+            <!-- End Logo -->
+
+            <!-- Sidenav Menu -->
+            <div class="sidebar-inner" data-simplebar>
+                <div id="sidebar-menu" class="sidebar-menu">
+                    <ul role="menu" aria-label="Main navigation menu">
+                        <li class="menu-title" aria-disabled="true"><span>Main</span></li>
+
+                        <li>
+                            <a href="index.html" class="active">
+                                <span class="menu-icon"><i
+                                        class="icon-layout-dashboard"></i></span><span>Dashboard</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Inventory</span></li>
+                        <li>
+                            <a href="medicines.html">
+                                <span class="menu-icon"><i class="icon-list-todo"></i></span><span>Medicine List</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="categories.html">
+                                <span class="menu-icon"><i class="icon-layout-grid"></i></span><span>Categories</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="units.html">
+                                <span class="menu-icon"><i class="icon-monitor-up"></i></span><span>Units</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="racks.html">
+                                <span class="menu-icon"><i class="icon-inbox"></i></span><span>Racks</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="batch-management.html">
+                                <span class="menu-icon"><i class="icon-boxes"></i></span><span>Batch Management</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="manufacturers.html">
+                                <span class="menu-icon"><i
+                                        class="icon-square-user"></i></span><span>Manufacturers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-adjustment.html">
+                                <span class="menu-icon"><i class="icon-layers"></i></span><span>Stock Adjustment</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-transfer.html">
+                                <span class="menu-icon"><i class="icon-truck"></i></span><span>Stock Transfer</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-tracking.html">
+                                <span class="menu-icon"><i class="icon-triangle-alert"></i></span><span>Expiry
+                                    Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="low-stock.html">
+                                <span class="menu-icon"><i class="icon-layers-2"></i></span><span>Low Stock</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-logs.html">
+                                <span class="menu-icon"><i class="icon-list-end"></i></span><span>Inventory Logs</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Sales</span></li>
+                        <li>
+                            <a href="pos.html">
+                                <span class="menu-icon"><i class="icon-tv-minimal"></i></span><span>POS Sales</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sales-return.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw"></i></span><span>Sales Return</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customers.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="invoices.html">
+                                <span class="menu-icon"><i class="icon-newspaper"></i></span><span>Invoices</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="payments.html">
+                                <span class="menu-icon"><i class="icon-dollar-sign"></i></span><span>Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Purchases</span></li>
+                        <li>
+                            <a href="purchases.html">
+                                <span class="menu-icon"><i class="icon-shopping-cart"></i></span><span>Purchases</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-orders.html">
+                                <span class="menu-icon"><i class="icon-shopping-bag"></i></span><span>Purchase
+                                    Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-returns.html">
+                                <span class="menu-icon"><i class="icon-reply-all"></i></span><span>Purchase
+                                    Returns</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendors.html">
+                                <span class="menu-icon"><i class="icon-users"></i></span><span>Vendors</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-payments.html">
+                                <span class="menu-icon"><i class="icon-badge-dollar-sign"></i></span><span>Vendor
+                                    Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Prescriptions</span></li>
+                        <li>
+                            <a href="prescriptions.html">
+                                <span class="menu-icon"><i class="icon-book-check"></i></span><span>Prescriptions</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="prescription-verification.html">
+                                <span class="menu-icon"><i
+                                        class="icon-circle-arrow-out-up-right"></i></span><span>Prescription
+                                    Verification</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="doctors.html">
+                                <span class="menu-icon"><i
+                                        class="icon-briefcase-medical"></i></span><span>Doctors</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Reports</span></li>
+                        <li>
+                            <a href="sales-reports.html">
+                                <span class="menu-icon"><i class="icon-proportions"></i></span><span>Sales
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-reports.html">
+                                <span class="menu-icon"><i class="icon-file-spreadsheet"></i></span><span>Purchase
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-reports.html">
+                                <span class="menu-icon"><i class="icon-file-terminal"></i></span><span>Inventory
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-reports.html">
+                                <span class="menu-icon"><i class="icon-file-chart-column"></i></span><span>Expiry
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="profit-loss-reports.html">
+                                <span class="menu-icon"><i class="icon-badge-percent"></i></span><span>Profit &
+                                    Loss</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tax-reports.html">
+                                <span class="menu-icon"><i class="icon-file-symlink"></i></span><span>Tax Report</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-valuation.html">
+                                <span class="menu-icon"><i class="icon-file-axis-3d"></i></span><span>Stock
+                                    Valuation</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-aging.html">
+                                <span class="menu-icon"><i class="icon-file-search"></i></span><span>Stock Aging</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customer-outstanding.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customer
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-outstanding.html">
+                                <span class="menu-icon"><i class="icon-file-user"></i></span><span>Vendor
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li class="menu-title" aria-disabled="true"><span>Settings</span></li>
+                        <li class="submenu">
+                            <a href="javascript:void(0);">
+                                <span class="menu-icon"><i class="icon-building-2"></i></span><span>Business</span>
+                                <span class="menu-arrow"></span>
+                            </a>
+                            <ul>
+                                <li><a href="business-settings.html">Business Settings</a></li>
+                                <li><a href="profile-settings.html">Profile Settings</a></li>
+                                <li><a href="localization-settings.html">Localization</a></li>
+                                <li><a href="branches-settings.html">Branches</a></li>
+                                <li><a href="notifications-settings.html">Notifications</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="invoice-settings.html">
+                                <span class="menu-icon"><i class="icon-file-text"></i></span><span>Billing</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="connected-apps.html">
+                                <span class="menu-icon"><i class="icon-component"></i></span><span>System
+                                    Integrations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="backup-settings.html">
+                                <span class="menu-icon"><i class="icon-computer"></i></span><span>Backup</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Authentication</span></li>
+                        <li>
+                            <a href="sign-in.html">
+                                <span class="menu-icon"><i class="icon-log-in"></i></span><span>Login</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sign-up.html">
+                                <span class="menu-icon"><i
+                                        class="icon-text-cursor-input"></i></span><span>Register</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="forgot-password.html">
+                                <span class="menu-icon"><i class="icon-shield-alert"></i></span><span>Forgot
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="reset-password.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw-dot"></i></span><span>Reset
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="otp.html">
+                                <span class="menu-icon"><i class="icon-mail-warning"></i></span><span>OTP
+                                    Verification</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        <!-- Sidenav Menu End -->
+
+        <!-- ========================
+			Start Page Content
+		========================= -->
+
+        <div class="page-wrapper">
+
+            <!-- Start Content -->
+            <div class="content pb-0">
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                    <div>
+                        <h3 class="display-4 fw-bold mb-1 d-flex align-items-center gap-2 flex-wrap">Welcome, Andrew
+                            Merkel <img src="assets/img/icons/symbol.svg" alt="icon"></h3>
+                        <p class="fs-13 mb-0">This report was generated on 25 Feb 2026 at 8:45 PM - <a
+                                href="javascript:void(0);" class="link-info">Refresh Report</a></p>
+                    </div>
+                    <div class="d-flex align-items-center flex-wrap gap-2">
+                        <a href="pos.html" class="btn btn-danger-gradient d-inline-flex align-items-center gap-2"><i
+                                class="icon-shopping-cart"></i>POS </a>
+                        <div class="input-group input-group-end position-relative w-fit">
+                            <input type="text" class="form-control date-range bookingrange rounded-end">
+                            <span class="input-icon-addon fs-16 text-dark">
+                                <i class="icon-calendar-fold"></i>
+                            </span>
+                        </div>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Maximize"
+                            data-bs-original-title="Maximize"><i class="icon-maximize"></i></a>
+                        <div class="dropdown">
+                            <a href="javascript:void(0);"
+                                class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                data-bs-toggle="dropdown">
+                                <i class="icon-arrow-up-to-line"></i>Export
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li>
+                                    <a href="javascript:void(0);" class="dropdown-item rounded">Export as PDF</a>
+                                </li>
+                                <li>
+                                    <a href="javascript:void(0);" class="dropdown-item rounded">Export as Excel</a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-body">
+                        <div
+                            class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-xxl-5 gx-3 gy-4 justify-content-center">
+                            <div class="border-xxl-end">
+                                <h3 class="d-flex align-items-center gap-2 section-title">$8,492<span
+                                        class="fw-normal fs-14 text-body">Sales</span></h3>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span
+                                        class="badge badge-sm badge-soft-danger d-inline-flex align-items-center">9.6%<i
+                                            class="icon-arrow-down-right ms-1"></i></span>
+                                    <p class="fs-13 mb-0">Since Last Month</p>
+                                </div>
+                            </div>
+                            <div class="border-xxl-end ps-xxl-4">
+                                <h3 class="d-flex align-items-center gap-2 section-title">$4,524<span
+                                        class="fw-normal fs-14 text-body">Purchases</span></h3>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span
+                                        class="badge badge-sm badge-soft-success d-inline-flex align-items-center">4.2%<i
+                                            class="icon-arrow-up-right ms-1"></i></span>
+                                    <p class="fs-13 mb-0">Since Last Month</p>
+                                </div>
+                            </div>
+                            <div class="border-xxl-end ps-xxl-4">
+                                <h3 class="d-flex align-items-center gap-2 section-title">9,492<span
+                                        class="fw-normal fs-14 text-body">Medicines</span></h3>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span
+                                        class="badge badge-sm badge-soft-success d-inline-flex align-items-center">4.2%<i
+                                            class="icon-arrow-up-right ms-1"></i></span>
+                                    <p class="fs-13 mb-0">Since Last Month</p>
+                                </div>
+                            </div>
+                            <div class="border-xxl-end ps-xxl-4">
+                                <h3 class="d-flex align-items-center gap-2 section-title">1,234<span
+                                        class="fw-normal fs-14 text-body">Prescriptions</span></h3>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span
+                                        class="badge badge-sm badge-soft-success d-inline-flex align-items-center">4.2%<i
+                                            class="icon-arrow-up-right ms-1"></i></span>
+                                    <p class="fs-13 mb-0">Since Last Month</p>
+                                </div>
+                            </div>
+                            <div class="ps-xxl-4">
+                                <h3 class="d-flex align-items-center gap-2 section-title">23<span
+                                        class="fw-normal fs-14 text-body">Low Stock Alerts</span></h3>
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    <span
+                                        class="badge badge-sm badge-soft-success d-inline-flex align-items-center">4.2%<i
+                                            class="icon-arrow-up-right ms-1"></i></span>
+                                    <p class="fs-13 mb-0">Since Last Month</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- start row -->
+                <div class="row">
+
+                    <div class="col-xxl-8 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h4 class="mb-0">Sales & Purchase</h4>
+                                    <div class="dropdown">
+                                        <a href="javascript:void(0);"
+                                            class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-calendar"></i>Weekly
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Weekly</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Monthly</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Yearly</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
+                                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <h5 class="mb-0 d-flex align-items-center gap-2"><span
+                                                    class="fw-normal fs-14 text-body">Sales</span> $12,456</h5>
+                                            <span
+                                                class="badge badge-sm bg-success text-white d-inline-flex align-items-center"><i
+                                                    class="icon-arrow-up-right me-1"></i>20.2%</span>
+                                        </div>
+                                        <div class="d-flex align-items-center gap-2 flex-wrap">
+                                            <h5 class="mb-0 d-flex align-items-center gap-2"><span
+                                                    class="fw-normal fs-14 text-body">Purchase</span> $8,456</h5>
+                                            <span
+                                                class="badge badge-sm bg-success text-white d-inline-flex align-items-center"><i
+                                                    class="icon-arrow-up-right me-1"></i>12.4%</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                                        <span
+                                            class="badge bg-white text-dark d-inline-flex align-items-center shadow"><i
+                                                class="fa-solid fa-circle fs-8 text-secondary me-1"></i>Purchase</span>
+                                        <span
+                                            class="badge bg-white text-dark d-inline-flex align-items-center shadow"><i
+                                                class="fa-solid fa-circle fs-8 text-primary me-1"></i>Sales</span>
+                                    </div>
+                                </div>
+                                <div id="sales-purchase-chart"></div>
+                                <h6 class="mb-2">Last Week Statistics</h6>
+                                <div class="row g-4">
+                                    <div class="col-sm-6">
+                                        <div
+                                            class="border rounded-3 p-3 d-flex align-items-center gap-2 justify-content-between">
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Sales</p>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <h6 class="sub-title mb-0">$15,656</h6>
+                                                    <span
+                                                        class="badge badge-sm badge-soft-success d-inline-flex align-items-center">2%<i
+                                                            class="icon-arrow-up-right ms-1"></i></span>
+                                                    <p class="mb-0">From Last Week</p>
+                                                </div>
+                                            </div>
+                                            <div class="avatar avatar-md bg-primary flex-shrink-0">
+                                                <img src="assets/img/icons/trending.svg" alt="icon"
+                                                    class="img-fluid w-auto h-auto">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div
+                                            class="border rounded-3 p-3 d-flex align-items-center gap-2 justify-content-between">
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Purchase</p>
+                                                <div class="d-flex align-items-center gap-2 flex-wrap">
+                                                    <h6 class="sub-title mb-0">$8,985</h6>
+                                                    <span
+                                                        class="badge badge-sm badge-soft-success d-inline-flex align-items-center">2%<i
+                                                            class="icon-arrow-up-right ms-1"></i></span>
+                                                    <p class="mb-0">From Last Week</p>
+                                                </div>
+                                            </div>
+                                            <div class="avatar avatar-md bg-secondary flex-shrink-0">
+                                                <img src="assets/img/icons/cart.svg" alt="icon"
+                                                    class="img-fluid w-auto h-auto">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- end card body -->
+                        </div> <!-- end card -->
+                    </div> <!-- end col -->
+
+                    <div class="col-xxl-4 d-flex flex-column">
+
+                        <!-- start row -->
+                        <div class="row">
+
+                            <div class="col-xxl-12 col-md-6 d-flex">
+
+                                <div class="card bg-dark flex-fill">
+                                    <div class="card-body">
+                                        <div
+                                            class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                            <h4 class="mb-0 text-white">Medicine Statistics</h4>
+                                            <button type="button"
+                                                class="btn btn-icon bg-white bg-opacity-10 text-white rounded-circle">
+                                                <i class="icon-refresh-ccw"></i>
+                                            </button>
+                                        </div>
+                                        <div class="row align-items-end g-3">
+                                            <div class="col-sm-5">
+                                                <div class="vstack gap-2">
+                                                    <div class="bg-primary-gradient-200 rounded-3 p-2">
+                                                        <p class="fs-13 text-white mb-1">Low Stock</p>
+                                                        <h5 class="fs-16 text-white mb-0">5868</h5>
+                                                    </div>
+                                                    <div class="bg-secondary-gradient-200 rounded-3 p-2">
+                                                        <p class="fs-13 text-white mb-1">Available</p>
+                                                        <h5 class="fs-16 text-white mb-0">2214</h5>
+                                                    </div>
+                                                    <div class="bg-danger-gradient-200 rounded-3 p-2">
+                                                        <p class="fs-13 text-white mb-1">Out of Stock</p>
+                                                        <h5 class="fs-16 text-white mb-0">700</h5>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-sm-7">
+                                                <div id="statistics-chart"></div>
+                                            </div>
+                                        </div>
+                                    </div> <!-- end card body -->
+                                </div> <!-- end card -->
+
+                            </div>
+
+                            <div class="col-xxl-12 col-md-6 d-flex">
+
+                                <div class="card flex-fill">
+                                    <div class="card-body">
+                                        <div
+                                            class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                            <h4 class="mb-0">Weekly Sales</h4>
+                                            <button type="button" class="btn btn-icon btn-white rounded-circle">
+                                                <i class="icon-refresh-ccw"></i>
+                                            </button>
+                                        </div>
+                                        <div id="sale-chart"></div>
+                                        <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                            <div>
+                                                <p class="mb-1">Total Sales</p>
+                                                <h5 class="mb-0">$5,456</h5>
+                                            </div>
+                                            <div>
+                                                <div
+                                                    class="d-flex align-items-center gap-1 border rounded-pill p-1 pe-2">
+                                                    <span
+                                                        class="badge badge-sm bg-danger text-white d-inline-flex align-items-center">9.6%<i
+                                                            class="icon-arrow-down-right ms-1"></i></span>
+                                                    <p class="fs-13 mb-0">Since Yesterday</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div> <!-- end card body -->
+                                </div> <!-- end card -->
+
+                            </div>
+
+                        </div>
+                        <!-- end row -->
+
+                    </div> <!-- end col -->
+
+                </div>
+                <!-- end row -->
+
+                <!-- start row -->
+                <div class="row">
+
+                    <div class="col-xxl-5 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h4 class="mb-0">Inventory by Category</h4>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <a href="#" class="btn btn-icon btn-white rounded-circle">
+                                            <i class="icon-plus"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-icon btn-white rounded-circle">
+                                            <i class="icon-refresh-ccw"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="vstack gap-3 pb-4 mb-4 border-bottom">
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <p class="mb-0 w-80 flex-shrink-0">Tablet</p>
+                                        <div class="progress progress-2xl rounded-pill w-100" role="progressbar"
+                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar bg-transparent bg-primary-gradient-100 text-start d-block rounded-pill"
+                                                style="width: 80%;"><span
+                                                    class="badge bg-white text-dark border">1565</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <p class="mb-0 w-80 flex-shrink-0">Syrups</p>
+                                        <div class="progress progress-2xl rounded-pill w-100" role="progressbar"
+                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar bg-transparent bg-secondary-gradient-100 text-start d-block rounded-pill"
+                                                style="width: 70%;"><span
+                                                    class="badge bg-white text-dark border">1226</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <p class="mb-0 w-80 flex-shrink-0">Capsules</p>
+                                        <div class="progress progress-2xl rounded-pill w-100" role="progressbar"
+                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar bg-transparent bg-info-gradient-100 text-start d-block rounded-pill"
+                                                style="width: 60%;"><span
+                                                    class="badge bg-white text-dark border">1145</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <p class="mb-0 w-80 flex-shrink-0">Injections</p>
+                                        <div class="progress progress-2xl rounded-pill w-100" role="progressbar"
+                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar bg-transparent bg-pink-gradient-100 text-start d-block rounded-pill"
+                                                style="width: 50%;"><span
+                                                    class="badge bg-white text-dark border">964</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <p class="mb-0 w-80 flex-shrink-0">Ointments</p>
+                                        <div class="progress progress-2xl rounded-pill w-100" role="progressbar"
+                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar bg-transparent bg-purple-gradient-100 text-start d-block rounded-pill"
+                                                style="width: 40%;"><span
+                                                    class="badge bg-white text-dark border">865</span></div>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between gap-2">
+                                        <p class="mb-0 w-80 flex-shrink-0">Drops</p>
+                                        <div class="progress progress-2xl rounded-pill w-100" role="progressbar"
+                                            aria-valuenow="40" aria-valuemin="0" aria-valuemax="100">
+                                            <div class="progress-bar bg-transparent bg-teal-gradient-100 text-start d-block rounded-pill"
+                                                style="width: 30%;"><span
+                                                    class="badge bg-white text-dark border">621</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="row row-cols-1 row-cols-sm-3 g-3">
+                                    <div class="text-center">
+                                        <h5 class="section-title mb-1">9,492</h5>
+                                        <p class="mb-0">Medicines</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <h5 class="section-title mb-1">26</h5>
+                                        <p class="mb-0">Categories</p>
+                                    </div>
+                                    <div class="text-center">
+                                        <h5 class="section-title mb-1">03</h5>
+                                        <p class="mb-0">Low Stock</p>
+                                    </div>
+                                </div>
+                            </div> <!-- end card body -->
+                        </div> <!-- end card -->
+                    </div> <!-- end col -->
+
+                    <div class="col-xxl-4 col-lg-6 col-md-6 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h4 class="mb-0">Stock Alerts</h4>
+                                    <button type="button" class="btn btn-icon btn-white rounded-circle">
+                                        <i class="icon-refresh-ccw"></i>
+                                    </button>
+                                </div>
+                                <div class="vstack gap-3">
+                                    <div
+                                        class="d-flex align-items-sm-center justify-content-between gap-2 flex-column flex-sm-row">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-lg me-2 bg-soft-primary">
+                                                <i class="icon-pill-bottle"></i>
+                                            </div>
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Paracetamol 500mg</p>
+                                                <p class="mb-0">#RAC0124</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>0 in Stock</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="d-flex align-items-sm-center justify-content-between gap-2 flex-column flex-sm-row">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-lg me-2 bg-soft-primary">
+                                                <i class="icon-syringe"></i>
+                                            </div>
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Tetanus Toxoid</p>
+                                                <p class="mb-0">#RAC0414</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>0 in Stock</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="d-flex align-items-sm-center justify-content-between gap-2 flex-column flex-sm-row">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-lg me-2 bg-soft-primary">
+                                                <i class="icon-pill"></i>
+                                            </div>
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Ondansetron</p>
+                                                <p class="mb-0">#RAC0142</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>36 in Stock</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="d-flex align-items-sm-center justify-content-between gap-2 flex-column flex-sm-row">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-lg me-2 bg-soft-primary">
+                                                <i class="icon-pill"></i>
+                                            </div>
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Citrizen 40mg</p>
+                                                <p class="mb-0">#RAC0142</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>36 in Stock</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="d-flex align-items-sm-center justify-content-between gap-2 flex-column flex-sm-row">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-lg me-2 bg-soft-primary">
+                                                <i class="icon-microscope"></i>
+                                            </div>
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Infrared Thermometer</p>
+                                                <p class="mb-0">#RAC0741</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-soft-purple d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>27 in Stock</span>
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="d-flex align-items-sm-center justify-content-between gap-2 flex-column flex-sm-row">
+                                        <div class="d-flex align-items-center">
+                                            <div class="avatar avatar-lg me-2 bg-soft-primary">
+                                                <i class="icon-pill"></i>
+                                            </div>
+                                            <div>
+                                                <p class="fw-bold text-dark mb-1">Axer 400mg</p>
+                                                <p class="mb-0">#RAC0471</p>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <span class="badge badge-soft-orange d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>32 in Stock</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- end card body -->
+                        </div> <!-- end card -->
+                    </div> <!-- end col -->
+
+                    <div class="col-xxl-3 col-lg-6 col-md-6 d-flex flex-column">
+
+                        <!-- start row -->
+                        <div class="row">
+
+                            <div class="col-lg-12 col-md-6 d-flex">
+                                <div class="card flex-fill">
+                                    <div class="card-body">
+                                        <div
+                                            class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                            <h4 class="mb-0">Expired</h4>
+                                            <a href="#" class="btn btn-icon btn-white rounded-circle">
+                                                <i class="icon-arrow-up-right"></i>
+                                            </a>
+                                        </div>
+                                        <div class="bg-danger-gradient p-2 rounded-3 mb-2">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center">
+                                                    <div
+                                                        class="avatar avatar-md avatar-rounded bg-white bg-opacity-10 me-2">
+                                                        <i class="icon-syringe"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="fw-medium text-white mb-1">Tetanus Toxoid</p>
+                                                        <p class="fs-13 text-white mb-0">#RAC1245</p>
+                                                    </div>
+                                                </div>
+                                                <p class="fs-13 text-white mb-0">18 Mar</p>
+                                            </div>
+                                        </div>
+                                        <div class="bg-danger-gradient p-2 rounded-3">
+                                            <div class="d-flex align-items-center justify-content-between">
+                                                <div class="d-flex align-items-center">
+                                                    <div
+                                                        class="avatar avatar-md avatar-rounded bg-white bg-opacity-10 me-2">
+                                                        <i class="icon-pill"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="fw-medium text-white mb-1">Cetirizine 10mg</p>
+                                                        <p class="fs-13 text-white mb-0">#RAC3122</p>
+                                                    </div>
+                                                </div>
+                                                <p class="fs-13 text-white mb-0">18 Mar</p>
+                                            </div>
+                                        </div>
+                                    </div> <!-- end card body -->
+                                </div> <!-- end card -->
+
+                            </div> <!-- end col -->
+
+                            <div class="col-lg-12 col-md-6 d-flex">
+
+                                <div class="card flex-fill">
+                                    <div class="card-body pb-0">
+                                        <div
+                                            class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                            <h4 class="mb-0">Near Expiry</h4>
+                                            <button type="button" class="btn btn-icon btn-white rounded-circle">
+                                                <i class="icon-refresh-ccw"></i>
+                                            </button>
+                                        </div>
+                                        <div id="expiry-chart"></div>
+                                    </div> <!-- end card body -->
+                                </div> <!-- end card -->
+
+                            </div> <!-- end col -->
+
+                        </div>
+                        <!-- end row -->
+
+                    </div> <!-- end col -->
+
+
+                </div>
+                <!-- end row -->
+
+                <!-- start row -->
+                <div class="row">
+
+                    <div class="col-xxl-4 col-md-6 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h4 class="mb-0">Prescription Status</h4>
+                                    <button type="button" class="btn btn-icon btn-white rounded-circle">
+                                        <i class="icon-refresh-ccw"></i>
+                                    </button>
+                                </div>
+                                <div class="text-center position-relative mb-3">
+                                    <div>
+                                        <canvas id="prescription-chart" class="mx-auto"></canvas>
+                                    </div>
+                                    <div class="position-absolute top-50 start-50 translate-middle">
+                                        <h5 class="mb-1 section-title">1,234</h5>
+                                        <p class="mb-0">Prescriptions</p>
+                                    </div>
+                                </div>
+                                <div class="vstack gap-2">
+                                    <div
+                                        class="bg-light border rounded-3 p-2 d-flex align-items-center justify-content-between">
+                                        <h5 class="mb-0 d-inline-flex align-items-center gap-2"><i
+                                                class="fa-solid fa-circle fs-8 text-info"></i>845 <span
+                                                class="fs-14 fw-normal">Completed</span></h5>
+                                        <span
+                                            class="badge badge-sm badge-soft-success d-inline-flex align-items-center">8.2%<i
+                                                class="icon-arrow-up-right ms-1"></i></span>
+                                    </div>
+                                    <div
+                                        class="bg-light border rounded-3 p-2 d-flex align-items-center justify-content-between">
+                                        <h5 class="mb-0 d-inline-flex align-items-center gap-2"><i
+                                                class="fa-solid fa-circle fs-8 text-warning"></i>312 <span
+                                                class="fs-14 fw-normal">Pending</span></h5>
+                                        <span
+                                            class="badge badge-sm badge-soft-success d-inline-flex align-items-center">5.1%<i
+                                                class="icon-arrow-up-right ms-1"></i></span>
+                                    </div>
+                                    <div
+                                        class="bg-light border rounded-3 p-2 d-flex align-items-center justify-content-between">
+                                        <h5 class="mb-0 d-inline-flex align-items-center gap-2"><i
+                                                class="fa-solid fa-circle fs-8 text-danger"></i>77 <span
+                                                class="fs-14 fw-normal">Cancelled</span></h5>
+                                        <span
+                                            class="badge badge-sm badge-soft-danger d-inline-flex align-items-center">9.6%<i
+                                                class="icon-arrow-down-right ms-1"></i></span>
+                                    </div>
+                                </div>
+                            </div> <!-- end card body -->
+                        </div> <!-- end card -->
+                    </div> <!-- end col -->
+
+                    <div class="col-xxl-4 col-md-6 d-flex flex-column">
+                        <div class="card z-1 overflow-hidden flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+                                    <div class="avatar avatar-rounded bg-primary-gradient">
+                                        <i class="icon-file-text fs-20"></i>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-white text-dark border">8650 Invoices</span>
+                                    </div>
+                                </div>
+                                <p class="mb-1">Total Invoices</p>
+                                <h3 class="mb-0">$80,658.21</h3>
+                            </div> <!-- end card body -->
+                            <img src="assets/img/bg/overaly-01.png" alt="bg"
+                                class="position-absolute top-0 start-0 h-100 z-n1">
+                        </div> <!-- end card -->
+
+                        <div class="card z-1 overflow-hidden flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+                                    <div class="avatar avatar-rounded bg-info">
+                                        <i class="icon-file-input fs-20"></i>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-white text-dark border">7586 Invoices</span>
+                                    </div>
+                                </div>
+                                <p class="mb-1">Paid Invoices</p>
+                                <h3 class="mb-0">$72,565.00</h3>
+                            </div> <!-- end card body -->
+                            <img src="assets/img/bg/overaly-02.png" alt="bg"
+                                class="position-absolute top-0 start-0 h-100 z-n1">
+                        </div> <!-- end card -->
+
+                        <div class="card z-1 overflow-hidden flex-fill">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between flex-wrap gap-2 mb-2">
+                                    <div class="avatar avatar-rounded bg-danger-gradient">
+                                        <i class="icon-file-x fs-20"></i>
+                                    </div>
+                                    <div>
+                                        <span class="badge bg-white text-dark border">426 Invoices</span>
+                                    </div>
+                                </div>
+                                <p class="mb-1">Invoice on Due</p>
+                                <h3 class="mb-0">$8,143.21</h3>
+                            </div> <!-- end card body -->
+                            <img src="assets/img/bg/overaly-03.png" alt="bg"
+                                class="position-absolute top-0 start-0 h-100 z-n1">
+                        </div> <!-- end card -->
+                    </div> <!-- end col -->
+
+                    <div class="col-xxl-4 d-flex">
+                        <div class="card flex-fill">
+                            <div class="card-header">
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <h4 class="mb-0">Recent Transactions</h4>
+                                    <button type="button" class="btn btn-icon btn-white rounded-circle">
+                                        <i class="icon-refresh-ccw"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body bg-light">
+                                <div class="row gx-3">
+                                    <div class="col-sm-4">
+                                        <div class="border bg-white rounded-3 p-2 text-center mb-3">
+                                            <p class="mb-2">Cash</p>
+                                            <h5 class="mb-0">$2,454</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="border bg-white rounded-3 p-2 text-center mb-3">
+                                            <p class="mb-2">UPI</p>
+                                            <h5 class="mb-0">$1,541</h5>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <div class="border bg-white rounded-3 p-2 text-center mb-3">
+                                            <p class="mb-2">Card</p>
+                                            <h5 class="mb-0">$654</h5>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="progress bg-transparent overflow-visible gap-2 mb-2 position-relative mt-4">
+                                    <div class="progress-bar bg-pink-gradient rounded" role="progressbar"
+                                        style="width: 45%;"><span
+                                            class="position-absolute text-dark pro-value">45%</span></div>
+                                    <div class="progress-bar bg-orange-gradient rounded" role="progressbar"
+                                        style="width: 35%;"><span
+                                            class="position-absolute text-dark pro-value">35%</span></div>
+                                    <div class="progress-bar bg-cyan-gradient rounded" role="progressbar"
+                                        style="width: 20%;"><span
+                                            class="position-absolute text-dark pro-value">20%</span></div>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <p class="d-flex align-items-center mb-0"><i
+                                            class="fa-solid fa-circle fs-8 text-pink me-1"></i>Cash</p>
+                                    <p class="d-flex align-items-center mb-0"><i
+                                            class="fa-solid fa-circle fs-8 text-orange me-1"></i>UPI</p>
+                                    <p class="d-flex align-items-center mb-0"><i
+                                            class="fa-solid fa-circle fs-8 text-cyan me-1"></i>Card</p>
+                                </div>
+                            </div> <!-- end card body -->
+                            <div class="p-3 border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center">
+                                            <a href="#" class="avatar avatar-rounded me-2">
+                                                <img src="assets/img/profiles/avatar-37.jpg" alt="user"
+                                                    class="img-fluid">
+                                            </a>
+                                            <div class="overflow-hidden">
+                                                <p class="fw-medium text-truncate mb-1"><a href="#">Andre Claire</a></p>
+                                                <p class="fs-13 mb-0">#CUS1245</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <p class="fs-13 mb-1">Total Sales</p>
+                                                <p class="fw-bold text-dark mb-0">$2400</p>
+                                            </div>
+                                            <span class="badge badge-soft-pink border border-pink-200">Cash</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3 border-bottom">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center">
+                                            <a href="#" class="avatar avatar-rounded me-2">
+                                                <img src="assets/img/profiles/avatar-39.jpg" alt="user"
+                                                    class="img-fluid">
+                                            </a>
+                                            <div>
+                                                <p class="fw-medium mb-1"><a href="#">Emily Johnson</a></p>
+                                                <p class="fs-13 mb-0">#CUS1246</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <p class="fs-13 mb-1">Total Sales</p>
+                                                <p class="fw-bold text-dark mb-0">$1500</p>
+                                            </div>
+                                            <span class="badge badge-soft-orange border border-orange-200">UPI</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="p-3">
+                                <div class="row g-3">
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center">
+                                            <a href="#" class="avatar avatar-rounded me-2">
+                                                <img src="assets/img/profiles/avatar-38.jpg" alt="user"
+                                                    class="img-fluid">
+                                            </a>
+                                            <div>
+                                                <p class="fw-medium mb-1"><a href="#">Michael Smith</a></p>
+                                                <p class="fs-13 mb-0">#CUS1244</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="d-flex align-items-center justify-content-between">
+                                            <div>
+                                                <p class="fs-13 mb-1">Total Sales</p>
+                                                <p class="fw-bold text-dark mb-0">$654</p>
+                                            </div>
+                                            <span class="badge badge-soft-cyan border border-cyan-200">Card</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div> <!-- end card -->
+                    </div> <!-- end col -->
+
+                </div>
+                <!-- end row -->
+
+            </div>
+            <!-- End Content -->
+
+            <!-- Start Footer -->
+            <footer
+                class="footer bg-white border-top px-4 py-2 d-flex align-items-center justify-content-between gap-2 flex-column flex-sm-row">
+                <p class="text-dark mb-0">&copy; 2026 <a href="#" class="link-primary">DreamsPOS</a>, All Rights
+                    Reserved</p>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <a href="#" class="link-body-emphasis">Docs</a>
+                    <span>/</span>
+                    <a href="#" class="link-body-emphasis">Support</a>
+                    <span>/</span>
+                    <a href="#" class="link-body-emphasis">License</a>
+                </div>
+            </footer>
+            <!-- End Footer -->
+
+        </div>
+
+        <!-- ========================
+			End Page Content
+		========================= -->
+
+    </div>
+    <!-- End Wrapper -->
+
+    <!-- jQuery -->
+    <script src="assets/js/jquery-4.0.0.min.js"></script>
+
+    <!-- Bootstrap Core JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Simplebar JS -->
+    <script src="assets/plugins/simplebar/simplebar.min.js"></script>
+
+    <!-- Apexcharts JS -->
+    <script src="assets/plugins/apexchart/apexcharts.min.js"></script>
+    <script src="assets/plugins/apexchart/chart-data.js"></script>
+
+    <!-- Apexcharts JS -->
+    <script src="assets/plugins/chartjs/chart.umd.min.js"></script>
+    <script src="assets/plugins/chartjs/chart-data.js"></script>
+
+    <!-- Daterangepikcer JS -->
+    <script src="assets/js/moment.min.js"></script>
+    <script src="assets/plugins/daterangepicker/daterangepicker.js"></script>
+
+    <!-- Main JS -->
+    <script src="assets/js/script.js"></script>
+
+</body>
+
+</html>

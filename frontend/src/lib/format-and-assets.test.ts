@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { formatDate } from '@/lib/format';
 import { pastelFor, PASTEL_SLOTS } from '@/lib/pastel';
-import { resourceDownloadUrl } from '@/features/course-details/api/resources-service';
+import { resourceDownloadUrl } from '@/lib/course-details/resources-service';
 
 describe('formatDate', () => {
   it('returns empty for falsy input', () => {
@@ -23,5 +23,11 @@ describe('pastelFor', () => {
 describe('resourceDownloadUrl', () => {
   it('returns same-origin rewrite path', () => {
     expect(resourceDownloadUrl(42)).toBe('/api/download/42');
+  });
+
+  it('adds download query when forcing attachment', () => {
+    expect(resourceDownloadUrl(42, { forceDownload: true })).toBe(
+      '/api/download/42?download=1'
+    );
   });
 });

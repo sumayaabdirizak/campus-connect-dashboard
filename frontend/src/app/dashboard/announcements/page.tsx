@@ -1,4 +1,4 @@
-import { AnnouncementsView } from '@/features/announcements/components/announcements-view';
+﻿import { AnnouncementsView } from '@/components/announcements/announcements-view';
 
 export const metadata = {
   title: 'Dashboard : Announcements'
@@ -7,3 +7,4 @@ export const metadata = {
 export default async function AnnouncementsPage() {
   return <AnnouncementsView />;
 }
+

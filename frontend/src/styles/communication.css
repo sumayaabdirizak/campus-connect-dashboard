@@ -1,5 +1,5 @@
 /* Communication module tokens — scoped under [data-comm] wrappers.
- * Brand: Primary Blue + Secondary Green (campus-connect). */
+ * Brand: Pharmacy teal + secondary orange (campus-connect theme). */
 
 [data-comm] {
   --comm-rail-w: 4.25rem;
@@ -11,32 +11,19 @@
   --comm-busy: oklch(0.65 0.18 25);
   --comm-unread: var(--primary);
   --comm-surface: color-mix(in oklch, var(--muted) 55%, var(--background));
-  --comm-chat-bg:
-    radial-gradient(
-      1200px 600px at 10% -10%,
-      color-mix(in oklch, var(--primary) 7%, transparent),
-      transparent 55%
-    ),
-    radial-gradient(
-      900px 500px at 110% 20%,
-      color-mix(in oklch, var(--secondary) 6%, transparent),
-      transparent 50%
-    ),
-    var(--background);
-  --comm-pattern:
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23000000' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --comm-chat-bg: #f8fafc;
+  --comm-pattern: none;
 }
 
 .dark [data-comm],
 [data-comm].dark {
-  --comm-pattern:
-    url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.035'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  --comm-chat-bg: #0f172a;
+  --comm-pattern: none;
 }
 
 [data-comm] .comm-chat-canvas {
-  background-color: var(--background);
-  background-image: var(--comm-pattern), var(--comm-chat-bg);
-  background-blend-mode: normal, normal;
+  background-color: #fff;
+  background-image: none;
 }
 
 [data-comm] .comm-rail-btn {

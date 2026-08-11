@@ -9,7 +9,8 @@ export const overviewNavGroup: NavGroup = {
       icon: 'dashboard',
       isActive: false,
       shortcut: ['d', 'd'],
-      access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] },
+      /** Any authenticated platform role (built-in or custom). */
+      access: {},
     },
   ],
 };
@@ -22,7 +23,8 @@ export const deanSetupNavGroup: NavGroup = {
     { title: 'Batches', url: '/dashboard/dean/batches', icon: 'kanban', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Users', url: '/dashboard/dean/users', icon: 'userCog', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Courses', url: '/dashboard/dean/courses', icon: 'fileCheck', isActive: false, access: { roles: ['DEAN'] } },
-    { title: 'Course offerings', url: '/dashboard/dean/assigning', icon: 'calendar', isActive: false, access: { roles: ['DEAN'] } },
+    { title: 'Clubs', url: '/dashboard/dean/clubs', icon: 'teams', isActive: false, access: { roles: ['DEAN'] } },
+    { title: 'Offices', url: '/dashboard/admin/offices', icon: 'chat', isActive: false, access: { roles: ['DEAN'] } },
   ],
 };
 
@@ -32,6 +34,9 @@ export const universityStructureNavGroup: NavGroup = {
     { title: 'Faculties', url: '/dashboard/faculties', icon: 'teams', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Departments', url: '/dashboard/departments', icon: 'userTie', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Programs', url: '/dashboard/programs', icon: 'forms', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+    { title: 'Academic Years', url: '/dashboard/academic-years', icon: 'calendar', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+    { title: 'Courses', url: '/dashboard/courses', icon: 'fileCheck', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+    { title: 'Batches', url: '/dashboard/batches', icon: 'kanban', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
   ],
 };
 
@@ -43,7 +48,28 @@ export const adminNavGroups: NavGroup[] = [
   {
     label: 'Admin',
     items: [
-      { title: 'Reports', url: '/dashboard/admin/report', icon: 'barChart', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+      { title: 'Roles', url: '/dashboard/admin/roles', icon: 'userCog', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+      {
+        title: 'Clubs',
+        url: '/dashboard/dean/clubs',
+        icon: 'teams',
+        isActive: false,
+        access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
+      },
+      {
+        title: 'Offices',
+        url: '/dashboard/admin/offices',
+        icon: 'chat',
+        isActive: false,
+        access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
+      },
+      {
+        title: 'Reports',
+        url: '/dashboard/admin/report',
+        icon: 'barChart',
+        isActive: false,
+        access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
+      },
       { title: 'Audit Logs', url: '/dashboard/audit-logs', icon: 'activity', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     ],
   },
@@ -62,9 +88,9 @@ export const studentPortalNavGroup: NavGroup = {
 export const communicationNavGroup: NavGroup = {
   label: 'Communication',
   items: [
-    { title: 'Messages', url: '/dashboard/messages', icon: 'chat', isActive: false, access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] } },
-    { title: 'Announcements', url: '/dashboard/announcements', icon: 'speakerphone', isActive: false, access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] } },
-    { title: 'Calendar', url: '/dashboard/calendar', icon: 'calendar', isActive: false, access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] } },
+    { title: 'Messages', url: '/dashboard/messages', icon: 'chat', isActive: false, access: {} },
+    { title: 'Announcements', url: '/dashboard/announcements', icon: 'speakerphone', isActive: false, access: {} },
+    { title: 'Calendar', url: '/dashboard/calendar', icon: 'calendar', isActive: false, access: {} },
   ],
 };
 
@@ -75,5 +101,5 @@ export const deanReportsNavGroup: NavGroup = {
 
 export const accountNavGroup: NavGroup = {
   label: 'Account',
-  items: [{ title: 'Profile', url: '/dashboard/profile', icon: 'profile', isActive: false, access: { roles: ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'] } }],
+  items: [{ title: 'Profile', url: '/dashboard/profile', icon: 'profile', isActive: false, access: {} }],
 };

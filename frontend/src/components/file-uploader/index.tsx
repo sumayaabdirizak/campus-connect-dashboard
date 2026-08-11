@@ -4,7 +4,7 @@ import * as React from 'react';
 import Dropzone, { type FileRejection } from 'react-dropzone';
 import { toast } from 'sonner';
 import { Icons } from '@/components/icons';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/features/ui/components/scroll-area';
 import { useControllableState } from '@/hooks/use-controllable-state';
 import { showToast } from '@/lib/notifications';
 import { cn, formatBytes } from '@/lib/utils';

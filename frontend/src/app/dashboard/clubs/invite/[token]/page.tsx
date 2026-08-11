@@ -1,11 +1,11 @@
 'use client';
 
 import { use, useState } from 'react';
-import { useInvitePreview, useAcceptInvite } from '@/features/clubs/api/queries';
-import type { AcceptInviteResponse } from '@/features/clubs/api/types';
-import { InviteAcceptLoading, InviteAcceptError } from '@/features/clubs/components/invite-accept/invite-accept-states';
-import { InviteAcceptSuccess } from '@/features/clubs/components/invite-accept/invite-accept-success';
-import { InviteAcceptCard } from '@/features/clubs/components/invite-accept/invite-accept-card';
+import { useInvitePreview, useAcceptInvite } from '@/lib/clubs/queries';
+import type { AcceptInviteResponse } from '@/lib/clubs/types';
+import { InviteAcceptLoading, InviteAcceptError } from '@/components/clubs/invite-accept/invite-accept-states';
+import { InviteAcceptSuccess } from '@/components/clubs/invite-accept/invite-accept-success';
+import { InviteAcceptCard } from '@/components/clubs/invite-accept/invite-accept-card';
 
 export default function InviteAcceptPage({
   params,

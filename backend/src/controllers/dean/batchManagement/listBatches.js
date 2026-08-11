@@ -2,9 +2,17 @@ import { prisma } from "../../../db/prisma.js";
 import { parsePaginationQuery, paginatedPayload } from "../../../utils/pagination.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import { assertFacultyBatch, getFacultyProgramIds } from "./helpers.js";
+import { enrichBatchWithCohortSemester } from "../../../services/academic/academicCalendar.js";
+import { graduateCompletedCohorts } from "../../../services/academic/graduateCompletedCohorts.js";
 
 export const getFacultyBatches = async (req, res) => {
   try {
+    try {
+      await graduateCompletedCohorts(new Date());
+    } catch (err) {
+      console.error("Failed to auto-graduate completed cohorts", { error: err?.message });
+    }
+
     const { facultyId } = req;
     const { programId, academicYearId, search } = req.query;
     const programIds = await getFacultyProgramIds(facultyId);
@@ -39,12 +47,14 @@ export const getFacultyBatches = async (req, res) => {
       }),
     ]);
 
+    const enriched = batches.map((b) => enrichBatchWithCohortSemester(b));
+
     res.json({
       status: "success",
       message: "Batches fetched",
       count: totalCount,
-      batches,
-      ...paginatedPayload({ totalCount, page, pageSize, results: batches }),
+      batches: enriched,
+      ...paginatedPayload({ totalCount, page, pageSize, results: enriched }),
     });
   } catch (e) {
     respondInternalError(res, "Failed to fetch batches", e);

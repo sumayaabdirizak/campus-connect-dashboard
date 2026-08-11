@@ -48,8 +48,18 @@ export const getCourseById = async (req, res) => {
 
 export const createCourse = async (req, res) => {
   try {
-    const { name, code, description, credits, departmentId, thumbnail, semesterNumber } =
-      req.body;
+    const {
+      name,
+      code,
+      description,
+      credits,
+      departmentId,
+      thumbnail,
+      semesterNumber,
+      year,
+      maxMarks,
+      status,
+    } = req.body;
 
     const existing = await prisma.course.findUnique({ where: { code } });
     if (existing) return res.status(400).json({ message: "Course code already in use" });
@@ -61,6 +71,9 @@ export const createCourse = async (req, res) => {
         description: description || null,
         credits,
         semesterNumber: semesterNumber || null,
+        year: year || null,
+        maxMarks: maxMarks || 100,
+        status: status || "ACTIVE",
         departmentId,
         thumbnail: thumbnail || null,
       },
@@ -73,8 +86,18 @@ export const createCourse = async (req, res) => {
 
 export const updateCourse = async (req, res) => {
   try {
-    const { name, code, description, credits, departmentId, thumbnail, semesterNumber } =
-      req.body;
+    const {
+      name,
+      code,
+      description,
+      credits,
+      departmentId,
+      thumbnail,
+      semesterNumber,
+      year,
+      maxMarks,
+      status,
+    } = req.body;
 
     const data = {
       ...(name !== undefined && { name }),
@@ -84,6 +107,9 @@ export const updateCourse = async (req, res) => {
       ...(departmentId !== undefined && { departmentId }),
       ...(thumbnail !== undefined && { thumbnail: thumbnail || null }),
       ...(semesterNumber !== undefined && { semesterNumber: semesterNumber || null }),
+      ...(year !== undefined && { year: year || null }),
+      ...(maxMarks !== undefined && { maxMarks }),
+      ...(status !== undefined && { status }),
     };
 
     const course = await prisma.course.update({

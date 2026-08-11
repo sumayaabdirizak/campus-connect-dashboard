@@ -12,7 +12,7 @@ describe('roleBadgeVariant', () => {
   });
 
   it('title-cases unknown roles', () => {
-    expect(roleBadgeVariant('FACULTY_ADMIN').label).toBe('Faculty Admin');
+    expect(roleBadgeVariant('CUSTOM_ROLE').label).toBe('Custom Role');
     expect(roleBadgeVariant(null).label).toBe('');
   });
 });

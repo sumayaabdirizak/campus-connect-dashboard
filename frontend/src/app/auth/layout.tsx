@@ -7,6 +7,11 @@ export const metadata: Metadata = {
   }
 };
 
+/** Auth routes always use the Pharmacy-inspired campus-connect theme. */
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <div data-theme='campus-connect' className='min-h-svh bg-background text-foreground'>
+      {children}
+    </div>
+  );
 }

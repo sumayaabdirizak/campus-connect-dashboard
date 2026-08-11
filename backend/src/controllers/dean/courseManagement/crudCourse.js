@@ -5,7 +5,7 @@ import { assertFacultyCourse, getFacultyDepartmentIds } from "./helpers.js";
 export const createCourse = async (req, res) => {
   try {
     const { facultyId } = req;
-    const { name, code, description, credits, departmentId, semesterNumber } = req.body;
+    const { name, code, description, credits, departmentId, semesterNumber, year, maxMarks, status } = req.body;
 
     if (!name || !code || !departmentId) {
       return res.status(400).json({ message: "name, code, and departmentId are required." });
@@ -25,6 +25,15 @@ export const createCourse = async (req, res) => {
       semester = Math.trunc(n);
     }
 
+    let courseYear = null;
+    if (year !== undefined && year !== null && year !== "") {
+      const n = Number(year);
+      if (!Number.isFinite(n) || n < 1 || n > 12) {
+        return res.status(400).json({ message: "year must be between 1 and 12." });
+      }
+      courseYear = Math.trunc(n);
+    }
+
     const course = await prisma.course.create({
       data: {
         name,
@@ -32,6 +41,9 @@ export const createCourse = async (req, res) => {
         description: description ?? null,
         credits: Number(credits) || 3,
         semesterNumber: semester,
+        year: courseYear,
+        maxMarks: Number(maxMarks) || 100,
+        status: status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
         departmentId: Number(departmentId),
       },
       include: {
@@ -52,16 +64,26 @@ export const updateCourse = async (req, res) => {
   try {
     const { id } = req.params;
     const { facultyId } = req;
-    const { name, code, description, credits, semesterNumber } = req.body;
+    const { name, code, description, credits, semesterNumber, year, maxMarks, status, departmentId } = req.body;
 
     const existing = await assertFacultyCourse(id, facultyId, res);
     if (!existing) return;
+
+    if (departmentId !== undefined) {
+      const deptIds = await getFacultyDepartmentIds(facultyId);
+      if (!deptIds.includes(Number(departmentId))) {
+        return res.status(403).json({ message: "Department does not belong to your faculty." });
+      }
+    }
 
     const data = {
       ...(name && { name }),
       ...(code && { code: code.toUpperCase() }),
       ...(description !== undefined && { description }),
       ...(credits && { credits: Number(credits) }),
+      ...(maxMarks !== undefined && { maxMarks: Number(maxMarks) }),
+      ...(status !== undefined && { status: status === "INACTIVE" ? "INACTIVE" : "ACTIVE" }),
+      ...(departmentId !== undefined && { departmentId: Number(departmentId) }),
     };
 
     if (semesterNumber !== undefined) {
@@ -73,6 +95,18 @@ export const updateCourse = async (req, res) => {
           return res.status(400).json({ message: "semesterNumber must be between 1 and 12." });
         }
         data.semesterNumber = Math.trunc(n);
+      }
+    }
+
+    if (year !== undefined) {
+      if (year === null || year === "") {
+        data.year = null;
+      } else {
+        const n = Number(year);
+        if (!Number.isFinite(n) || n < 1 || n > 12) {
+          return res.status(400).json({ message: "year must be between 1 and 12." });
+        }
+        data.year = Math.trunc(n);
       }
     }
 

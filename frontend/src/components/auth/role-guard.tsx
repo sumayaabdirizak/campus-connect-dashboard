@@ -48,7 +48,12 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
         lastSessionCheckAt = 0;
         lastSessionCheckResult = false;
         clearAuth();
-        router.push('/auth/sign-in');
+        // A soft `router.push` here can hang mid-transition (RSC payload
+        // fetches fine but the URL never actually updates) leaving the
+        // spinner below stuck forever — hard-navigate instead, which always
+        // lands on the sign-in page.
+        window.location.href = `/auth/sign-in?next=${encodeURIComponent(pathname)}`;
+        return;
       }
       setIsLoading(false);
     }
@@ -103,7 +108,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (isMounted && !isLoading && !isAuthenticated && pathname !== '/auth/sign-in') {
-      router.push('/auth/sign-in');
+      window.location.href = `/auth/sign-in?next=${encodeURIComponent(pathname)}`;
     }
   }, [isAuthenticated, router, pathname, isMounted, isLoading, user]);
 

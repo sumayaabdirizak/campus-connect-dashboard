@@ -7,6 +7,12 @@ export {
 export {
   getCourseOfferings,
   createCourseOffering,
+  createCourseOfferingsBulk,
   deleteCourseOffering,
 } from "./courseManagement/offerings.js";
 export { generateCourseOfferings } from "./courseManagement/generateOfferings.js";
+export {
+  getSessionsForOffering,
+  saveSessionsForOffering,
+  getSessionsHeatmap,
+} from "./courseManagement/sessions.js";

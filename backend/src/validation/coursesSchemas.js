@@ -11,6 +11,9 @@ export const createCourseBodySchema = Joi.object({
   credits: Joi.number().min(0).max(30).default(3),
   thumbnail: Joi.string().trim().allow("", null).max(2000).optional(),
   semesterNumber: Joi.number().integer().min(1).max(12).allow(null, "").optional(),
+  year: Joi.number().integer().min(1).max(12).allow(null, "").optional(),
+  maxMarks: Joi.number().integer().min(1).max(1000).default(100),
+  status: Joi.string().valid("ACTIVE", "INACTIVE").default("ACTIVE"),
 });
 
 export const updateCourseBodySchema = Joi.object({
@@ -21,4 +24,7 @@ export const updateCourseBodySchema = Joi.object({
   credits: Joi.number().min(0).max(30).optional(),
   thumbnail: Joi.string().trim().allow("", null).max(2000).optional(),
   semesterNumber: Joi.number().integer().min(1).max(12).allow(null, "").optional(),
+  year: Joi.number().integer().min(1).max(12).allow(null, "").optional(),
+  maxMarks: Joi.number().integer().min(1).max(1000).optional(),
+  status: Joi.string().valid("ACTIVE", "INACTIVE").optional(),
 }).min(1);

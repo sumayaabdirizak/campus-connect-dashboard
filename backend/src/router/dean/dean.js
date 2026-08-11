@@ -15,10 +15,14 @@ import {
   getFacultyCourses, getCourseById,
   getCourseOfferings,
   createCourseOffering,
+  createCourseOfferingsBulk,
   deleteCourseOffering,
   generateCourseOfferings,
   assignTeacherToCourse,
   removeTeacherFromCourse,
+  getSessionsForOffering,
+  saveSessionsForOffering,
+  getSessionsHeatmap,
 } from '../../controllers/dean/courseManagement.controller.js';
 import { getDeanAnalytics } from '../../controllers/dean/deanAnalytics.controller/index.js';
 import { getDeanReports } from '../../controllers/dean/deanReports.controller.js';
@@ -59,7 +63,11 @@ router.delete('/courses/:id/teachers/:teacherId', removeTeacherFromCourse);
 router.post('/offerings/generate', generateCourseOfferings);
 router.get('/offerings', getCourseOfferings);
 router.post('/offerings', createCourseOffering);
+router.post('/offerings/bulk', createCourseOfferingsBulk);
 router.delete('/offerings/:id', deleteCourseOffering);
+router.get('/offerings/:offeringId/sessions', getSessionsForOffering);
+router.put('/offerings/:offeringId/sessions', saveSessionsForOffering);
+router.get('/sessions/heatmap', getSessionsHeatmap);
 
 // ── Analytics ────────────────────────────────────────────────
 router.get('/analytics', getDeanAnalytics);

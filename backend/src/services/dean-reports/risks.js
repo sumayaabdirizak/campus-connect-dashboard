@@ -6,14 +6,26 @@ export function buildRiskSections({
   const studentsAtRisk = studentReports
     .filter((s) => s.status === 'At Risk' || s.gpa < 2.0)
     .slice(0, 8)
-    .map((s) => ({
-      id: s.id,
-      name: s.student,
-      department: s.department,
-      gpa: s.gpa,
-      reason: 'Low GPA',
-      priority: s.gpa < 1.5 ? 'high' : 'medium',
-    }));
+    .map((s) => {
+      const lowGpa = s.gpa < 2.0;
+      const poorAttendance = s.attendance < 60;
+      const reason =
+        lowGpa && poorAttendance
+          ? 'Low GPA & poor attendance'
+          : lowGpa
+            ? 'Low GPA'
+            : poorAttendance
+              ? 'Poor attendance'
+              : 'At risk';
+      return {
+        id: s.id,
+        name: s.student,
+        department: s.department,
+        gpa: s.gpa,
+        reason,
+        priority: s.gpa < 1.5 ? 'high' : 'medium',
+      };
+    });
 
   const coursesAtRisk = bottomCourses
     .filter((c) => c.avgScore < 65 || c.completion < 50)

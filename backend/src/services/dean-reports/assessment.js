@@ -50,11 +50,11 @@ export function buildAssessmentReports({
         resourceViews.length > 0
           ? Math.min(100, Math.round((completedViews / resourceViews.length) * 100))
           : 0,
-      /** Avg watch progress %, or resource count when no watch data */
+      /** Avg watch progress %; 0 when no resource has recorded watch-duration data */
       avgScore:
         watchPcts.length > 0
           ? Math.round(watchPcts.reduce((s, n) => s + n, 0) / watchPcts.length)
-          : resourceCount,
+          : 0,
       resourceCount,
       viewCount: resourceViews.length,
     },

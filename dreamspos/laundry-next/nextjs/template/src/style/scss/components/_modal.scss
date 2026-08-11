@@ -1,0 +1,222 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+//
+// modal.scss
+//
+
+.modal-content {
+    color: inherit;
+    border-radius: $border-radius-lg;
+    background-color: var(--white);
+    border-color: $border-color;    
+}
+.modal-title {
+    font-size: 20px;
+    color: var(--heading-color);
+}
+.modal-full-width {
+    width: 95%;
+    max-width: none;
+}
+.modal-top {
+    margin: 0 auto;
+}
+.modal {
+    &.show {
+        .modal-right,
+        .modal-left {
+            transform: translate(0, 0) !important;
+        }
+    }
+}
+.modal-bottom {
+    display: flex;
+    flex-flow: column nowrap;
+    -ms-flex-pack: end;
+    justify-content: flex-end;
+    height: 100%;
+    margin: 0 auto;
+    align-content: center;
+}
+.modal-filled {
+    color: $white;
+    .modal-header {
+        background-color: rgba($white-rgb, 0.1);
+    }
+    .modal-title {
+        color: $white;
+    }
+    .modal-header,
+    .modal-footer {
+        border: none;
+    }
+}
+.modal-backdrop {
+    backdrop-filter: blur(10px);
+}
+.modal-header {
+    padding: 20px;
+    border-color: var(--border-color);
+    border-radius: $border-radius-lg $border-radius-lg 0 0;
+    justify-content: space-between;
+    .btn-close {
+        background: $white;
+        font-size: 20px;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: 1px solid $border-color;
+        transition: all 0.7s;
+        &.btn-close-modal {
+            width: 32px;
+            height: 32px;
+            background: $white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 16px;
+            opacity: 1;
+            padding: 0;
+            transition: all 0.5s ease-in-out;
+            @include respond-below(md) {
+                width: 20px;
+                height: 20px;
+                font-size: 16px;
+            }
+            &:hover {
+                background: $danger;
+                color: $darkmode-white;
+            }
+        }
+    }
+}
+.modal-body {
+    padding: 20px;
+    background-color: transparent;
+}
+.modal-footer>* {
+    margin-top: 0;
+    margin-bottom: 0;
+}
+.modal-footer {
+    padding: 20px;
+    background-color: transparent;
+    border-color: var(--border-color);
+}
+.btn-close:focus {
+    box-shadow: none;
+}
+.offcanvas-header, .offcanvas-body, .offcanvas-footer {
+    padding: 20px 20px;
+}
+.offcanvas-footer {
+    display: flex;
+    justify-content:end;
+    gap: 8px;
+}
+.offcanvas-header {
+    border-bottom: 1px solid $border-color;
+}
+// Offcanvas
+.offcanvas {
+    min-width: 500px !important;
+    background-color: var(--white);
+    color: var(--body-color);
+    border-left: 1px solid $border-color !important;
+    margin: 12px;
+    @include respond-below(md) {
+        min-width: auto !important;
+    }
+    @include respond-below(sm) {
+        margin: 0;
+    }
+    .btn-close {
+        background: transparent;
+        font-size: 20px;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.7s;
+        &:hover {
+            color: $danger;
+        }
+        &.btn-close-modal {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 16px;
+            opacity: 1;
+            padding: 0;
+            transition: all 0.5s ease-in-out;
+            border: 1px solid $border-color;
+            @include respond-below(md) {
+                width: 30px;
+                height: 30px;
+            }
+            &:hover {
+                background: $danger;
+                color: $darkmode-white;
+                border-color: $danger;
+            }
+        }
+    }
+    &.offcanvas-end {
+        border-radius: $border-radius;
+    }
+}
+
+.modal-header.bg-colored {
+    padding: 20px;
+    border-color: var(--border-color);
+    border-radius: $border-radius-lg $border-radius-lg 0 0;
+    justify-content: space-between;
+    background: linear-gradient(270deg, rgba(255, 187, 0, 0.3) 0%, rgba(19, 181, 201, 0.3) 100%);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    .btn-close {
+        background: transparent;
+        font-size: 20px;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.7s;
+        &.btn-close-modal {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 32px;
+            height: 32px;
+            background: $light;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-size: 24px;
+            opacity: 1;
+            padding: 0;
+            transition: all 0.5s ease-in-out;
+            @include respond-below(md) {
+                width: 20px;
+                height: 20px;
+                font-size: 16px;
+            }
+            &:hover {
+                background: $danger;
+                color: $darkmode-white;
+            }
+        }
+    }
+}

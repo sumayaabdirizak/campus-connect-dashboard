@@ -1,7 +1,7 @@
 import { useRegisterActions } from 'kbar';
 import { useTheme } from 'next-themes';
-import { useThemeConfig } from '@/components/themes/active-theme';
-import { THEMES } from '@/components/themes/theme.config';
+import { useThemeConfig } from '@/features/themes/components/active-theme';
+import { THEMES } from '@/features/themes/components/theme.config';
 
 const useThemeSwitching = () => {
   const { theme, setTheme } = useTheme();

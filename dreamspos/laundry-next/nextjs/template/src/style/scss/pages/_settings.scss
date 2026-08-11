@@ -1,0 +1,81 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+
+.settings-sidebar {
+    margin-bottom: 0;
+    @include respond-below(lg) {
+        margin-bottom: 24px;
+    }
+    ul {
+       list-style: none;
+        li {
+            width: 100%;
+            .nav-link {
+                display: flex;
+                align-items: center;
+                padding: 8px 16px;
+                font-size: 16px;
+                font-weight: $font-weight-medium;
+                border: 1px solid $border-color;
+                margin-bottom: 16px;
+                border-radius: 56px;
+                background-color: $white;
+                box-shadow: $box-shadow;
+                &:hover, &.active{
+                    background-color: $dark;
+                    color: $white;
+                    border-color: $dark;
+                }
+            }
+        }
+    }
+}
+.orders-tab {
+    ul {
+       list-style: none;
+        li {
+            width: 100%;
+            .nav-link {
+                display: flex;
+                align-items: center;
+                padding: 8px 16px;
+                font-size: 16px;
+                font-weight: $font-weight-medium;
+                border: 1px solid $border-color;
+                margin-bottom: 16px;
+                border-radius: 56px;
+                background-color: $light;
+                box-shadow: $box-shadow;
+                &:hover, &.active{
+                    background-color: $dark;
+                    color: $white;
+                    border-color: $dark;
+                }
+            }
+        }
+    }
+}
+.page-search{
+    position: relative;
+    input{
+    padding:10px 18px 10px 30px;
+    }
+    i{
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: unset;
+        left: 12px;
+        border: 0;
+        line-height: 0;
+    }
+}
+
+.customer-radio-input {
+    .form-check-input{
+        width: 20px;
+        height: 20px;
+        margin-top: 0.125em;
+    }
+}

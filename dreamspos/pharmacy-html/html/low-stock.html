@@ -1,0 +1,1433 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Low Stock | Pharmacy POS - Bootstrap 5 Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dreams POS is a powerful Bootstrap based Inventory Management Admin Template designed for businesses, offering seamless invoicing, project tracking, and estimates.">
+    <meta name="keywords"
+        content="inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system">
+    <meta name="author" content="Dreams Technologies">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.png">
+
+    <!-- Apple Icon -->
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/plugins/fontawesome/fontawesome.min.css">
+
+    <!-- Lucide Icon CSS -->
+    <link rel="stylesheet" href="assets/plugins/lucide/lucide.css">
+
+    <!-- Simplebar CSS -->
+    <link rel="stylesheet" href="assets/plugins/simplebar/simplebar.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="assets/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Datatable CSS -->
+    <link rel="stylesheet" href="assets/css/dataTables.bootstrap5.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Begin Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Topbar Start -->
+        <header class="navbar-header">
+            <div class="page-container topbar-menu">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Sidebar Mobile Button -->
+                    <a id="mobile_btn" class="mobile-btn" href="#sidebar">
+                        <i class="icon-menu fs-24"></i>
+                    </a>
+                    <!-- Logo -->
+                    <a href="index.html" class="logo">
+
+                        <!-- Logo Normal -->
+                        <span class="logo-light">
+                            <span class="logo-lg"><img src="assets/img/logo.svg" alt="logo"></span>
+                        </span>
+
+                        <!-- Logo Dark -->
+                        <span class="logo-dark">
+                            <span class="logo-lg"><img src="assets/img/logo-dark.svg" alt="dark logo"></span>
+                        </span>
+
+                        <!-- Logo Sm -->
+                        <span class="logo-small">
+                            <span class="logo-lg"><img src="assets/img/logo-small.svg" alt="small logo"></span>
+                        </span>
+                    </a>
+
+                    <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn2">
+                        <i class="ti ti-arrow-bar-to-right"></i>
+                    </button>
+
+                    <div class="d-none d-lg-flex">
+                        <h4 class="mb-0">Low Stock</h4>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <div class="dropdown me-1 d-lg-flex d-none">
+                        <a href="javascript:void(0);"
+                            class="dropdown-toggle btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-toggle="dropdown">
+                            <i class="icon-map-pin-house"></i>Newyork
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Newyork</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Los Angeles</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Diego</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Dallas</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Antonio</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="d-flex align-items-center header-search d-lg-flex d-none">
+                        <!-- Search -->
+                        <div class="input-icon position-relative me-1">
+                            <span class="input-icon-addon"><i class="icon-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Search">
+                            <span class="input-icon-addon d-inline-flex p-0 header-search-icon"><i
+                                    class="icon-command"></i>K</span>
+                        </div>
+                    </div>
+                    <!-- /Search -->
+
+
+                    <!-- Notification Dropdown -->
+                    <div class="header-item">
+                        <div class="dropdown me-1">
+
+                            <button class="topbar-link btn topbar-link dropdown-toggle drop-arrow-none"
+                                data-bs-toggle="dropdown" data-bs-offset="0,24" type="button" aria-haspopup="false"
+                                aria-expanded="false">
+                                <i class="icon-bell animate-ring"></i>
+                                <span class="notification-badge"></span>
+                            </button>
+
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg p-3"
+                                style="min-height: 300px;">
+
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h5 class="m-0">Notifications</h5>
+                                    <a href="#" class="fw-medium text-decoration-underline">Mark all as read</a>
+                                </div>
+
+                                <!-- Notification Body -->
+                                <div class="notification-body position-relative z-2 rounded-0" data-simplebar>
+
+                                    <div class="vstack gap-3">
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-1">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-orange border border-orange-200">
+                                                    <i class="icon-layers-2"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Low Stock Alert</p>
+                                                    <p class="mb-2 text-wrap">Paracetamol 500mg is running low (5 items
+                                                        left)</p>
+                                                    <p class="fs-13 mb-0">2 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-2">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-info border border-info-200">
+                                                    <i class="icon-inbox"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Stock Updated</p>
+                                                    <p class="mb-2 text-wrap">Inventory for Ibuprofen 200mg has been
+                                                        successfully updated.</p>
+                                                    <p class="fs-13 mb-0">10 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-3">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-warning border border-warning-200">
+                                                    <i class="icon-clock-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Medicine Expiry Reminder</p>
+                                                    <p class="mb-2 text-wrap">Amoxicillin Capsules will expire in 7
+                                                        days.</p>
+                                                    <p class="fs-13 mb-0">5 hours ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-4">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-danger border border-danger-200">
+                                                    <i class="icon-triangle-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Out of Stock</p>
+                                                    <p class="mb-2 text-wrap">Vitamin C Tablets are currently out of
+                                                        stock. </p>
+                                                    <p class="fs-13 mb-0">1 day ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <!-- View All-->
+                                <div class="pt-3">
+                                    <a href="#" class="btn btn-white d-flex align-items-center justify-content-center">
+                                        View All<i class="icon-arrow-right ms-2"></i>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="header-item">
+                        <div class="me-1">
+                            <a href="business-settings.html" class="btn topbar-link" aria-label="Settings"><i
+                                    class="icon-settings"></i></a>
+                        </div>
+                    </div>
+                    <!-- Settings -->
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
+                        <a href="javascript:void(0);"
+                            class="topbar-link dropdown-toggle drop-arrow-none position-relative"
+                            data-bs-toggle="dropdown" data-bs-offset="0,22" aria-haspopup="false" aria-expanded="false">
+                            <img src="assets/img/profiles/avatar-28.jpg" width="36" class="rounded-circle d-flex"
+                                alt="user">
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-3">
+
+                            <div class="d-flex align-items-center bg-light rounded p-3 mb-2">
+                                <div class="avatar flex-shrink-0">
+                                    <img src="assets/img/profiles/avatar-28.jpg" class="rounded-circle" alt="user">
+                                </div>
+                                <div class="ms-2">
+                                    <p class="fw-medium text-dark mb-0">Robert Ordway</p>
+                                    <span class="d-block fs-13">Administrator</span>
+                                </div>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="profile-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-user-cog me-2"></i>Profile Settings
+                            </a>
+
+                            <!-- Item -->
+                            <a href="reports.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-proportions me-2"></i>Reports
+                            </a>
+
+                            <!-- Item-->
+                            <div
+                                class="form-check form-switch form-check-reverse d-flex align-items-center justify-content-between dropdown-item mb-0">
+                                <label class="form-check-label d-flex align-items-center" for="notify"><i
+                                        class="icon-bell me-2"></i>Notifications</label>
+                                <input class="form-check-input me-0" type="checkbox" role="switch" id="notify" checked>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="business-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-settings me-2"></i>Settings
+                            </a>
+
+                            <!-- Item-->
+                            <div class="pt-2 mt-2 border-top">
+                                <a href="sign-in.html" class="dropdown-item d-flex align-items-center text-danger">
+                                    <i class="icon-log-out me-2"></i>Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+        <!-- Topbar End -->
+
+        <!-- Sidenav Menu Start -->
+        <div class="sidebar" id="sidebar">
+
+            <!-- Start Logo -->
+            <div class="sidebar-logo">
+                <div>
+                    <!-- Logo Normal -->
+                    <a href="index.html" class="logo logo-normal">
+                        <img src="assets/img/logo.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Small -->
+                    <a href="index.html" class="logo-small">
+                        <img src="assets/img/logo-small.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Dark -->
+                    <a href="index.html" class="dark-logo">
+                        <img src="assets/img/logo-dark.svg" alt="Logo">
+                    </a>
+                </div>
+                <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn">
+                    <i class="icon-chevron-left"></i>
+                </button>
+
+                <!-- Sidebar Menu Close -->
+                <button class="sidebar-close">
+                    <i class="icon-x align-middle"></i>
+                </button>
+            </div>
+            <!-- End Logo -->
+
+            <!-- Sidenav Menu -->
+            <div class="sidebar-inner" data-simplebar>
+                <div id="sidebar-menu" class="sidebar-menu">
+                    <ul role="menu" aria-label="Main navigation menu">
+                        <li class="menu-title" aria-disabled="true"><span>Main</span></li>
+
+                        <li>
+                            <a href="index.html">
+                                <span class="menu-icon"><i
+                                        class="icon-layout-dashboard"></i></span><span>Dashboard</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Inventory</span></li>
+                        <li>
+                            <a href="medicines.html">
+                                <span class="menu-icon"><i class="icon-list-todo"></i></span><span>Medicine List</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="categories.html">
+                                <span class="menu-icon"><i class="icon-layout-grid"></i></span><span>Categories</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="units.html">
+                                <span class="menu-icon"><i class="icon-monitor-up"></i></span><span>Units</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="racks.html">
+                                <span class="menu-icon"><i class="icon-inbox"></i></span><span>Racks</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="batch-management.html">
+                                <span class="menu-icon"><i class="icon-boxes"></i></span><span>Batch Management</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="manufacturers.html">
+                                <span class="menu-icon"><i
+                                        class="icon-square-user"></i></span><span>Manufacturers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-adjustment.html">
+                                <span class="menu-icon"><i class="icon-layers"></i></span><span>Stock Adjustment</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-transfer.html">
+                                <span class="menu-icon"><i class="icon-truck"></i></span><span>Stock Transfer</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-tracking.html">
+                                <span class="menu-icon"><i class="icon-triangle-alert"></i></span><span>Expiry
+                                    Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="low-stock.html" class="active">
+                                <span class="menu-icon"><i class="icon-layers-2"></i></span><span>Low Stock</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-logs.html">
+                                <span class="menu-icon"><i class="icon-list-end"></i></span><span>Inventory Logs</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Sales</span></li>
+                        <li>
+                            <a href="pos.html">
+                                <span class="menu-icon"><i class="icon-tv-minimal"></i></span><span>POS Sales</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sales-return.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw"></i></span><span>Sales Return</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customers.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="invoices.html">
+                                <span class="menu-icon"><i class="icon-newspaper"></i></span><span>Invoices</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="payments.html">
+                                <span class="menu-icon"><i class="icon-dollar-sign"></i></span><span>Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Purchases</span></li>
+                        <li>
+                            <a href="purchases.html">
+                                <span class="menu-icon"><i class="icon-shopping-cart"></i></span><span>Purchases</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-orders.html">
+                                <span class="menu-icon"><i class="icon-shopping-bag"></i></span><span>Purchase
+                                    Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-returns.html">
+                                <span class="menu-icon"><i class="icon-reply-all"></i></span><span>Purchase
+                                    Returns</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendors.html">
+                                <span class="menu-icon"><i class="icon-users"></i></span><span>Vendors</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-payments.html">
+                                <span class="menu-icon"><i class="icon-badge-dollar-sign"></i></span><span>Vendor
+                                    Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Prescriptions</span></li>
+                        <li>
+                            <a href="prescriptions.html">
+                                <span class="menu-icon"><i class="icon-book-check"></i></span><span>Prescriptions</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="prescription-verification.html">
+                                <span class="menu-icon"><i
+                                        class="icon-circle-arrow-out-up-right"></i></span><span>Prescription
+                                    Verification</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="doctors.html">
+                                <span class="menu-icon"><i
+                                        class="icon-briefcase-medical"></i></span><span>Doctors</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Reports</span></li>
+                        <li>
+                            <a href="sales-reports.html">
+                                <span class="menu-icon"><i class="icon-proportions"></i></span><span>Sales
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-reports.html">
+                                <span class="menu-icon"><i class="icon-file-spreadsheet"></i></span><span>Purchase
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-reports.html">
+                                <span class="menu-icon"><i class="icon-file-terminal"></i></span><span>Inventory
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-reports.html">
+                                <span class="menu-icon"><i class="icon-file-chart-column"></i></span><span>Expiry
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="profit-loss-reports.html">
+                                <span class="menu-icon"><i class="icon-badge-percent"></i></span><span>Profit &
+                                    Loss</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tax-reports.html">
+                                <span class="menu-icon"><i class="icon-file-symlink"></i></span><span>Tax Report</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-valuation.html">
+                                <span class="menu-icon"><i class="icon-file-axis-3d"></i></span><span>Stock
+                                    Valuation</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-aging.html">
+                                <span class="menu-icon"><i class="icon-file-search"></i></span><span>Stock Aging</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customer-outstanding.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customer
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-outstanding.html">
+                                <span class="menu-icon"><i class="icon-file-user"></i></span><span>Vendor
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li class="menu-title" aria-disabled="true"><span>Settings</span></li>
+                        <li class="submenu">
+                            <a href="javascript:void(0);">
+                                <span class="menu-icon"><i class="icon-building-2"></i></span><span>Business</span>
+                                <span class="menu-arrow"></span>
+                            </a>
+                            <ul>
+                                <li><a href="business-settings.html">Business Settings</a></li>
+                                <li><a href="profile-settings.html">Profile Settings</a></li>
+                                <li><a href="localization-settings.html">Localization</a></li>
+                                <li><a href="branches-settings.html">Branches</a></li>
+                                <li><a href="notifications-settings.html">Notifications</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="invoice-settings.html">
+                                <span class="menu-icon"><i class="icon-file-text"></i></span><span>Billing</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="connected-apps.html">
+                                <span class="menu-icon"><i class="icon-component"></i></span><span>System
+                                    Integrations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="backup-settings.html">
+                                <span class="menu-icon"><i class="icon-computer"></i></span><span>Backup</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Authentication</span></li>
+                        <li>
+                            <a href="sign-in.html">
+                                <span class="menu-icon"><i class="icon-log-in"></i></span><span>Login</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sign-up.html">
+                                <span class="menu-icon"><i
+                                        class="icon-text-cursor-input"></i></span><span>Register</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="forgot-password.html">
+                                <span class="menu-icon"><i class="icon-shield-alert"></i></span><span>Forgot
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="reset-password.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw-dot"></i></span><span>Reset
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="otp.html">
+                                <span class="menu-icon"><i class="icon-mail-warning"></i></span><span>OTP
+                                    Verification</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        <!-- Sidenav Menu End -->
+
+        <!-- ========================
+			Start Page Content
+		========================= -->
+
+        <div class="page-wrapper">
+
+            <!-- Start Content -->
+            <div class="content">
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="index.html"> <span><i class="icon-house"></i></span>
+                                    Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Low Stock</li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+                            data-bs-original-title="Refresh"><i class="icon-refresh-ccw"></i></a>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Maximize"
+                            data-bs-original-title="Maximize"><i class="icon-maximize"></i></a>
+                    </div>
+                </div>
+
+                <!-- start card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                            <div class="d-inline-flex align-items-center flex-wrap flex-sm-nowrap gap-2">
+                                <div class="table-search d-flex align-items-center mb-0">
+                                    <div class="search-input" id="tablefilter">
+                                        <a href="javascript:void(0);" class="btn-searchset"><i
+                                                class="icon-search"></i></a>
+                                    </div>
+                                </div>
+                                <div class="input-group position-relative w-fit">
+                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                        <i class="icon-calendar-fold"></i>
+                                    </span>
+                                    <input type="text" class="form-control date-range bookingrange rounded-end">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+
+                                <!-- Filter -->
+                                <a href="#" class="btn btn-white btn-icon" data-bs-toggle="offcanvas"
+                                    data-bs-target="#add_filter" aria-controls="add_filter"><i
+                                        class="icon-funnel"></i></a>
+                                <!-- column -->
+                                <div class="dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="column">
+                                        <i class="icon-columns-3"></i> Columns
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-start dropdown-menu-md">
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />SKU</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Items</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Category</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Current Stock</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Minimum Stock Level</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Reorder Quantity</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Supplier</span>
+                                            </label>
+                                        </li>
+                                        <li class="dropdown-item rounded">
+                                            <label class="d-flex align-items-center">
+                                                <span><i class="icon-grip-vertical me-3"></i></span>
+                                                <span class="d-flex align-items-center"><input
+                                                        class="form-check-input m-0 me-2" type="checkbox"
+                                                        checked />Status</span>
+                                            </label>
+                                        </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- sort by -->
+                                <div class="dropdown sortby-dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown">
+                                        <i class="icon-arrow-down-wide-narrow"></i> Sort by
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="list-unstyled mb-0">
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded text-dark d-flex align-items-center justify-content-between">Items
+                                                    <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Items
+                                                    <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Supplier
+                                                    <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Supplier
+                                                    <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Current
+                                                    Stock <span>High-Low</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Current
+                                                    Stock <span>Low-High</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Export -->
+                                <div class="gap-3 d-flex align-items-center flex-wrap">
+                                    <div class="dropdown">
+                                        <a href="javascript:void(0);"
+                                            class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-arrow-up-to-line"></i>Export
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    PDF</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    Excel</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+
+                        <!-- start table -->
+                        <div class="table-responsive table-nowrap">
+                            <table class="table mb-0 datatable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>SKU</th>
+                                        <th>Items</th>
+                                        <th>Category</th>
+                                        <th>Current Stock</th>
+                                        <th>Minimum Stock Level</th>
+                                        <th>Reorder Quantity</th>
+                                        <th>Supplier</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#TAB016</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Paracetamol 500</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-orange">Tablet</span></td>
+                                        <td>20</td>
+                                        <td>200</td>
+                                        <td>180</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-1.jpg"
+                                                        class="rounded-circle" alt="user"></span> MedLife Distributors
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Critical</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#TAB015</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Amoxicillin 250</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-orange">Tablet</span></td>
+                                        <td>200</td>
+                                        <td>300</td>
+                                        <td>100</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-2.jpg"
+                                                        class="rounded-circle" alt="user"></span> HealthCare Pharma
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#SYR014</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Cetirizine</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-pink">Syrup</span></td>
+                                        <td>40</td>
+                                        <td>100</td>
+                                        <td>60</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-3.jpg"
+                                                        class="rounded-circle" alt="user"></span> GreenCross Medicals
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#TAB013</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Ceftriaxone 20</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-orange">Tablet</span></td>
+                                        <td>120</td>
+                                        <td>200</td>
+                                        <td>80</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-4.jpg"
+                                                        class="rounded-circle" alt="user"></span> NovaCure Pharma
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#CRE012</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Betnovate</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-cyan">Oinment</span></td>
+                                        <td>60</td>
+                                        <td>100</td>
+                                        <td>40</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-5.jpg"
+                                                        class="rounded-circle" alt="user"></span> CareWell Agency
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#TAB011</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Amoxicillin 30</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-orange">Tablet</span></td>
+                                        <td>310</td>
+                                        <td>400</td>
+                                        <td>90</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-6.jpg"
+                                                        class="rounded-circle" alt="user"></span> Zenith Distributors
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#INJ010</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Tetanus Toxoid</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-purple">Injection</span></td>
+                                        <td>250</td>
+                                        <td>300</td>
+                                        <td>50</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-7.jpg"
+                                                        class="rounded-circle" alt="user"></span> LifeLine Pharma
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Critical</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#SYR009</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Atorvastatin</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-pink">Syrup</span></td>
+                                        <td>35</td>
+                                        <td>100</td>
+                                        <td>65</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-8.jpg"
+                                                        class="rounded-circle" alt="user"></span> SafeMeds Distribution
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#TAB008</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Metformin 100</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-orange">Tablet</span></td>
+                                        <td>150</td>
+                                        <td>200</td>
+                                        <td>50</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-9.jpg"
+                                                        class="rounded-circle" alt="user"></span> NovaHealth Pharma
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#INJ007</a></td>
+                                        <td>
+                                            <span class="fw-medium text-dark">Ondansetron</span>
+                                        </td>
+                                        <td><span class="badge badge-soft-purple">Injection</span></td>
+                                        <td>120</td>
+                                        <td>200</td>
+                                        <td>80</td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span class="avatar avatar-xs rounded-circle me-2"><img
+                                                        src="assets/img/supplier/supplier-img-10.jpg"
+                                                        class="rounded-circle" alt="user"></span> PrimeCare Pharma
+                                            </div>
+                                        </td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Low stock</span></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 pt-0">
+                                <div id="tableinfo"></div>
+                                <div id="tablepage"></div>
+                                <div id="tablelength"></div>
+                            </div>
+                        </div>
+                        <!-- end table -->
+
+                    </div>
+                </div>
+                <!-- end card -->
+
+            </div>
+            <!-- End Content -->
+
+        </div>
+
+        <!-- ========================
+			End Page Content
+		========================= -->
+
+    </div>
+    <!-- End Wrapper -->
+
+    <!-- start offcanvas -->
+    <div class="offcanvas offcanvas-offset offcanvas-end" tabindex="-1" id="add_filter">
+        <div class="offcanvas-header d-block border-0">
+            <div class="d-flex align-items-center justify-content-between">
+                <h4 class="title d-flex align-items-center gap-2 mb-0"> <span
+                        class="avatar avatar-sm bg-primary rounded-circle fs-16"><i class="icon-funnel"></i></span>
+                    Filter</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"><i
+                        class="icon-x"></i></button>
+            </div>
+        </div>
+        <div class="offcanvas-body pt-0">
+            <div class="filter-sidebar">
+                <div class="filter-body">
+
+                    <!-- Item 1 -->
+                    <div class="filter-item">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#medicine"
+                                    aria-expanded="false">
+                                    Medicine
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="medicine" class="card-collapse collapse show">
+                            <div>
+                                <div class="input-icon input-icon-start position-relative mb-3">
+                                    <span class="input-icon-addon text-dark"><i class="icon-search"></i></span>
+                                    <input type="text" class="form-control" placeholder="Search">
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_01">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_01">
+                                        <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                src="assets/img/icons/tablet-icon-1.svg" alt="icon"></span> Paracetamol
+                                        500
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_02">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_02">
+                                        <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                src="assets/img/icons/tablet-icon-2.svg" alt="icon"></span>Amoxicillin
+                                        250
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_03">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_03">
+                                        <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                src="assets/img/icons/tablet-icon-3.svg" alt="icon"></span>Cetirizine
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_04">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_04">
+                                        <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                src="assets/img/icons/tablet-icon-4.svg" alt="icon"></span>Ceftriaxone
+                                        20
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_05">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_05">
+                                        <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                src="assets/img/icons/tablet-icon-5.svg" alt="icon"></span>Betnovate
+                                    </label>
+                                </div>
+                                <div class="more-menu1">
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_06">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_06">
+                                            <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                    src="assets/img/icons/tablet-icon-6.svg"
+                                                    alt="icon"></span>Amoxicillin 30
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_07">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_07">
+                                            <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                    src="assets/img/icons/tablet-icon-7.svg" alt="icon"></span>Tetanus
+                                            Toxoid
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_08">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_08">
+                                            <span class="avatar avatar-xs bg-light rounded-circle p-1"><img
+                                                    src="assets/img/icons/tablet-icon-8.svg"
+                                                    alt="icon"></span>Atorvastatin
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="view-all mt-3">
+                                    <a href="#" class="viewall1-button text-primary font-medium">View More</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Type Items -->
+                    <div class="filter-item">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#category"
+                                    aria-expanded="false">
+                                    Category
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="category" class="card-collapse collapse show">
+                            <div>
+                                <div class="input-icon input-icon-start position-relative mb-3">
+                                    <span class="input-icon-addon text-dark"><i class="icon-search"></i></span>
+                                    <input type="text" class="form-control" placeholder="Search">
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_09">
+                                    <label
+                                        class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                        for="check_09">
+                                        Uncategorized
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_10">
+                                    <label
+                                        class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                        for="check_10">
+                                        Tablet
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_11">
+                                    <label
+                                        class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                        for="check_11">
+                                        Capsule
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_13">
+                                    <label
+                                        class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                        for="check_13">
+                                        Oinment
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_14">
+                                    <label
+                                        class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                        for="check_14">
+                                        Syrup
+                                    </label>
+                                </div>
+                                <div class="more-menu2">
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_15">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_15">
+                                            Drops
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_16">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_16">
+                                            Medical Devices
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_17">
+                                        <label
+                                            class="form-check-label w-100 d-flex align-items-center justify-content-between ms-2"
+                                            for="check_17">
+                                            Supplements
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="view-all mt-3">
+                                    <a href="#" class="viewall2-button text-primary font-medium">View More</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Supplier Items -->
+                    <div class="filter-item">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#supplier"
+                                    aria-expanded="false">
+                                    Supplier
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="supplier" class="card-collapse collapse show">
+                            <div>
+                                <div class="input-icon input-icon-start position-relative mb-3">
+                                    <span class="input-icon-addon text-dark"><i class="icon-search"></i></span>
+                                    <input type="text" class="form-control" placeholder="Search">
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_18">
+                                    <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                        for="check_18">
+                                        <span class="avatar avatar-xs rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-1.jpg" alt="supplier"
+                                                class="img-fluid rounded-circle"></span>MedLife Distributors
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_19">
+                                    <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                        for="check_19">
+                                        <span class="avatar avatar-xs rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-2.jpg" alt="supplier"
+                                                class="img-fluid rounded-circle"></span>HealthCare Pharma
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_20">
+                                    <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                        for="check_20">
+                                        <span class="avatar avatar-xs rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-3.jpg" alt="supplier"
+                                                class="img-fluid rounded-circle"></span>GreenCross Medicals
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_21">
+                                    <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                        for="check_21">
+                                        <span class="avatar avatar-xs rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-4.jpg" alt="supplier"
+                                                class="img-fluid rounded-circle"></span>NovaCure Pharma
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_22">
+                                    <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                        for="check_22">
+                                        <span class="avatar avatar-xs rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-5.jpg" alt="supplier"
+                                                class="img-fluid rounded-circle"></span>CareWell Agency
+                                    </label>
+                                </div>
+                                <div class="more-menu3">
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_23">
+                                        <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                            for="check_23">
+                                            <span class="avatar avatar-xs rounded-circle"><img
+                                                    src="assets/img/supplier/supplier-img-6.jpg" alt="supplier"
+                                                    class="img-fluid rounded-circle"></span>Zenith Distributors
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_24">
+                                        <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                            for="check_24">
+                                            <span class="avatar avatar-xs rounded-circle"><img
+                                                    src="assets/img/supplier/supplier-img-7.jpg" alt="supplier"
+                                                    class="img-fluid rounded-circle"></span>LifeLine Pharma
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_25">
+                                        <label class="form-check-label ms-2 d-flex align-items-center gap-2 w-100"
+                                            for="check_25">
+                                            <span class="avatar avatar-xs rounded-circle"><img
+                                                    src="assets/img/supplier/supplier-img-8.jpg" alt="supplier"
+                                                    class="img-fluid rounded-circle"></span>SafeMeds Distribution
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="view-all mt-3">
+                                    <a href="#" class="viewall3-button text-primary font-medium">View More</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Stock Status Items -->
+                    <div class="filter-item pb-0 mb-0 border-0">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#stock-status"
+                                    aria-expanded="false">
+                                    Status
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="stock-status" class="card-collapse collapse show">
+                            <div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_34">
+                                    <label class="form-check-label ms-2 d-flex align-items-center w-100" for="check_34">
+                                        <span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                class="fa-solid fa-circle fs-5 me-1"></i> Critical</span>
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_35">
+                                    <label class="form-check-label ms-2 d-flex align-items-center w-100" for="check_35">
+                                        <span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                class="fa-solid fa-circle fs-5 me-1"></i> Low Stock</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="offcanvas-footer d-flex align-items-center justify-content-between gap-2 flex-wrap ">
+            <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2" data-bs-dismiss="offcanvas"><i
+                    class="icon-x"></i>Cancel </a>
+            <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"> <i class="icon-pocket"></i>
+                Apply Filter </a>
+        </div>
+    </div>
+    <!-- end offcanvas -->
+
+    <!-- jQuery -->
+    <script src="assets/js/jquery-4.0.0.min.js"></script>
+
+    <!-- Bootstrap Core JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Simplebar JS -->
+    <script src="assets/plugins/simplebar/simplebar.min.js"></script>
+
+    <!-- Daterangepikcer JS -->
+    <script src="assets/js/moment.min.js"></script>
+    <script src="assets/plugins/daterangepicker/daterangepicker.js"></script>
+
+    <!-- Datatable JS -->
+    <script src="assets/js/jquery.dataTables.min.js"></script>
+    <script src="assets/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Main JS -->
+    <script src="assets/js/script.js"></script>
+
+</body>
+
+</html>

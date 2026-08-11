@@ -1,0 +1,1 @@
+export { fetchFacultiesWithoutDean } from './services';

@@ -24,6 +24,9 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-info-muted: var(--info-muted);
+  --color-content-area: var(--content-area, var(--muted));
+  --color-sidebar-icon: var(--sidebar-icon, var(--primary));
+  --color-sidebar-muted: var(--sidebar-muted, var(--muted-foreground));
 }
 
 @layer base {
@@ -149,6 +152,36 @@
   z-index: 1;
 }
 
+@keyframes notification-bell-ring {
+  0%,
+  12%,
+  100% {
+    transform: rotate(0deg);
+  }
+  2%,
+  6% {
+    transform: rotate(14deg);
+  }
+  4%,
+  8% {
+    transform: rotate(-14deg);
+  }
+  10% {
+    transform: rotate(7deg);
+  }
+}
+
+.notification-bell-unread {
+  transform-origin: 50% 15%;
+  animation: notification-bell-ring 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-bell-unread {
+    animation: none;
+  }
+}
+
 @keyframes reveal {
   from {
     /* Use CSS variables for the origin, defaulting to center if not set */
@@ -198,7 +231,6 @@
   }
 }
 
-
 /* ─── View Transitions for quiz question swap ────────────────────────────
  * Defines a custom slide animation when the .startViewTransition() callback
  * in StudentAttempt.navigateTo() swaps questions. Without these rules the
@@ -216,10 +248,16 @@
   animation: quiz-card-in 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 @keyframes quiz-card-out {
-  to { opacity: 0; transform: translateX(-24px); }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
 }
 @keyframes quiz-card-in {
-  from { opacity: 0; transform: translateX(24px); }
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
 }
 
 /* Honour reduced-motion: students who have the OS setting on get a clean
@@ -269,6 +307,15 @@
     animation: cc-fade-up 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  @keyframes cc-carousel-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .hover-lift,
     .hover-lift:hover,
@@ -282,3 +329,42 @@
     }
   }
 }
+
+/* DreamsPOS style 3D rotatebox card-loading animation */
+@keyframes cc-rotatebox {
+  0% {
+    transform: perspective(120px) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(120px) rotateX(-180.1deg) rotateY(0deg);
+  }
+  100% {
+    transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
+  }
+}
+
+.card-disabled-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(1px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: progress;
+}
+
+.dark .card-disabled-overlay {
+  background-color: rgba(15, 23, 42, 0.7);
+}
+
+.card-portlets-loader {
+  background-color: var(--primary);
+  animation: cc-rotatebox 1.2s infinite ease-in-out;
+  height: 30px;
+  width: 30px;
+  border-radius: 4px;
+}
+

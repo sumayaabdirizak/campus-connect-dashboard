@@ -41,6 +41,23 @@ function isNetworkError(error: unknown): boolean {
   );
 }
 
+function formatErrorDetails(data: unknown): string | undefined {
+  if (!data || typeof data !== 'object') return undefined;
+  const details = (data as { details?: unknown }).details;
+  if (typeof details === 'string' && details.trim()) return details.trim();
+  if (Array.isArray(details) && details.length > 0) {
+    return details.map(String).filter(Boolean).join(' · ');
+  }
+  if (details && typeof details === 'object') {
+    try {
+      return JSON.stringify(details);
+    } catch {
+      return undefined;
+    }
+  }
+  return undefined;
+}
+
 /** Normalize any thrown value into a user-friendly API error. */
 export function parseApiError(error: unknown, fallbackMessage = 'Something went wrong'): ParsedApiError {
   if (error instanceof ParsedApiError) return error;
@@ -49,8 +66,19 @@ export function parseApiError(error: unknown, fallbackMessage = 'Something went 
     return new ParsedApiError('Network error. Check your connection and try again.', 'network');
   }
 
-  const message =
+  const apiData =
+    error instanceof Error && 'data' in error
+      ? (error as Error & { data?: unknown }).data
+      : undefined;
+  const detailText = formatErrorDetails(apiData);
+
+  let message =
     error instanceof Error && error.message.trim() ? error.message.trim() : fallbackMessage;
+
+  // Prefer specific Joi/Zod detail over generic "Validation failed"
+  if (detailText && /^validation failed$/i.test(message)) {
+    message = detailText;
+  }
 
   const status =
     error instanceof Error && 'status' in error && typeof error.status === 'number'
@@ -83,11 +111,17 @@ export function parseApiError(error: unknown, fallbackMessage = 'Something went 
   if (
     status === 400 ||
     status === 422 ||
+    status === 409 ||
     lower.includes('invalid') ||
     lower.includes('validation') ||
-    lower.includes('required')
+    lower.includes('required') ||
+    lower.includes('already in use')
   ) {
-    return new ParsedApiError(message, 'validation', { status, toastType: 'warning' });
+    return new ParsedApiError(message, 'validation', {
+      status,
+      toastType: 'warning',
+      description: detailText && detailText !== message ? detailText : undefined
+    });
   }
 
   if (status != null && status >= 500) {
@@ -97,7 +131,7 @@ export function parseApiError(error: unknown, fallbackMessage = 'Something went 
     });
   }
 
-  return new ParsedApiError(message, 'unknown', { status });
+  return new ParsedApiError(message, 'unknown', { status, description: detailText });
 }
 
 /** Parse an API error and show the appropriate toast. Returns the parsed error. */

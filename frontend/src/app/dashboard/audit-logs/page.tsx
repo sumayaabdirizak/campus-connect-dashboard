@@ -1,8 +1,8 @@
 'use client';
 
 import { Icons } from '@/components/icons';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { AuditLogsView } from '@/features/admin/components/audit-logs/audit-logs-view';
+import { Alert, AlertDescription } from '@/features/ui/components/alert';
+import { AuditLogsView } from '@/components/admin/audit-logs/audit-logs-view';
 import { useAuthStore } from '@/lib/auth-store';
 
 export default function AuditLogsPage() {
