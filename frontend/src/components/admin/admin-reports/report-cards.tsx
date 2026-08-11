@@ -68,3 +68,17 @@ export function KpiCard({
 export function EmptyChart({ message }: { message: string }) {
   return <p className='text-muted-foreground py-12 text-center text-sm'>{message}</p>
 }
+
+/**
+ * Animated pulse dot indicator for live/active status
+ */
+export function LivePulseDot({ color = '#22c55e' }: { color?: string }) {
+  return (
+    <motion.div
+      animate={{ scale: [1, 1.2, 1] }}
+      transition={{ duration: 2, repeat: Infinity }}
+      className='size-2 rounded-full'
+      style={{ backgroundColor: color }}
+    />
+  )
+}

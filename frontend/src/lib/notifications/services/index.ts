@@ -1,5 +1,8 @@
 /* Notification Services Index */
 
+// Re-export notification types
+export type { NotifItem, NotifSource } from '../types';
+
 // Re-export notification feed aggregation and mapping logic
 export { rel, discTitle, discHref, discSubtitle, groupNotifications } from './utils/notification-feed-mappers';
 export { markKeysRead, useReadKeys } from './utils/read-store';
