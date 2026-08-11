@@ -48,9 +48,10 @@ export function useThreadMessages(
         })
         if (cancelled || requestSeqRef.current !== seq) return
         const all = page.results ?? []
-        const root = all.find((m) => m.id === validRootId) ?? null
+        const rootIdStr = validRootId != null ? String(validRootId) : null
+        const root = all.find((m) => m.id === rootIdStr) ?? null
         const replies = all
-          .filter((m) => m.id !== validRootId && m.parentMessageId === validRootId)
+          .filter((m) => m.id !== rootIdStr && m.parentMessageId === rootIdStr)
           .toSorted(compareByCreatedAt)
         setState({
           root,
@@ -95,8 +96,9 @@ export function useThreadMessages(
         cursor,
       })
       if (requestSeqRef.current !== seq) return
+      const rootIdStr = validRootId != null ? String(validRootId) : null
       const older = (page.results ?? []).filter(
-        (m) => m.id !== validRootId && m.parentMessageId === validRootId
+        (m) => m.id !== rootIdStr && m.parentMessageId === rootIdStr
       )
       setState((s) => ({
         ...s,

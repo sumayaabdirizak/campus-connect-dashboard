@@ -40,7 +40,7 @@ export function DmPane({ groupDmId }: { groupDmId: string | null }) {
   const numericGroupDmId = groupDmId != null ? Number(groupDmId) : null
   const messagesStore = useGroupDmMessages(numericGroupDmId)
   const typers = useGroupDmTyping(numericGroupDmId, myUserId)
-  const { latestReadByOthers } = useDmReadReceipts(numericGroupDmId, myUserId)
+  const { latestReadByOthers } = useDmReadReceipts(groupDmId, myUserId)
 
   const memberCount = detail?.members?.length ?? 0
   const { handleLeave, leaveMut } = useDmPaneEffects({

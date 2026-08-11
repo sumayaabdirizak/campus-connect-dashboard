@@ -1,9 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render } from '@testing-library/react'
+import * as RTL from '@testing-library/react'
 import { StudentDashboard } from './student-dashboard'
 import * as authStore from '@/lib/auth-store'
 import * as studentCoursesQueries from '@/lib/student-courses/queries'
 import * as gradebookQueries from '@/lib/course-details/queries/gradebook-queries'
+
+const screen = RTL.screen as any
+const waitFor = RTL.waitFor as any
 
 // Mock dependencies
 vi.mock('@/lib/auth-store')

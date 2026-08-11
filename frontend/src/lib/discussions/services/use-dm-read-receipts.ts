@@ -25,28 +25,28 @@ import { getGroupDmReceipts } from '../queries/group-dm-service';
 import { useReconnectGeneration } from './use-reconnect-generation';
 
 type ReadReceiptUpdate = {
-  groupDmId?: number | null;
-  messageId?: number | null;
+  groupDmId?: string | null;
+  messageId?: string | null;
   userId?: number;
   readAt?: string;
 };
 
 export function useDmReadReceipts(
-  groupDmId: number | null | undefined,
+  groupDmId: string | null | undefined,
   myUserId: number | null
 ): {
-  receiptsByUser: Map<number, { messageId: number; readAt: string }>;
+  receiptsByUser: Map<number, { messageId: string; readAt: string }>;
   /** Highest messageId read by *any* user other than the caller. Used to
    *  compute whether your last sent message is "seen". */
-  latestReadByOthers: number | null;
+  latestReadByOthers: string | null;
 } {
   const validId =
-    Number.isFinite(Number(groupDmId)) && Number(groupDmId) > 0
-      ? Number(groupDmId)
+    groupDmId && typeof groupDmId === 'string' && groupDmId.trim().length > 0
+      ? groupDmId
       : null;
 
   const [, forceRender] = useState(0);
-  const mapRef = useRef<Map<number, { messageId: number; readAt: string }>>(
+  const mapRef = useRef<Map<number, { messageId: string; readAt: string }>>(
     new Map()
   );
   const reconnectGen = useReconnectGeneration();
@@ -92,10 +92,10 @@ export function useDmReadReceipts(
     }
     const socket = getDiscussionSocket();
     const onUpdate = (payload: ReadReceiptUpdate) => {
-      if (Number(payload?.groupDmId) !== validId) return;
+      if (payload?.groupDmId !== validId) return;
       const userId = Number(payload?.userId);
-      const messageId = Number(payload?.messageId);
-      if (!Number.isFinite(userId) || !Number.isFinite(messageId)) return;
+      const messageId = payload?.messageId;
+      if (!Number.isFinite(userId) || !messageId) return;
       const map = mapRef.current;
       const prev = map.get(userId);
       // Only advance — never regress someone's read marker.
@@ -117,12 +117,12 @@ export function useDmReadReceipts(
 
   const receiptsByUser = mapRef.current;
   const latestReadByOthers = useMemo(() => {
-    let max = 0;
+    let max: string | null = null;
     for (const [uid, entry] of receiptsByUser) {
       if (myUserId != null && uid === myUserId) continue;
-      if (entry.messageId > max) max = entry.messageId;
+      if (!max || entry.messageId > max) max = entry.messageId;
     }
-    return max > 0 ? max : null;
+    return max;
     // We intentionally depend on a stable "tick" via forceRender; the Map
     // itself is mutated in place but referentially identical.
     // eslint-disable-next-line react-hooks/exhaustive-deps

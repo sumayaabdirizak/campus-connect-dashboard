@@ -16,15 +16,17 @@ export function useThreadSocketSync(
 
     const onNew = (raw: unknown) => {
       const msg = unwrap(raw)
+      const rootIdStr = validRootId != null ? String(validRootId) : null
       if (!msg || Number(msg.channelId) !== validChannelId) return
-      if (Number(msg.parentMessageId) !== validRootId) return
+      if (msg.parentMessageId !== rootIdStr) return
       setState((s) => ({ ...s, replies: mergeReplies(s.replies, [msg]) }))
     }
     const onEdit = (raw: unknown) => {
       const msg = unwrap(raw)
       if (!msg) return
+      const rootIdStr = validRootId != null ? String(validRootId) : null
       setState((s) => {
-        if (msg.id === validRootId) {
+        if (msg.id === rootIdStr) {
           return { ...s, root: s.root ? { ...s.root, ...msg } : msg }
         }
         const idx = s.replies.findIndex((x) => x.id === msg.id)
@@ -34,11 +36,12 @@ export function useThreadSocketSync(
         return { ...s, replies: next }
       })
     }
-    const onDelete = (payload: { messageId?: number }) => {
-      const messageId = Number(payload?.messageId)
-      if (!Number.isFinite(messageId)) return
+    const onDelete = (payload: { messageId?: string }) => {
+      const messageId = payload?.messageId
+      if (!messageId) return
+      const rootIdStr = validRootId != null ? String(validRootId) : null
       setState((s) => {
-        if (messageId === validRootId && s.root) {
+        if (messageId === rootIdStr && s.root) {
           return { ...s, root: { ...s.root, deletedAt: new Date().toISOString() } }
         }
         const idx = s.replies.findIndex((x) => x.id === messageId)
@@ -49,14 +52,15 @@ export function useThreadSocketSync(
       })
     }
     const onReaction = (payload: {
-      messageId?: number
+      messageId?: string
       reactions?: MessageReaction[]
     }) => {
-      const messageId = Number(payload?.messageId)
-      if (!Number.isFinite(messageId)) return
+      const messageId = payload?.messageId
+      if (!messageId) return
       if (!Array.isArray(payload?.reactions)) return
+      const rootIdStr = validRootId != null ? String(validRootId) : null
       setState((s) => {
-        if (messageId === validRootId && s.root) {
+        if (messageId === rootIdStr && s.root) {
           return { ...s, root: { ...s.root, reactions: payload.reactions } }
         }
         const idx = s.replies.findIndex((x) => x.id === messageId)

@@ -18,16 +18,16 @@ export function AdminDashboard() {
   const statsQuery = useAdminAuditStats()
 
   const analytics = analyticsQuery.data
-  const faculties = facultiesQuery.data?.faculties || []
+  const faculties = facultiesQuery.data?.results || []
   const stats = statsQuery.data
   const isLoading = analyticsQuery.isLoading || facultiesQuery.isLoading || statsQuery.isLoading
   const hasError = analyticsQuery.error || facultiesQuery.error
 
   // Calculate stats from analytics
-  const userCount = analytics?.summary?.totalUsers || 0
-  const courseCount = analytics?.summary?.activeCourses || 0
+  const userCount = analytics?.kpis?.totalUsers || 0
+  const courseCount = analytics?.kpis?.totalCourses || 0
   const departmentCount = faculties.length
-  const activeToday = analytics?.summary?.activeToday || 0
+  const activeToday = analytics?.kpis?.activeUsersThisMonth || 0
 
   if (hasError) {
     return (
@@ -91,7 +91,7 @@ export function AdminDashboard() {
           <ActionCard title='Manage Users' count={userCount} href='/dashboard/admin/users' />
           <ActionCard title='Manage Courses' count={courseCount} href='/dashboard/admin/courses' />
           <ActionCard title='Manage Departments' count={departmentCount} href='/dashboard/admin/departments' />
-          <ActionCard title='View Reports' count={analytics?.summary?.totalReports || 0} href='/dashboard/admin/reports' />
+          <ActionCard title='View Reports' count={0} href='/dashboard/admin/reports' />
         </div>
       </div>
 

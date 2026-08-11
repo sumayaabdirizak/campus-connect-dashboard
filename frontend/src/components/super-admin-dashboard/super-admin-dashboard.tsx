@@ -15,14 +15,14 @@ export function SuperAdminDashboard() {
   const facultiesQuery = useAdminFaculties()
 
   const analytics = analyticsQuery.data
-  const faculties = facultiesQuery.data?.faculties || []
+  const faculties = facultiesQuery.data?.results || []
   const isLoading = analyticsQuery.isLoading || facultiesQuery.isLoading
   const hasError = analyticsQuery.error || facultiesQuery.error
 
   // Platform-wide metrics
-  const totalUsers = analytics?.summary?.totalUsers || 0
-  const activeMonth = analytics?.summary?.activeMonth || 0
-  const adminCount = analytics?.summary?.admins || 0
+  const totalUsers = analytics?.kpis?.totalUsers || 0
+  const activeMonth = analytics?.kpis?.activeUsersThisMonth || 0
+  const adminCount = faculties.length || 0
   const alertCount = 0 // Placeholder
 
   if (hasError) {
@@ -115,14 +115,14 @@ export function SuperAdminDashboard() {
           <Card>
             <CardContent className='p-4'>
               <p className='text-sm text-muted-foreground'>Total Courses</p>
-              <p className='text-3xl font-bold'>{analytics?.summary?.totalCourses || 0}</p>
+              <p className='text-3xl font-bold'>{analytics?.kpis?.totalCourses || 0}</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className='p-4'>
-              <p className='text-sm text-muted-foreground'>Enrollment Rate</p>
+              <p className='text-sm text-muted-foreground'>Completion Rate</p>
               <p className='text-3xl font-bold'>
-                {analytics?.summary?.enrollmentRate ? `${Math.round(analytics.summary.enrollmentRate)}%` : 'N/A'}
+                {analytics?.kpis?.completionRate ? `${Math.round(analytics.kpis.completionRate)}%` : 'N/A'}
               </p>
             </CardContent>
           </Card>

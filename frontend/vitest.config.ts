@@ -16,10 +16,12 @@ export default defineConfig({
         'vitest.setup.ts',
       ],
       all: true,
-      lines: 70,
-      functions: 70,
-      branches: 70,
-      statements: 70,
+      thresholds: {
+        lines: 70,
+        functions: 70,
+        branches: 70,
+        statements: 70,
+      },
     },
   },
   resolve: {

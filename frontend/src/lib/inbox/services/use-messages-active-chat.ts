@@ -37,12 +37,12 @@ export function useMessagesActiveChat() {
   const role = useAuthStore((s) => s.user?.role)
   const officeOnly = isOfficeMessagesOnlyRole(role)
   const { data: serversData } = useServers()
-  const { clubs: rawClubs } = useJoinedClubsList()
+  const rawClubs = useJoinedClubsList() || []
   // Clubs' `serverId` FK isn't migrated to UUID yet â€” stringify defensively so
   // this compiles against the now-string DiscussionGroup id; club/channel
   // association lookups degrade gracefully (no match) until clubs catches up.
   const clubs = useMemo(
-    () => rawClubs.map((c) => ({ ...c, serverId: c.serverId != null ? String(c.serverId) : null })),
+    () => rawClubs.map((c: any) => ({ ...c, serverId: c.serverId != null ? String(c.serverId) : null })),
     [rawClubs]
   )
   const [active, setActive] = useState<ActiveChat | null>(null)

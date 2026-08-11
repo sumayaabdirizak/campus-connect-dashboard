@@ -16,14 +16,14 @@ export function TeacherDashboard() {
   const user = useAuthStore((state) => state.user)
   const coursesQuery = useTeacherCourses(true)
 
-  const courses = coursesQuery.data?.courses || []
+  const courses = coursesQuery.data || []
   const isLoading = coursesQuery.isLoading
   const hasError = coursesQuery.error
 
   // Calculate KPIs
-  const totalStudents = courses.reduce((sum, c) => sum + (c.totalStudents || 0), 0)
-  const totalPending = courses.reduce((sum, c) => sum + (c.pendingSubmissions || 0), 0)
-  const totalDrafts = courses.reduce((sum, c) => sum + (c.drafts || 0), 0)
+  const totalStudents = courses.reduce((sum: number, c: any) => sum + (c.totalStudents || 0), 0)
+  const totalPending = courses.reduce((sum: number, c: any) => sum + (c.pendingSubmissions || 0), 0)
+  const totalDrafts = courses.reduce((sum: number, c: any) => sum + (c.drafts || 0), 0)
 
   if (hasError) {
     return (

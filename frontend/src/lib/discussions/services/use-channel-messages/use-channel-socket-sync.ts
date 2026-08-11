@@ -25,8 +25,8 @@ export function useChannelSocketSync(
         setState((s) => ({ ...s, messages: mergeMessages(s.messages, [msg]) }))
         return
       }
-      const parentId = Number(msg.parentMessageId)
-      if (!Number.isFinite(parentId)) return
+      const parentId = msg.parentMessageId
+      if (!parentId) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === parentId)
         if (idx < 0) return s
@@ -72,10 +72,11 @@ export function useChannelSocketSync(
       })
     }
 
-    const onDelete = (payload: { messageId?: number; channelId?: number }) => {
-      const messageId = Number(payload?.messageId)
-      if (!Number.isFinite(messageId)) return
-      if (payload?.channelId != null && Number(payload.channelId) !== validId) return
+    const onDelete = (payload: { messageId?: string; channelId?: string }) => {
+      const messageId = payload?.messageId
+      if (!messageId) return
+      const channelId = payload?.channelId ? String(payload.channelId) : null
+      if (channelId != null && Number(channelId) !== validId) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)
         if (idx < 0) return s
@@ -85,9 +86,9 @@ export function useChannelSocketSync(
       })
     }
 
-    const onReaction = (payload: { messageId?: number; reactions?: MessageReaction[] }) => {
-      const messageId = Number(payload?.messageId)
-      if (!Number.isFinite(messageId)) return
+    const onReaction = (payload: { messageId?: string; reactions?: MessageReaction[] }) => {
+      const messageId = payload?.messageId
+      if (!messageId) return
       if (!Array.isArray(payload?.reactions)) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)

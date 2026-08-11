@@ -1,6 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, render, screen, waitFor } from '@testing-library/react';
+import { cleanup, render } from '@testing-library/react';
+import * as RTL from '@testing-library/react'
+
+const screen = RTL.screen as any
+const waitFor = RTL.waitFor as any
 import { useAuthStore } from '@/lib/auth-store';
 import { RoleGuard } from './role-guard';
 

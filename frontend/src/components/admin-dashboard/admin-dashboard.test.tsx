@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render } from '@testing-library/react'
+import * as RTL from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
+const screen = RTL.screen as any
 import { AdminDashboard } from './admin-dashboard'
 import * as authStore from '@/lib/auth-store'
 import * as adminQueries from '@/lib/admin-queries'

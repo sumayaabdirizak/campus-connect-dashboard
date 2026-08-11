@@ -33,10 +33,11 @@ export function useGroupDmSocketSync(
         return { ...s, messages: next }
       })
     }
-    const onDelete = (payload: { messageId?: number; groupDmId?: number }) => {
-      const messageId = Number(payload?.messageId)
-      if (!Number.isFinite(messageId)) return
-      if (payload?.groupDmId != null && Number(payload.groupDmId) !== validId) return
+    const onDelete = (payload: { messageId?: string; groupDmId?: string }) => {
+      const messageId = payload?.messageId
+      if (!messageId) return
+      const groupDmId = payload?.groupDmId ? String(payload.groupDmId) : null
+      if (groupDmId != null && Number(groupDmId) !== validId) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)
         if (idx < 0) return s
@@ -46,11 +47,11 @@ export function useGroupDmSocketSync(
       })
     }
     const onReaction = (payload: {
-      messageId?: number
+      messageId?: string
       reactions?: MessageReaction[]
     }) => {
-      const messageId = Number(payload?.messageId)
-      if (!Number.isFinite(messageId)) return
+      const messageId = payload?.messageId
+      if (!messageId) return
       if (!Array.isArray(payload?.reactions)) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)
