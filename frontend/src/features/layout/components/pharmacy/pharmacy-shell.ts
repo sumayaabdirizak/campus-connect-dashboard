@@ -1,1 +1,1 @@
-export { default as PharmacyShell } from '@/components/layout/pharmacy/pharmacy-shell'
+export { PharmacyShell } from '@/components/layout/pharmacy/pharmacy-shell'
