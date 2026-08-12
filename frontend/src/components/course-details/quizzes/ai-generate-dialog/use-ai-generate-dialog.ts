@@ -1,0 +1,156 @@
+'use client';
+
+import { useState } from 'react';
+import {
+  useGenerateQuestions,
+  useImportBankQuestions,
+  useImportToQuiz
+} from '@/lib/course-details/queries/question-bank-queries';
+import { useCreateQuiz } from '@/lib/course-details/queries/quizzes-queries';
+import type { GeneratedQuestion } from '@/lib/course-details/types';
+import type { Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
+import {
+  loadSourceFile,
+  runGenerateQuestions,
+  saveGeneratedQuestions
+} from './ai-generate-actions';
+import type { Destination, Difficulty } from './types';
+
+export function useAiGenerateDialog(opts: {
+  courseOfferingId: string;
+  destination: Destination;
+  onOpenChange: (open: boolean) => void;
+  onQuizCreated?: (quiz: Quiz) => void;
+}) {
+  const { courseOfferingId, destination, onOpenChange, onQuizCreated } = opts;
+  const isNewQuiz = destination.kind === 'new-quiz';
+
+  const generateMutation = useGenerateQuestions(courseOfferingId);
+  const importMutation = useImportBankQuestions(courseOfferingId);
+  const createQuizMutation = useCreateQuiz(courseOfferingId);
+  const importToQuizMutation = useImportToQuiz(
+    courseOfferingId,
+    destination.kind === 'quiz' ? destination.quizId : 0
+  );
+
+  const [phase, setPhase] = useState<'config' | 'preview'>('config');
+  const [quizTitle, setQuizTitle] = useState('');
+  const [prompt, setPrompt] = useState('');
+  const [sourceMaterial, setSourceMaterial] = useState('');
+  const [sourceFileName, setSourceFileName] = useState<string | null>(null);
+  const [isExtractingSource, setIsExtractingSource] = useState(false);
+  const [count, setCount] = useState(10);
+  const [questionTypes, setQuestionTypes] = useState<QuizQuestionType[]>(['MCQ']);
+  const [difficulty, setDifficulty] = useState<Difficulty>('mixed');
+  const [generated, setGenerated] = useState<GeneratedQuestion[]>([]);
+  const [keepSet, setKeepSet] = useState<Set<number>>(new Set());
+
+  const closeHandler = (next: boolean) => {
+    if (!next) {
+      setPhase('config');
+      setQuizTitle('');
+      setPrompt('');
+      setSourceMaterial('');
+      setSourceFileName(null);
+      setIsExtractingSource(false);
+      setCount(10);
+      setQuestionTypes(['MCQ']);
+      setDifficulty('mixed');
+      setGenerated([]);
+      setKeepSet(new Set());
+    }
+    onOpenChange(next);
+  };
+
+  const toggleType = (t: QuizQuestionType) => {
+    setQuestionTypes((prev) =>
+      prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
+    );
+  };
+
+  const handleSourceFile = (file: File | undefined) => {
+    if (!file) return;
+    void loadSourceFile(file, sourceMaterial, {
+      setIsExtractingSource,
+      setSourceMaterial,
+      setSourceFileName
+    });
+  };
+
+  const handleGenerate = () =>
+    runGenerateQuestions({
+      isNewQuiz,
+      quizTitle,
+      prompt,
+      sourceMaterial,
+      count,
+      questionTypes,
+      difficulty,
+      generateMutation,
+      onPreview: (questions) => {
+        setGenerated(questions);
+        setKeepSet(new Set(questions.map((_, i) => i)));
+        setPhase('preview');
+      }
+    });
+
+  const toggleKeep = (idx: number) => {
+    setKeepSet((prev) => {
+      const next = new Set(prev);
+      if (next.has(idx)) next.delete(idx);
+      else next.add(idx);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (keepSet.size === generated.length) setKeepSet(new Set());
+    else setKeepSet(new Set(generated.map((_, i) => i)));
+  };
+
+  const handleSave = () =>
+    saveGeneratedQuestions({
+      generated,
+      keepSet,
+      quizTitle,
+      destination,
+      createQuizMutation,
+      importMutation,
+      onQuizCreated,
+      closeHandler
+    });
+
+  return {
+    isNewQuiz,
+    phase,
+    setPhase,
+    quizTitle,
+    setQuizTitle,
+    prompt,
+    setPrompt,
+    sourceMaterial,
+    setSourceMaterial,
+    sourceFileName,
+    setSourceFileName,
+    isExtractingSource,
+    count,
+    setCount,
+    questionTypes,
+    difficulty,
+    setDifficulty,
+    generated,
+    keepSet,
+    closeHandler,
+    toggleType,
+    handleSourceFile,
+    handleGenerate,
+    toggleKeep,
+    toggleAll,
+    handleSave,
+    isGenerating: generateMutation.isPending,
+    isSaving:
+      importMutation.isPending ||
+      importToQuizMutation.isPending ||
+      createQuizMutation.isPending
+  };
+}
