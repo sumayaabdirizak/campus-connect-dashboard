@@ -82,7 +82,7 @@ export function useNotificationFeed() {
           type: 'announcement',
           title: a.title,
           subtitle: a.createdBy?.name
-            ? `${a.createdBy.name} Â· ${rel(a.createdAt)}`
+            ? `${a.createdBy.name} · ${rel(a.createdAt)}`
             : rel(a.createdAt) || 'Announcement',
           body: a.createdBy?.name
             ? `From ${a.createdBy.name}`
@@ -108,7 +108,7 @@ export function useNotificationFeed() {
           key,
           source: d.kind,
           type: d.kind,
-          title: d.courseCode ? `${d.courseCode} Â· ${d.title}` : d.title,
+          title: d.courseCode ? `${d.courseCode} · ${d.title}` : d.title,
           subtitle: `Due ${rel(d.deadlineAt)}`,
           body: d.kind === 'quiz' ? 'Quiz due' : 'Assignment due',
           at: d.deadlineAt!,
