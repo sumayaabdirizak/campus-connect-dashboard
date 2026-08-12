@@ -1,12 +1,6 @@
-'use client'
+'use client';
 
-interface CourseChatProps {
-  courseId: string;
-  isStudent?: boolean;
-}
+import { CourseChat } from './course-chat/course-chat';
 
-export function CourseChat({ courseId, isStudent }: CourseChatProps) {
-  return <div className="p-4">Course Chat for {courseId}</div>
-}
-
-export default CourseChat
+export { CourseChat };
+export default CourseChat;

@@ -2,6 +2,7 @@
 // These components are lazy-loaded based on the active course tab
 
 export { default as CourseAssignments } from '../course-assignments'
+export { default as CourseChat } from '../course-chat'
 export { default as CourseFeed } from '../course-feed'
 export { default as CourseGradebook } from '../course-gradebook'
 export { default as CourseGroups } from '../course-groups'

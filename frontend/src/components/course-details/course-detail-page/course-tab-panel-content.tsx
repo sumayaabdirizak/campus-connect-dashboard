@@ -6,6 +6,7 @@ import type { CourseTabId } from '@/lib/course-details/queries/types';
 import type { OverviewData } from '@/components/teacher-courses/course-overview/types';
 import {
   CourseAssignments,
+  CourseChat,
   CourseFeed,
   CourseGradebook,
   CourseGroups,
@@ -44,6 +45,8 @@ export function CourseTabPanelContent({
       )}
 
       {activeTab === 'feed' && <CourseFeed courseId={offeringId} isStudent={isStudent} />}
+
+      {activeTab === 'chat' && <CourseChat courseId={offeringId} isStudent={isStudent} />}
 
       {activeTab === 'assignments' && (
         <CourseAssignments courseId={offeringId} isStudent={isStudent} />
