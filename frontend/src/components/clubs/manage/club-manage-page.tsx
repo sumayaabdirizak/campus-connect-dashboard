@@ -1,5 +1,11 @@
 'use client'
-export function ClubManagePage() {
-  return <div className="p-4">Club Manage Page</div>
+
+import { use } from 'react'
+import { ClubManagePane } from './club-manage-pane'
+
+export function ClubManagePage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params)
+  return <ClubManagePane slug={slug} />
 }
+
 export default ClubManagePage
