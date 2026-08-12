@@ -28,8 +28,6 @@ export interface CourseTabDef {
  * Default course tabs for teacher view
  */
 export const TEACHER_COURSE_TABS: CourseTabDef[] = [
-  { id: 'overview', label: 'Overview', visible: true },
-  { id: 'announcements', label: 'Announcements', visible: true },
   { id: 'assignments', label: 'Assignments', visible: true },
   { id: 'quizzes', label: 'Quizzes', visible: true },
   { id: 'resources', label: 'Resources', visible: true },
@@ -38,19 +36,17 @@ export const TEACHER_COURSE_TABS: CourseTabDef[] = [
   { id: 'roster', label: 'Roster', visible: true },
   { id: 'groups', label: 'Groups', visible: true },
   { id: 'chat', label: 'Chat', visible: true },
+  { id: 'reviews', label: 'Reviews', visible: true },
 ];
 
 /**
  * Default course tabs for student view
  */
 export const STUDENT_COURSE_TABS: CourseTabDef[] = [
-  { id: 'overview', label: 'Overview', visible: true },
-  { id: 'announcements', label: 'Announcements', visible: true },
   { id: 'assignments', label: 'Assignments', visible: true },
   { id: 'quizzes', label: 'Quizzes', visible: true },
   { id: 'resources', label: 'Resources', visible: true },
   { id: 'feed', label: 'Feed', visible: true },
-  { id: 'roster', label: 'Roster', visible: true },
   { id: 'groups', label: 'Groups', visible: true },
   { id: 'chat', label: 'Chat', visible: true },
 ];

@@ -7,9 +7,9 @@ import { useAuthStore } from '@/lib/auth-store'
 import { useTeacherCourses } from '@/lib/teacher-courses/queries'
 import { useStudentCourses } from '@/lib/student-courses/queries'
 import { CourseList } from '@/components/teacher-courses/course-list'
-import { StudentCourseList } from '@/components/student-courses/components/course-list'
-import { GraduatedBanner } from '@/components/student-courses/components/graduated-banner'
-import { SemesterHistoryPanel } from '@/components/student-courses/components/semester-history-panel'
+import { StudentCourseList } from '@/components/student-courses/course-list'
+import { GraduatedBanner } from '@/components/student-courses/graduated-banner'
+import { SemesterHistoryPanel } from '@/components/student-courses/semester-history-panel'
 import { AdminCoursesPage } from '@/components/courses-admin/components/admin-courses-page'
 
 export default function CoursesPage() {
