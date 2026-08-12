@@ -6,6 +6,7 @@ export interface AdminCourse {
   code: string;
   description?: string | null;
   credits: number;
+  status?: string;
   department: { id: number; name: string; code: string };
   teacherAssignings?: {
     teacher: { id: number; full_name: string; email: string };
