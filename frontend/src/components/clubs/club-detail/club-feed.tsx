@@ -5,7 +5,13 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Icons } from '@/components/icons'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useClubFeed, usePostClubMessage, useToggleClubReaction } from '@/lib/clubs/queries'
+import {
+  useClubFeed,
+  usePostClubMessage,
+  useToggleClubReaction,
+  useClubComments,
+  usePostClubComment,
+} from '@/lib/clubs/queries'
 import { useAuthStore } from '@/lib/auth-store'
 import { uploadDiscussionFile } from '@/lib/discussions/services/discussion-upload'
 import { toast } from 'sonner'
@@ -101,6 +107,118 @@ function renderBody(text: string) {
 
 const LIKE_EMOJI = '❤️'
 
+/** Comment list + reply composer for one post. Only mounted once opened. */
+function CommentThread({
+  messageId,
+  serverId,
+  themeColor,
+}: {
+  messageId: string
+  serverId?: number | null
+  themeColor: string
+}) {
+  const { data, isLoading } = useClubComments(serverId, messageId, true)
+  const postComment = usePostClubComment(serverId)
+  const user = useAuthStore((s) => s.user)
+  const [draft, setDraft] = useState('')
+
+  const comments = data?.results ?? []
+  const trimmed = draft.trim()
+
+  const submit = () => {
+    if (!trimmed || postComment.isPending) return
+    postComment.mutate(
+      { messageId, content: trimmed },
+      { onSuccess: () => setDraft('') }
+    )
+  }
+
+  return (
+    <div className='mt-3 space-y-3 border-t border-gray-100 pt-3'>
+      {isLoading ? (
+        <div className='space-y-2'>
+          <Skeleton className='h-10 rounded-lg' />
+          <Skeleton className='h-10 rounded-lg' />
+        </div>
+      ) : comments.length > 0 ? (
+        <div className='space-y-2.5'>
+          {comments.map((c) => {
+            const name = c.isAnonymous ? 'Anonymous' : (c.sender?.full_name ?? 'Unknown')
+            const avatarUrl = c.isAnonymous ? null : c.sender?.avatarUrl
+            return (
+              <div key={c.id} className='flex items-start gap-2'>
+                <div
+                  className='flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold'
+                  style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
+                >
+                  {avatarUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={avatarUrl} alt='' className='h-full w-full object-cover' />
+                  ) : (
+                    initials(name)
+                  )}
+                </div>
+                <div className='min-w-0 flex-1 rounded-xl bg-gray-50 px-3 py-2'>
+                  <div className='flex items-baseline gap-2'>
+                    <p className='truncate text-xs font-bold text-gray-900'>{name}</p>
+                    <p className='shrink-0 text-[10px] text-gray-400'>
+                      {timeAgoLong(c.createdAt)}
+                    </p>
+                  </div>
+                  {c.content ? (
+                    <p className='mt-0.5 whitespace-pre-wrap break-words text-xs text-gray-700'>
+                      {c.content}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : (
+        <p className='text-xs text-gray-400'>No comments yet — be the first to reply.</p>
+      )}
+
+      {/* Reply composer */}
+      <div className='flex items-center gap-2'>
+        <div
+          className='flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold'
+          style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
+        >
+          {user?.avatarUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={user.avatarUrl} alt='' className='h-full w-full object-cover' />
+          ) : (
+            initials(user?.full_name)
+          )}
+        </div>
+        <input
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              submit()
+            }
+          }}
+          placeholder='Write a comment...'
+          maxLength={20000}
+          className='min-w-0 flex-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300'
+        />
+        <button
+          type='button'
+          onClick={submit}
+          disabled={!trimmed || postComment.isPending}
+          aria-label='Send comment'
+          className='shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+        >
+          <Icons.send className='h-4 w-4' />
+        </button>
+      </div>
+    </div>
+  )
+}
+
 function FeedMessage({
   message,
   themeColor,
@@ -112,6 +230,7 @@ function FeedMessage({
 }) {
   const viewerId = useAuthStore((s) => s.user?.id)
   const toggleReaction = useToggleClubReaction(serverId)
+  const [showComments, setShowComments] = useState(false)
   const name = message.isAnonymous ? 'Anonymous' : (message.sender?.full_name ?? 'Unknown')
   const avatarUrl = message.isAnonymous ? null : message.sender?.avatarUrl
   // Only the author gets the overflow menu.
@@ -257,7 +376,9 @@ function FeedMessage({
         </button>
         <button
           type='button'
-          className='flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-blue-500'
+          onClick={() => setShowComments((v) => !v)}
+          aria-expanded={showComments}
+          className={`flex items-center gap-1.5 text-sm transition-colors ${showComments ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
         >
           <Icons.chat className='h-5 w-5' />
           {commentCount > 0 ? <span className='text-xs'>{commentCount}</span> : null}
@@ -271,6 +392,10 @@ function FeedMessage({
             ? `${firstLiker} and ${serverReactions.length - 1} other${serverReactions.length - 1 === 1 ? '' : 's'} liked this`
             : `${firstLiker} liked this`}
         </p>
+      ) : null}
+
+      {showComments ? (
+        <CommentThread messageId={message.id} serverId={serverId} themeColor={themeColor} />
       ) : null}
     </div>
   )

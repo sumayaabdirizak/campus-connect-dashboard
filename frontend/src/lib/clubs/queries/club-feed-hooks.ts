@@ -98,3 +98,56 @@ export function useToggleClubReaction(serverId?: number | null) {
     onError: (err: Error) => toast.error(err.message || 'Failed to react'),
   });
 }
+
+// ────────────────────────────────────────────────────────────────────────────
+// Comments — replies to a post. Backed by the same group-message endpoints
+// as the top-level feed: a comment is just a message with parentMessageId
+// set, and GET ?parentId= scopes the list to one post's thread.
+// ────────────────────────────────────────────────────────────────────────────
+
+export const clubCommentsKey = (serverId: number | string, messageId: string) =>
+  ['clubs', 'feed', String(serverId), 'comments', messageId] as const;
+
+export const listClubComments = (serverId: number | string, messageId: string) =>
+  apiClient<ClubFeedResponse>(
+    `/discussions/groups/${encodeURIComponent(String(serverId))}/messages?parentId=${encodeURIComponent(
+      messageId
+    )}&limit=100`
+  );
+
+export const postClubComment = (
+  serverId: number | string,
+  messageId: string,
+  content: string
+) =>
+  apiClient<DiscussionMessage>(
+    `/discussions/groups/${encodeURIComponent(String(serverId))}/messages`,
+    { method: 'POST', body: JSON.stringify({ content, parentMessageId: messageId }) }
+  );
+
+/** Comment thread for one post. Only fetched once the thread is opened. */
+export function useClubComments(
+  serverId: number | null | undefined,
+  messageId: string,
+  enabled: boolean
+) {
+  return useQuery({
+    queryKey: clubCommentsKey(serverId ?? 0, messageId),
+    queryFn: () => listClubComments(serverId as number, messageId),
+    enabled: enabled && Number.isFinite(serverId) && Number(serverId) > 0,
+  });
+}
+
+export function usePostClubComment(serverId?: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { messageId: string; content: string }) =>
+      postClubComment(serverId as number, args.messageId, args.content),
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: clubCommentsKey(serverId ?? 0, variables.messageId) });
+      // Refreshes the post's threadPreview.replyCount shown in the collapsed state.
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to comment'),
+  });
+}
