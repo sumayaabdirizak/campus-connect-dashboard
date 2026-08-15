@@ -61,34 +61,34 @@ export function ClubDetailSidebar({ club, themeColor }: Props) {
         </div>
       ) : null}
 
-      <div className='rounded-xl border bg-card'>
-        <div className='border-b px-4 py-3 text-sm font-semibold'>About</div>
-        <div className='space-y-3 p-4'>
-          <p className='text-sm text-muted-foreground'>
+      <div className='rounded-lg border bg-card'>
+        <div className='border-b px-3 py-2 text-xs font-semibold uppercase tracking-wide'>About</div>
+        <div className='space-y-2 p-3'>
+          <p className='text-xs text-muted-foreground leading-tight'>
             {club.description || 'No description yet.'}
           </p>
           {club.faculty ? (
-            <div className='flex items-center justify-between'>
+            <div className='flex items-center justify-between gap-2'>
               <span className='text-xs text-muted-foreground'>Faculty</span>
-              <span className='text-sm font-medium'>{club.faculty.name}</span>
+              <span className='text-xs font-medium truncate'>{club.faculty.name}</span>
             </div>
           ) : null}
           {club.owner ? (
             <div className='flex items-center justify-between gap-2'>
               <span className='text-xs text-muted-foreground'>Created by</span>
-              <div className='flex items-center gap-1.5 min-w-0'>
-                <Icons.pro className='h-3 w-3 text-amber-500 flex-shrink-0' />
-                <ExpandableText text={club.owner.full_name} maxLength={20} />
+              <div className='flex items-center gap-1 min-w-0'>
+                <Icons.pro className='h-2.5 w-2.5 text-amber-500 flex-shrink-0' />
+                <span className='text-xs font-medium truncate'>{club.owner.full_name}</span>
               </div>
             </div>
           ) : null}
-          <div className='flex items-center justify-between'>
+          <div className='flex items-center justify-between gap-2'>
             <span className='text-xs text-muted-foreground'>Members</span>
-            <span className='text-sm font-medium'>{club.memberCountCache}</span>
+            <span className='text-xs font-medium'>{club.memberCountCache}</span>
           </div>
-          <div className='flex items-center justify-between'>
+          <div className='flex items-center justify-between gap-2'>
             <span className='text-xs text-muted-foreground'>Privacy</span>
-            <span className='text-sm font-medium capitalize'>
+            <span className='text-xs font-medium capitalize'>
               {formatJoinPolicy(club.joinPolicy)}
             </span>
           </div>
