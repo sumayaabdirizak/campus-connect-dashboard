@@ -54,7 +54,7 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
   }
 
   return (
-    <div className='w-full bg-gray-50 border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-200'>
+    <div className='w-full bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-200'>
       {/* Header */}
       <div className='flex items-start justify-between mb-4'>
         <div className='flex items-center gap-4 flex-1 min-w-0'>
