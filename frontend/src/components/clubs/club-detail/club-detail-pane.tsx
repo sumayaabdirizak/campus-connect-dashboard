@@ -33,7 +33,7 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
   return (
     <ScrollArea className='h-full'>
       <div
-        className='min-h-full'
+        className='min-h-full bg-gray-50'
         style={{ '--club-accent': themeColor } as React.CSSProperties}
       >
         {isPending ? <ClubPendingBanner clubName={club.name} /> : null}
