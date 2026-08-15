@@ -255,12 +255,12 @@ export function ClubFeed({
   return (
     <div className='space-y-3'>
       {canPost ? (
-        <div className='rounded-xl border border-gray-200 bg-white p-3 shadow-sm'>
+        <div className='rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm'>
           {/* Author row */}
           <div className='flex items-start justify-between gap-2'>
             <div className='flex min-w-0 items-center gap-2'>
               <div
-                className='flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold'
+                className='flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-semibold'
                 style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
               >
                 {user?.avatarUrl ? (
@@ -271,11 +271,11 @@ export function ClubFeed({
                 )}
               </div>
               <div className='min-w-0'>
-                <p className='truncate text-sm font-bold leading-tight text-gray-900'>
+                <p className='truncate text-xs font-bold leading-tight text-gray-900'>
                   {user?.full_name ?? 'You'}
                 </p>
                 {user?.email ? (
-                  <p className='truncate text-xs text-gray-500'>{user.email}</p>
+                  <p className='truncate text-[10px] leading-tight text-gray-500'>{user.email}</p>
                 ) : null}
               </div>
             </div>
@@ -286,7 +286,7 @@ export function ClubFeed({
               aria-label='Clear post'
               className='shrink-0 rounded-full p-0.5 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent'
             >
-              <Icons.close className='h-4 w-4' />
+              <Icons.close className='h-3.5 w-3.5' />
             </button>
           </div>
 
@@ -304,17 +304,17 @@ export function ClubFeed({
             placeholder='Write something to the group...'
             rows={2}
             maxLength={20000}
-            className='mt-2.5 min-h-[38px] resize-none border-0 bg-transparent p-0 text-sm shadow-none placeholder:text-gray-400 focus-visible:ring-0'
+            className='mt-2 min-h-[30px] resize-none border-0 bg-transparent p-0 text-xs shadow-none placeholder:text-gray-400 focus-visible:ring-0'
           />
 
           {attachmentIds.length > 0 ? (
-            <p className='mt-1.5 text-xs text-gray-500'>
+            <p className='mt-1 text-[10px] text-gray-500'>
               {attachmentIds.length} file{attachmentIds.length !== 1 ? 's' : ''} attached
             </p>
           ) : null}
 
           {/* Divider */}
-          <div className='my-2.5 h-px bg-gray-200' />
+          <div className='my-2 h-px bg-gray-200' />
 
           {/* Toolbar */}
           <div className='flex items-center justify-between'>
@@ -324,18 +324,18 @@ export function ClubFeed({
                 onClick={() => pickFiles('image/*')}
                 disabled={uploading}
                 aria-label='Attach photo'
-                className='rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+                className='rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
               >
-                <Icons.media className='h-4 w-4' />
+                <Icons.media className='h-3.5 w-3.5' />
               </button>
               <button
                 type='button'
                 onClick={() => pickFiles('')}
                 disabled={uploading}
                 aria-label='Attach file'
-                className='rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+                className='rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
               >
-                <Icons.paperclip className='h-4 w-4' />
+                <Icons.paperclip className='h-3.5 w-3.5' />
               </button>
             </div>
             <input
@@ -350,7 +350,7 @@ export function ClubFeed({
               size='sm'
               onClick={submit}
               disabled={!hasDraft || postMutation.isPending || uploading}
-              className='h-8 rounded-full bg-gray-900 px-5 text-xs font-semibold text-white hover:bg-gray-800'
+              className='h-7 rounded-full bg-gray-900 px-4 text-[11px] font-semibold text-white hover:bg-gray-800'
             >
               {postMutation.isPending ? 'Posting...' : uploading ? 'Uploading...' : 'Post'}
             </Button>
