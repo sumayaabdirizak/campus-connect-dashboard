@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useClubDetail, useJoinClub, useLeaveClub } from '@/lib/clubs/queries'
 import { ClubPendingBanner } from '@/components/clubs/club-pending-banner'
 import { ClubDetailBanner } from './club-detail-banner'
@@ -19,11 +19,30 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
   const { data, isLoading } = useClubDetail(slug)
   const [isCollapsed, setIsCollapsed] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
+  const rafRef = useRef<number | null>(null)
   const joinMutation = useJoinClub()
   const leaveMutation = useLeaveClub()
 
+  useEffect(() => {
+    return () => {
+      if (rafRef.current !== null) cancelAnimationFrame(rafRef.current)
+    }
+  }, [])
+
   const handleScroll = () => {
-    setIsCollapsed((scrollRef.current?.scrollTop ?? 0) > 160)
+    // At most one evaluation per frame — scroll fires far more often than that.
+    if (rafRef.current !== null) return
+    rafRef.current = requestAnimationFrame(() => {
+      rafRef.current = null
+      const y = scrollRef.current?.scrollTop ?? 0
+      setIsCollapsed((prev) =>
+        // Separate thresholds on purpose. Collapsing shortens the header, so
+        // content slides up and scrollTop lands back below a single boundary —
+        // which expands it, which pushes scrollTop over the boundary again.
+        // The gap between 180 and 100 keeps the two states from chasing.
+        prev ? y > 100 : y > 180
+      )
+    })
   }
 
   if (isLoading) return <ClubDetailLoading />
