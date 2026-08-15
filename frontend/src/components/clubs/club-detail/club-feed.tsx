@@ -87,21 +87,21 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
           {/* Actions */}
           <div className='mt-3 flex items-center gap-2 opacity-0 transition-opacity group-hover:opacity-100'>
             <button className='flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
-              <Icons.smiley className='h-4 w-4' />
+              <Icons.heart className='h-4 w-4' />
               React
             </button>
             <button className='flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
-              <Icons.reply className='h-4 w-4' />
+              <Icons.chat className='h-4 w-4' />
               Reply
             </button>
             {threadCount > 0 && (
               <button className='flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
-                <Icons.message className='h-4 w-4' />
+                <Icons.chat className='h-4 w-4' />
                 {threadCount} replies
               </button>
             )}
             <button className='ml-auto flex items-center gap-1 rounded px-2 py-1 text-xs text-muted-foreground transition-colors hover:bg-muted hover:text-foreground'>
-              <Icons.moreVertical className='h-4 w-4' />
+              <Icons.ellipsis className='h-4 w-4' />
             </button>
           </div>
         </div>
