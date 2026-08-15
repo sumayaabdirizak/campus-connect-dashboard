@@ -11,7 +11,11 @@ router.get('/mine', async (req, res, next) => {
   try {
     const uid = userId(req);
     const result = await listClubsForUser(uid);
-    res.json(result);
+    res.json({
+      owned: result.owned.map(formatClubForApi),
+      memberOf: result.memberOf.map(formatClubForApi),
+      moderating: result.moderating.map(formatClubForApi),
+    });
   } catch (err) {
     next(err);
   }

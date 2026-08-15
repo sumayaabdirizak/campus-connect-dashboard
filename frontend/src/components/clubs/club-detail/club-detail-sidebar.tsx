@@ -1,8 +1,6 @@
-import Link from 'next/link'
 import { Icons } from '@/components/icons'
 import type { Club } from '@/lib/clubs/types'
 import { formatJoinPolicy } from './helpers'
-import { messagesClubManageHref, messagesServerHref } from '@/lib/inbox/services/messages-href'
 
 type Props = {
   club: Club
@@ -13,14 +11,7 @@ type Props = {
   membershipRole: string | null
 }
 
-export function ClubDetailSidebar({
-  club,
-  slug,
-  themeColor,
-  isMember,
-  isOwner,
-  membershipRole,
-}: Props) {
+export function ClubDetailSidebar({ club, themeColor }: Props) {
   return (
     <aside className='hidden w-80 shrink-0 space-y-4 lg:block'>
       {club.rules ? (
@@ -51,8 +42,11 @@ export function ClubDetailSidebar({
       ) : null}
 
       <div className='rounded-xl border bg-card'>
-        <div className='border-b px-4 py-3 text-sm font-semibold'>Community Info</div>
+        <div className='border-b px-4 py-3 text-sm font-semibold'>About</div>
         <div className='space-y-3 p-4'>
+          <p className='text-sm text-muted-foreground'>
+            {club.description || 'No description yet.'}
+          </p>
           {club.faculty ? (
             <div className='flex items-center justify-between'>
               <span className='text-xs text-muted-foreground'>Faculty</span>
@@ -73,7 +67,7 @@ export function ClubDetailSidebar({
             <span className='text-sm font-medium'>{club.memberCountCache}</span>
           </div>
           <div className='flex items-center justify-between'>
-            <span className='text-xs text-muted-foreground'>Join Policy</span>
+            <span className='text-xs text-muted-foreground'>Privacy</span>
             <span className='text-sm font-medium capitalize'>
               {formatJoinPolicy(club.joinPolicy)}
             </span>
@@ -86,32 +80,6 @@ export function ClubDetailSidebar({
           ) : null}
         </div>
       </div>
-
-      {isMember || isOwner ? (
-        <div className='rounded-xl border bg-card'>
-          <div className='border-b px-4 py-3 text-sm font-semibold'>Quick Links</div>
-          <div className='p-2'>
-            {club.serverId ? (
-              <Link
-                href={messagesServerHref(String(club.serverId))}
-                className='flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted'
-              >
-                <Icons.chat className='h-4 w-4 text-muted-foreground' />
-                Open Chat
-              </Link>
-            ) : null}
-            {isOwner || membershipRole === 'ADMIN' ? (
-              <Link
-                href={messagesClubManageHref(slug)}
-                className='flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors hover:bg-muted'
-              >
-                <Icons.settings className='h-4 w-4 text-muted-foreground' />
-                Manage Club
-              </Link>
-            ) : null}
-          </div>
-        </div>
-      ) : null}
     </aside>
   )
 }

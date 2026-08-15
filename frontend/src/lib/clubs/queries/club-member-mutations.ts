@@ -19,10 +19,14 @@ export function useJoinClub() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (clubId: number) => joinClub(clubId),
-    onSuccess: (_data, clubId) => {
-      qc.invalidateQueries({ queryKey: clubKeys.mine() });
-      qc.invalidateQueries({ queryKey: clubKeys.list() });
-      qc.invalidateQueries({ queryKey: clubKeys.members(clubId) });
+    // Membership changes `isMember` on the detail query and the join state on
+    // every list query, so invalidate the whole namespace — the mutation only
+    // receives a clubId, and `clubKeys.detail` is keyed by slug.
+    onSuccess: (data) => {
+      qc.invalidateQueries({ queryKey: clubKeys.all });
+      toast.success(
+        data?.status === 'PENDING' ? 'Request sent — awaiting approval' : 'Joined!'
+      );
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to join club'),
   });
@@ -32,9 +36,8 @@ export function useLeaveClub() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (clubId: number) => leaveClub(clubId),
-    onSuccess: (_data, clubId) => {
-      qc.invalidateQueries({ queryKey: clubKeys.mine() });
-      qc.invalidateQueries({ queryKey: clubKeys.members(clubId) });
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: clubKeys.all });
       toast.success('You left the club');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to leave club'),

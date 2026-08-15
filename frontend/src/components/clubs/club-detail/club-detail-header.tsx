@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Icons } from '@/components/icons'
 import { ClubRoleBadge } from '@/components/clubs/club-role-badge'
 import type { Club, ClubRole } from '@/lib/clubs/types'
-import { messagesClubManageHref, messagesServerHref } from '@/lib/inbox/services/messages-href'
+import { messagesClubManageHref } from '@/lib/inbox/services/messages-href'
 
 type Props = {
   club: Club
@@ -63,14 +63,6 @@ export function ClubDetailHeader({
         </div>
 
         <div className='flex items-center gap-2 pb-1'>
-          {(isMember || isOwner) && club.serverId ? (
-            <Link href={messagesServerHref(String(club.serverId))}>
-              <Button size='sm' className='gap-1.5 shadow-sm' style={{ backgroundColor: themeColor }}>
-                <Icons.chat className='h-3.5 w-3.5' />
-                Open Chat
-              </Button>
-            </Link>
-          ) : null}
           {!isMember && !isOwner && !isPending && club.joinPolicy !== 'INVITE_ONLY' ? (
             <Button
               size='sm'

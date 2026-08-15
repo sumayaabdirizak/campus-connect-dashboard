@@ -19,7 +19,7 @@ router.get('/:id/members', async (req, res, next) => {
     const members = await prisma.discussionGroupMembership.findMany({
       where: { groupId: club.serverId, leftAt: null, isActive: true },
       include: {
-        user: { select: { id: true, full_name: true, email: true } },
+        user: { select: { id: true, full_name: true, email: true, avatarUrl: true } },
       },
       orderBy: { joinedAt: 'asc' },
     });
@@ -28,7 +28,7 @@ router.get('/:id/members', async (req, res, next) => {
     res.json({
       members: members.map((m) => ({
         userId: m.userId,
-        user: { ...m.user, avatarUrl: null },
+        user: m.user,
         role: m.role,
         clubRole:
           Number(m.userId) === ownerId
@@ -55,17 +55,12 @@ router.get('/:id/requests', async (req, res, next) => {
     const rows = await prisma.clubJoinRequest.findMany({
       where: { clubId, status: 'PENDING' },
       include: {
-        user: { select: { id: true, full_name: true, email: true } },
+        user: { select: { id: true, full_name: true, email: true, avatarUrl: true } },
       },
       orderBy: { requestedAt: 'asc' },
     });
 
-    res.json({
-      requests: rows.map((r) => ({
-        ...r,
-        user: r.user ? { ...r.user, avatarUrl: null } : r.user,
-      })),
-    });
+    res.json({ requests: rows });
   } catch (err) {
     next(err);
   }

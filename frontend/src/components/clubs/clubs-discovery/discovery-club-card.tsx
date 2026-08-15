@@ -159,12 +159,20 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
         </div>
       )}
 
-      {(isMember || joined) && !compact && (
-        <div className='px-3 pb-3'>
-          <div className='flex h-7 w-full items-center justify-center gap-1 rounded-md bg-emerald-500/10 text-xs font-medium text-emerald-600 dark:text-emerald-400'>
-            <Icons.check className='h-3 w-3' />
-            {joined && !isMember ? 'Joined!' : 'Member'}
-          </div>
+      {(isMember || joined) && (
+        <div className={cn('px-3 pb-3', compact && 'pb-0 pr-3')}>
+          {/* No handler — the click bubbles to the wrapping <Link>, which
+              already points at the club. */}
+          <Button size='sm' variant='outline' className='h-7 w-full gap-1 text-xs'>
+            {joined && !isMember ? (
+              <>
+                <Icons.check className='h-3 w-3' />
+                Joined!
+              </>
+            ) : (
+              'View'
+            )}
+          </Button>
         </div>
       )}
 

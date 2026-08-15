@@ -8,6 +8,7 @@ export async function getClubBySlug(slug, { includePending = false, viewerUserId
       faculty: true,
       owner: { select: { id: true, full_name: true } },
       interests: { include: { tag: true } },
+      _count: { select: { requests: { where: { status: 'PENDING' } } } },
     },
   });
   if (!club) return null;
@@ -17,10 +18,21 @@ export async function getClubBySlug(slug, { includePending = false, viewerUserId
   return club;
 }
 
+/** Stored membership roles that the API surfaces as the `MODERATOR` club role. */
+const MODERATOR_MEMBERSHIP_ROLES = new Set(['ADMIN', 'DEAN']);
+
+/** Shared shape so `/clubs/mine` clubs carry the same fields as `/clubs`. */
+const clubCardInclude = {
+  faculty: { select: { id: true, name: true } },
+  interests: { include: { tag: { select: { slug: true, label: true } } } },
+  _count: { select: { requests: { where: { status: 'PENDING' } } } },
+};
+
 export async function listClubsForUser(userId) {
   const [owned, memberships] = await Promise.all([
     prisma.club.findMany({
       where: { ownerId: userId, status: { not: 'ARCHIVED' } },
+      include: clubCardInclude,
       orderBy: { createdAt: 'desc' },
     }),
     prisma.club.findMany({
@@ -35,6 +47,7 @@ export async function listClubsForUser(userId) {
         ownerId: { not: userId },
       },
       include: {
+        ...clubCardInclude,
         server: {
           select: {
             memberships: {
@@ -48,9 +61,10 @@ export async function listClubsForUser(userId) {
     }),
   ]);
 
-  const memberOf = memberships.map((club) => ({
+  // `server` is only fetched to read the viewer's role — drop it from the payload.
+  const memberOf = memberships.map(({ server, ...club }) => ({
     ...club,
-    membershipRole: club.server?.memberships?.[0]?.role || 'MEMBER',
+    membershipRole: server?.memberships?.[0]?.role || 'MEMBER',
   }));
 
   const [ownedWithActivity, memberWithActivity] = await Promise.all([
@@ -61,6 +75,8 @@ export async function listClubsForUser(userId) {
   return {
     owned: ownedWithActivity,
     memberOf: memberWithActivity,
-    moderating: memberWithActivity.filter((c) => c.membershipRole === 'MODERATOR'),
+    moderating: memberWithActivity.filter((c) =>
+      MODERATOR_MEMBERSHIP_ROLES.has(c.membershipRole)
+    ),
   };
 }
