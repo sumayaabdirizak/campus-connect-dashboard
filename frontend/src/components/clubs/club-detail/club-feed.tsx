@@ -39,18 +39,28 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
   const name = message.isAnonymous ? 'Anonymous' : (message.sender?.full_name ?? 'Unknown')
   const avatarUrl = message.isAnonymous ? null : message.sender?.avatarUrl
   const reactionCount = (message.reactions ?? []).length
-  const threadCount = 0 // Placeholder for thread reply count
+  const commentCount = 0 // Placeholder for comment count
   const hasAttachments = (message.attachments ?? []).length > 0
   const imageAttachments = (message.attachments ?? []).filter(a => a.type === 'IMAGE')
+  const [reactions, setReactions] = useState<Record<string, number>>({ '❤️': reactionCount })
+  const [showReactionPicker, setShowReactionPicker] = useState(false)
+
+  const handleAddReaction = (emoji: string) => {
+    setReactions((prev) => ({
+      ...prev,
+      [emoji]: (prev[emoji] || 0) + 1,
+    }))
+    setShowReactionPicker(false)
+  }
 
   return (
-    <div className='group rounded-lg border border-border bg-card shadow-sm transition-all hover:shadow-md hover:border-primary/20'>
-      <div className='p-4'>
-        {/* Header with avatar, name, time, actions */}
-        <div className='flex items-start justify-between gap-3'>
-          <div className='flex gap-3 flex-1 min-w-0'>
+    <div className='w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200'>
+      {/* Header */}
+      <div className='flex items-start justify-between mb-3'>
+        <div className='flex items-center gap-3 flex-1 min-w-0'>
+          <a href='#' className='flex-shrink-0'>
             <div
-              className='flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold shadow-sm'
+              className='flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold border border-gray-200'
               style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
             >
               {avatarUrl ? (
@@ -60,120 +70,107 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
                 initials(name)
               )}
             </div>
-            <div className='min-w-0 flex-1'>
-              <div className='flex items-center gap-2 flex-wrap'>
-                <span className='truncate text-sm font-semibold leading-tight'>{name}</span>
-                <span className='shrink-0 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground'>
-                  Member
-                </span>
-              </div>
-              <p className='text-xs text-muted-foreground mt-1 cursor-help hover:text-foreground transition-colors' title={new Date(message.createdAt).toLocaleString()}>
-                {timeAgo(message.createdAt)}
-              </p>
+          </a>
+          <div className='min-w-0 flex-1'>
+            <div className='flex items-center gap-2'>
+              <a href='#' className='font-bold text-gray-900 hover:underline truncate'>
+                {name}
+              </a>
             </div>
+            <a href='#' className='text-gray-500 text-sm hover:underline'>
+              @{name.toLowerCase().replace(/\s+/g, '')}
+            </a>
           </div>
-
-          {/* More menu */}
-          <button className='opacity-0 group-hover:opacity-100 transition-opacity p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground'>
-            <Icons.ellipsis className='h-4 w-4' />
-          </button>
         </div>
+        <a href='#' className='flex-shrink-0 text-blue-400 hover:text-blue-600 transition-colors'>
+          <Icons.ellipsis className='w-5 h-5' />
+        </a>
+      </div>
 
-        {/* Message content */}
-        <div className='mt-3 ml-13'>
-          {message.content ? (
-            <p className='whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground'>
-              {message.content}
-            </p>
-          ) : hasAttachments ? null : (
-            <p className='text-sm italic text-muted-foreground'>[no content]</p>
-          )}
+      {/* Content */}
+      <div className='mb-3'>
+        {message.content ? (
+          <p className='text-gray-900 text-sm leading-relaxed whitespace-pre-wrap break-words'>
+            {message.content}
+          </p>
+        ) : null}
+      </div>
 
-          {/* Image attachments grid */}
-          {imageAttachments.length > 0 && (
-            <div className={`mt-3 grid gap-2 ${imageAttachments.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}>
-              {imageAttachments.slice(0, 4).map((attachment) => (
-                <div
-                  key={attachment.id}
-                  className='relative aspect-square rounded-md overflow-hidden bg-muted border border-border hover:border-primary/50 transition-colors group/img cursor-pointer'
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={attachment.url || ''}
-                    alt='attachment'
-                    className='w-full h-full object-cover group-hover/img:scale-105 transition-transform duration-200'
-                  />
-                  <div className='absolute inset-0 bg-black/0 group-hover/img:bg-black/10 transition-colors' />
-                </div>
-              ))}
-              {imageAttachments.length > 4 && (
-                <div className='relative aspect-square rounded-md overflow-hidden bg-muted border border-border flex items-center justify-center'>
-                  <span className='text-sm font-medium text-muted-foreground'>+{imageAttachments.length - 4} more</span>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Other attachments */}
-          {hasAttachments && (message.attachments ?? []).filter(a => a.type !== 'IMAGE').length > 0 && (
-            <div className='mt-3 space-y-1.5'>
-              {(message.attachments ?? []).filter(a => a.type !== 'IMAGE').map((attachment) => (
-                <a
-                  key={attachment.id}
-                  href={attachment.url || '#'}
-                  className='flex items-center gap-2 p-2 rounded-md bg-muted hover:bg-muted/80 transition-colors group/file text-xs'
-                >
-                  <Icons.paperclip className='h-3.5 w-3.5 text-muted-foreground' />
-                  <span className='truncate text-foreground group-hover/file:text-primary'>{attachment.fileName || 'Download'}</span>
-                  <Icons.externalLink className='h-3.5 w-3.5 text-muted-foreground shrink-0' />
-                </a>
-              ))}
-            </div>
-          )}
+      {/* Image attachments */}
+      {imageAttachments.length > 0 && (
+        <div className='mb-3'>
+          <div className='rounded-2xl overflow-hidden border border-gray-200'>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={imageAttachments[0]?.url || ''} alt='' className='w-full h-64 object-cover' />
+          </div>
         </div>
+      )}
 
-        {/* Reactions bar */}
-        {reactionCount > 0 && (
-          <div className='mt-3 flex flex-wrap gap-1.5 ml-13'>
-            {(message.reactions ?? []).map((reaction, i) => (
+      {/* Timestamp */}
+      <div className='text-gray-500 text-xs mb-3 cursor-help hover:text-gray-700' title={new Date(message.createdAt).toLocaleString()}>
+        {timeAgo(message.createdAt)} · {new Date(message.createdAt).toLocaleDateString()}
+      </div>
+
+      {/* Engagement stats */}
+      {(reactionCount > 0 || commentCount > 0) && (
+        <div className='flex items-center gap-4 text-gray-500 text-xs py-2 border-t border-b border-gray-200'>
+          {Object.entries(reactions).map(([emoji, count]) =>
+            count > 0 ? (
               <button
-                key={i}
-                className='flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-muted/60 hover:bg-muted border border-border/50 text-xs font-medium transition-all hover:scale-105 cursor-pointer'
+                key={emoji}
+                className='hover:text-gray-700 transition-colors cursor-pointer hover:underline'
               >
-                <span>{reaction}</span>
-                <span className='text-muted-foreground text-xs'>1</span>
+                {emoji} <span className='text-gray-500'>{count}</span>
               </button>
-            ))}
-          </div>
-        )}
-
-        {/* Engagement metrics */}
-        <div className='mt-3 ml-13 flex items-center gap-4 text-xs text-muted-foreground border-t border-border/50 pt-3'>
-          <button className='hover:text-foreground transition-colors hover:underline'>
-            {reactionCount > 0 ? `${reactionCount} reaction${reactionCount !== 1 ? 's' : ''}` : 'Add reaction'}
-          </button>
-          {threadCount > 0 && (
-            <button className='hover:text-foreground transition-colors hover:underline'>
-              {threadCount} repl{threadCount !== 1 ? 'ies' : 'y'}
+            ) : null
+          )}
+          {commentCount > 0 && (
+            <button className='hover:text-gray-700 transition-colors cursor-pointer hover:underline'>
+              {commentCount} comment{commentCount !== 1 ? 's' : ''}
             </button>
           )}
         </div>
+      )}
 
-        {/* Action buttons */}
-        <div className='mt-3 ml-13 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity'>
-          <button className='flex items-center justify-center gap-1.5 px-3 py-2 rounded-md hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors'>
-            <Icons.heart className='h-4 w-4' />
-            React
+      {/* Action buttons */}
+      <div className='flex items-center justify-around pt-2 text-gray-500 border-gray-200'>
+        {/* Comments */}
+        <button className='flex items-center justify-center gap-2 py-2 px-3 hover:bg-blue-50 hover:text-blue-500 rounded-full transition-colors group flex-1'>
+          <Icons.chat className='w-4 h-4' />
+          <span className='text-xs font-medium group-hover:block hidden'>Comment</span>
+        </button>
+
+        {/* Reactions */}
+        <div className='relative'>
+          <button
+            onClick={() => setShowReactionPicker(!showReactionPicker)}
+            className='flex items-center justify-center gap-2 py-2 px-3 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors group flex-1'
+          >
+            <Icons.heart className='w-4 h-4' />
+            <span className='text-xs font-medium group-hover:block hidden'>React</span>
           </button>
-          <button className='flex items-center justify-center gap-1.5 px-3 py-2 rounded-md hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors'>
-            <Icons.chat className='h-4 w-4' />
-            Reply
-          </button>
-          <button className='flex items-center justify-center gap-1.5 px-3 py-2 rounded-md hover:bg-muted text-xs text-muted-foreground hover:text-foreground transition-colors'>
-            <Icons.share className='h-4 w-4' />
-            Share
-          </button>
+
+          {/* Reaction picker */}
+          {showReactionPicker && (
+            <div className='absolute bottom-full left-0 mb-2 flex gap-1 bg-white border border-gray-200 rounded-full p-2 shadow-lg z-10'>
+              {['❤️', '😂', '😢', '😮', '🔥', '👍'].map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => handleAddReaction(emoji)}
+                  className='text-xl hover:scale-125 transition-transform cursor-pointer'
+                >
+                  {emoji}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
+
+        {/* Share */}
+        <button className='flex items-center justify-center gap-2 py-2 px-3 hover:bg-green-50 hover:text-green-500 rounded-full transition-colors group flex-1'>
+          <Icons.share className='w-4 h-4' />
+          <span className='text-xs font-medium group-hover:block hidden'>Share</span>
+        </button>
       </div>
     </div>
   )
