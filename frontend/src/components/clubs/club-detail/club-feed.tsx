@@ -321,15 +321,6 @@ export function ClubFeed({
             <div className='flex items-center gap-1'>
               <button
                 type='button'
-                onClick={() => pickFiles('audio/*')}
-                disabled={uploading}
-                aria-label='Attach audio'
-                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
-              >
-                <Icons.music className='h-5 w-5' />
-              </button>
-              <button
-                type='button'
                 onClick={() => pickFiles('image/*')}
                 disabled={uploading}
                 aria-label='Attach photo'
@@ -345,15 +336,6 @@ export function ClubFeed({
                 className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
               >
                 <Icons.paperclip className='h-5 w-5' />
-              </button>
-              <button
-                type='button'
-                onClick={() => pickFiles('')}
-                disabled={uploading}
-                aria-label='More options'
-                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
-              >
-                <Icons.ellipsis className='h-5 w-5' />
               </button>
             </div>
             <input
