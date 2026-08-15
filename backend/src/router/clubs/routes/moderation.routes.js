@@ -16,11 +16,17 @@ router.post('/:id/approve', requireDeanOrSuperAdmin, async (req, res, next) => {
     const clubId = Number(req.params.id);
     const uid = userId(req);
 
-    // Scope check: dean can only approve clubs in their faculty
+    // Scope check: a dean is restricted to FACULTY-scoped clubs in their own
+    // faculty. UNIVERSITY/CROSS clubs have no facultyId at all — comparing
+    // against club.facultyId unconditionally would 403 every dean out of
+    // approving them, even after the pending list was fixed to show them.
     if (req.user.role === 'DEAN' && req.facultyId) {
-      const club = await prisma.club.findUnique({ where: { id: clubId }, select: { facultyId: true } });
+      const club = await prisma.club.findUnique({
+        where: { id: clubId },
+        select: { facultyId: true, scopeKind: true },
+      });
       if (!club) return res.status(404).json(apiErrorBody('Club not found'));
-      if (club.facultyId !== req.facultyId) {
+      if (club.scopeKind === 'FACULTY' && club.facultyId !== req.facultyId) {
         return res.status(403).json(apiErrorBody('Club is not in your faculty'));
       }
     }
@@ -60,11 +66,14 @@ router.post('/:id/reject', requireDeanOrSuperAdmin, async (req, res, next) => {
     const uid = userId(req);
     const { reason } = rejectSchema.parse(req.body);
 
-    // Scope check
+    // Scope check — see the matching comment in POST /:id/approve above.
     if (req.user.role === 'DEAN' && req.facultyId) {
-      const club = await prisma.club.findUnique({ where: { id: clubId }, select: { facultyId: true } });
-      if (!club) return res.status(404).json(apiErrorBody('Club not found'));
-      if (club.facultyId !== req.facultyId) {
+      const target = await prisma.club.findUnique({
+        where: { id: clubId },
+        select: { facultyId: true, scopeKind: true },
+      });
+      if (!target) return res.status(404).json(apiErrorBody('Club not found'));
+      if (target.scopeKind === 'FACULTY' && target.facultyId !== req.facultyId) {
         return res.status(403).json(apiErrorBody('Club is not in your faculty'));
       }
     }

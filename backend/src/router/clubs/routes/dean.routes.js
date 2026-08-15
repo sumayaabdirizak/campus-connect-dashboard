@@ -8,11 +8,18 @@ import { requireDeanOrSuperAdmin } from '../../../controllers/clubs/requireDeanO
 
 const router = express.Router();
 
+/**
+ * Faculty-scoped deans are restricted to clubs in their own faculty — but
+ * only FACULTY-scoped clubs carry a facultyId at all. A UNIVERSITY/CROSS
+ * club has facultyId=null, so filtering on `{ facultyId: req.facultyId }`
+ * unconditionally hid every non-faculty application from every dean, with
+ * no queue anyone but a cross-faculty admin could ever see them in.
+ */
 function facultyScope(req) {
   if (!isCrossFacultyAdmin(req.user.role) && req.facultyId) {
-    return { facultyId: req.facultyId };
+    return { OR: [{ facultyId: req.facultyId }, { scopeKind: { not: 'FACULTY' } }] };
   }
-  return {};
+  return null;
 }
 
 const clubListInclude = {
@@ -49,15 +56,23 @@ router.get('/dean/all', requireDeanOrSuperAdmin, async (req, res, next) => {
       defaultPageSize: 50,
       maxPageSize: 200,
     });
-    const where = { ...facultyScope(req) };
-    if (status) where.status = String(status).toUpperCase();
+    // Built as an AND list rather than merged object keys: facultyScope and
+    // the search term both need their own `OR`, and a second `where.OR =`
+    // assignment would silently overwrite the first instead of combining.
+    const conditions = [];
+    const scope = facultyScope(req);
+    if (scope) conditions.push(scope);
+    if (status) conditions.push({ status: String(status).toUpperCase() });
     const term = String(q ?? '').trim();
     if (term.length >= 2) {
-      where.OR = [
-        { name: { contains: term, mode: 'insensitive' } },
-        { tagline: { contains: term, mode: 'insensitive' } },
-      ];
+      conditions.push({
+        OR: [
+          { name: { contains: term, mode: 'insensitive' } },
+          { tagline: { contains: term, mode: 'insensitive' } },
+        ],
+      });
     }
+    const where = conditions.length > 0 ? { AND: conditions } : {};
 
     const [totalCount, clubs] = await Promise.all([
       prisma.club.count({ where }),
