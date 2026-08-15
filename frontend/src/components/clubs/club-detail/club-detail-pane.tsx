@@ -94,6 +94,7 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
           themeColor={themeColor}
           isMember={isMember}
           isOwner={isOwner}
+          canModerate={membershipRole === 'ADMIN' || membershipRole === 'DEAN'}
           joining={joinMutation.isPending}
           onJoin={() => joinMutation.mutate(club.id)}
         />

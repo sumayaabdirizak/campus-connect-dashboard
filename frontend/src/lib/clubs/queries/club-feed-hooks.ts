@@ -138,6 +138,55 @@ export function useClubComments(
   });
 }
 
+// ────────────────────────────────────────────────────────────────────────────
+// Post management — edit (author-only) and delete (author or moderator),
+// both against the same discussion-message routes used everywhere else.
+// ────────────────────────────────────────────────────────────────────────────
+
+export const editClubMessage = (
+  serverId: number | string,
+  messageId: string,
+  content: string
+) =>
+  apiClient<{ message: DiscussionMessage }>(
+    `/discussions/groups/${encodeURIComponent(String(serverId))}/messages/${encodeURIComponent(
+      messageId
+    )}`,
+    { method: 'PATCH', body: JSON.stringify({ content }) }
+  );
+
+export const deleteClubMessage = (serverId: number | string, messageId: string) =>
+  apiClient(
+    `/discussions/groups/${encodeURIComponent(String(serverId))}/messages/${encodeURIComponent(
+      messageId
+    )}`,
+    { method: 'DELETE' }
+  );
+
+export function useEditClubMessage(serverId?: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { messageId: string; content: string }) =>
+      editClubMessage(serverId as number, args.messageId, args.content),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to save changes'),
+  });
+}
+
+export function useDeleteClubMessage(serverId?: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (messageId: string) => deleteClubMessage(serverId as number, messageId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+      toast.success('Post deleted');
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to delete post'),
+  });
+}
+
 export function usePostClubComment(serverId?: number | null) {
   const qc = useQueryClient();
   return useMutation({

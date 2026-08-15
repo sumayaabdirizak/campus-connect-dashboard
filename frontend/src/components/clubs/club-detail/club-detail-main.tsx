@@ -8,6 +8,8 @@ type Props = {
   themeColor: string
   isMember: boolean
   isOwner: boolean
+  /** Owners and moderators can delete any post, not just their own. */
+  canModerate?: boolean
   joining: boolean
   onJoin: () => void
 }
@@ -17,6 +19,7 @@ export function ClubDetailMain({
   themeColor,
   isMember,
   isOwner,
+  canModerate = false,
   joining,
   onJoin,
 }: Props) {
@@ -37,7 +40,12 @@ export function ClubDetailMain({
       ) : null}
 
       {(isMember || isOwner) && club.serverId ? (
-        <ClubFeed serverId={club.serverId} themeColor={themeColor} canPost />
+        <ClubFeed
+          serverId={club.serverId}
+          themeColor={themeColor}
+          canPost
+          canModerate={isOwner || canModerate}
+        />
       ) : !isMember && !isOwner ? (
         <div className='rounded-xl border bg-card p-6'>
           <div className='flex flex-col items-center gap-3 py-8 text-center'>

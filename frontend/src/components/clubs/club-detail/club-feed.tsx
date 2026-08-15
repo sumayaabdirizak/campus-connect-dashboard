@@ -5,12 +5,15 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Icons } from '@/components/icons'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   useClubFeed,
   usePostClubMessage,
   useToggleClubReaction,
   useClubComments,
   usePostClubComment,
+  useEditClubMessage,
+  useDeleteClubMessage,
 } from '@/lib/clubs/queries'
 import { useAuthStore } from '@/lib/auth-store'
 import { uploadDiscussionFile } from '@/lib/discussions/services/discussion-upload'
@@ -223,19 +226,42 @@ function FeedMessage({
   message,
   themeColor,
   serverId,
+  canModerate = false,
 }: {
   message: DiscussionMessage
   themeColor: string
   serverId?: number | null
+  /** Lets a non-author delete this post (owners/admins). Editing stays author-only. */
+  canModerate?: boolean
 }) {
   const viewerId = useAuthStore((s) => s.user?.id)
   const toggleReaction = useToggleClubReaction(serverId)
+  const editMutation = useEditClubMessage(serverId)
+  const deleteMutation = useDeleteClubMessage(serverId)
   const [showComments, setShowComments] = useState(false)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editDraft, setEditDraft] = useState(message.content ?? '')
+  const [confirmingDelete, setConfirmingDelete] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const name = message.isAnonymous ? 'Anonymous' : (message.sender?.full_name ?? 'Unknown')
   const avatarUrl = message.isAnonymous ? null : message.sender?.avatarUrl
-  // Only the author gets the overflow menu.
   const isAuthor =
     viewerId != null && Number(viewerId) === Number(message.senderId ?? message.sender?.id)
+  // Author can edit or delete their own post; a moderator can only delete.
+  const canDelete = isAuthor || canModerate
+  const canShowMenu = isAuthor || canModerate
+
+  const saveEdit = () => {
+    const trimmed = editDraft.trim()
+    if (!trimmed || trimmed === message.content || editMutation.isPending) {
+      setIsEditing(false)
+      return
+    }
+    editMutation.mutate(
+      { messageId: message.id, content: trimmed },
+      { onSuccess: () => setIsEditing(false) }
+    )
+  }
 
   const serverReactions = message.reactions ?? []
   const commentCount = message.threadPreview?.replyCount ?? 0
@@ -279,22 +305,114 @@ function FeedMessage({
             >
               <Icons.clock className='h-3.5 w-3.5' />
               {timeAgoLong(message.createdAt)}
+              {message.editedAt ? <span>· edited</span> : null}
             </p>
           </div>
         </div>
-        {isAuthor ? (
-          <button
-            type='button'
-            aria-label='Post options'
-            className='shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700'
+        {canShowMenu ? (
+          <Popover
+            open={menuOpen}
+            onOpenChange={(open) => {
+              setMenuOpen(open)
+              if (!open) setConfirmingDelete(false)
+            }}
           >
-            <Icons.ellipsis className='h-4 w-4' />
-          </button>
+            <PopoverTrigger asChild>
+              <button
+                type='button'
+                aria-label='Post options'
+                className='shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700'
+              >
+                <Icons.ellipsis className='h-4 w-4' />
+              </button>
+            </PopoverTrigger>
+            <PopoverContent align='end' className='w-40 p-1'>
+              {isAuthor ? (
+                <button
+                  type='button'
+                  onClick={() => {
+                    setEditDraft(message.content ?? '')
+                    setIsEditing(true)
+                    setMenuOpen(false)
+                  }}
+                  className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-gray-700 transition-colors hover:bg-gray-100'
+                >
+                  <Icons.edit className='h-3.5 w-3.5' />
+                  Edit post
+                </button>
+              ) : null}
+              {canDelete ? (
+                confirmingDelete ? (
+                  <button
+                    type='button'
+                    onClick={() => {
+                      deleteMutation.mutate(message.id, { onSuccess: () => setMenuOpen(false) })
+                    }}
+                    disabled={deleteMutation.isPending}
+                    className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs font-medium text-red-600 transition-colors hover:bg-red-50 disabled:opacity-50'
+                  >
+                    <Icons.trash className='h-3.5 w-3.5' />
+                    {deleteMutation.isPending ? 'Deleting...' : 'Confirm delete'}
+                  </button>
+                ) : (
+                  <button
+                    type='button'
+                    onClick={() => setConfirmingDelete(true)}
+                    className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-gray-700 transition-colors hover:bg-gray-100'
+                  >
+                    <Icons.trash className='h-3.5 w-3.5' />
+                    Delete post
+                  </button>
+                )
+              ) : null}
+            </PopoverContent>
+          </Popover>
         ) : null}
       </div>
 
       {/* Body */}
-      {body ? (
+      {isEditing ? (
+        <div>
+          <Textarea
+            value={editDraft}
+            onChange={(e) => setEditDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                saveEdit()
+              }
+              if (e.key === 'Escape') {
+                setIsEditing(false)
+                setEditDraft(message.content ?? '')
+              }
+            }}
+            rows={3}
+            maxLength={20000}
+            autoFocus
+            className='min-h-[60px] resize-none text-sm'
+          />
+          <div className='mt-2 flex items-center justify-end gap-2'>
+            <button
+              type='button'
+              onClick={() => {
+                setIsEditing(false)
+                setEditDraft(message.content ?? '')
+              }}
+              className='rounded-full px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100'
+            >
+              Cancel
+            </button>
+            <Button
+              size='sm'
+              onClick={saveEdit}
+              disabled={editMutation.isPending || !editDraft.trim()}
+              className='h-7 rounded-full bg-gray-900 px-4 text-[11px] font-semibold text-white hover:bg-gray-800'
+            >
+              {editMutation.isPending ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        </div>
+      ) : body ? (
         <p className='whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900'>
           {renderBody(body)}
         </p>
@@ -409,10 +527,13 @@ export function ClubFeed({
   serverId,
   themeColor,
   canPost,
+  canModerate = false,
 }: {
   serverId?: number | null
   themeColor: string
   canPost: boolean
+  /** Owners/admins can delete any post, not just their own. */
+  canModerate?: boolean
 }) {
   const [draft, setDraft] = useState('')
   const [attachments, setAttachments] = useState<
@@ -647,7 +768,13 @@ export function ClubFeed({
       ) : (
         // Endpoint returns oldest-first within a page; show newest at the top.
         [...messages].reverse().map((m) => (
-          <FeedMessage key={m.id} message={m} themeColor={themeColor} serverId={serverId} />
+          <FeedMessage
+            key={m.id}
+            message={m}
+            themeColor={themeColor}
+            serverId={serverId}
+            canModerate={canModerate}
+          />
         ))
       )}
     </div>
