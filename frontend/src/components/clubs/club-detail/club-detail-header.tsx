@@ -39,7 +39,7 @@ export function ClubDetailHeader({
   isCollapsed = false,
 }: Props) {
   return (
-    <div className={`w-full bg-white border-b border-gray-200 sticky top-0 z-30 transition-all duration-300 ${isCollapsed ? 'py-2.5 shadow-sm' : 'pb-4'}`}>
+    <div className={`w-full bg-gray-50 border-b border-gray-200 sticky top-0 z-30 transition-all duration-300 ${isCollapsed ? 'py-2.5 shadow-sm' : 'pb-4'}`}>
       <div className='mx-auto max-w-5xl px-4'>
         {isCollapsed ? (
           <div className='flex items-center justify-between gap-4 animate-fade-in'>
