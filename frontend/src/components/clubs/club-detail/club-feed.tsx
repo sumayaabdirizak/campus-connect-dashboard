@@ -21,157 +21,214 @@ function initials(name?: string | null) {
     .join('')
 }
 
-/** "just now" / "5m" / "3h" / "2d", falling back to a date past a week. */
-function timeAgo(iso: string) {
+/** Spelled-out relative time for the post byline: "about 1 month ago". */
+function timeAgoLong(iso: string) {
   const then = new Date(iso).getTime()
   if (!Number.isFinite(then)) return ''
   const mins = Math.floor((Date.now() - then) / 60000)
   if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m`
+  const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'} ago`
+  if (mins < 60) return plural(mins, 'minute')
   const hours = Math.floor(mins / 60)
-  if (hours < 24) return `${hours}h`
+  if (hours < 24) return plural(hours, 'hour')
   const days = Math.floor(hours / 24)
-  if (days < 7) return `${days}d`
-  return new Date(iso).toLocaleDateString()
+  if (days < 30) return plural(days, 'day')
+  const months = Math.floor(days / 30)
+  if (months < 12) return `about ${plural(months, 'month')}`
+  return `about ${plural(Math.floor(months / 12), 'year')}`
+}
+
+/**
+ * Splits trailing hashtags off the body so they can render as chips.
+ * Only a trailing run is pulled — hashtags used mid-sentence stay in the text.
+ */
+function splitTrailingHashtags(content: string) {
+  const match = content.match(/((?:\s*#[\w-]+)+)\s*$/)
+  if (!match) return { body: content.trim(), tags: [] as string[] }
+  return {
+    body: content.slice(0, match.index).trim(),
+    tags: match[1].trim().split(/\s+/),
+  }
+}
+
+/** Renders body text with bare URLs turned into links. */
+function renderBody(text: string) {
+  return text.split(/(https?:\/\/\S+)/g).map((part, i) =>
+    /^https?:\/\//.test(part) ? (
+      <a
+        key={i}
+        href={part}
+        target='_blank'
+        rel='noopener noreferrer'
+        className='font-medium text-emerald-600 underline underline-offset-2 hover:text-emerald-700 break-all'
+      >
+        {part}
+      </a>
+    ) : (
+      <span key={i}>{part}</span>
+    )
+  )
 }
 
 function FeedMessage({ message, themeColor }: { message: DiscussionMessage; themeColor: string }) {
+  const viewerId = useAuthStore((s) => s.user?.id)
   const name = message.isAnonymous ? 'Anonymous' : (message.sender?.full_name ?? 'Unknown')
   const avatarUrl = message.isAnonymous ? null : message.sender?.avatarUrl
-  const reactionCount = (message.reactions ?? []).length
-  const commentCount = 0 // Placeholder for comment count
-  const hasAttachments = (message.attachments ?? []).length > 0
-  const imageAttachments = (message.attachments ?? []).filter(a => a.type === 'IMAGE')
-  const [reactions, setReactions] = useState<Record<string, number>>({ '❤️': reactionCount })
-  const [showReactionPicker, setShowReactionPicker] = useState(false)
+  // Only the author gets the overflow menu.
+  const isAuthor =
+    viewerId != null && Number(viewerId) === Number(message.senderId ?? message.sender?.id)
 
-  const handleAddReaction = (emoji: string) => {
-    setReactions((prev) => ({
-      ...prev,
-      [emoji]: (prev[emoji] || 0) + 1,
-    }))
-    setShowReactionPicker(false)
-  }
+  const serverReactions = message.reactions ?? []
+  const commentCount = message.threadPreview?.replyCount ?? 0
+  // Attachments carry `fileType`, not `type`.
+  const images = (message.attachments ?? []).filter((a) =>
+    String(a.fileType).toUpperCase() === 'IMAGE'
+  )
+  const files = (message.attachments ?? []).filter((a) =>
+    String(a.fileType).toUpperCase() !== 'IMAGE'
+  )
+
+  const { body, tags } = splitTrailingHashtags(message.content ?? '')
+
+  // Local-only until a reaction endpoint exists; seeded from the server count.
+  const [liked, setLiked] = useState(
+    viewerId != null && serverReactions.some((r) => Number(r.userId) === Number(viewerId))
+  )
+  const likeCount = serverReactions.length + (liked && !serverReactions.some((r) => Number(r.userId) === Number(viewerId)) ? 1 : 0)
+  const firstLiker = serverReactions.find((r) => r.user?.full_name)?.user?.full_name
 
   return (
-    <div className='w-full bg-white border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-200'>
+    <div className='w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md'>
       {/* Header */}
-      <div className='flex items-start justify-between mb-4'>
-        <div className='flex items-center gap-4 flex-1 min-w-0'>
-          <a href='#' className='flex-shrink-0'>
-            <div
-              className='flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold border-2 border-gray-200'
-              style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
-            >
-              {avatarUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={avatarUrl} alt='' className='h-full w-full object-cover' />
-              ) : (
-                initials(name)
-              )}
-            </div>
-          </a>
+      <div className='mb-4 flex items-start justify-between gap-3'>
+        <div className='flex min-w-0 flex-1 items-center gap-3'>
+          <div
+            className='flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold'
+            style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
+          >
+            {avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={avatarUrl} alt='' className='h-full w-full object-cover' />
+            ) : (
+              initials(name)
+            )}
+          </div>
           <div className='min-w-0 flex-1'>
-            <div className='flex items-center gap-2'>
-              <a href='#' className='font-bold text-gray-900 hover:underline truncate text-base'>
-                {name}
-              </a>
-            </div>
-            <a href='#' className='text-gray-500 text-sm hover:underline'>
-              @{name.toLowerCase().replace(/\s+/g, '')}
-            </a>
+            <p className='truncate text-sm font-bold text-gray-900'>{name}</p>
+            <p
+              className='mt-0.5 flex items-center gap-1 text-xs text-gray-500'
+              title={new Date(message.createdAt).toLocaleString()}
+            >
+              <Icons.clock className='h-3.5 w-3.5' />
+              {timeAgoLong(message.createdAt)}
+            </p>
           </div>
         </div>
-        <a href='#' className='flex-shrink-0 text-blue-400 hover:text-blue-600 transition-colors'>
-          <Icons.ellipsis className='w-6 h-6' />
-        </a>
-      </div>
-
-      {/* Content */}
-      <div className='mb-4'>
-        {message.content ? (
-          <p className='text-gray-900 text-base leading-relaxed whitespace-pre-wrap break-words'>
-            {message.content}
-          </p>
+        {isAuthor ? (
+          <button
+            type='button'
+            aria-label='Post options'
+            className='shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700'
+          >
+            <Icons.ellipsis className='h-4 w-4' />
+          </button>
         ) : null}
       </div>
 
-      {/* Image attachments */}
-      {imageAttachments.length > 0 && (
-        <div className='mb-4'>
-          <div className='rounded-2xl overflow-hidden border-2 border-gray-200'>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageAttachments[0]?.url || ''} alt='' className='w-full h-80 object-cover' />
-          </div>
-        </div>
-      )}
+      {/* Body */}
+      {body ? (
+        <p className='whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900'>
+          {renderBody(body)}
+        </p>
+      ) : null}
 
-      {/* Timestamp */}
-      <div className='text-gray-500 text-sm mb-4 cursor-help hover:text-gray-700' title={new Date(message.createdAt).toLocaleString()}>
-        {timeAgo(message.createdAt)} · {new Date(message.createdAt).toLocaleDateString()}
+      {/* Image grid */}
+      {images.length > 0 ? (
+        <div
+          className={`mt-3 grid gap-1 overflow-hidden rounded-xl ${images.length === 1 ? 'grid-cols-1' : 'grid-cols-2'}`}
+        >
+          {images.slice(0, 4).map((img) => (
+            <a
+              key={img.id}
+              href={img.accessUrl ?? img.url ?? '#'}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='block overflow-hidden bg-gray-100'
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={img.accessUrl ?? img.url ?? ''}
+                alt=''
+                className={`w-full object-cover ${images.length === 1 ? 'max-h-96' : 'h-40'}`}
+              />
+            </a>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Non-image attachments */}
+      {files.length > 0 ? (
+        <div className='mt-3 space-y-1.5'>
+          {files.map((file) => (
+            <a
+              key={file.id}
+              href={file.accessUrl ?? file.url ?? '#'}
+              target='_blank'
+              rel='noopener noreferrer'
+              className='flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100'
+            >
+              <Icons.paperclip className='h-3.5 w-3.5 shrink-0 text-gray-400' />
+              <span className='truncate'>{file.fileType}</span>
+            </a>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Hashtags */}
+      {tags.length > 0 ? (
+        <div className='mt-3 flex flex-wrap gap-1.5'>
+          {tags.map((tag) => (
+            <span
+              key={tag}
+              className='rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600'
+            >
+              {tag}
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Divider */}
+      <div className='my-3 h-px bg-gray-200' />
+
+      {/* Actions — like and comment only */}
+      <div className='flex items-center gap-5'>
+        <button
+          type='button'
+          onClick={() => setLiked((v) => !v)}
+          aria-pressed={liked}
+          className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+        >
+          <Icons.heart className='h-5 w-5' />
+          {likeCount > 0 ? <span className='text-xs'>{likeCount}</span> : null}
+        </button>
+        <button
+          type='button'
+          className='flex items-center gap-1.5 text-sm text-gray-500 transition-colors hover:text-blue-500'
+        >
+          <Icons.chat className='h-5 w-5' />
+          {commentCount > 0 ? <span className='text-xs'>{commentCount}</span> : null}
+        </button>
       </div>
 
-      {/* Engagement stats */}
-      {(reactionCount > 0 || commentCount > 0) && (
-        <div className='flex items-center gap-4 text-gray-500 text-xs py-2 border-t border-b border-gray-200'>
-          {Object.entries(reactions).map(([emoji, count]) =>
-            count > 0 ? (
-              <button
-                key={emoji}
-                className='hover:text-gray-700 transition-colors cursor-pointer hover:underline'
-              >
-                {emoji} <span className='text-gray-500'>{count}</span>
-              </button>
-            ) : null
-          )}
-          {commentCount > 0 && (
-            <button className='hover:text-gray-700 transition-colors cursor-pointer hover:underline'>
-              {commentCount} comment{commentCount !== 1 ? 's' : ''}
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* Action buttons */}
-      <div className='flex items-center justify-around pt-4 text-gray-500 border-gray-200'>
-        {/* Comments */}
-        <button className='flex items-center justify-center gap-2 py-3 px-4 hover:bg-blue-50 hover:text-blue-500 rounded-full transition-colors group flex-1'>
-          <Icons.chat className='w-5 h-5' />
-          <span className='text-sm font-medium group-hover:block hidden'>Comment</span>
-        </button>
-
-        {/* Reactions */}
-        <div className='relative'>
-          <button
-            onClick={() => setShowReactionPicker(!showReactionPicker)}
-            className='flex items-center justify-center gap-2 py-3 px-4 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors group flex-1'
-          >
-            <Icons.heart className='w-5 h-5' />
-            <span className='text-sm font-medium group-hover:block hidden'>React</span>
-          </button>
-
-          {/* Reaction picker */}
-          {showReactionPicker && (
-            <div className='absolute bottom-full left-0 mb-3 flex gap-2 bg-white border border-gray-200 rounded-full p-3 shadow-lg z-10'>
-              {['❤️', '😂', '😢', '😮', '🔥', '👍'].map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => handleAddReaction(emoji)}
-                  className='text-2xl hover:scale-125 transition-transform cursor-pointer'
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* Share */}
-        <button className='flex items-center justify-center gap-2 py-3 px-4 hover:bg-green-50 hover:text-green-500 rounded-full transition-colors group flex-1'>
-          <Icons.share className='w-5 h-5' />
-          <span className='text-sm font-medium group-hover:block hidden'>Share</span>
-        </button>
-      </div>
+      {/* Who liked it */}
+      {firstLiker ? (
+        <p className='mt-3 text-xs text-gray-400'>
+          {serverReactions.length > 1
+            ? `${firstLiker} and ${serverReactions.length - 1} other${serverReactions.length - 1 === 1 ? '' : 's'} liked this`
+            : `${firstLiker} liked this`}
+        </p>
+      ) : null}
     </div>
   )
 }
