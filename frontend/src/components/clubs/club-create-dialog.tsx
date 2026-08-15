@@ -29,9 +29,11 @@ import type { ClubJoinPolicy, ClubScopeKind } from '@/lib/clubs/types'
 export interface ClubCreateDialogProps {
   isDean: boolean
   isSuperAdmin: boolean
+  /** Trigger button text — callers phrase this differently depending on context. */
+  label?: string
 }
 
-export function ClubCreateDialog({ isDean, isSuperAdmin }: ClubCreateDialogProps) {
+export function ClubCreateDialog({ isDean, isSuperAdmin, label = 'Create Club' }: ClubCreateDialogProps) {
   const router = useRouter()
   const applyMutation = useCreateClub()
   const directMutation = useCreateClubAsDean()
@@ -92,7 +94,7 @@ export function ClubCreateDialog({ isDean, isSuperAdmin }: ClubCreateDialogProps
       <DialogTrigger asChild>
         <Button size='sm' className='gap-1.5'>
           <Icons.add className='h-4 w-4' />
-          Create Club
+          {label}
         </Button>
       </DialogTrigger>
       <DialogContent className='sm:max-w-md'>

@@ -1,11 +1,10 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { Compass, List, Grid3x3 } from 'lucide-react'
+import { List, Grid3x3 } from 'lucide-react'
 import { Input } from '@/features/ui/components/input'
 import { ScrollArea } from '@/features/ui/components/scroll-area'
 import { Icons } from '@/components/icons'
-import { Button } from '@/components/ui/button'
 import {
   useClubs,
   useMyClubs,
@@ -55,6 +54,19 @@ export function MessagesDiscoverPane() {
     [mine]
   )
 
+  // Live clubs the viewer belongs to — pending/rejected applications surface
+  // separately via DiscoverMyApplications, not as a browsable card here.
+  const myActiveClubs = useMemo(() => {
+    const seen = new Set<number>()
+    const out: Club[] = []
+    for (const c of [...(mine?.owned ?? []), ...(mine?.memberOf ?? [])]) {
+      if (c.status !== 'APPROVED' || seen.has(c.id)) continue
+      seen.add(c.id)
+      out.push(c)
+    }
+    return out
+  }, [mine])
+
   const clubs = useMemo(() => {
     let list = catalog?.clubs?.length
       ? catalog.clubs
@@ -68,15 +80,19 @@ export function MessagesDiscoverPane() {
     const out: Club[] = []
     for (const c of list) {
       if (seen.has(c.id)) continue
+      // Already shown under "Your clubs" — don't repeat it in Recommended.
+      if (activeTab === 'all' && myIds.has(c.id)) continue
       seen.add(c.id)
       out.push(c)
     }
     return out
-  }, [catalog, recommended, mine, activeTab])
+  }, [catalog, recommended, mine, activeTab, myIds])
 
   const clubsToDisplay = useMemo(() => {
     return clubs.length > 0 ? clubs : []
   }, [clubs])
+
+  const totalToExplore = clubsToDisplay.length + (activeTab === 'all' ? myActiveClubs.length : 0)
 
   return (
     <div className='flex h-full min-h-0 flex-col bg-white'>
@@ -84,56 +100,90 @@ export function MessagesDiscoverPane() {
         <div className='px-4 py-4'>
           <div className='mb-4 flex items-center justify-between'>
             <div className='flex items-center gap-2.5'>
-              <div className='flex size-8 items-center justify-center rounded-lg bg-[#EFF6FF]'>
-                <Compass className='size-4 text-[#3B82F6]' />
+              <div className='flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#EEF2FF] to-[#F5F3FF]'>
+                <Icons.sparkles className='size-4 text-[#6366F1]' />
               </div>
               <div>
                 <h2 className='text-lg font-semibold text-[#101828]'>Discover</h2>
-                <p className='text-xs text-[#667085]'>{clubsToDisplay.length} clubs to explore</p>
+                <p className='text-xs text-[#667085]'>{totalToExplore} clubs to explore</p>
               </div>
             </div>
-            <ClubCreateDialog isDean={isDean} isSuperAdmin={isSuperAdmin} />
+            <ClubCreateDialog isDean={isDean} isSuperAdmin={isSuperAdmin} label='Apply for Club' />
           </div>
 
-          <div className='mb-3 flex gap-2'>
-            <button
-              onClick={() => setActiveTab('all')}
-              className={cn(
-                'px-3 py-2 text-sm font-medium rounded-lg transition-all',
-                activeTab === 'all'
-                  ? 'bg-[#F3F4F6] text-[#101828] border border-[#D1D5DB]'
-                  : 'text-[#667085] hover:text-[#101828]'
-              )}
-            >
-              All Clubs
-            </button>
-            <button
-              onClick={() => setActiveTab('my')}
-              className={cn(
-                'px-3 py-2 text-sm font-medium rounded-lg transition-all',
-                activeTab === 'my'
-                  ? 'bg-[#F3F4F6] text-[#101828] border border-[#D1D5DB]'
-                  : 'text-[#667085] hover:text-[#101828]'
-              )}
-            >
-              My Clubs
-            </button>
+          <div className='mb-3 flex items-center justify-between gap-2'>
+            <div className='flex gap-2'>
+              <button
+                onClick={() => setActiveTab('all')}
+                className={cn(
+                  'px-3 py-2 text-sm font-medium rounded-lg transition-all',
+                  activeTab === 'all'
+                    ? 'bg-[#F3F4F6] text-[#101828] border border-[#D1D5DB]'
+                    : 'text-[#667085] hover:text-[#101828]'
+                )}
+              >
+                All Clubs
+              </button>
+              <button
+                onClick={() => setActiveTab('my')}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all',
+                  activeTab === 'my'
+                    ? 'bg-[#F3F4F6] text-[#101828] border border-[#D1D5DB]'
+                    : 'text-[#667085] hover:text-[#101828]'
+                )}
+              >
+                My Clubs
+                {myActiveClubs.length > 0 ? (
+                  <span className='flex size-4 items-center justify-center rounded-full bg-[#3B82F6] text-[10px] font-semibold text-white'>
+                    {myActiveClubs.length}
+                  </span>
+                ) : null}
+              </button>
+            </div>
+
+            <div className='flex gap-1 border border-[#E5E7EB] rounded-lg p-1'>
+              <button
+                onClick={() => setViewMode('list')}
+                className={cn(
+                  'p-1.5 rounded transition-all',
+                  viewMode === 'list'
+                    ? 'bg-[#F3F4F6]'
+                    : 'hover:bg-[#F9FAFB]'
+                )}
+                title='List view'
+              >
+                <List className='h-4 w-4 text-[#667085]' />
+              </button>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={cn(
+                  'p-1.5 rounded transition-all',
+                  viewMode === 'grid'
+                    ? 'bg-[#F3F4F6]'
+                    : 'hover:bg-[#F9FAFB]'
+                )}
+                title='Grid view'
+              >
+                <Grid3x3 className='h-4 w-4 text-[#667085]' />
+              </button>
+            </div>
           </div>
         </div>
 
         <div className='px-4 py-3 border-t border-[#E5E7EB]'>
-          <div className='relative mb-3'>
-            <Icons.search className='pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[#98A2B3]' />
-            <Input
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder='Search clubs...'
-              className='h-9 border-[#E5E7EB] bg-[#F8FAFC] pl-8 text-sm'
-            />
-          </div>
+          <div className='flex items-center gap-2'>
+            <div className='relative flex-1'>
+              <Icons.search className='pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[#98A2B3]' />
+              <Input
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+                placeholder='Search clubs...'
+                className='h-9 rounded-full border-[#E5E7EB] bg-[#F8FAFC] pl-8 text-sm'
+              />
+            </div>
 
-          <div className='flex items-center justify-between gap-2'>
-            <div className='flex gap-1.5'>
+            <div className='flex shrink-0 gap-1.5'>
               <button
                 onClick={() => setSortBy('popular')}
                 className={cn(
@@ -168,47 +218,34 @@ export function MessagesDiscoverPane() {
                 Active
               </button>
             </div>
-
-            <div className='flex gap-1 border border-[#E5E7EB] rounded-lg p-1'>
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'p-1.5 rounded transition-all',
-                  viewMode === 'list'
-                    ? 'bg-[#F3F4F6]'
-                    : 'hover:bg-[#F9FAFB]'
-                )}
-                title='List view'
-              >
-                <List className='h-4 w-4 text-[#667085]' />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  'p-1.5 rounded transition-all',
-                  viewMode === 'grid'
-                    ? 'bg-[#F3F4F6]'
-                    : 'hover:bg-[#F9FAFB]'
-                )}
-                title='Grid view'
-              >
-                <Grid3x3 className='h-4 w-4 text-[#667085]' />
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
       <ScrollArea className='min-h-0 flex-1'>
-        <div className='space-y-4 p-4'>
+        <div className='space-y-5 p-4'>
           {isDean && activeTab === 'all' ? <DiscoverPendingApprovalsLink /> : null}
           {activeTab === 'all' ? <DiscoverMyApplications clubs={myApplications} /> : null}
 
+          {activeTab === 'all' && myActiveClubs.length > 0 ? (
+            <div className='space-y-3'>
+              <h3 className='text-sm font-bold text-[#101828]'>Your clubs</h3>
+              <div className={cn(viewMode === 'grid' ? 'grid gap-3 sm:grid-cols-2' : 'space-y-3')}>
+                {myActiveClubs.map((club) => (
+                  <DiscoveryClubCard
+                    key={club.id}
+                    club={club}
+                    isMember
+                    compact={viewMode === 'list'}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className='space-y-3'>
             {activeTab === 'all' && (
-              <h3 className='text-xs font-semibold tracking-wide text-[#667085] uppercase'>
-                Recommended for you
-              </h3>
+              <h3 className='text-sm font-bold text-[#101828]'>Recommended for you</h3>
             )}
 
             {isLoading && clubsToDisplay.length === 0 ? (
@@ -220,7 +257,7 @@ export function MessagesDiscoverPane() {
                     key={i}
                     className={cn(
                       'animate-pulse rounded-xl border border-[#E5E7EB] bg-white',
-                      viewMode === 'grid' ? 'h-64' : 'h-20'
+                      viewMode === 'grid' ? 'h-28' : 'h-16'
                     )}
                   />
                 ))}

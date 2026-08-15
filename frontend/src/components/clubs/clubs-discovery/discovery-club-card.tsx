@@ -3,11 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Icons } from '@/components/icons'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useJoinClub } from '@/lib/clubs/queries'
-import { ClubAnimatedBanner } from '@/components/clubs/club-animated-banner'
 import type { Club } from '@/lib/clubs/types'
 import { messagesClubHref } from '@/lib/inbox/services/messages-href'
 
@@ -22,7 +20,7 @@ function clubInitials(name: string) {
 
 const JOIN_POLICY_LABEL: Record<string, string> = {
   OPEN: 'Join',
-  BY_REQUEST: 'Request to Join',
+  BY_REQUEST: 'Request',
   INVITE_ONLY: 'Invite Only',
 }
 
@@ -36,6 +34,7 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
   const joinMutation = useJoinClub()
   const [joined, setJoined] = useState(false)
   const themeColor = club.themeColor || '#6366f1'
+  const showJoinAction = !isMember && !joined && club.joinPolicy !== 'INVITE_ONLY'
 
   const handleJoin = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -45,141 +44,94 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
     })
   }
 
+  const avatar = (
+    <div
+      className={cn(
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold',
+        compact ? 'h-9 w-9' : 'h-10 w-10'
+      )}
+      style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
+    >
+      {club.iconUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={club.iconUrl} alt='' className='h-full w-full object-cover' />
+      ) : (
+        clubInitials(club.name)
+      )}
+    </div>
+  )
+
+  const actionButton = showJoinAction ? (
+    <Button
+      size='sm'
+      variant={club.joinPolicy === 'OPEN' ? 'default' : 'outline'}
+      className='h-7 shrink-0 rounded-full px-4 text-xs'
+      style={club.joinPolicy === 'OPEN' ? { backgroundColor: themeColor } : undefined}
+      onClick={handleJoin}
+      disabled={joinMutation.isPending}
+    >
+      {joinMutation.isPending ? 'Joining...' : JOIN_POLICY_LABEL[club.joinPolicy]}
+    </Button>
+  ) : (
+    // No handler — the click bubbles to the wrapping <Link>, which already
+    // points at the club.
+    <Button size='sm' variant='outline' className='h-7 shrink-0 rounded-full px-4 text-xs gap-1'>
+      {joined && !isMember ? (
+        <>
+          <Icons.check className='h-3 w-3' />
+          Joined!
+        </>
+      ) : (
+        'Open'
+      )}
+    </Button>
+  )
+
+  const subtitle = [
+    `${club.memberCountCache} member${club.memberCountCache !== 1 ? 's' : ''}`,
+    club.faculty?.name,
+  ]
+    .filter(Boolean)
+    .join(' · ')
+
+  if (compact) {
+    return (
+      <Link
+        href={messagesClubHref(club.slug)}
+        className='group flex items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-foreground/20'
+      >
+        {avatar}
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-1.5'>
+            <h3 className='truncate text-sm font-semibold'>{club.name}</h3>
+            {club.isOfficial && <Icons.circleCheck className='h-3.5 w-3.5 shrink-0 text-blue-500' />}
+          </div>
+          <p className='truncate text-xs text-muted-foreground'>{subtitle}</p>
+        </div>
+        {actionButton}
+      </Link>
+    )
+  }
+
   return (
     <Link
       href={messagesClubHref(club.slug)}
-      className={cn(
-        'group relative flex flex-col overflow-hidden rounded-xl border bg-card',
-        'transition-all duration-200 ease-out',
-        'hover:-translate-y-1 hover:shadow-lg hover:shadow-black/5 dark:hover:shadow-black/20',
-        compact && 'flex-row items-center'
-      )}
+      className='group flex flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20'
     >
-      {!compact && (
-        <div className='relative h-28 w-full overflow-hidden'>
-          {club.bannerUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={club.bannerUrl}
-              alt=''
-              className='h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03]'
-            />
-          ) : (
-            <ClubAnimatedBanner themeColor={themeColor} className='h-full w-full'>
-              <div className='flex h-full items-center justify-center'>
-                <span className='text-3xl font-bold text-white/20'>{clubInitials(club.name)}</span>
-              </div>
-            </ClubAnimatedBanner>
-          )}
-          <div
-            className='absolute inset-x-0 bottom-0 h-14'
-            style={{
-              background: 'linear-gradient(to top, hsl(var(--card)), transparent)',
-            }}
-          />
-          {club.isOfficial && (
-            <div className='absolute right-2 top-2 flex h-5 items-center gap-0.5 rounded-full bg-blue-500/90 px-1.5 text-[10px] font-medium text-white backdrop-blur-sm'>
-              <Icons.circleCheck className='h-3 w-3' />
-              Official
-            </div>
-          )}
-        </div>
-      )}
-
-      {compact && (
-        <div
-          className='ml-3 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-xs font-bold transition-transform group-hover:scale-105'
-          style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
-        >
-          {club.iconUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={club.iconUrl} alt='' className='h-full w-full rounded-lg object-cover' />
-          ) : (
-            clubInitials(club.name)
-          )}
-        </div>
-      )}
-
-      <div className={cn('flex flex-1 flex-col gap-1.5 p-3', compact && 'py-2')}>
-        <div className='flex items-center gap-2'>
-          <h3 className='truncate text-sm font-semibold'>{club.name}</h3>
-          {!compact && club.isOfficial && (
-            <Icons.circleCheck className='h-3.5 w-3.5 shrink-0 text-blue-500' />
-          )}
-        </div>
-
-        {club.tagline && !compact && (
-          <p className='line-clamp-2 text-xs text-muted-foreground'>{club.tagline}</p>
-        )}
-
-        <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-          <span className='flex items-center gap-1'>
-            <Icons.teams className='h-3 w-3' />
-            {club.memberCountCache} member{club.memberCountCache !== 1 ? 's' : ''}
-          </span>
-          {club.scopeKind && (
-            <Badge variant='outline' className='h-4 px-1 text-[10px]'>
-              {club.scopeKind.toLowerCase()}
-            </Badge>
-          )}
-        </div>
-
-        {!compact && club.interests && club.interests.length > 0 && (
-          <div className='mt-0.5 flex flex-wrap gap-1'>
-            {club.interests.slice(0, 3).map((tag) => (
-              <span
-                key={tag.slug}
-                className='inline-flex h-4 items-center rounded-full px-1.5 text-[10px] font-medium'
-                style={{ backgroundColor: `${themeColor}12`, color: themeColor }}
-              >
-                {tag.label}
-              </span>
-            ))}
-            {club.interests.length > 3 && (
-              <span className='text-[10px] text-muted-foreground'>
-                +{club.interests.length - 3}
-              </span>
-            )}
+      <div className='flex items-center gap-3'>
+        {avatar}
+        <div className='min-w-0 flex-1'>
+          <div className='flex items-center gap-1.5'>
+            <h3 className='truncate text-sm font-semibold'>{club.name}</h3>
+            {club.isOfficial && <Icons.circleCheck className='h-3.5 w-3.5 shrink-0 text-blue-500' />}
           </div>
-        )}
+          <p className='truncate text-xs text-muted-foreground'>{subtitle}</p>
+        </div>
+        {actionButton}
       </div>
-
-      {!isMember && !joined && club.joinPolicy !== 'INVITE_ONLY' && (
-        <div className={cn('px-3 pb-3', compact && 'pb-0 pr-3')}>
-          <Button
-            size='sm'
-            variant={club.joinPolicy === 'OPEN' ? 'default' : 'outline'}
-            className='h-7 w-full text-xs'
-            style={club.joinPolicy === 'OPEN' ? { backgroundColor: themeColor } : undefined}
-            onClick={handleJoin}
-            disabled={joinMutation.isPending}
-          >
-            {joinMutation.isPending ? 'Joining...' : JOIN_POLICY_LABEL[club.joinPolicy]}
-          </Button>
-        </div>
-      )}
-
-      {(isMember || joined) && (
-        <div className={cn('px-3 pb-3', compact && 'pb-0 pr-3')}>
-          {/* No handler — the click bubbles to the wrapping <Link>, which
-              already points at the club. */}
-          <Button size='sm' variant='outline' className='h-7 w-full gap-1 text-xs'>
-            {joined && !isMember ? (
-              <>
-                <Icons.check className='h-3 w-3' />
-                Joined!
-              </>
-            ) : (
-              'View'
-            )}
-          </Button>
-        </div>
-      )}
-
-      <div
-        className='absolute bottom-0 left-0 right-0 h-0.5 opacity-0 transition-opacity group-hover:opacity-100'
-        style={{ backgroundColor: themeColor }}
-      />
+      <p className='line-clamp-2 text-xs text-muted-foreground'>
+        {club.tagline || club.description || 'No description yet.'}
+      </p>
     </Link>
   )
 }
