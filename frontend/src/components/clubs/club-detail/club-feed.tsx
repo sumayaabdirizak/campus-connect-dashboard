@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Icons } from '@/components/icons'
 import { Skeleton } from '@/components/ui/skeleton'
-import { useClubFeed, usePostClubMessage } from '@/lib/clubs/queries'
+import { useClubFeed, usePostClubMessage, useToggleClubReaction } from '@/lib/clubs/queries'
 import { useAuthStore } from '@/lib/auth-store'
 import { uploadDiscussionFile } from '@/lib/discussions/services/discussion-upload'
 import { toast } from 'sonner'
@@ -70,8 +70,19 @@ function renderBody(text: string) {
   )
 }
 
-function FeedMessage({ message, themeColor }: { message: DiscussionMessage; themeColor: string }) {
+const LIKE_EMOJI = '❤️'
+
+function FeedMessage({
+  message,
+  themeColor,
+  serverId,
+}: {
+  message: DiscussionMessage
+  themeColor: string
+  serverId?: number | null
+}) {
   const viewerId = useAuthStore((s) => s.user?.id)
+  const toggleReaction = useToggleClubReaction(serverId)
   const name = message.isAnonymous ? 'Anonymous' : (message.sender?.full_name ?? 'Unknown')
   const avatarUrl = message.isAnonymous ? null : message.sender?.avatarUrl
   // Only the author gets the overflow menu.
@@ -90,12 +101,11 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
 
   const { body, tags } = splitTrailingHashtags(message.content ?? '')
 
-  // Local-only until a reaction endpoint exists; seeded from the server count.
-  const [liked, setLiked] = useState(
-    viewerId != null && serverReactions.some((r) => Number(r.userId) === Number(viewerId))
-  )
-  const likeCount = serverReactions.length + (liked && !serverReactions.some((r) => Number(r.userId) === Number(viewerId)) ? 1 : 0)
-  const firstLiker = serverReactions.find((r) => r.user?.full_name)?.user?.full_name
+  const likes = serverReactions.filter((r) => r.emoji === LIKE_EMOJI)
+  const liked =
+    viewerId != null && likes.some((r) => Number(r.userId) === Number(viewerId))
+  const likeCount = likes.length
+  const firstLiker = likes.find((r) => r.user?.full_name)?.user?.full_name
 
   return (
     <div className='w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md'>
@@ -205,9 +215,13 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
       <div className='flex items-center gap-5'>
         <button
           type='button'
-          onClick={() => setLiked((v) => !v)}
+          onClick={() =>
+            toggleReaction.mutate({ messageId: message.id, emoji: LIKE_EMOJI, mine: liked })
+          }
+          disabled={toggleReaction.isPending}
           aria-pressed={liked}
-          className={`flex items-center gap-1.5 text-sm transition-colors ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+          aria-label={liked ? 'Remove like' : 'Like post'}
+          className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-50 ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
         >
           <Icons.heart className='h-5 w-5' />
           {likeCount > 0 ? <span className='text-xs'>{likeCount}</span> : null}
@@ -280,6 +294,9 @@ export function ClubFeed({
       for (const file of files) {
         const { promise } = uploadDiscussionFile({
           file,
+          // A club posts to its server, not a channel — without this the
+          // upload route rejects with "groupId, channelId, or groupDmId is required".
+          groupId: serverId as number,
           keyVersion: 1,
           requireE2eeMetadata: false,
         })
@@ -440,7 +457,7 @@ export function ClubFeed({
       ) : (
         // Endpoint returns oldest-first within a page; show newest at the top.
         [...messages].reverse().map((m) => (
-          <FeedMessage key={m.id} message={m} themeColor={themeColor} />
+          <FeedMessage key={m.id} message={m} themeColor={themeColor} serverId={serverId} />
         ))
       )}
     </div>

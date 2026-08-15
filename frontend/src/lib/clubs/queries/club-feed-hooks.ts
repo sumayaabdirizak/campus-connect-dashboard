@@ -54,3 +54,47 @@ export function usePostClubMessage(serverId?: number | null) {
     onError: (err: Error) => toast.error(err.message || 'Failed to post'),
   });
 }
+
+const reactionPath = (serverId: number | string, messageId: string) =>
+  `/discussions/groups/${encodeURIComponent(String(serverId))}/messages/${encodeURIComponent(
+    messageId
+  )}/reactions`;
+
+export const addClubReaction = (
+  serverId: number | string,
+  messageId: string,
+  emoji: string
+) =>
+  apiClient(reactionPath(serverId, messageId), {
+    method: 'POST',
+    body: JSON.stringify({ emoji }),
+  });
+
+export const removeClubReaction = (
+  serverId: number | string,
+  messageId: string,
+  emoji: string
+) =>
+  apiClient(
+    `${reactionPath(serverId, messageId)}?emoji=${encodeURIComponent(emoji)}`,
+    { method: 'DELETE' }
+  );
+
+/**
+ * Toggles one emoji on a post. `mine` says whether the viewer has already
+ * reacted with it, which decides add vs remove — the endpoint has no toggle
+ * verb of its own.
+ */
+export function useToggleClubReaction(serverId?: number | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (args: { messageId: string; emoji: string; mine: boolean }) =>
+      args.mine
+        ? removeClubReaction(serverId as number, args.messageId, args.emoji)
+        : addClubReaction(serverId as number, args.messageId, args.emoji),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+    },
+    onError: (err: Error) => toast.error(err.message || 'Failed to react'),
+  });
+}

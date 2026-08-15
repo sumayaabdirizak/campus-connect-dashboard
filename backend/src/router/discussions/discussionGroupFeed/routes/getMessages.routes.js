@@ -85,6 +85,17 @@ router.get("/groups/:groupId/messages", async (req, res) => {
       include: {
         sender: { select: { id: true, full_name: true, avatarUrl: true } },
         attachments: true,
+        // Selected, not included: the raw row carries the internal integer id
+        // and messageId, which must not cross the wire (see messageShared.js).
+        reactions: {
+          select: {
+            emoji: true,
+            userId: true,
+            createdAt: true,
+            user: { select: { id: true, full_name: true } },
+          },
+          orderBy: { createdAt: "asc" },
+        },
       },
     });
 

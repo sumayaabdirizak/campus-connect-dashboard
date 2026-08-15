@@ -27,6 +27,8 @@ async function sha256Hex(file: File): Promise<string> {
 export function uploadDiscussionFile(args: {
   file: File;
   channelId?: string;
+  /** Server/group scope — used by club feeds, which post to a group, not a channel. */
+  groupId?: string | number;
   groupDmId?: string;
   keyVersion: number;
   requireE2eeMetadata: boolean;
@@ -45,6 +47,7 @@ export function uploadDiscussionFile(args: {
     const form = new FormData();
     form.append('file', args.file);
     if (args.channelId != null) form.append('channelId', String(args.channelId));
+    if (args.groupId != null) form.append('groupId', String(args.groupId));
     if (args.groupDmId != null) form.append('groupDmId', String(args.groupDmId));
     if (args.requireE2eeMetadata) {
       const hex = await sha256Hex(args.file);
