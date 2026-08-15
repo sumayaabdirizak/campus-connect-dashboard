@@ -33,28 +33,29 @@ function ExpandableText({ text, maxLength = 30 }: { text: string; maxLength?: nu
 
 export function ClubDetailSidebar({ club, themeColor }: Props) {
   return (
-    <aside className='hidden w-80 shrink-0 space-y-4 lg:block'>
+    <aside className='hidden w-60 shrink-0 space-y-4 lg:block'>
       {club.rules ? (
-        <div className='overflow-hidden rounded-xl border' style={{ borderColor: `${themeColor}30` }}>
+        <div className='overflow-hidden rounded border' style={{ borderColor: `${themeColor}30` }}>
           <div
-            className='px-4 py-3 text-sm font-semibold uppercase tracking-wide text-white'
+            className='px-2 py-1.5 text-xs font-semibold uppercase tracking-tight text-white'
             style={{ backgroundColor: themeColor }}
           >
-            Club Rules
+            Rules
           </div>
           <div className='divide-y p-0'>
             {club.rules
               .split('\n')
               .filter(Boolean)
+              .slice(0, 2)
               .map((rule, i) => (
-                <div key={i} className='flex gap-3 px-4 py-3'>
+                <div key={i} className='flex gap-2 px-2 py-1.5'>
                   <span
-                    className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-xs font-bold'
+                    className='mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-bold'
                     style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
                   >
                     {i + 1}
                   </span>
-                  <p className='text-sm leading-relaxed text-muted-foreground'>{rule.trim()}</p>
+                  <p className='text-xs leading-tight text-muted-foreground'>{rule.trim().substring(0, 40)}</p>
                 </div>
               ))}
           </div>
