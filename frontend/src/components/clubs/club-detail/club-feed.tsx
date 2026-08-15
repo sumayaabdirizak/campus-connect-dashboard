@@ -199,6 +199,19 @@ export function ClubFeed({
 
   const messages = data?.results ?? []
   const trimmed = draft.trim()
+  const hasDraft = trimmed.length > 0 || attachmentIds.length > 0
+
+  const clearDraft = () => {
+    setDraft('')
+    setAttachmentIds([])
+  }
+
+  /** Opens the picker filtered to `accept` ('' = anything). */
+  const pickFiles = (accept: string) => {
+    if (!fileInputRef.current) return
+    fileInputRef.current.accept = accept
+    fileInputRef.current.click()
+  }
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -242,39 +255,107 @@ export function ClubFeed({
   return (
     <div className='space-y-3'>
       {canPost ? (
-        <div className='rounded-xl border bg-card p-4'>
-          <div className='flex gap-3'>
-            <div
-              className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-semibold'
-              style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
-            >
-              {initials(user?.full_name)}
+        <div className='rounded-2xl border border-gray-200 bg-white p-5 shadow-sm'>
+          {/* Author row */}
+          <div className='flex items-start justify-between gap-3'>
+            <div className='flex min-w-0 items-center gap-3'>
+              <div
+                className='flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold'
+                style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
+              >
+                {user?.avatarUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={user.avatarUrl} alt='' className='h-full w-full object-cover' />
+                ) : (
+                  initials(user?.full_name)
+                )}
+              </div>
+              <div className='min-w-0'>
+                <p className='truncate text-base font-bold text-gray-900'>
+                  {user?.full_name ?? 'You'}
+                </p>
+                {user?.email ? (
+                  <p className='truncate text-sm text-gray-500'>{user.email}</p>
+                ) : null}
+              </div>
             </div>
-            <Textarea
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                // Enter posts; Shift+Enter inserts a newline.
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  submit()
-                }
-              }}
-              placeholder='Write something to the group...'
-              rows={2}
-              maxLength={20000}
-              className='min-h-[60px] resize-none'
-            />
-          </div>
-          <div className='mt-3 flex items-center justify-between'>
             <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={uploading}
-              className='flex items-center gap-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:opacity-50'
+              type='button'
+              onClick={clearDraft}
+              disabled={!hasDraft}
+              aria-label='Clear post'
+              className='shrink-0 rounded-full p-1 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent'
             >
-              <Icons.paperclip className='h-4 w-4' />
-              Photo / file
+              <Icons.close className='h-5 w-5' />
             </button>
+          </div>
+
+          {/* Draft */}
+          <Textarea
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter posts; Shift+Enter inserts a newline.
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault()
+                submit()
+              }
+            }}
+            placeholder='Write something to the group...'
+            rows={2}
+            maxLength={20000}
+            className='mt-4 min-h-[52px] resize-none border-0 bg-transparent p-0 text-sm shadow-none placeholder:text-gray-400 focus-visible:ring-0'
+          />
+
+          {attachmentIds.length > 0 ? (
+            <p className='mt-2 text-xs text-gray-500'>
+              {attachmentIds.length} file{attachmentIds.length !== 1 ? 's' : ''} attached
+            </p>
+          ) : null}
+
+          {/* Divider */}
+          <div className='my-4 h-px bg-gray-200' />
+
+          {/* Toolbar */}
+          <div className='flex items-center justify-between'>
+            <div className='flex items-center gap-1'>
+              <button
+                type='button'
+                onClick={() => pickFiles('audio/*')}
+                disabled={uploading}
+                aria-label='Attach audio'
+                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+              >
+                <Icons.music className='h-5 w-5' />
+              </button>
+              <button
+                type='button'
+                onClick={() => pickFiles('image/*')}
+                disabled={uploading}
+                aria-label='Attach photo'
+                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+              >
+                <Icons.media className='h-5 w-5' />
+              </button>
+              <button
+                type='button'
+                onClick={() => pickFiles('')}
+                disabled={uploading}
+                aria-label='Attach file'
+                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+              >
+                <Icons.paperclip className='h-5 w-5' />
+              </button>
+              <button
+                type='button'
+                onClick={() => pickFiles('')}
+                disabled={uploading}
+                aria-label='More options'
+                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+              >
+                <Icons.ellipsis className='h-5 w-5' />
+              </button>
+            </div>
             <input
               ref={fileInputRef}
               type='file'
@@ -284,12 +365,11 @@ export function ClubFeed({
               disabled={uploading}
             />
             <Button
-              size='sm'
               onClick={submit}
-              disabled={(!trimmed && attachmentIds.length === 0) || postMutation.isPending || uploading}
-              style={{ backgroundColor: themeColor }}
+              disabled={!hasDraft || postMutation.isPending || uploading}
+              className='rounded-full bg-gray-900 px-7 py-2.5 text-sm font-semibold text-white hover:bg-gray-800'
             >
-              {postMutation.isPending ? 'Posting...' : 'Post'}
+              {postMutation.isPending ? 'Posting...' : uploading ? 'Uploading...' : 'Post'}
             </Button>
           </div>
         </div>

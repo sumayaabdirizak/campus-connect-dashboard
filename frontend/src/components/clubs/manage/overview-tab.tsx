@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,12 @@ import {
 import { Icons } from '@/components/icons'
 import { useEditClub } from '@/lib/clubs/queries'
 import type { Club, ClubJoinPolicy } from '@/lib/clubs/types'
+import { useQueryClient } from '@/lib/async-query'
+import { clubKeys } from '@/lib/clubs/queries/club-keys'
+import { uploadJson } from '@/lib/upload-client'
+import { apiClient } from '@/lib/api-client'
+import { toast } from 'sonner'
+import { Upload } from 'lucide-react'
 
 const THEME_COLORS = [
   '#6366f1', '#8b5cf6', '#ec4899', '#ef4444',
@@ -36,6 +42,68 @@ export function OverviewTab({
   const [themeColor, setThemeColor] = useState(club.themeColor || '#6366f1')
 
   const editMutation = useEditClub()
+  const qc = useQueryClient()
+
+  const bannerInputRef = useRef<HTMLInputElement>(null)
+  const avatarInputRef = useRef<HTMLInputElement>(null)
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
+
+  const handleBannerUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploadingBanner(true)
+    const form = new FormData()
+    form.append('banner', file)
+    try {
+      await uploadJson(`/clubs/${club.id}/banner`, form)
+      qc.invalidateQueries({ queryKey: clubKeys.all })
+      toast.success('Banner updated successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload banner')
+    } finally {
+      setIsUploadingBanner(false)
+      if (bannerInputRef.current) bannerInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveBanner = async () => {
+    try {
+      await apiClient(`/clubs/${club.id}/banner`, { method: 'DELETE' })
+      qc.invalidateQueries({ queryKey: clubKeys.all })
+      toast.success('Banner removed successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove banner')
+    }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setIsUploadingAvatar(true)
+    const form = new FormData()
+    form.append('icon', file)
+    try {
+      await uploadJson(`/clubs/${club.id}/icon`, form)
+      qc.invalidateQueries({ queryKey: clubKeys.all })
+      toast.success('Avatar updated successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to upload avatar')
+    } finally {
+      setIsUploadingAvatar(false)
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
+
+  const handleRemoveAvatar = async () => {
+    try {
+      await apiClient(`/clubs/${club.id}/icon`, { method: 'DELETE' })
+      qc.invalidateQueries({ queryKey: clubKeys.all })
+      toast.success('Avatar removed successfully')
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to remove avatar')
+    }
+  }
 
   const isDirty =
     name !== club.name ||
@@ -55,48 +123,120 @@ export function OverviewTab({
     editMutation.mutate({ clubId: club.id, data })
   }
 
+  const initials = club.name
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase())
+    .join('')
+
   return (
     <div className='space-y-6'>
-      {/* Banner preview */}
-      <div
-        className='relative h-32 w-full overflow-hidden rounded-lg'
-        style={{
-          background: club.bannerUrl
-            ? `url(${club.bannerUrl}) center/cover`
-            : `linear-gradient(135deg, ${themeColor}50, ${themeColor}20, transparent)`,
-        }}
-      >
-        <div className='absolute inset-0 flex items-end p-4'>
-          <div className='flex items-center gap-3'>
-            <div
-              className='flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold'
-              style={{ backgroundColor: `${themeColor}30`, color: themeColor }}
-            >
-              {club.name
-                .split(/\s+/)
-                .slice(0, 2)
-                .map((w) => w[0]?.toUpperCase())
-                .join('')}
-            </div>
-            <div>
-              <p className='font-semibold text-foreground drop-shadow-sm'>{name || club.name}</p>
-              {tagline && (
-                <p className='text-xs text-muted-foreground drop-shadow-sm'>{tagline}</p>
-              )}
-            </div>
+      <input
+        type='file'
+        ref={bannerInputRef}
+        onChange={handleBannerUpload}
+        accept='image/*'
+        className='hidden'
+      />
+      <input
+        type='file'
+        ref={avatarInputRef}
+        onChange={handleAvatarUpload}
+        accept='image/*'
+        className='hidden'
+      />
+
+      <div className='rounded-2xl border border-gray-200 bg-gray-50/50 p-1 overflow-hidden'>
+        <div
+          className='relative h-32 w-full overflow-hidden rounded-xl bg-slate-200'
+          style={
+            club.bannerUrl
+              ? { backgroundImage: `url(${club.bannerUrl})`, backgroundPosition: 'center', backgroundSize: 'cover' }
+              : { background: `linear-gradient(135deg, ${themeColor}50, ${themeColor}20, transparent)` }
+          }
+        />
+        <div className='flex items-end gap-3 px-4 pb-2 -mt-8 relative z-10'>
+          <div className='flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-white bg-white shadow-md overflow-hidden p-0.5'>
+            {club.iconUrl ? (
+              <img src={club.iconUrl} alt='' className='h-full w-full rounded-lg object-cover' />
+            ) : (
+              <div
+                className='flex h-full w-full items-center justify-center rounded-lg font-bold text-white text-lg'
+                style={{ backgroundColor: themeColor }}
+              >
+                {initials}
+              </div>
+            )}
+          </div>
+          <div className='pb-1'>
+            <h3 className='font-bold text-gray-900 leading-none'>{name || club.name}</h3>
+            {tagline && (
+              <p className='text-xs text-gray-500 mt-1 leading-none'>{tagline}</p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* Fields */}
+      <div className='space-y-4 py-2 border-b border-gray-100 pb-6'>
+        <div className='flex items-center gap-4'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => bannerInputRef.current?.click()}
+            disabled={isUploadingBanner}
+            className='flex items-center gap-1.5 text-xs font-semibold'
+          >
+            <Upload className='h-3.5 w-3.5' />
+            {isUploadingBanner ? 'Uploading...' : 'Change banner'}
+          </Button>
+          {club.bannerUrl && (
+            <button
+              type='button'
+              onClick={handleRemoveBanner}
+              className='text-xs text-gray-500 hover:text-red-600 hover:underline'
+            >
+              Remove banner
+            </button>
+          )}
+        </div>
+
+        <div className='flex items-center flex-wrap gap-x-4 gap-y-2'>
+          <Button
+            type='button'
+            variant='outline'
+            size='sm'
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={isUploadingAvatar}
+            className='flex items-center gap-1.5 text-xs font-semibold'
+          >
+            <Upload className='h-3.5 w-3.5' />
+            {isUploadingAvatar ? 'Uploading...' : 'Change avatar'}
+          </Button>
+          {club.iconUrl && (
+            <button
+              type='button'
+              onClick={handleRemoveAvatar}
+              className='text-xs text-gray-500 hover:text-red-600 hover:underline'
+            >
+              Remove avatar
+            </button>
+          )}
+          <span className='text-[10px] text-gray-400'>
+            PNG, JPG, WebP or GIF · max 5 MB
+          </span>
+        </div>
+      </div>
+
       <div className='grid gap-4 sm:grid-cols-2'>
         <div className='space-y-1.5'>
-          <Label htmlFor='club-name'>Club Name</Label>
+          <Label htmlFor='club-name'>Club name</Label>
           <Input
             id='club-name'
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
+            className='h-9 rounded-lg border-gray-200'
           />
         </div>
         <div className='space-y-1.5'>
@@ -107,6 +247,7 @@ export function OverviewTab({
             onChange={(e) => setTagline(e.target.value)}
             maxLength={80}
             placeholder='Short description'
+            className='h-9 rounded-lg border-gray-200'
           />
         </div>
       </div>
@@ -120,6 +261,7 @@ export function OverviewTab({
           maxLength={500}
           rows={3}
           placeholder='What is this club about?'
+          className='rounded-lg border-gray-200'
         />
         <p className='text-[10px] text-muted-foreground text-right'>
           {description.length}/500
@@ -127,7 +269,6 @@ export function OverviewTab({
       </div>
 
       <div className='grid gap-4 sm:grid-cols-2'>
-        {/* Join policy — owner only */}
         <div className='space-y-1.5'>
           <Label>Join Policy</Label>
           <Select
@@ -135,13 +276,12 @@ export function OverviewTab({
             onValueChange={(v) => setJoinPolicy(v as ClubJoinPolicy)}
             disabled={!isOwner}
           >
-            <SelectTrigger className='h-9'>
+            <SelectTrigger className='h-9 rounded-lg border-gray-200'>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className='rounded-lg'>
               <SelectItem value='OPEN'>Open — anyone can join</SelectItem>
               <SelectItem value='BY_REQUEST'>By Request — requires approval</SelectItem>
-              <SelectItem value='INVITE_ONLY'>Invite Only</SelectItem>
             </SelectContent>
           </Select>
           {!isOwner && (
@@ -151,7 +291,6 @@ export function OverviewTab({
           )}
         </div>
 
-        {/* Theme color */}
         <div className='space-y-1.5'>
           <Label>Theme Color</Label>
           <div className='flex flex-wrap gap-2'>
@@ -172,12 +311,12 @@ export function OverviewTab({
         </div>
       </div>
 
-      {/* Save */}
-      <div className='flex justify-end'>
+      <div className='flex justify-end pt-2'>
         <Button
           onClick={handleSave}
           disabled={!isDirty || editMutation.isPending}
           style={isDirty ? { backgroundColor: themeColor } : undefined}
+          className='rounded-lg px-6'
         >
           {editMutation.isPending ? (
             <>
