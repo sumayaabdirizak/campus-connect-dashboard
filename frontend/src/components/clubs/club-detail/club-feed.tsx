@@ -631,9 +631,6 @@ export function ClubFeed({
                 <p className='truncate text-xs font-bold leading-tight text-gray-900'>
                   {user?.full_name ?? 'You'}
                 </p>
-                {user?.email ? (
-                  <p className='truncate text-[10px] leading-tight text-gray-500'>{user.email}</p>
-                ) : null}
               </div>
             </div>
             <button
