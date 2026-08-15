@@ -51,6 +51,35 @@ function splitTrailingHashtags(content: string) {
   }
 }
 
+function formatFileSize(bytes: number) {
+  if (!Number.isFinite(bytes) || bytes < 0) return ''
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+}
+
+/** Extension → short label + accent colour for the pending-attachment chip. */
+const FILE_KIND_BY_EXT: Record<string, { label: string; className: string }> = {
+  ts: { label: 'TypeScript', className: 'bg-blue-50 text-blue-600' },
+  tsx: { label: 'TypeScript', className: 'bg-blue-50 text-blue-600' },
+  js: { label: 'JavaScript', className: 'bg-amber-50 text-amber-600' },
+  jsx: { label: 'JavaScript', className: 'bg-amber-50 text-amber-600' },
+  json: { label: 'JSON', className: 'bg-gray-100 text-gray-600' },
+  pdf: { label: 'PDF', className: 'bg-red-50 text-red-600' },
+  doc: { label: 'Word', className: 'bg-sky-50 text-sky-600' },
+  docx: { label: 'Word', className: 'bg-sky-50 text-sky-600' },
+  xls: { label: 'Excel', className: 'bg-emerald-50 text-emerald-600' },
+  xlsx: { label: 'Excel', className: 'bg-emerald-50 text-emerald-600' },
+  zip: { label: 'Archive', className: 'bg-purple-50 text-purple-600' },
+  csv: { label: 'CSV', className: 'bg-emerald-50 text-emerald-600' },
+  txt: { label: 'Text', className: 'bg-gray-100 text-gray-600' },
+}
+
+function fileKind(fileName: string) {
+  const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
+  return FILE_KIND_BY_EXT[ext] ?? { label: ext ? ext.toUpperCase() : 'File', className: 'bg-gray-100 text-gray-600' }
+}
+
 /** Renders body text with bare URLs turned into links. */
 function renderBody(text: string) {
   return text.split(/(https?:\/\/\S+)/g).map((part, i) =>
@@ -261,7 +290,9 @@ export function ClubFeed({
   canPost: boolean
 }) {
   const [draft, setDraft] = useState('')
-  const [attachmentIds, setAttachmentIds] = useState<string[]>([])
+  const [attachments, setAttachments] = useState<
+    { id: string; name: string; size: number }[]
+  >([])
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { data, isLoading, error } = useClubFeed(serverId)
@@ -270,11 +301,15 @@ export function ClubFeed({
 
   const messages = data?.results ?? []
   const trimmed = draft.trim()
-  const hasDraft = trimmed.length > 0 || attachmentIds.length > 0
+  const hasDraft = trimmed.length > 0 || attachments.length > 0
 
   const clearDraft = () => {
     setDraft('')
-    setAttachmentIds([])
+    setAttachments([])
+  }
+
+  const removeAttachment = (id: string) => {
+    setAttachments((prev) => prev.filter((a) => a.id !== id))
   }
 
   /** Opens the picker filtered to `accept` ('' = anything). */
@@ -290,7 +325,7 @@ export function ClubFeed({
 
     setUploading(true)
     try {
-      const newIds: string[] = []
+      const uploaded: { id: string; name: string; size: number }[] = []
       for (const file of files) {
         const { promise } = uploadDiscussionFile({
           file,
@@ -301,10 +336,11 @@ export function ClubFeed({
           requireE2eeMetadata: false,
         })
         const result = await promise
-        newIds.push(result.id)
+        // The upload response has no filename — keep it from the local File
+        // the user picked, since that's what the chip needs to render.
+        uploaded.push({ id: result.id, name: file.name, size: file.size })
       }
-      setAttachmentIds((prev) => [...prev, ...newIds])
-      toast.success(`Uploaded ${newIds.length} file(s)`)
+      setAttachments((prev) => [...prev, ...uploaded])
     } catch (err) {
       toast.error((err as Error).message || 'Upload failed')
     } finally {
@@ -314,13 +350,14 @@ export function ClubFeed({
   }
 
   const submit = () => {
-    if ((!trimmed && attachmentIds.length === 0) || postMutation.isPending) return
+    if ((!trimmed && attachments.length === 0) || postMutation.isPending) return
+    const attachmentIds = attachments.map((a) => a.id)
     postMutation.mutate(
       { content: trimmed, attachmentIds: attachmentIds.length > 0 ? attachmentIds : undefined },
       {
         onSuccess: () => {
           setDraft('')
-          setAttachmentIds([])
+          setAttachments([])
         },
       }
     )
@@ -381,10 +418,38 @@ export function ClubFeed({
             className='mt-2 min-h-[30px] resize-none border-0 bg-transparent p-0 text-xs shadow-none placeholder:text-gray-400 focus-visible:ring-0'
           />
 
-          {attachmentIds.length > 0 ? (
-            <p className='mt-1 text-[10px] text-gray-500'>
-              {attachmentIds.length} file{attachmentIds.length !== 1 ? 's' : ''} attached
-            </p>
+          {attachments.length > 0 ? (
+            <div className='mt-2 flex flex-wrap gap-2'>
+              {attachments.map((a) => {
+                const kind = fileKind(a.name)
+                return (
+                  <div
+                    key={a.id}
+                    className='flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-2 pr-1.5'
+                  >
+                    <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${kind.className}`}>
+                      <Icons.page className='h-4 w-4' />
+                    </div>
+                    <div className='min-w-0'>
+                      <p className='max-w-[160px] truncate text-xs font-medium text-gray-900'>
+                        {a.name}
+                      </p>
+                      <p className='text-[10px] text-gray-500'>
+                        {kind.label} · {formatFileSize(a.size)}
+                      </p>
+                    </div>
+                    <button
+                      type='button'
+                      onClick={() => removeAttachment(a.id)}
+                      aria-label={`Remove ${a.name}`}
+                      className='shrink-0 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700'
+                    >
+                      <Icons.close className='h-3.5 w-3.5' />
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
           ) : null}
 
           {/* Divider */}
