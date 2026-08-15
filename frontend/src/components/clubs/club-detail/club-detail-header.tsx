@@ -39,37 +39,13 @@ export function ClubDetailHeader({
   return (
     <div className='mx-auto max-w-5xl px-4'>
       <div className='-mt-8 flex items-end gap-4'>
-        <div className='relative h-28 w-28 shrink-0 flex items-center justify-center'>
-          {/* Outer light ring */}
-          <div
-            className='absolute h-28 w-28 rounded-full shadow-lg'
-            style={{
-              backgroundColor: themeColor + '20',
-              border: '3px solid ' + themeColor + '15'
-            }}
-          />
-
-          {/* Middle tan ring */}
-          <div
-            className='absolute h-24 w-24 rounded-full'
-            style={{ backgroundColor: themeColor + '35' }}
-          />
-
-          {/* Dark ring */}
-          <div
-            className='absolute h-20 w-20 rounded-full'
-            style={{ backgroundColor: themeColor + '70' }}
-          />
-
-          {/* Center white circle with content */}
-          <div className='absolute flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md border-2 border-gray-200 text-lg font-bold' style={{ color: themeColor }}>
-            {club.iconUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={club.iconUrl} alt='' className='h-full w-full rounded-full object-cover' />
-            ) : (
-              initials
-            )}
-          </div>
+        <div className='flex h-20 w-20 shrink-0 items-center justify-center rounded-full shadow-lg' style={{ backgroundColor: themeColor + '15', color: themeColor }}>
+          {club.iconUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={club.iconUrl} alt='' className='h-full w-full rounded-full object-cover' />
+          ) : (
+            <span className='text-2xl font-bold'>{initials}</span>
+          )}
         </div>
 
         <div className='flex-1 pb-1'>
