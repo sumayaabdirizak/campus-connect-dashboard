@@ -54,13 +54,13 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
   }
 
   return (
-    <div className='w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 shadow-sm hover:shadow-md transition-shadow duration-200'>
+    <div className='w-full bg-gray-50 border border-gray-200 rounded-3xl p-6 shadow-sm hover:shadow-lg transition-shadow duration-200'>
       {/* Header */}
-      <div className='flex items-start justify-between mb-3'>
-        <div className='flex items-center gap-3 flex-1 min-w-0'>
+      <div className='flex items-start justify-between mb-4'>
+        <div className='flex items-center gap-4 flex-1 min-w-0'>
           <a href='#' className='flex-shrink-0'>
             <div
-              className='flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold border border-gray-200'
+              className='flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold border-2 border-gray-200'
               style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
             >
               {avatarUrl ? (
@@ -73,7 +73,7 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
           </a>
           <div className='min-w-0 flex-1'>
             <div className='flex items-center gap-2'>
-              <a href='#' className='font-bold text-gray-900 hover:underline truncate'>
+              <a href='#' className='font-bold text-gray-900 hover:underline truncate text-base'>
                 {name}
               </a>
             </div>
@@ -83,14 +83,14 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
           </div>
         </div>
         <a href='#' className='flex-shrink-0 text-blue-400 hover:text-blue-600 transition-colors'>
-          <Icons.ellipsis className='w-5 h-5' />
+          <Icons.ellipsis className='w-6 h-6' />
         </a>
       </div>
 
       {/* Content */}
-      <div className='mb-3'>
+      <div className='mb-4'>
         {message.content ? (
-          <p className='text-gray-900 text-sm leading-relaxed whitespace-pre-wrap break-words'>
+          <p className='text-gray-900 text-base leading-relaxed whitespace-pre-wrap break-words'>
             {message.content}
           </p>
         ) : null}
@@ -98,16 +98,16 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
 
       {/* Image attachments */}
       {imageAttachments.length > 0 && (
-        <div className='mb-3'>
-          <div className='rounded-2xl overflow-hidden border border-gray-200'>
+        <div className='mb-4'>
+          <div className='rounded-2xl overflow-hidden border-2 border-gray-200'>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={imageAttachments[0]?.url || ''} alt='' className='w-full h-64 object-cover' />
+            <img src={imageAttachments[0]?.url || ''} alt='' className='w-full h-80 object-cover' />
           </div>
         </div>
       )}
 
       {/* Timestamp */}
-      <div className='text-gray-500 text-xs mb-3 cursor-help hover:text-gray-700' title={new Date(message.createdAt).toLocaleString()}>
+      <div className='text-gray-500 text-sm mb-4 cursor-help hover:text-gray-700' title={new Date(message.createdAt).toLocaleString()}>
         {timeAgo(message.createdAt)} · {new Date(message.createdAt).toLocaleDateString()}
       </div>
 
@@ -133,31 +133,31 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
       )}
 
       {/* Action buttons */}
-      <div className='flex items-center justify-around pt-2 text-gray-500 border-gray-200'>
+      <div className='flex items-center justify-around pt-4 text-gray-500 border-gray-200'>
         {/* Comments */}
-        <button className='flex items-center justify-center gap-2 py-2 px-3 hover:bg-blue-50 hover:text-blue-500 rounded-full transition-colors group flex-1'>
-          <Icons.chat className='w-4 h-4' />
-          <span className='text-xs font-medium group-hover:block hidden'>Comment</span>
+        <button className='flex items-center justify-center gap-2 py-3 px-4 hover:bg-blue-50 hover:text-blue-500 rounded-full transition-colors group flex-1'>
+          <Icons.chat className='w-5 h-5' />
+          <span className='text-sm font-medium group-hover:block hidden'>Comment</span>
         </button>
 
         {/* Reactions */}
         <div className='relative'>
           <button
             onClick={() => setShowReactionPicker(!showReactionPicker)}
-            className='flex items-center justify-center gap-2 py-2 px-3 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors group flex-1'
+            className='flex items-center justify-center gap-2 py-3 px-4 hover:bg-red-50 hover:text-red-500 rounded-full transition-colors group flex-1'
           >
-            <Icons.heart className='w-4 h-4' />
-            <span className='text-xs font-medium group-hover:block hidden'>React</span>
+            <Icons.heart className='w-5 h-5' />
+            <span className='text-sm font-medium group-hover:block hidden'>React</span>
           </button>
 
           {/* Reaction picker */}
           {showReactionPicker && (
-            <div className='absolute bottom-full left-0 mb-2 flex gap-1 bg-white border border-gray-200 rounded-full p-2 shadow-lg z-10'>
+            <div className='absolute bottom-full left-0 mb-3 flex gap-2 bg-white border border-gray-200 rounded-full p-3 shadow-lg z-10'>
               {['❤️', '😂', '😢', '😮', '🔥', '👍'].map((emoji) => (
                 <button
                   key={emoji}
                   onClick={() => handleAddReaction(emoji)}
-                  className='text-xl hover:scale-125 transition-transform cursor-pointer'
+                  className='text-2xl hover:scale-125 transition-transform cursor-pointer'
                 >
                   {emoji}
                 </button>
@@ -167,9 +167,9 @@ function FeedMessage({ message, themeColor }: { message: DiscussionMessage; them
         </div>
 
         {/* Share */}
-        <button className='flex items-center justify-center gap-2 py-2 px-3 hover:bg-green-50 hover:text-green-500 rounded-full transition-colors group flex-1'>
-          <Icons.share className='w-4 h-4' />
-          <span className='text-xs font-medium group-hover:block hidden'>Share</span>
+        <button className='flex items-center justify-center gap-2 py-3 px-4 hover:bg-green-50 hover:text-green-500 rounded-full transition-colors group flex-1'>
+          <Icons.share className='w-5 h-5' />
+          <span className='text-sm font-medium group-hover:block hidden'>Share</span>
         </button>
       </div>
     </div>
