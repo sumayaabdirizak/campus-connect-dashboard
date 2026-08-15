@@ -1,6 +1,7 @@
 import { Icons } from '@/components/icons'
 import type { Club } from '@/lib/clubs/types'
 import { formatJoinPolicy } from './helpers'
+import { useState } from 'react'
 
 type Props = {
   club: Club
@@ -9,6 +10,25 @@ type Props = {
   isMember: boolean
   isOwner: boolean
   membershipRole: string | null
+}
+
+function ExpandableText({ text, maxLength = 30 }: { text: string; maxLength?: number }) {
+  const [isExpanded, setIsExpanded] = useState(false)
+  const needsExpand = text.length > maxLength
+
+  if (!needsExpand) return <span className='text-sm font-medium'>{text}</span>
+
+  const truncated = text.substring(0, maxLength)
+
+  return (
+    <button
+      onClick={() => setIsExpanded(!isExpanded)}
+      className='text-sm font-medium text-left hover:underline text-blue-600 transition-colors'
+      title={text}
+    >
+      {isExpanded ? text : `${truncated}...`}
+    </button>
+  )
 }
 
 export function ClubDetailSidebar({ club, themeColor }: Props) {
@@ -54,11 +74,11 @@ export function ClubDetailSidebar({ club, themeColor }: Props) {
             </div>
           ) : null}
           {club.owner ? (
-            <div className='flex items-center justify-between'>
+            <div className='flex items-center justify-between gap-2'>
               <span className='text-xs text-muted-foreground'>Created by</span>
-              <div className='flex items-center gap-1.5'>
-                <Icons.pro className='h-3 w-3 text-amber-500' />
-                <span className='text-sm font-medium'>{club.owner.full_name}</span>
+              <div className='flex items-center gap-1.5 min-w-0'>
+                <Icons.pro className='h-3 w-3 text-amber-500 flex-shrink-0' />
+                <ExpandableText text={club.owner.full_name} maxLength={20} />
               </div>
             </div>
           ) : null}
