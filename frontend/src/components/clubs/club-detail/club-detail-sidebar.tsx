@@ -33,7 +33,7 @@ function ExpandableText({ text, maxLength = 30 }: { text: string; maxLength?: nu
 
 export function ClubDetailSidebar({ club, themeColor }: Props) {
   return (
-    <aside className='hidden w-48 shrink-0 space-y-3 lg:block'>
+    <aside className='w-full space-y-3'>
       {club.rules ? (
         <div className='overflow-hidden rounded border' style={{ borderColor: `${themeColor}30` }}>
           <div

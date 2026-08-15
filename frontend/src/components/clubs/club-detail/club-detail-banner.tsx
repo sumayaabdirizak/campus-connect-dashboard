@@ -7,11 +7,17 @@ type Props = {
   bannerUrl?: string | null
   themeColor: string
   initials: string
+  clubName: string
 }
 
-export function ClubDetailBanner({ bannerUrl, themeColor, initials }: Props) {
+/**
+ * Banner is always h-40 — height NEVER changes.
+ * Collapsing the height caused layout-shift jumps, so the sticky header
+ * handles the collapsed look instead.
+ */
+export function ClubDetailBanner({ bannerUrl, themeColor, initials, clubName }: Props) {
   return (
-    <div className='relative h-40 w-full overflow-hidden'>
+    <div className='relative h-40 w-full overflow-hidden flex-shrink-0'>
       {bannerUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={bannerUrl} alt='' className='h-full w-full object-cover' />
@@ -22,18 +28,25 @@ export function ClubDetailBanner({ bannerUrl, themeColor, initials }: Props) {
           </div>
         </ClubAnimatedBanner>
       )}
-      <div
-        className='absolute inset-x-0 bottom-0 h-20'
-        style={{
-          background: 'linear-gradient(to top, hsl(var(--background)), transparent)',
-        }}
-      />
-      <Link
-        href={messagesDiscoverHref()}
-        className='absolute left-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-background/80 backdrop-blur-sm transition-colors hover:bg-background'
-      >
-        <Icons.chevronLeft className='h-4 w-4' />
-      </Link>
+      {/* Back + breadcrumb — only visible when NOT collapsed (banner is visible) */}
+      <div className='absolute left-4 top-4 flex items-center gap-2 z-10'>
+        <Link
+          href={messagesDiscoverHref()}
+          className='flex h-8 w-8 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm transition-colors hover:bg-gray-50'
+        >
+          <Icons.chevronLeft className='h-4 w-4 text-gray-700' />
+        </Link>
+        <div className='flex items-center gap-1 px-3 py-1 rounded-full border border-gray-200 bg-white shadow-sm text-xs font-semibold'>
+          <Link
+            href={messagesDiscoverHref()}
+            className='text-gray-400 hover:text-gray-600 transition-colors'
+          >
+            Clubs
+          </Link>
+          <span className='text-gray-300'>/</span>
+          <span className='text-gray-800'>{clubName}</span>
+        </div>
+      </div>
     </div>
   )
 }
