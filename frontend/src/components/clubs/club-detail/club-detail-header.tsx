@@ -39,12 +39,15 @@ export function ClubDetailHeader({
   return (
     <div className='mx-auto max-w-5xl px-4'>
       <div className='-mt-8 flex items-end gap-4'>
-        <div className='h-20 w-20 shrink-0'>
+        <div
+          className='flex h-20 w-20 shrink-0 items-center justify-center rounded-lg shadow-lg'
+          style={{ backgroundColor: themeColor }}
+        >
           {club.iconUrl ? (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={club.iconUrl} alt='' className='h-full w-full object-cover' />
+            <img src={club.iconUrl} alt='' className='h-16 w-16 rounded-md object-cover' />
           ) : (
-            <div className='flex h-full w-full items-center justify-center rounded-full text-2xl font-bold' style={{ backgroundColor: themeColor + '20', color: themeColor }}>
+            <div className='flex h-16 w-16 items-center justify-center rounded-md bg-white text-lg font-bold' style={{ color: themeColor }}>
               {initials}
             </div>
           )}
