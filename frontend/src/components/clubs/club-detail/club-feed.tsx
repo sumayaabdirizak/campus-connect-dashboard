@@ -255,12 +255,12 @@ export function ClubFeed({
   return (
     <div className='space-y-3'>
       {canPost ? (
-        <div className='rounded-2xl border border-gray-200 bg-white p-5 shadow-sm'>
+        <div className='rounded-xl border border-gray-200 bg-white p-3 shadow-sm'>
           {/* Author row */}
-          <div className='flex items-start justify-between gap-3'>
-            <div className='flex min-w-0 items-center gap-3'>
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex min-w-0 items-center gap-2'>
               <div
-                className='flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-semibold'
+                className='flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-semibold'
                 style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
               >
                 {user?.avatarUrl ? (
@@ -271,11 +271,11 @@ export function ClubFeed({
                 )}
               </div>
               <div className='min-w-0'>
-                <p className='truncate text-base font-bold text-gray-900'>
+                <p className='truncate text-sm font-bold leading-tight text-gray-900'>
                   {user?.full_name ?? 'You'}
                 </p>
                 {user?.email ? (
-                  <p className='truncate text-sm text-gray-500'>{user.email}</p>
+                  <p className='truncate text-xs text-gray-500'>{user.email}</p>
                 ) : null}
               </div>
             </div>
@@ -284,9 +284,9 @@ export function ClubFeed({
               onClick={clearDraft}
               disabled={!hasDraft}
               aria-label='Clear post'
-              className='shrink-0 rounded-full p-1 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent'
+              className='shrink-0 rounded-full p-0.5 text-red-500 transition-colors hover:bg-red-50 disabled:opacity-30 disabled:hover:bg-transparent'
             >
-              <Icons.close className='h-5 w-5' />
+              <Icons.close className='h-4 w-4' />
             </button>
           </div>
 
@@ -304,38 +304,38 @@ export function ClubFeed({
             placeholder='Write something to the group...'
             rows={2}
             maxLength={20000}
-            className='mt-4 min-h-[52px] resize-none border-0 bg-transparent p-0 text-sm shadow-none placeholder:text-gray-400 focus-visible:ring-0'
+            className='mt-2.5 min-h-[38px] resize-none border-0 bg-transparent p-0 text-sm shadow-none placeholder:text-gray-400 focus-visible:ring-0'
           />
 
           {attachmentIds.length > 0 ? (
-            <p className='mt-2 text-xs text-gray-500'>
+            <p className='mt-1.5 text-xs text-gray-500'>
               {attachmentIds.length} file{attachmentIds.length !== 1 ? 's' : ''} attached
             </p>
           ) : null}
 
           {/* Divider */}
-          <div className='my-4 h-px bg-gray-200' />
+          <div className='my-2.5 h-px bg-gray-200' />
 
           {/* Toolbar */}
           <div className='flex items-center justify-between'>
-            <div className='flex items-center gap-1'>
+            <div className='flex items-center gap-0.5'>
               <button
                 type='button'
                 onClick={() => pickFiles('image/*')}
                 disabled={uploading}
                 aria-label='Attach photo'
-                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+                className='rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
               >
-                <Icons.media className='h-5 w-5' />
+                <Icons.media className='h-4 w-4' />
               </button>
               <button
                 type='button'
                 onClick={() => pickFiles('')}
                 disabled={uploading}
                 aria-label='Attach file'
-                className='rounded-full p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+                className='rounded-full p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
               >
-                <Icons.paperclip className='h-5 w-5' />
+                <Icons.paperclip className='h-4 w-4' />
               </button>
             </div>
             <input
@@ -347,9 +347,10 @@ export function ClubFeed({
               disabled={uploading}
             />
             <Button
+              size='sm'
               onClick={submit}
               disabled={!hasDraft || postMutation.isPending || uploading}
-              className='rounded-full bg-gray-900 px-7 py-2.5 text-sm font-semibold text-white hover:bg-gray-800'
+              className='h-8 rounded-full bg-gray-900 px-5 text-xs font-semibold text-white hover:bg-gray-800'
             >
               {postMutation.isPending ? 'Posting...' : uploading ? 'Uploading...' : 'Post'}
             </Button>
