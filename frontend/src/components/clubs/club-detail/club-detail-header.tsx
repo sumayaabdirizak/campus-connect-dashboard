@@ -39,28 +39,15 @@ export function ClubDetailHeader({
   return (
     <div className='mx-auto max-w-5xl px-4'>
       <div className='-mt-8 flex items-end gap-4'>
-        <div className='relative h-24 w-24 shrink-0 overflow-hidden rounded-full shadow-lg'>
-          {/* Background with split sections */}
-          <div className='absolute inset-0 flex flex-wrap'>
-            {/* Top left - light blue */}
-            <div className='h-1/2 w-1/2' style={{ backgroundColor: themeColor + '30' }} />
-            {/* Top right - dark blue */}
-            <div className='h-1/2 w-1/2' style={{ backgroundColor: themeColor + '90' }} />
-            {/* Bottom left - beige */}
-            <div className='h-1/2 w-1/2' style={{ backgroundColor: themeColor + '15' }} />
-            {/* Bottom right - light */}
-            <div className='h-1/2 w-1/2' style={{ backgroundColor: themeColor + '10' }} />
-          </div>
-
-          {/* Image/Icon in center */}
-          <div className='absolute inset-0 flex items-center justify-center'>
-            {club.iconUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={club.iconUrl} alt='' className='h-16 w-16 object-cover' style={{ color: themeColor }} />
-            ) : (
-              <span className='text-3xl font-bold' style={{ color: themeColor }}>{initials}</span>
-            )}
-          </div>
+        <div className='h-20 w-20 shrink-0'>
+          {club.iconUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={club.iconUrl} alt='' className='h-full w-full object-cover' />
+          ) : (
+            <div className='flex h-full w-full items-center justify-center rounded-full text-2xl font-bold' style={{ backgroundColor: themeColor + '20', color: themeColor }}>
+              {initials}
+            </div>
+          )}
         </div>
 
         <div className='flex-1 pb-1'>
