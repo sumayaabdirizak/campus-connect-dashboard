@@ -39,27 +39,36 @@ export function ClubDetailHeader({
   return (
     <div className='mx-auto max-w-5xl px-4'>
       <div className='-mt-8 flex items-end gap-4'>
-        <div className='relative h-24 w-24 shrink-0'>
-          {/* Split background container */}
-          <div className='absolute inset-0 rounded-full overflow-hidden shadow-lg border-4 border-background'>
-            <div className='flex h-full w-full'>
-              {/* Left half - light color */}
-              <div className='w-1/2 h-full' style={{ backgroundColor: `${themeColor}30` }} />
-              {/* Right half - dark color */}
-              <div className='w-1/2 h-full' style={{ backgroundColor: `${themeColor}80` }} />
-            </div>
-          </div>
+        <div className='relative h-28 w-28 shrink-0 flex items-center justify-center'>
+          {/* Outer light ring */}
+          <div
+            className='absolute h-28 w-28 rounded-full shadow-lg'
+            style={{
+              backgroundColor: themeColor + '20',
+              border: '3px solid ' + themeColor + '15'
+            }}
+          />
+
+          {/* Middle tan ring */}
+          <div
+            className='absolute h-24 w-24 rounded-full'
+            style={{ backgroundColor: themeColor + '35' }}
+          />
+
+          {/* Dark ring */}
+          <div
+            className='absolute h-20 w-20 rounded-full'
+            style={{ backgroundColor: themeColor + '70' }}
+          />
 
           {/* Center white circle with content */}
-          <div className='absolute inset-0 flex items-end justify-center pb-2'>
-            <div className='flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md border-2 border-gray-100 text-lg font-bold' style={{ color: themeColor }}>
-              {club.iconUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={club.iconUrl} alt='' className='h-full w-full rounded-full object-cover' />
-              ) : (
-                initials
-              )}
-            </div>
+          <div className='absolute flex h-16 w-16 items-center justify-center rounded-full bg-white shadow-md border-2 border-gray-200 text-lg font-bold' style={{ color: themeColor }}>
+            {club.iconUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={club.iconUrl} alt='' className='h-full w-full rounded-full object-cover' />
+            ) : (
+              initials
+            )}
           </div>
         </div>
 
