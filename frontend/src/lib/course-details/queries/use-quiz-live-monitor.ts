@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 import { getSocketUrl } from '@/lib/api-config';
+import { getQuizAttempts } from '@/lib/course-details/services/quizzes-service';
 
 const SOCKET_URL = getSocketUrl();
 
@@ -95,6 +96,65 @@ export function useQuizLiveMonitor(quizId: number | null): UseQuizLiveMonitorRes
     if (!quizId) return;
     setJoined(false);
     setError(null);
+    // Without this, switching from monitoring one quiz to another kept the
+    // previous quiz's tiles around forever — the quiz:progress handler
+    // below filters out events for the wrong quizId, but nothing ever
+    // cleared what was already in the map.
+    setByAttempt(new Map());
+
+    let cancelled = false;
+    // The socket only delivers events from the moment it joins the room —
+    // a teacher opening the monitor after students already started (the
+    // normal case, not the exception) saw an empty grid until someone's
+    // next autosave or submit happened to fire. Seed from the same
+    // attempts list the non-live "Attempts" tab already uses so the grid
+    // starts populated, then let live events layer on top.
+    getQuizAttempts(quizId)
+      .then((attempts) => {
+        if (cancelled) return;
+        setByAttempt((prev) => {
+          const next = new Map(prev);
+          for (const a of attempts) {
+            // A live event may have already raced ahead of this fetch
+            // (e.g. a student answered between connect and this response)
+            // — don't clobber it with a now-stale snapshot row.
+            if (next.has(a.id)) continue;
+            const answeredCount = (a.answers ?? []).filter(
+              (ans) => ans.selected_option_id != null || !!ans.text_answer?.trim()
+            ).length;
+            const status: LiveAttemptTile['status'] = !a.submitted_at
+              ? 'in_progress'
+              : a.closure_reason === 'violations'
+                ? 'auto_closed_violations'
+                : a.closure_reason === 'time_expired'
+                  ? 'time_expired'
+                  : 'submitted';
+            next.set(a.id, {
+              attemptId: a.id,
+              studentId: a.studentId,
+              studentName: a.student?.full_name ?? `Student #${a.studentId}`,
+              studentNumber: a.student?.number ?? null,
+              status,
+              startedAt: a.started_at,
+              expiresAt: a.expires_at ?? null,
+              // Not reconstructible from a snapshot — QuizAnswer rows carry
+              // no per-answer timestamp. Resolves on the next live 'answer'
+              // event for this attempt.
+              currentQuestionId: null,
+              answeredCount,
+              violationsCount: a.violations_count ?? 0,
+              lastActivityAt: a.submitted_at ?? a.started_at,
+              score: a.score ?? null,
+            });
+          }
+          return next;
+        });
+      })
+      .catch((e) => {
+        // Non-fatal — the live feed still works, the grid just starts
+        // empty as before instead of pre-populated.
+        console.warn('[quiz-monitor] attempts backfill failed:', e);
+      });
 
     const socket = io(SOCKET_URL, {
       transports: ['websocket'],
@@ -177,6 +237,7 @@ export function useQuizLiveMonitor(quizId: number | null): UseQuizLiveMonitorRes
     });
 
     return () => {
+      cancelled = true;
       socket.emit('quiz:monitor:leave', quizId);
       socket.disconnect();
       socketRef.current = null;

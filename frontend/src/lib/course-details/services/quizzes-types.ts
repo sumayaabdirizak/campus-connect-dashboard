@@ -253,6 +253,7 @@ export interface QuizAttempt {
   quizId: number;
   studentId: number;
   started_at: string;
+  expires_at?: string | null;
   submitted_at: string | null;
   score: number | null;
   grade: number | null;
