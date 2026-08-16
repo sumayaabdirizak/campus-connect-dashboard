@@ -24,10 +24,18 @@ export function register(router) {
         return res.status(403).json({ message: 'Attempt does not belong to caller' });
       }
 
+      // finalizeAttempt itself has no deadline check — it's also the cron's
+      // auto-submit path, which must be allowed to close an attempt after
+      // expiry. What must NOT happen is a late manual call smuggling in
+      // answers composed after time ran out. Past the deadline, finalize
+      // with only what was already autosaved rather than the request body,
+      // and stamp the same closure_reason the cron would have used.
+      const isExpired = !!attemptRow.expires_at && new Date(attemptRow.expires_at) <= new Date();
       const updatedAttempt = await finalizeAttempt({
         attemptId,
-        answers,
+        answers: isExpired ? [] : answers,
         violationsCount: violations_count,
+        closureReason: isExpired ? 'time_expired' : undefined,
       });
 
       try {

@@ -28,20 +28,33 @@ export function register(router) {
                 courseOffering: { select: { publicId: true } },
               },
             },
-            answers: { select: { id: true } },
+            answers: { select: { id: true, questionId: true } },
           },
         });
         if (!attempt) return null;
 
-        const ownAnswerIds = new Set(attempt.answers.map((a) => a.id));
+        // points_earned is only bounded to [0, 100] at the schema layer —
+        // that can't know a question's actual weight. A 5-point question
+        // graded at 100 would otherwise pass straight through and inflate
+        // the attempt's score past 100%. Clamp per-question here, where the
+        // real point value is available.
+        const pointsByQuestionId = new Map(
+          attempt.quiz.questions.map((q) => [q.id, q.points])
+        );
+        const questionIdByAnswerId = new Map(
+          attempt.answers.map((a) => [a.id, a.questionId])
+        );
         for (const grade of answers) {
           if (typeof grade.points_earned !== 'number') continue;
-          if (!ownAnswerIds.has(grade.answerId)) continue;
+          const questionId = questionIdByAnswerId.get(grade.answerId);
+          if (questionId === undefined) continue;
+          const maxPoints = pointsByQuestionId.get(questionId) ?? 0;
+          const clampedPoints = Math.min(Math.max(grade.points_earned, 0), maxPoints);
           await tx.quizAnswer.update({
             where: { id: grade.answerId },
             data: {
               is_correct: !!grade.is_correct,
-              points_earned: grade.points_earned,
+              points_earned: clampedPoints,
             },
           });
         }
