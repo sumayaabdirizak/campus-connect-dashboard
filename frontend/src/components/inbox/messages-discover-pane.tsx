@@ -68,25 +68,23 @@ export function MessagesDiscoverPane() {
   }, [mine])
 
   const clubs = useMemo(() => {
-    let list = catalog?.clubs?.length
-      ? catalog.clubs
-      : [...(recommended?.clubs ?? [])]
+    // "My Clubs" must list the same set the badge counts — owned clubs were
+    // missing here because only memberOf was read, so an owner saw a badge
+    // of 3 with just their 1 memberOf club rendered underneath.
+    if (activeTab === 'my') return myActiveClubs
 
-    if (activeTab === 'my') {
-      list = mine?.memberOf ?? []
-    }
-
+    const list = catalog?.clubs?.length ? catalog.clubs : [...(recommended?.clubs ?? [])]
     const seen = new Set<number>()
     const out: Club[] = []
     for (const c of list) {
       if (seen.has(c.id)) continue
       // Already shown under "Your clubs" — don't repeat it in Recommended.
-      if (activeTab === 'all' && myIds.has(c.id)) continue
+      if (myIds.has(c.id)) continue
       seen.add(c.id)
       out.push(c)
     }
     return out
-  }, [catalog, recommended, mine, activeTab, myIds])
+  }, [catalog, recommended, activeTab, myIds, myActiveClubs])
 
   const clubsToDisplay = useMemo(() => {
     return clubs.length > 0 ? clubs : []
@@ -95,7 +93,7 @@ export function MessagesDiscoverPane() {
   const totalToExplore = clubsToDisplay.length + (activeTab === 'all' ? myActiveClubs.length : 0)
 
   return (
-    <div className='flex h-full min-h-0 flex-col bg-white'>
+    <div className='flex h-full min-h-0 flex-col bg-[#F9FAFB]'>
       <div className='shrink-0 border-b border-[#E5E7EB] bg-white'>
         <div className='px-4 py-4'>
           <div className='mb-4 flex items-center justify-between'>
