@@ -32,15 +32,23 @@ export interface DiscoveryClubCardProps {
 
 export function DiscoveryClubCard({ club, isMember = false, compact = false }: DiscoveryClubCardProps) {
   const joinMutation = useJoinClub()
+  // Joining a BY_REQUEST club doesn't make you a member — it files a
+  // request pending approval. These used to collapse into one `joined`
+  // flag, so a "Request" click rendered "Joined! ✓" immediately, before
+  // anyone had approved anything.
   const [joined, setJoined] = useState(false)
+  const [requested, setRequested] = useState(false)
   const themeColor = club.themeColor || '#6366f1'
-  const showJoinAction = !isMember && !joined && club.joinPolicy !== 'INVITE_ONLY'
+  const showJoinAction = !isMember && !joined && !requested && club.joinPolicy !== 'INVITE_ONLY'
 
   const handleJoin = (e: React.MouseEvent) => {
     e.preventDefault()
     e.stopPropagation()
     joinMutation.mutate(club.id, {
-      onSuccess: () => setJoined(true)
+      onSuccess: (data) => {
+        if (data?.status === 'PENDING') setRequested(true)
+        else setJoined(true)
+      }
     })
   }
 
@@ -72,6 +80,13 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
     >
       {joinMutation.isPending ? 'Joining...' : JOIN_POLICY_LABEL[club.joinPolicy]}
     </Button>
+  ) : requested && !isMember ? (
+    // Not clickable — a second request is a no-op the backend already
+    // treats as idempotent, so there's nothing useful a click would do here.
+    <span className='flex h-7 shrink-0 items-center gap-1 rounded-full border border-dashed px-4 text-xs text-muted-foreground'>
+      <Icons.clock className='h-3 w-3' />
+      Pending
+    </span>
   ) : (
     // No handler — the click bubbles to the wrapping <Link>, which already
     // points at the club.
