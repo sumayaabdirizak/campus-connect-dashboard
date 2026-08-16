@@ -17,6 +17,8 @@ type Props = {
   membershipRole: string | null
   joining: boolean
   leaving: boolean
+  /** Set once a BY_REQUEST join returns PENDING — the viewer isn't a member yet. */
+  requested?: boolean
   onJoin: () => void
   onLeave: () => void
   isCollapsed?: boolean
@@ -34,6 +36,7 @@ export function ClubDetailHeader({
   membershipRole,
   joining,
   leaving,
+  requested = false,
   onJoin,
   onLeave,
   isCollapsed = false,
@@ -77,7 +80,7 @@ export function ClubDetailHeader({
             </div>
 
             <div className='flex items-center gap-2'>
-              {!isMember && !isOwner && !isPending && club.joinPolicy !== 'INVITE_ONLY' ? (
+              {!isMember && !isOwner && !isPending && !requested && club.joinPolicy !== 'INVITE_ONLY' ? (
                 <Button
                   size='sm'
                   onClick={onJoin}
@@ -90,6 +93,12 @@ export function ClubDetailHeader({
                       ? 'Join group'
                       : 'Request to Join'}
                 </Button>
+              ) : null}
+              {!isMember && !isOwner && requested ? (
+                <span className='flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-4 py-2 text-xs font-semibold text-gray-500'>
+                  <Icons.clock className='h-3 w-3' />
+                  Pending
+                </span>
               ) : null}
               {isMember && !isOwner ? (
                 <Button size='sm' variant='outline' onClick={onLeave} disabled={leaving} className='rounded-lg px-3 py-1.5 text-xs'>
@@ -135,7 +144,7 @@ export function ClubDetailHeader({
             </div>
 
             <div className='flex items-center gap-2 pt-2 sm:pt-0'>
-              {!isMember && !isOwner && !isPending && club.joinPolicy !== 'INVITE_ONLY' ? (
+              {!isMember && !isOwner && !isPending && !requested && club.joinPolicy !== 'INVITE_ONLY' ? (
                 <Button
                   size='sm'
                   onClick={onJoin}
@@ -148,6 +157,12 @@ export function ClubDetailHeader({
                       ? 'Join group'
                       : 'Request to Join'}
                 </Button>
+              ) : null}
+              {!isMember && !isOwner && requested ? (
+                <span className='flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-500'>
+                  <Icons.clock className='h-3.5 w-3.5' />
+                  Pending
+                </span>
               ) : null}
               {isMember && !isOwner ? (
                 <Button size='sm' variant='outline' onClick={onLeave} disabled={leaving} className='rounded-lg px-4 py-2'>

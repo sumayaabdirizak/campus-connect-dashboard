@@ -11,6 +11,8 @@ type Props = {
   /** Owners and moderators can delete any post, not just their own. */
   canModerate?: boolean
   joining: boolean
+  /** Set once a BY_REQUEST join returns PENDING — the viewer isn't a member yet. */
+  requested?: boolean
   onJoin: () => void
 }
 
@@ -21,6 +23,7 @@ export function ClubDetailMain({
   isOwner,
   canModerate = false,
   joining,
+  requested = false,
   onJoin,
 }: Props) {
   return (
@@ -61,7 +64,12 @@ export function ClubDetailMain({
                 Become a member to chat and participate
               </p>
             </div>
-            {club.joinPolicy !== 'INVITE_ONLY' ? (
+            {requested ? (
+              <span className='mt-1 flex items-center gap-1.5 rounded-md border border-dashed px-3 py-1.5 text-sm font-medium text-muted-foreground'>
+                <Icons.clock className='h-3.5 w-3.5' />
+                Request pending approval
+              </span>
+            ) : club.joinPolicy !== 'INVITE_ONLY' ? (
               <Button
                 size='sm'
                 className='mt-1'

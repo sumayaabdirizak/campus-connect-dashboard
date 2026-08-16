@@ -18,10 +18,20 @@ export interface ClubDetailPaneProps {
 export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
   const { data, isLoading } = useClubDetail(slug)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  // A BY_REQUEST join doesn't make the viewer a member — it files a request
+  // pending approval. isMember stays false after the mutation settles, so
+  // without this the button would just revert to "Request to Join" as if
+  // nothing happened. Reset on slug change so a different club's stale
+  // pending flag can't leak in from the previous page.
+  const [requested, setRequested] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
   const rafRef = useRef<number | null>(null)
   const joinMutation = useJoinClub()
   const leaveMutation = useLeaveClub()
+
+  useEffect(() => {
+    setRequested(false)
+  }, [slug])
 
   useEffect(() => {
     return () => {
@@ -54,6 +64,14 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
   const initials = clubInitials(club.name)
   const roleLabel = resolveClubRoleLabel(isOwner, membershipRole, isMember)
 
+  const handleJoin = () => {
+    joinMutation.mutate(club.id, {
+      onSuccess: (result) => {
+        if (result?.status === 'PENDING') setRequested(true)
+      },
+    })
+  }
+
   return (
     <div
       ref={scrollRef}
@@ -82,7 +100,8 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
         membershipRole={membershipRole}
         joining={joinMutation.isPending}
         leaving={leaveMutation.isPending}
-        onJoin={() => joinMutation.mutate(club.id)}
+        requested={requested}
+        onJoin={handleJoin}
         onLeave={() => leaveMutation.mutate(club.id)}
         isCollapsed={isCollapsed}
       />
@@ -96,7 +115,8 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
           isOwner={isOwner}
           canModerate={membershipRole === 'ADMIN' || membershipRole === 'DEAN'}
           joining={joinMutation.isPending}
-          onJoin={() => joinMutation.mutate(club.id)}
+          requested={requested}
+          onJoin={handleJoin}
         />
 
         {/*
