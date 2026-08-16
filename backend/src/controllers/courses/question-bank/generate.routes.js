@@ -2,6 +2,7 @@ import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireCourseOfferingManage } from '../../../middleware/courseOfferingRbac.js';
+import { aiGenerateRateLimit } from '../../../middleware/perUserRateLimit.js';
 import { generateQuestionsBodySchema } from '../../../validation/questionBankSchemas.js';
 import {
   generateQuizQuestions,
@@ -12,6 +13,10 @@ import {
 export function register(router) {
   router.post(
     '/:courseOfferingId/generate',
+    // Ahead of the RBAC check, same ordering as the other rate-limited
+    // routes — a request that's going to be rejected anyway shouldn't cost
+    // an extra DB round-trip first.
+    aiGenerateRateLimit,
     requireCourseOfferingManage(),
     // Clamp before Joi — large PDF extracts can exceed the schema max and
     // would 400 before fitSourceForGroq can trim for Groq TPM.

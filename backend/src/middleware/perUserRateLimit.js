@@ -62,3 +62,20 @@ export const uploadRateLimit = rateLimit({
   keyGenerator: keyByUserOrIp,
   message: { message: "Too many uploads — wait a few minutes and try again." },
 });
+
+/**
+ * AI question generation forwards up to ~30k chars of source text to a paid
+ * third-party provider (Groq/Gemini) per call, with no cost control at any
+ * other layer — no caching, no quota, no concurrency guard. A teacher
+ * iterating on a quiz might realistically generate a handful of batches in
+ * a sitting; 15/hour comfortably covers that while stopping a scripted loop
+ * from running up real API cost or exhausting the provider's own limits.
+ */
+export const aiGenerateRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: isTest ? 10_000 : 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: keyByUserOrIp,
+  message: { message: "Too many AI generation requests — try again in a bit." },
+});

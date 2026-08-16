@@ -1,11 +1,11 @@
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
-import { requireCourseOfferingRead } from '../../../middleware/courseOfferingRbac.js';
+import { requireCourseOfferingManage } from '../../../middleware/courseOfferingRbac.js';
 
-/** @param {import('express').Router} router */
+/** Teacher-only — see the comment in list.routes.js. */
 export function register(router) {
   router.get(
-    '/:courseOfferingId/topics', requireCourseOfferingRead(),
+    '/:courseOfferingId/topics', requireCourseOfferingManage(),
     asyncHandler(async (req, res) => {
       const cid = req.courseOffering.id;
       const rows = await prisma.question.groupBy({
