@@ -69,6 +69,7 @@ router.post('/:id/join', async (req, res, next) => {
         });
       }
 
+      let notifiedUserIds = [];
       const joinRequest = await prisma.$transaction(async (tx) => {
         const jr = await tx.clubJoinRequest.create({
           data: { clubId, userId: uid },
@@ -99,8 +100,25 @@ router.post('/:id/join', async (req, res, next) => {
           });
         }
 
+        notifiedUserIds = modsAndOwner.map((m) => m.userId);
         return jr;
       });
+
+      // Emitted after the transaction commits, not from inside it — a
+      // socket push firing before the write is durable could reach a
+      // moderator's client a moment before a refetch would see the row.
+      // Without this, moderators had zero real-time signal for a new
+      // request: only a DB notification row was ever created here.
+      try {
+        const io = getIo();
+        for (const modUserId of notifiedUserIds) {
+          io.to(`user:${modUserId}`).emit('notification:new', {
+            type: 'CLUB_JOIN_REQUEST',
+            clubId,
+            slug: club.slug,
+          });
+        }
+      } catch { /* socket unavailable */ }
 
       return res.status(201).json({ joinRequest, status: 'PENDING' });
     }

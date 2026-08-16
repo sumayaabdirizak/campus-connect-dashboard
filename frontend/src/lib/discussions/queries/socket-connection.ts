@@ -2,6 +2,7 @@ import { io, type Socket } from 'socket.io-client';
 import { getSocketUrl } from '@/lib/api-config';
 import { getSocketRef, roomRefCounts, setSocket, type RoomKey } from '@/lib/discussions/queries/socket-state';
 import { bindGlobalListeners } from '@/lib/discussions/queries/socket-listeners';
+import { bindClubSocketListeners } from '@/lib/clubs/queries/club-socket-listeners';
 import { attachSocketAuthRecovery } from '@/lib/socket-auth-recovery';
 
 export function ensureSocket(): Socket {
@@ -14,6 +15,7 @@ export function ensureSocket(): Socket {
   });
   setSocket(s);
   bindGlobalListeners(s);
+  bindClubSocketListeners(s);
   attachSocketAuthRecovery(s);
   // Rooms live on the server per-connection, so a reconnect (including one
   // recovered from an expired token) starts with none — re-join what's open.
