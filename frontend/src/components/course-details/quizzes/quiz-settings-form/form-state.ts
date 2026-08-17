@@ -1,4 +1,8 @@
-import type { CreateQuizInput, Quiz } from '@/lib/course-details/services/quizzes-types';
+import type {
+  CreateQuizInput,
+  Quiz,
+  QuizQuestionType
+} from '@/lib/course-details/services/quizzes-types';
 
 export const NO_MODULE = '__none__';
 
@@ -16,6 +20,13 @@ export interface FormState {
   scheduled_duration: number | null;
   confidence_scoring: boolean;
   moduleSelect: string;
+  mode: 'online' | 'offline';
+  // Marks-distribution plan — `marksPlanTypes` is the set of sections the
+  // teacher has switched on; `marksPlanAllocations` only has meaningful
+  // values for types present in that set.
+  marksPlanTotal: number;
+  marksPlanTypes: QuizQuestionType[];
+  marksPlanAllocations: Partial<Record<QuizQuestionType, number>>;
 }
 
 export const BLANK: FormState = {
@@ -31,7 +42,11 @@ export const BLANK: FormState = {
   timing_mode: 'flexible',
   scheduled_duration: null,
   confidence_scoring: false,
-  moduleSelect: NO_MODULE
+  moduleSelect: NO_MODULE,
+  mode: 'online',
+  marksPlanTotal: 10,
+  marksPlanTypes: [],
+  marksPlanAllocations: {}
 };
 
 export function isoToLocalInput(iso: string | null | undefined): string {
@@ -63,7 +78,13 @@ export function fromQuiz(q: Quiz): FormState {
     timing_mode: q.timing_mode ?? 'flexible',
     scheduled_duration: q.scheduled_duration ?? null,
     confidence_scoring: !!q.confidence_scoring,
-    moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId)
+    moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId),
+    mode: q.mode ?? 'online',
+    marksPlanTotal: q.marksPlan?.totalMarks ?? 10,
+    marksPlanTypes: q.marksPlan
+      ? (Object.keys(q.marksPlan.allocations) as QuizQuestionType[])
+      : [],
+    marksPlanAllocations: q.marksPlan?.allocations ?? {}
   };
 }
 
@@ -81,7 +102,17 @@ export function toPayload(s: FormState): CreateQuizInput {
     timing_mode: s.timing_mode,
     scheduled_duration: s.scheduled_duration,
     confidence_scoring: s.confidence_scoring,
-    moduleId: s.moduleSelect === NO_MODULE ? null : Number(s.moduleSelect)
+    moduleId: s.moduleSelect === NO_MODULE ? null : Number(s.moduleSelect),
+    mode: s.mode,
+    marksPlan:
+      s.marksPlanTypes.length === 0
+        ? null
+        : {
+            totalMarks: s.marksPlanTotal,
+            allocations: Object.fromEntries(
+              s.marksPlanTypes.map((t) => [t, s.marksPlanAllocations[t] ?? 0])
+            )
+          }
   };
 }
 
@@ -120,4 +151,4 @@ export function scheduleBadgeFor(editing: Quiz | null) {
   return null;
 }
 
-export type QuizSettingsTab = 'basics' | 'schedule' | 'behavior' | 'grading';
+export type QuizSettingsTab = 'basics' | 'schedule' | 'behavior' | 'grading' | 'marks';

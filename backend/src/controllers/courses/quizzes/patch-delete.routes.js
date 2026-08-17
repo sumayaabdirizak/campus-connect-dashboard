@@ -13,7 +13,7 @@ export function register(router) {
     const {
       title, description, duration_minutes, is_draft, open_at, close_at,
       shuffle_questions, shuffle_answers, max_attempts, passing_score,
-      timing_mode, scheduled_duration, moduleId, confidence_scoring,
+      timing_mode, scheduled_duration, mode, marksPlan, moduleId, confidence_scoring,
       auto_publish_at_open,
     } = req.body;
 
@@ -129,6 +129,8 @@ export function register(router) {
         ...(max_attempts && { max_attempts }),
         ...(passing_score !== undefined && { passing_score }),
         ...(timing_mode && { timing_mode }),
+        ...(mode && { mode }),
+        ...(marksPlan !== undefined && { marksPlan }),
         ...(scheduled_duration !== undefined && { scheduled_duration }),
         ...(confidence_scoring !== undefined && { confidence_scoring: !!confidence_scoring }),
         ...(resolvedModuleId !== undefined && { moduleId: resolvedModuleId }),

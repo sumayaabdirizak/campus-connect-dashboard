@@ -76,6 +76,17 @@ export interface Quiz {
   timing_mode: 'flexible' | 'fixed';
   /// Per-student time budget override in fixed mode. null = use duration_minutes.
   scheduled_duration: number | null;
+  /// "online" (default) — students take it in-app. "offline" — printed/handed
+  /// out on paper; informational only, doesn't change scoring or access.
+  mode: 'online' | 'offline';
+  /// Teacher's marks-distribution plan (Quiz Settings → Marks tab). Purely a
+  /// planning aid the question builder reads back to render one section per
+  /// selected question type. `null`/absent = no plan; builder falls back to
+  /// its flat, ungrouped question list.
+  marksPlan?: {
+    totalMarks: number;
+    allocations: Partial<Record<QuizQuestionType, number>>;
+  } | null;
   /// When true, students declare LOW/MED/HIGH confidence on each objective
   /// answer and scoring uses the Cologne / Bristol multiplier table:
   ///   HIGH+right = 100%, MED+right = 75%, LOW+right = 50%
@@ -143,6 +154,14 @@ export interface CreateQuizInput {
   passing_score?: number;
   timing_mode?: 'flexible' | 'fixed';
   scheduled_duration?: number | null;
+  /// "online" (default) — students take it in-app. "offline" — printed/handed
+  /// out on paper; informational only, doesn't change scoring or access.
+  mode?: 'online' | 'offline';
+  /// Marks-distribution plan sketched in Quiz Settings. `null` clears it.
+  marksPlan?: {
+    totalMarks: number;
+    allocations: Partial<Record<QuizQuestionType, number>>;
+  } | null;
   /// Chapter / module bucket. Omit or send `null` for Ungrouped. The server
   /// rejects ids that belong to a different course offering.
   moduleId?: number | null;

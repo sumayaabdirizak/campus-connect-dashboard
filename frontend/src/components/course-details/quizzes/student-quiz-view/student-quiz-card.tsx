@@ -23,6 +23,7 @@ export function StudentQuizCard({
   const attemptsLeft = q.attemptsLeft ?? Math.max(0, q.max_attempts - attemptsUsed);
   const exhausted = !inProgress && attemptsLeft <= 0;
   const last = q.lastAttempt ?? null;
+  const isOffline = q.mode === 'offline';
 
   return (
     <div className='group border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 transition-colors hover:bg-muted/30'>
@@ -45,7 +46,11 @@ export function StudentQuizCard({
             Results
           </Button>
         ) : null}
-        {!(exhausted && last && !inProgress) ? (
+        {isOffline ? (
+          <span className='text-xs text-muted-foreground italic'>
+            Printed handout — ask your teacher
+          </span>
+        ) : !(exhausted && last && !inProgress) ? (
           <Button
             size='sm'
             className={`transition-transform group-hover:translate-x-0.5 ${

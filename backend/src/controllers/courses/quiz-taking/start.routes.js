@@ -24,6 +24,9 @@ export function register(router) {
     });
     if (!quiz) return res.status(404).json({ error: 'Quiz not found' });
     if (quiz.is_draft) return res.status(400).json({ error: 'Quiz is not published' });
+    if (quiz.mode === 'offline') {
+      return res.status(400).json({ error: 'This quiz is offline (printed handout) — it cannot be taken in-app' });
+    }
 
     const submittedCount = await prisma.quizAttempt.count({
       where: { quizId: qid, studentId, submitted_at: { not: null } },

@@ -53,12 +53,12 @@ export function useQuizBuilder(courseId: string, quiz: Quiz) {
     reorderMutation
   });
 
-  const startNew = () => {
+  const startNew = (type?: QuizQuestionType) => {
     if (!canAddQuestions) {
       toast.error(ADD_LOCKED);
       return;
     }
-    setDraft(emptyDraft());
+    setDraft(type ? applyQuestionType(emptyDraft(), type) : emptyDraft());
   };
 
   const setType = (type: QuizQuestionType) => {

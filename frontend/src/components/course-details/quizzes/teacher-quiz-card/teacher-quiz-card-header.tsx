@@ -64,6 +64,11 @@ export function TeacherQuizCardHeader({
               No questions
             </Badge>
           )}
+          {q.mode === 'offline' && (
+            <Badge variant='outline' className='text-[10px]'>
+              Offline
+            </Badge>
+          )}
         </div>
         <p className='text-xs text-muted-foreground mt-1 tabular-nums'>
           {q.duration_minutes} min · pass ≥ {q.passing_score}%

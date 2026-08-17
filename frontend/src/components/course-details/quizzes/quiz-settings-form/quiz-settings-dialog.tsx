@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -12,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { Calendar, FileText, Shuffle, Trophy } from 'lucide-react';
+import { Calendar, ClipboardCheck, FileText, Shuffle, Trophy } from 'lucide-react';
 import { toast } from 'sonner';
 import { BasicsTab } from './basics-tab';
 import { BehaviorTab } from './behavior-tab';
@@ -25,6 +25,7 @@ import {
   type QuizSettingsTab
 } from './form-state';
 import { GradingTab } from './grading-tab';
+import { MarksTab } from './marks-tab';
 import { ScheduleTab } from './schedule-tab';
 import type { QuizSettingsDialogProps } from './types';
 
@@ -39,13 +40,18 @@ export function QuizSettingsDialog({
   const [form, setForm] = useState(BLANK);
   const [tab, setTab] = useState<QuizSettingsTab>('basics');
 
-  const handleOpenChange = (next: boolean) => {
-    if (next) {
+  // Radix's onOpenChange only fires for its own internally-triggered
+  // transitions (Escape, overlay click) — it does NOT fire when the parent
+  // flips the controlled `open` prop externally, which is how every quiz
+  // card's "Settings" menu item opens this dialog. Syncing form state from
+  // `editing` has to happen on the `open` prop itself, not on that callback.
+  useEffect(() => {
+    if (open) {
       setForm(editing ? fromQuiz(editing) : BLANK);
       setTab('basics');
     }
-    onOpenChange(next);
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editing]);
 
   const handleSubmit = () => {
     const err = validateForm(form, editing);
@@ -61,7 +67,7 @@ export function QuizSettingsDialog({
   const scheduleBadge = scheduleBadgeFor(editing);
 
   return (
-    <Dialog open={open} onOpenChange={handleOpenChange}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
           <div className='flex items-center gap-2'>
@@ -83,7 +89,7 @@ export function QuizSettingsDialog({
           onValueChange={(v) => setTab(v as QuizSettingsTab)}
           className='mt-2'
         >
-          <TabsList className='grid grid-cols-4 w-full'>
+          <TabsList className='grid grid-cols-5 w-full'>
             <TabsTrigger value='basics' className='gap-1'>
               <FileText className='w-3.5 h-3.5' /> Basics
             </TabsTrigger>
@@ -95,6 +101,9 @@ export function QuizSettingsDialog({
             </TabsTrigger>
             <TabsTrigger value='grading' className='gap-1'>
               <Trophy className='w-3.5 h-3.5' /> Grading
+            </TabsTrigger>
+            <TabsTrigger value='marks' className='gap-1'>
+              <ClipboardCheck className='w-3.5 h-3.5' /> Marks
             </TabsTrigger>
           </TabsList>
 
@@ -109,6 +118,9 @@ export function QuizSettingsDialog({
           </TabsContent>
           <TabsContent value='grading'>
             <GradingTab form={form} setForm={setForm} editing={editing} />
+          </TabsContent>
+          <TabsContent value='marks'>
+            <MarksTab form={form} setForm={setForm} />
           </TabsContent>
         </Tabs>
 

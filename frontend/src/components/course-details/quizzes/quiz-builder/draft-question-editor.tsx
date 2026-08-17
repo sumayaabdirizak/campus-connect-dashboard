@@ -26,6 +26,14 @@ interface DraftQuestionEditorProps {
   onCancel: () => void;
   onSave: () => void;
   isSaving: boolean;
+  /// When set, this question was added from a specific marks-plan section —
+  /// keep it pinned to that type so it doesn't drift out of the section it
+  /// was added under.
+  lockType?: boolean;
+  /// When set, caps the Points input at the section's remaining marks
+  /// budget (target minus what's already used by the section's other
+  /// questions), so a save can't push the section over its planned total.
+  maxPoints?: number;
 }
 
 export function DraftQuestionEditor({
@@ -38,7 +46,9 @@ export function DraftQuestionEditor({
   setCorrectExclusive,
   onCancel,
   onSave,
-  isSaving
+  isSaving,
+  lockType,
+  maxPoints
 }: DraftQuestionEditorProps) {
   return (
     <div className='border rounded-lg p-4 space-y-3 bg-muted/10'>
@@ -52,6 +62,7 @@ export function DraftQuestionEditor({
           <Select
             value={draft.question_type}
             onValueChange={(v) => setType(v as QuizQuestionType)}
+            disabled={lockType}
           >
             <SelectTrigger>
               <SelectValue />
@@ -62,17 +73,28 @@ export function DraftQuestionEditor({
               <SelectItem value='SHORT_ANSWER'>Short answer</SelectItem>
             </SelectContent>
           </Select>
+          {lockType && (
+            <p className='text-[11px] text-muted-foreground'>Locked to this section&apos;s type</p>
+          )}
         </div>
         <div className='space-y-1'>
           <Label className='text-xs'>Points</Label>
           <Input
             type='number'
             min={1}
+            max={maxPoints}
             value={draft.points}
-            onChange={(e) =>
-              setDraft({ ...draft, points: Number(e.target.value) || 1 })
-            }
+            onChange={(e) => {
+              let next = Number(e.target.value) || 1;
+              if (maxPoints != null) next = Math.min(next, Math.max(maxPoints, 1));
+              setDraft({ ...draft, points: next });
+            }}
           />
+          {maxPoints != null && (
+            <p className='text-[11px] text-muted-foreground'>
+              Up to {Math.max(maxPoints, 1)} — this section&apos;s remaining marks budget
+            </p>
+          )}
         </div>
       </div>
 

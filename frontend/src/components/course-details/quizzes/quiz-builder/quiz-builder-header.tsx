@@ -7,12 +7,15 @@ import {
   FileSpreadsheet,
   Library,
   Plus,
+  Printer,
   Sparkles
 } from 'lucide-react';
-import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import type { Quiz, QuizQuestion } from '@/lib/course-details/services/quizzes-types';
+import { printOfflineQuiz } from './print-offline-quiz';
 
 interface QuizBuilderHeaderProps {
   quiz: Quiz;
+  questions: QuizQuestion[];
   questionCount: number;
   totalPoints: number;
   canAddQuestions: boolean;
@@ -26,6 +29,7 @@ interface QuizBuilderHeaderProps {
 
 export function QuizBuilderHeader({
   quiz,
+  questions,
   questionCount,
   totalPoints,
   canAddQuestions,
@@ -51,6 +55,17 @@ export function QuizBuilderHeader({
           </p>
         </div>
         <div className='flex gap-2 shrink-0 flex-wrap'>
+          {quiz.mode === 'offline' && (
+            <Button
+              variant='outline'
+              onClick={() => printOfflineQuiz(quiz, questions)}
+              className='gap-1'
+              disabled={questionCount === 0}
+              title={questionCount === 0 ? 'Add questions before printing' : 'Print offline handout'}
+            >
+              <Printer className='w-4 h-4' /> Print
+            </Button>
+          )}
           <Button
             variant='outline'
             size='icon'

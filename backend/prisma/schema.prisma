@@ -1002,6 +1002,18 @@ model Quiz {
   timing_mode        String   @default("flexible") // "flexible" | "fixed"
   scheduled_duration Int?                     // Duration for planning (fixed mode)
 
+  /// "online" (default) — students take it in-app, normal attempt flow.
+  /// "offline" — printed/handed-out on paper; students don't take it in-app.
+  /// Purely informational + gates the print/export UI; doesn't change scoring.
+  mode String @default("online") // "online" | "offline"
+
+  /// Teacher's marks-distribution plan, sketched out in Quiz Settings and
+  /// read back by the question builder to render one section per selected
+  /// question type (e.g. { totalMarks: 10, allocations: { MCQ: 3,
+  /// TRUE_FALSE: 3, SHORT_ANSWER: 4 } }). Purely a planning aid — never
+  /// validated against actual question points server-side. `null` = no plan.
+  marksPlan Json?
+
   /// Confidence-based scoring (Cologne / Bristol style). When enabled the
   /// student tags every objective answer with a confidence level (LOW / MED
   /// / HIGH); scoring then rewards calibrated thinking and penalises

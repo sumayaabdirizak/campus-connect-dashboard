@@ -44,6 +44,25 @@ export function BasicsTab({ form, setForm, modules }: BasicsTabProps) {
         />
       </div>
 
+      <div className='space-y-1.5'>
+        <Label htmlFor='quiz-mode'>Mode</Label>
+        <Select
+          value={form.mode}
+          onValueChange={(v) => setForm({ ...form, mode: v as FormState['mode'] })}
+        >
+          <SelectTrigger id='quiz-mode'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='online'>Online — students take it in-app</SelectItem>
+            <SelectItem value='offline'>Offline — printed handout</SelectItem>
+          </SelectContent>
+        </Select>
+        <p className='text-[11px] text-muted-foreground'>
+          Offline quizzes are for printing only — students don&apos;t take them in-app.
+        </p>
+      </div>
+
       {modules.length > 0 ? (
         <div className='space-y-1.5'>
           <Label className='flex items-center gap-1'>
