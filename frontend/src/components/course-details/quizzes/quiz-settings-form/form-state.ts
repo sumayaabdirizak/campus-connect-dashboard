@@ -17,7 +17,6 @@ export interface FormState {
   shuffle_answers: boolean;
   passing_score: number;
   timing_mode: 'flexible' | 'fixed';
-  scheduled_duration: number | null;
   confidence_scoring: boolean;
   moduleSelect: string;
   mode: 'online' | 'offline';
@@ -40,7 +39,6 @@ export const BLANK: FormState = {
   shuffle_answers: false,
   passing_score: 50,
   timing_mode: 'flexible',
-  scheduled_duration: null,
   confidence_scoring: false,
   moduleSelect: NO_MODULE,
   mode: 'online',
@@ -64,6 +62,13 @@ export function localInputToIso(local: string): string | null {
   return d.toISOString();
 }
 
+/// Current moment in the same "local datetime-input" string shape as
+/// `isoToLocalInput`, used to floor Opens/Closes pickers at "now" so a
+/// teacher can't schedule a quiz into the past.
+export function nowLocalInput(): string {
+  return isoToLocalInput(new Date().toISOString());
+}
+
 export function fromQuiz(q: Quiz): FormState {
   return {
     title: q.title,
@@ -76,7 +81,6 @@ export function fromQuiz(q: Quiz): FormState {
     shuffle_answers: q.shuffle_answers,
     passing_score: q.passing_score,
     timing_mode: q.timing_mode ?? 'flexible',
-    scheduled_duration: q.scheduled_duration ?? null,
     confidence_scoring: !!q.confidence_scoring,
     moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId),
     mode: q.mode ?? 'online',
@@ -100,7 +104,6 @@ export function toPayload(s: FormState): CreateQuizInput {
     shuffle_answers: s.shuffle_answers,
     passing_score: s.passing_score,
     timing_mode: s.timing_mode,
-    scheduled_duration: s.scheduled_duration,
     confidence_scoring: s.confidence_scoring,
     moduleId: s.moduleSelect === NO_MODULE ? null : Number(s.moduleSelect),
     mode: s.mode,
@@ -125,11 +128,8 @@ export function validateForm(s: FormState, editing: Quiz | null): string | null 
       return 'Open time must be before close time';
     }
   }
-  if (s.timing_mode === 'fixed') {
-    if (!s.open_at_local) return 'Fixed mode requires an Open time';
-    if (s.scheduled_duration != null && s.scheduled_duration < 1) {
-      return 'Scheduled duration must be at least 1 minute';
-    }
+  if (s.timing_mode === 'fixed' && !s.open_at_local) {
+    return 'Fixed mode requires an Open time';
   }
   if (!s.is_draft && editing && (editing.questions?.length ?? 0) === 0) {
     return 'Add at least one question before publishing';
@@ -145,10 +145,10 @@ export function scheduleBadgeFor(editing: Quiz | null) {
   const now = Date.now();
   const o = editing.open_at ? new Date(editing.open_at).getTime() : null;
   const c = editing.close_at ? new Date(editing.close_at).getTime() : null;
-  if (o && now < o) return { label: 'Scheduled', tone: 'secondary' as const };
+  if (o && now < o) return { label: 'Scheduled', tone: 'info' as const };
   if (c && now > c) return { label: 'Closed', tone: 'destructive' as const };
-  if (o || c) return { label: 'Open', tone: 'default' as const };
+  if (o || c) return { label: 'Open', tone: 'success' as const };
   return null;
 }
 
-export type QuizSettingsTab = 'basics' | 'schedule' | 'behavior' | 'grading' | 'marks';
+export type QuizSettingsTab = 'basics' | 'schedule' | 'behavior' | 'marks';

@@ -1,6 +1,5 @@
 'use client';
 
-import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -32,8 +31,14 @@ export function AiGenerateOptions({
   toggleType,
   disabled
 }: AiGenerateOptionsProps) {
+  const TYPE_LABEL: Record<QuizQuestionType, string> = {
+    MCQ: 'Multiple choice',
+    TRUE_FALSE: 'True / False',
+    SHORT_ANSWER: 'Short answer'
+  };
+
   return (
-    <div className='grid grid-cols-3 gap-3'>
+    <div className='grid grid-cols-2 gap-3'>
       <div className='space-y-1.5'>
         <Label htmlFor='ai-count'>Number of questions</Label>
         <Input
@@ -66,19 +71,28 @@ export function AiGenerateOptions({
           </SelectContent>
         </Select>
       </div>
-      <div className='space-y-1.5'>
-        <Label>Types</Label>
-        <div className='flex flex-col gap-1 text-xs'>
-          {(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'] as const).map((t) => (
-            <label key={t} className='inline-flex items-center gap-1.5 cursor-pointer'>
-              <Checkbox
-                checked={questionTypes.includes(t)}
-                onCheckedChange={() => toggleType(t)}
+      <div className='col-span-2 space-y-1.5'>
+        <Label>Question types</Label>
+        <div className='flex flex-wrap gap-2'>
+          {(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'] as const).map((t) => {
+            const active = questionTypes.includes(t);
+            return (
+              <button
+                key={t}
+                type='button'
                 disabled={disabled}
-              />
-              <span>{t.replace('_', ' ')}</span>
-            </label>
-          ))}
+                onClick={() => toggleType(t)}
+                aria-pressed={active}
+                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${
+                  active
+                    ? 'border-primary bg-primary/10 text-primary'
+                    : 'border-input text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                }`}
+              >
+                {TYPE_LABEL[t]}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>

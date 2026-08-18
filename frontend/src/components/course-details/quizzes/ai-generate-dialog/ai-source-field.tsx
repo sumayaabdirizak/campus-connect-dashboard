@@ -1,8 +1,8 @@
 'use client';
 
-import { FileText, Loader2, X } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
+import { useRef } from 'react';
+import { FileText, Loader2, Upload, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -29,54 +29,73 @@ export function AiSourceField({
   onSourceFile,
   disabled
 }: AiSourceFieldProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   return (
     <div className='space-y-1.5'>
-      <Label htmlFor='ai-source'>
-        Source material{' '}
-        <span className='text-muted-foreground font-normal'>
-          (optional — chapter text, lecture notes, etc.)
-        </span>
-      </Label>
-      <div className='flex flex-wrap items-center gap-2'>
-        <Input
+      <div className='flex items-baseline justify-between gap-2'>
+        <Label htmlFor='ai-source'>
+          Source material{' '}
+          <span className='text-muted-foreground font-normal'>(optional)</span>
+        </Label>
+        {sourceMaterial ? (
+          <span className='text-[11px] text-muted-foreground tabular-nums'>
+            {sourceMaterial.length.toLocaleString()} / {AI_SOURCE_MAX_CHARS.toLocaleString()}
+          </span>
+        ) : null}
+      </div>
+
+      <div className='flex items-center gap-2'>
+        <input
+          ref={fileInputRef}
           id='ai-source-file'
           type='file'
           accept={AI_SOURCE_ACCEPT}
           disabled={disabled || isExtractingSource}
-          className='max-w-xs text-xs file:mr-2 file:rounded file:border-0 file:bg-muted file:px-2 file:py-1 file:text-xs'
+          className='hidden'
           onChange={(e) => {
             void onSourceFile(e.target.files?.[0]);
             e.target.value = '';
           }}
         />
+        <Button
+          type='button'
+          variant='outline'
+          size='sm'
+          className='gap-1.5'
+          disabled={disabled || isExtractingSource}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          {isExtractingSource ? (
+            <Loader2 className='w-3.5 h-3.5 animate-spin' />
+          ) : (
+            <Upload className='w-3.5 h-3.5' />
+          )}
+          {isExtractingSource ? 'Reading file…' : 'Upload file'}
+        </Button>
         {sourceFileName ? (
-          <Badge variant='secondary' className='gap-1 text-[11px] font-normal'>
-            <FileText className='w-3 h-3' />
-            {sourceFileName}
+          <span className='inline-flex items-center gap-1.5 rounded-full border bg-muted/50 pl-2.5 pr-1 py-0.5 text-xs'>
+            <FileText className='w-3 h-3 text-muted-foreground' />
+            <span className='max-w-[14rem] truncate'>{sourceFileName}</span>
             <button
               type='button'
-              className='ml-0.5 rounded-sm hover:bg-muted'
+              className='rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground'
               aria-label='Clear loaded file label'
               onClick={() => setSourceFileName(null)}
             >
               <X className='w-3 h-3' />
             </button>
-          </Badge>
-        ) : null}
-        {isExtractingSource ? (
-          <span className='inline-flex items-center gap-1 text-[11px] text-muted-foreground'>
-            <Loader2 className='w-3 h-3 animate-spin' />
-            Reading file…
           </span>
-        ) : null}
+        ) : (
+          <span className='text-[11px] text-muted-foreground'>
+            PDF, DOCX, or plain text — or just paste below
+          </span>
+        )}
       </div>
-      <p className='text-[11px] text-muted-foreground'>
-        Upload PDF, DOCX, or plain text (.txt, .md, .csv) — extracted text appears below. You
-        can still paste or edit manually.
-      </p>
+
       <Textarea
         id='ai-source'
-        rows={6}
+        rows={4}
         placeholder='Paste reference material here, or upload a file above. When provided, the AI grounds every question in this content instead of guessing.'
         value={sourceMaterial}
         onChange={(e) => {
@@ -84,12 +103,8 @@ export function AiSourceField({
           if (!e.target.value.trim()) setSourceFileName(null);
         }}
         disabled={disabled || isExtractingSource}
-        className='font-mono text-xs select-text'
+        className='text-xs select-text'
       />
-      <p className='text-[11px] text-muted-foreground tabular-nums'>
-        {sourceMaterial.length.toLocaleString()} / {AI_SOURCE_MAX_CHARS.toLocaleString()}{' '}
-        characters
-      </p>
     </div>
   );
 }

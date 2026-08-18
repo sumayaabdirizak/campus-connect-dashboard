@@ -3,7 +3,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { AddFromBankDialog } from '../add-from-bank-dialog';
 import { AiGenerateDialog } from '../ai-generate-dialog';
 import { QuizCsvDialog } from '../quiz-csv-dialog';
 import { DraftQuestionEditor } from './draft-question-editor';
@@ -68,7 +67,6 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
         draftOpen={b.draft != null}
         onCsv={() => b.setCsvOpen(true)}
         onAi={() => b.setAiOpen(true)}
-        onBank={() => b.setBankPickerOpen(true)}
         onAdd={() => {
           setLockedAddType(null);
           b.startNew();
@@ -146,12 +144,6 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
         />
       ) : null}
 
-      <AddFromBankDialog
-        open={b.bankPickerOpen}
-        onOpenChange={b.setBankPickerOpen}
-        courseOfferingId={courseId}
-        quizId={quiz.id}
-      />
       <AiGenerateDialog
         open={b.aiOpen}
         onOpenChange={b.setAiOpen}

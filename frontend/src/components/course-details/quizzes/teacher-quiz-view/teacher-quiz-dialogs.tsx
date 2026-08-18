@@ -2,7 +2,6 @@
 
 import { toast } from 'sonner';
 import { AiGenerateDialog } from '../ai-generate-dialog';
-import { QuestionBankManager } from '../question-bank-manager';
 import { QuizSettingsDialog } from '../quiz-settings-form';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type {
@@ -29,24 +28,20 @@ export function TeacherQuizDialogs({
   pending,
   mutateCreate,
   mutateUpdate,
-  bankOpen,
   aiQuizOpen,
   onCloseSettings,
-  onBankOpenChange,
   onAiOpenChange,
   onQuizCreated,
 }: {
   courseId: string;
-  settingsTarget: Quiz | 'create' | null;
+  settingsTarget: Quiz | null;
   liveEditing: Quiz | null;
   modules: CourseModule[];
   pending: boolean;
   mutateCreate: MutateCreate;
   mutateUpdate: MutateUpdate;
-  bankOpen: boolean;
   aiQuizOpen: boolean;
   onCloseSettings: () => void;
-  onBankOpenChange: (open: boolean) => void;
   onAiOpenChange: (open: boolean) => void;
   onQuizCreated: (quiz: Quiz) => void;
 }) {
@@ -86,11 +81,6 @@ export function TeacherQuizDialogs({
         pending={pending}
         modules={modules}
         onSubmit={handleSettingsSubmit}
-      />
-      <QuestionBankManager
-        open={bankOpen}
-        onOpenChange={onBankOpenChange}
-        courseOfferingId={courseId}
       />
       <AiGenerateDialog
         open={aiQuizOpen}

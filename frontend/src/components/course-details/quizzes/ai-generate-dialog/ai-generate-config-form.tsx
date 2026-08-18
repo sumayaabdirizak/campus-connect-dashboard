@@ -34,7 +34,7 @@ export function AiGenerateConfigForm(props: AiGenerateConfigFormProps) {
   const { isNewQuiz, isGenerating } = props;
 
   return (
-    <div className='flex-1 overflow-y-auto pr-1 -mr-1 space-y-4'>
+    <div className='flex-1 overflow-y-auto pr-1 -mr-1 space-y-3.5'>
       {isNewQuiz ? (
         <div className='space-y-1.5'>
           <Label htmlFor='ai-quiz-title'>Quiz title *</Label>
@@ -58,15 +58,6 @@ export function AiGenerateConfigForm(props: AiGenerateConfigFormProps) {
           disabled={isGenerating}
         />
       </div>
-      <AiSourceField
-        sourceMaterial={props.sourceMaterial}
-        setSourceMaterial={props.setSourceMaterial}
-        sourceFileName={props.sourceFileName}
-        setSourceFileName={props.setSourceFileName}
-        isExtractingSource={props.isExtractingSource}
-        onSourceFile={props.onSourceFile}
-        disabled={isGenerating}
-      />
       <AiGenerateOptions
         count={props.count}
         setCount={props.setCount}
@@ -74,6 +65,15 @@ export function AiGenerateConfigForm(props: AiGenerateConfigFormProps) {
         setDifficulty={props.setDifficulty}
         questionTypes={props.questionTypes}
         toggleType={props.toggleType}
+        disabled={isGenerating}
+      />
+      <AiSourceField
+        sourceMaterial={props.sourceMaterial}
+        setSourceMaterial={props.setSourceMaterial}
+        sourceFileName={props.sourceFileName}
+        setSourceFileName={props.setSourceFileName}
+        isExtractingSource={props.isExtractingSource}
+        onSourceFile={props.onSourceFile}
         disabled={isGenerating}
       />
       <AiHowItWorks isNewQuiz={isNewQuiz} />

@@ -1,22 +1,20 @@
 'use client';
 
+import { Info } from 'lucide-react';
+
 export function AiHowItWorks({ isNewQuiz }: { isNewQuiz: boolean }) {
   return (
-    <div className='rounded-lg border border-dashed bg-muted/30 p-3 text-[11px] text-muted-foreground space-y-1'>
-      <p className='font-medium text-foreground'>How this works</p>
+    <div className='flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground'>
+      <Info className='w-3.5 h-3.5 shrink-0 mt-0.5' />
       {isNewQuiz ? (
         <p>
-          Nothing is saved yet. After generating, you&apos;ll see every question and
-          choose which to keep. Selected questions become a new{' '}
-          <strong>draft quiz</strong> — you&apos;ll land in the builder to fine-tune and
-          publish it when ready.
+          Nothing is saved yet — you&apos;ll review every question and choose what to keep
+          first. The rest become a new <strong className='text-foreground'>draft quiz</strong>.
         </p>
       ) : (
         <p>
-          Nothing is saved yet. After generating, you&apos;ll see every question and
-          choose which to keep. Selected questions land in your{' '}
-          <strong>Question Bank</strong> for this course — you can then drop them into any
-          quiz via &quot;Add from Bank&quot;.
+          Nothing is saved yet — you&apos;ll review every question and choose what to keep
+          first. The rest are added straight to this quiz.
         </p>
       )}
     </div>

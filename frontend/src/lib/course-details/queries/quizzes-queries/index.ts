@@ -15,6 +15,7 @@ export {
   useReportViolation,
   useSaveAttemptAnswers,
   useGradeAttempt,
+  useCreateOfflineAttempt,
   useCreateQuestion,
   useUpdateQuestion,
   useReorderQuestions,

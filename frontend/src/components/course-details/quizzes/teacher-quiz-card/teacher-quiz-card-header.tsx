@@ -41,31 +41,38 @@ export function TeacherQuizCardHeader({
 
       <div className='min-w-0 flex-1'>
         <div className='flex items-center gap-2 flex-wrap'>
-          <ClipboardList className='w-4 h-4 text-muted-foreground shrink-0' />
+          <span className='shrink-0 grid place-items-center w-7 h-7 rounded-lg bg-accent text-accent-foreground'>
+            <ClipboardList className='w-3.5 h-3.5' />
+          </span>
           <p className='font-medium truncate select-none'>{q.title}</p>
           {q.is_draft ? (
-            <Badge variant='secondary' className='text-[10px]'>
+            <Badge variant='secondary' size='xs' className='rounded-full'>
               Draft
             </Badge>
           ) : (
             windowState && (
               <Badge
-                variant={windowState === 'closed' ? 'destructive' : 'outline'}
-                className={`text-[10px] capitalize ${
-                  windowState === 'open' ? 'text-success border-success' : ''
-                }`}
+                variant={
+                  windowState === 'closed'
+                    ? 'destructive'
+                    : windowState === 'open'
+                      ? 'success'
+                      : 'info'
+                }
+                size='xs'
+                className='rounded-full capitalize'
               >
                 {windowState}
               </Badge>
             )
           )}
           {isEmpty && (
-            <Badge variant='warning' size='xs'>
+            <Badge variant='warning' size='xs' className='rounded-full'>
               No questions
             </Badge>
           )}
           {q.mode === 'offline' && (
-            <Badge variant='outline' className='text-[10px]'>
+            <Badge variant='outline' size='xs' className='rounded-full'>
               Offline
             </Badge>
           )}

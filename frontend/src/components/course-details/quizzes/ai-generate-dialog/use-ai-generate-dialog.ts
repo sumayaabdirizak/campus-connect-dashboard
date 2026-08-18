@@ -1,12 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-  useGenerateQuestions,
-  useImportBankQuestions,
-  useImportToQuiz
-} from '@/lib/course-details/queries/question-bank-queries';
-import { useCreateQuiz } from '@/lib/course-details/queries/quizzes-queries';
+import { useGenerateQuestions } from '@/lib/course-details/queries/question-bank-queries';
+import { useCreateQuestion, useCreateQuiz } from '@/lib/course-details/queries/quizzes-queries';
 import type { GeneratedQuestion } from '@/lib/course-details/types';
 import type { Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
 import {
@@ -26,9 +22,8 @@ export function useAiGenerateDialog(opts: {
   const isNewQuiz = destination.kind === 'new-quiz';
 
   const generateMutation = useGenerateQuestions(courseOfferingId);
-  const importMutation = useImportBankQuestions(courseOfferingId);
   const createQuizMutation = useCreateQuiz(courseOfferingId);
-  const importToQuizMutation = useImportToQuiz(
+  const createQuestionMutation = useCreateQuestion(
     courseOfferingId,
     destination.kind === 'quiz' ? destination.quizId : 0
   );
@@ -115,7 +110,7 @@ export function useAiGenerateDialog(opts: {
       quizTitle,
       destination,
       createQuizMutation,
-      importMutation,
+      createQuestionMutation,
       onQuizCreated,
       closeHandler
     });
@@ -148,9 +143,6 @@ export function useAiGenerateDialog(opts: {
     toggleAll,
     handleSave,
     isGenerating: generateMutation.isPending,
-    isSaving:
-      importMutation.isPending ||
-      importToQuizMutation.isPending ||
-      createQuizMutation.isPending
+    isSaving: createQuestionMutation.isPending || createQuizMutation.isPending
   };
 }

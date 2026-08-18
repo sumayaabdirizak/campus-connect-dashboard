@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import { QuizBuilder } from '../quiz-builder';
 import { groupQuizzesByModule } from '../course-quizzes-utils';
+import { NewQuizPage } from '../new-quiz-page/new-quiz-page';
 import { TeacherAttemptsPanel } from '../teacher-attempts-panel';
 import { useQuizzes } from '@/lib/course-details/queries/quizzes-queries';
 import { useModules } from '@/lib/course-details/queries/resources-queries';
@@ -19,11 +20,11 @@ export function TeacherView({ courseId }: { courseId: string }) {
   const { data: modules = [] } = useModules(courseId);
   const actions = useTeacherQuizActions(courseId);
 
-  const [settingsTarget, setSettingsTarget] = useState<Quiz | 'create' | null>(null);
+  const [settingsTarget, setSettingsTarget] = useState<Quiz | null>(null);
+  const [creatingQuiz, setCreatingQuiz] = useState(false);
   const [editingQuestions, setEditingQuestions] = useState<Quiz | null>(null);
   const [viewingAttempts, setViewingAttempts] = useState<Quiz | null>(null);
   const [previewing, setPreviewing] = useState<Quiz | null>(null);
-  const [bankOpen, setBankOpen] = useState(false);
   const [aiQuizOpen, setAiQuizOpen] = useState(false);
 
   const sorted = useMemo(
@@ -40,10 +41,23 @@ export function TeacherView({ courseId }: { courseId: string }) {
   const liveEditingQuestions = editingQuestions
     ? quizzes.find((q) => q.id === editingQuestions.id) ?? editingQuestions
     : null;
-  const liveSettingsTarget =
-    settingsTarget && settingsTarget !== 'create'
-      ? quizzes.find((q) => q.id === settingsTarget.id) ?? settingsTarget
-      : settingsTarget;
+  const liveSettingsTarget = settingsTarget
+    ? quizzes.find((q) => q.id === settingsTarget.id) ?? settingsTarget
+    : settingsTarget;
+
+  if (creatingQuiz) {
+    return (
+      <NewQuizPage
+        courseId={courseId}
+        modules={modules}
+        onBack={() => setCreatingQuiz(false)}
+        onCreated={(quiz) => {
+          setCreatingQuiz(false);
+          setEditingQuestions(quiz);
+        }}
+      />
+    );
+  }
 
   if (liveEditingQuestions) {
     return (
@@ -75,9 +89,8 @@ export function TeacherView({ courseId }: { courseId: string }) {
     <div className='space-y-4'>
       <TeacherQuizToolbar
         quizCount={sorted.length}
-        onOpenBank={() => setBankOpen(true)}
         onOpenAi={() => setAiQuizOpen(true)}
-        onCreate={() => setSettingsTarget('create')}
+        onCreate={() => setCreatingQuiz(true)}
       />
 
       <TeacherQuizBulkBar
@@ -96,7 +109,7 @@ export function TeacherView({ courseId }: { courseId: string }) {
         groups={groups}
         showGrouped={showGrouped}
         selectedIds={actions.selectedIds}
-        onCreate={() => setSettingsTarget('create')}
+        onCreate={() => setCreatingQuiz(true)}
         handlers={{
           onSettings: setSettingsTarget,
           onEditQuestions: setEditingQuestions,
@@ -112,21 +125,15 @@ export function TeacherView({ courseId }: { courseId: string }) {
       <TeacherQuizDialogs
         courseId={courseId}
         settingsTarget={settingsTarget}
-        liveEditing={
-          liveSettingsTarget && liveSettingsTarget !== 'create'
-            ? liveSettingsTarget
-            : null
-        }
+        liveEditing={liveSettingsTarget}
         modules={modules}
         pending={
           actions.createMutation.isPending || actions.updateMutation.isPending
         }
         mutateCreate={actions.createMutation.mutate}
         mutateUpdate={actions.updateMutation.mutate}
-        bankOpen={bankOpen}
         aiQuizOpen={aiQuizOpen}
         onCloseSettings={() => setSettingsTarget(null)}
-        onBankOpenChange={setBankOpen}
         onAiOpenChange={setAiQuizOpen}
         onQuizCreated={setEditingQuestions}
       />

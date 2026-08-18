@@ -1,16 +1,14 @@
 'use client';
 
-import { Library, Plus, Sparkles } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 export function TeacherQuizToolbar({
   quizCount,
-  onOpenBank,
   onOpenAi,
   onCreate,
 }: {
   quizCount: number;
-  onOpenBank: () => void;
   onOpenAi: () => void;
   onCreate: () => void;
 }) {
@@ -20,9 +18,6 @@ export function TeacherQuizToolbar({
         {quizCount} {quizCount === 1 ? 'quiz' : 'quizzes'}
       </p>
       <div className='flex gap-2'>
-        <Button variant='outline' onClick={onOpenBank} className='gap-1'>
-          <Library className='w-4 h-4' /> Question Bank
-        </Button>
         <Button variant='outline' onClick={onOpenAi} className='gap-1'>
           <Sparkles className='w-4 h-4' /> Generate with AI
         </Button>

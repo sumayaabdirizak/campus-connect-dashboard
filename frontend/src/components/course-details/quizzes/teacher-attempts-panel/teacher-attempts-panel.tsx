@@ -57,6 +57,7 @@ export function TeacherAttemptsPanel({
   const filteredRows = filterAttemptRows(allRows, statusFilter, search);
   const counts = statusCounts(allRows);
   const pendingCount = attempts.filter(needsGrading).length;
+  const totalPoints = (quiz.questions ?? []).reduce((sum, q) => sum + q.points, 0);
 
   return (
     <div className='space-y-3'>
@@ -70,23 +71,25 @@ export function TeacherAttemptsPanel({
             <Badge variant='destructive'>{pendingCount} need grading</Badge>
           ) : null}
         </div>
-        <SegmentedControl
-          ariaLabel='Attempts or analytics view'
-          value={tab}
-          onChange={setTab}
-          options={[
-            { value: 'attempts', label: 'Attempts' },
-            {
-              value: 'analytics',
-              label: (
-                <span className='inline-flex items-center gap-1'>
-                  <BarChart3 className='w-3 h-3' />
-                  Analytics
-                </span>
-              ),
-            },
-          ]}
-        />
+        <div className='flex items-center gap-2'>
+          <SegmentedControl
+            ariaLabel='Attempts or analytics view'
+            value={tab}
+            onChange={setTab}
+            options={[
+              { value: 'attempts', label: 'Attempts' },
+              {
+                value: 'analytics',
+                label: (
+                  <span className='inline-flex items-center gap-1'>
+                    <BarChart3 className='w-3 h-3' />
+                    Analytics
+                  </span>
+                ),
+              },
+            ]}
+          />
+        </div>
       </div>
 
       {tab === 'analytics' ? (
@@ -109,6 +112,9 @@ export function TeacherAttemptsPanel({
             statusFilter={statusFilter}
             rosterEmpty={roster.length === 0}
             onGrade={setGrading}
+            isOffline={quiz.mode === 'offline'}
+            quizId={quiz.id}
+            totalPoints={totalPoints}
           />
         </>
       )}

@@ -28,7 +28,6 @@ const ADD_LOCKED =
 export function useQuizBuilder(courseId: string, quiz: Quiz) {
   const queryClient = useQueryClient();
   const [draft, setDraft] = useState<DraftQuestion | null>(null);
-  const [bankPickerOpen, setBankPickerOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [csvOpen, setCsvOpen] = useState(false);
 
@@ -90,8 +89,6 @@ export function useQuizBuilder(courseId: string, quiz: Quiz) {
   return {
     draft,
     setDraft,
-    bankPickerOpen,
-    setBankPickerOpen,
     aiOpen,
     setAiOpen,
     csvOpen,

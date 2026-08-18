@@ -85,7 +85,7 @@ export function DraftQuestionEditor({
             max={maxPoints}
             value={draft.points}
             onChange={(e) => {
-              let next = Number(e.target.value) || 1;
+              let next = Math.max(1, Number(e.target.value) || 1);
               if (maxPoints != null) next = Math.min(next, Math.max(maxPoints, 1));
               setDraft({ ...draft, points: next });
             }}

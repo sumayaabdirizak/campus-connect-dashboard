@@ -61,6 +61,22 @@ export async function getQuizAttempts(quizId: number): Promise<QuizAttempt[]> {
   return apiClient<QuizAttempt[]>(`/quizzes/${quizId}/attempts`);
 }
 
+/// Offline quizzes are printed handouts — students never start an in-app
+/// attempt. This records a result for a chosen student in one shot: either
+/// `marksEarned` out of the quiz's point total (converted server-side to
+/// the same percentage `score`/`grade` every other attempt uses), or
+/// `absent: true` if they never sat / handed in the paper quiz.
+export async function createOfflineAttempt(
+  quizId: number,
+  studentId: number,
+  outcome: { marksEarned: number } | { absent: true }
+): Promise<QuizAttempt> {
+  return apiClient<QuizAttempt>(`/quizzes/${quizId}/attempts/offline`, {
+    method: 'POST',
+    body: JSON.stringify({ studentId, ...outcome })
+  });
+}
+
 /// Per-question analytics aggregated over every submitted attempt. The
 /// component caches with the attempts list because the same teacher action
 /// (manual grade save) invalidates both.

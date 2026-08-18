@@ -35,18 +35,27 @@ export function MarksTab({ form, setForm }: MarksTabProps) {
     });
   };
 
-  const setAllocation = (type: QuizQuestionType, value: number) => {
-    setForm({
-      ...form,
-      marksPlanAllocations: { ...form.marksPlanAllocations, [type]: value }
-    });
-  };
-
   const allocated = form.marksPlanTypes.reduce(
     (sum, t) => sum + (form.marksPlanAllocations[t] ?? 0),
     0
   );
   const remaining = form.marksPlanTotal - allocated;
+
+  // Caps each section's input at what's left of the total once every
+  // other section's allocation is accounted for, so typing/scrolling past
+  // the budget clamps instead of producing an "over by N" number.
+  const maxFor = (type: QuizQuestionType) => {
+    const otherAllocated = allocated - (form.marksPlanAllocations[type] ?? 0);
+    return Math.max(form.marksPlanTotal - otherAllocated, 0);
+  };
+
+  const setAllocation = (type: QuizQuestionType, value: number) => {
+    const clamped = Math.min(Math.max(value, 0), maxFor(type));
+    setForm({
+      ...form,
+      marksPlanAllocations: { ...form.marksPlanAllocations, [type]: clamped }
+    });
+  };
 
   return (
     <div className='space-y-4 mt-4'>
@@ -62,7 +71,7 @@ export function MarksTab({ form, setForm }: MarksTabProps) {
           min={1}
           value={form.marksPlanTotal}
           onChange={(e) =>
-            setForm({ ...form, marksPlanTotal: parseInt(e.target.value, 10) || 0 })
+            setForm({ ...form, marksPlanTotal: Math.max(1, parseInt(e.target.value, 10) || 1) })
           }
           className='mt-1.5 h-9 text-sm'
         />
@@ -95,6 +104,7 @@ export function MarksTab({ form, setForm }: MarksTabProps) {
                 <Input
                   type='number'
                   min={0}
+                  max={maxFor(type)}
                   value={form.marksPlanAllocations[type] ?? 0}
                   onChange={(e) => setAllocation(type, parseInt(e.target.value, 10) || 0)}
                   className='h-8 w-20 text-sm'

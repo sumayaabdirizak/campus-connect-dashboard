@@ -6,18 +6,27 @@ import type {
   GeneratedQuestion,
   GenerateQuestionsInput
 } from '@/lib/course-details/types';
-import type { CreateQuizInput, Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
-import type { CreateBankQuestionInput } from '@/lib/course-details/types';
+import type {
+  CreateQuestionInput,
+  CreateQuizInput,
+  Quiz,
+  QuizQuestion,
+  QuizQuestionType
+} from '@/lib/course-details/services/quizzes-types';
 import {
   AI_SOURCE_MAX_CHARS,
   clampSourceMaterial,
   extractSourceTextFromFile
 } from '../../_shared/extract-source-text';
-import { chosenToBankImport, chosenToQuizInput } from './map-chosen';
+import { chosenToQuestionInputs, chosenToQuizInput } from './map-chosen';
 import type { Destination, Difficulty } from './types';
 
 type MutateFn<TData, TVars> = {
   mutate: (vars: TVars, opts?: MutateCallbacks<TData, TVars>) => void;
+};
+
+type MutateAsyncFn<TData, TVars> = {
+  mutateAsync: (vars: TVars, opts?: MutateCallbacks<TData, TVars>) => Promise<TData>;
 };
 
 export async function loadSourceFile(
@@ -96,13 +105,13 @@ export function runGenerateQuestions(opts: {
   );
 }
 
-export function saveGeneratedQuestions(opts: {
+export async function saveGeneratedQuestions(opts: {
   generated: GeneratedQuestion[];
   keepSet: Set<number>;
   quizTitle: string;
   destination: Destination;
   createQuizMutation: MutateFn<Quiz, CreateQuizInput>;
-  importMutation: MutateFn<{ success: boolean; imported: number }, CreateBankQuestionInput[]>;
+  createQuestionMutation: MutateAsyncFn<QuizQuestion, CreateQuestionInput>;
   onQuizCreated?: (quiz: Quiz) => void;
   closeHandler: (next: boolean) => void;
 }) {
@@ -129,18 +138,17 @@ export function saveGeneratedQuestions(opts: {
     });
     return;
   }
-  opts.importMutation.mutate(chosenToBankImport(chosen), {
-    onSuccess: (res) => {
-      toast.success(
-        `Added ${res.imported} question${res.imported === 1 ? '' : 's'} to bank`
-      );
-      if (opts.destination.kind === 'quiz') {
-        toast.message('Open "Add from Bank" to attach them to the quiz', {
-          duration: 6000
-        });
-      }
-      opts.closeHandler(false);
-    },
-    onError: (e: Error) => toast.error(e.message)
-  });
+  // Straight into the quiz's question list — one create call per kept
+  // question, sequential so order_index assignment on the backend can't race.
+  try {
+    for (const input of chosenToQuestionInputs(chosen)) {
+      await opts.createQuestionMutation.mutateAsync(input);
+    }
+    toast.success(
+      `Added ${chosen.length} question${chosen.length === 1 ? '' : 's'} to the quiz`
+    );
+    opts.closeHandler(false);
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : 'Could not save one of the questions');
+  }
 }

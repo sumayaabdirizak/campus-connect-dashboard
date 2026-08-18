@@ -47,7 +47,7 @@ export function AiGenerateDialog({
               ? 'Describe what you want and the AI will draft questions for you to review.'
               : d.isNewQuiz
                 ? "Review and uncheck anything you don't want — the rest become a new draft quiz."
-                : "Review and uncheck anything you don't want before saving to the bank."}
+                : "Review and uncheck anything you don't want before adding the rest to the quiz."}
           </DialogDescription>
         </DialogHeader>
         {d.phase === 'config' ? (

@@ -264,6 +264,15 @@ export const gradeAttemptBodySchema = Joi.object({
   answers: Joi.array().items(gradedAnswerSchema).min(1).max(1000).required(),
 });
 
+export const createOfflineAttemptBodySchema = Joi.object({
+  studentId: Joi.number().integer().positive().required(),
+  // Either a paper score, or `absent: true` to record the student never
+  // sat/handed in the offline quiz — never both.
+  marksEarned: Joi.number().min(0).max(100000),
+  absent: Joi.boolean(),
+})
+  .xor('marksEarned', 'absent');
+
 /// Body for the bulk question-reorder endpoint. `items` is the new order;
 /// `order_index` is what the row should be updated to. Same shape as the
 /// resource reorder route so the frontend pattern is uniform.

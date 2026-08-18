@@ -66,7 +66,7 @@ export function AiGenerateFooter({
               : 'Saving…'
             : isNewQuiz
               ? `Create quiz with ${keepCount}`
-              : `Save ${keepCount} to bank`}
+              : `Add ${keepCount} to quiz`}
         </Button>
       )}
     </DialogFooter>

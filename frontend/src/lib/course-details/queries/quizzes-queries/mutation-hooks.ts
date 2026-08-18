@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@/lib/async-query';
 import {
+  createOfflineAttempt,
   createQuestion,
   createQuiz,
   deleteQuestion,
@@ -119,6 +120,22 @@ export function useGradeAttempt(courseOfferingId: string, quizId: number) {
       queryClient.invalidateQueries({ queryKey: quizKeys.attempts(quizId) });
       queryClient.invalidateQueries({ queryKey: quizKeys.analytics(quizId) });
       queryClient.invalidateQueries({ queryKey: quizKeys.list(courseOfferingId) });
+    }
+  });
+}
+
+export function useCreateOfflineAttempt(quizId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      studentId,
+      outcome
+    }: {
+      studentId: number;
+      outcome: { marksEarned: number } | { absent: true };
+    }) => createOfflineAttempt(quizId, studentId, outcome),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: quizKeys.attempts(quizId) });
     }
   });
 }

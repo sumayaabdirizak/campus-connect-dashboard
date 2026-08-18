@@ -9,8 +9,7 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { Clock } from 'lucide-react';
-import type { FormState } from './form-state';
+import { nowLocalInput, type FormState } from './form-state';
 
 interface ScheduleTabProps {
   form: FormState;
@@ -18,32 +17,22 @@ interface ScheduleTabProps {
 }
 
 export function ScheduleTab({ form, setForm }: ScheduleTabProps) {
+  const isFixed = form.timing_mode === 'fixed';
+  const rangeInvalid =
+    !!form.open_at_local &&
+    !!form.close_at_local &&
+    new Date(form.open_at_local) >= new Date(form.close_at_local);
+
+  // Floors both pickers at "now" — a teacher can't schedule Opens/Closes
+  // into the past. Closes additionally floors at Opens once that's set, so
+  // the two constraints (no-past, Closes-after-Opens) can't fight each
+  // other. Only applied to interactive edits, not to whatever's already
+  // stored on an existing quiz (e.g. one that's already live).
+  const minOpen = nowLocalInput();
+  const minClose = form.open_at_local && form.open_at_local > minOpen ? form.open_at_local : minOpen;
+
   return (
     <div className='space-y-3 mt-4'>
-      <div className='grid grid-cols-2 gap-3'>
-        <div className='space-y-1.5'>
-          <Label htmlFor='quiz-open'>Opens</Label>
-          <Input
-            id='quiz-open'
-            type='datetime-local'
-            value={form.open_at_local}
-            onChange={(e) => setForm({ ...form, open_at_local: e.target.value })}
-          />
-        </div>
-        <div className='space-y-1.5'>
-          <Label htmlFor='quiz-close'>Closes</Label>
-          <Input
-            id='quiz-close'
-            type='datetime-local'
-            value={form.close_at_local}
-            onChange={(e) => setForm({ ...form, close_at_local: e.target.value })}
-          />
-        </div>
-      </div>
-      <p className='text-[11px] text-muted-foreground'>
-        Leave both blank for an always-open quiz. Times use your local timezone.
-      </p>
-
       <div className='space-y-1.5'>
         <Label>Timing mode</Label>
         <Select
@@ -64,34 +53,55 @@ export function ScheduleTab({ form, setForm }: ScheduleTabProps) {
             </SelectItem>
           </SelectContent>
         </Select>
+        <p className='text-[11px] text-muted-foreground'>
+          {isFixed
+            ? `Everyone's timer starts at "Opens" and runs for the Duration set on the Behavior tab (${form.duration_minutes} min).`
+            : 'Each student\'s timer starts when they open the quiz.'}
+        </p>
       </div>
 
-      {form.timing_mode === 'fixed' ? (
-        <div className='space-y-1.5 rounded-md border p-3 bg-muted/30'>
-          <Label htmlFor='quiz-sched-dur' className='flex items-center gap-1'>
-            <Clock className='w-3.5 h-3.5' />
-            Scheduled duration (min)
-          </Label>
+      <div className='grid grid-cols-2 gap-3'>
+        <div className='space-y-1.5'>
+          <Label htmlFor='quiz-open'>Opens</Label>
           <Input
-            id='quiz-sched-dur'
-            type='number'
-            min={1}
-            max={480}
-            value={form.scheduled_duration ?? ''}
-            onChange={(e) =>
-              setForm({
-                ...form,
-                scheduled_duration: e.target.value ? Number(e.target.value) : null
-              })
-            }
-            placeholder={`Defaults to ${form.duration_minutes} min`}
+            id='quiz-open'
+            type='datetime-local'
+            min={minOpen}
+            value={form.open_at_local}
+            onChange={(e) => {
+              const v = e.target.value;
+              setForm({ ...form, open_at_local: v && v < minOpen ? minOpen : v });
+            }}
           />
-          <p className='text-[11px] text-muted-foreground'>
-            Per-student time budget in fixed mode. Leave blank to use the Duration from the
-            Behavior tab ({form.duration_minutes} min).
-          </p>
         </div>
-      ) : null}
+        <div className='space-y-1.5'>
+          <Label htmlFor='quiz-close'>Closes</Label>
+          <Input
+            id='quiz-close'
+            type='datetime-local'
+            min={minClose}
+            value={form.close_at_local}
+            onChange={(e) => {
+              const v = e.target.value;
+              setForm({ ...form, close_at_local: v && v < minClose ? minClose : v });
+            }}
+            disabled={isFixed}
+            aria-invalid={rangeInvalid}
+            className={rangeInvalid ? 'border-destructive focus-visible:ring-destructive/50' : undefined}
+          />
+        </div>
+      </div>
+      {rangeInvalid ? (
+        <p className='text-[11px] text-destructive font-medium'>
+          Closes must be after Opens — right now it&apos;s the other way around.
+        </p>
+      ) : (
+        <p className='text-[11px] text-muted-foreground'>
+          {isFixed
+            ? 'Closes is ignored in Fixed mode — the window ends automatically at Opens + Duration, above.'
+            : 'Leave both blank for an always-open quiz. Times use your local timezone.'}
+        </p>
+      )}
     </div>
   );
 }
