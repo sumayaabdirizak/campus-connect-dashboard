@@ -5,21 +5,32 @@ import { useGenerateQuestions } from '@/lib/course-details/queries/question-bank
 import { useCreateQuestion, useCreateQuiz } from '@/lib/course-details/queries/quizzes-queries';
 import type { GeneratedQuestion } from '@/lib/course-details/types';
 import type { Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
+import type { DraftQuestion } from '../quiz-builder/types';
 import {
   loadSourceFile,
   runGenerateQuestions,
   saveGeneratedQuestions
 } from './ai-generate-actions';
-import type { Destination, Difficulty } from './types';
+import type { Destination } from './types';
 
 export function useAiGenerateDialog(opts: {
   courseOfferingId: string;
   destination: Destination;
   onOpenChange: (open: boolean) => void;
   onQuizCreated?: (quiz: Quiz) => void;
+  onLocalAdd?: (questions: DraftQuestion[]) => void;
+  lockedQuestionTypes?: QuizQuestionType[];
 }) {
-  const { courseOfferingId, destination, onOpenChange, onQuizCreated } = opts;
+  const {
+    courseOfferingId,
+    destination,
+    onOpenChange,
+    onQuizCreated,
+    onLocalAdd,
+    lockedQuestionTypes
+  } = opts;
   const isNewQuiz = destination.kind === 'new-quiz';
+  const defaultTypes = lockedQuestionTypes ?? ['MCQ'];
 
   const generateMutation = useGenerateQuestions(courseOfferingId);
   const createQuizMutation = useCreateQuiz(courseOfferingId);
@@ -35,8 +46,7 @@ export function useAiGenerateDialog(opts: {
   const [sourceFileName, setSourceFileName] = useState<string | null>(null);
   const [isExtractingSource, setIsExtractingSource] = useState(false);
   const [count, setCount] = useState(10);
-  const [questionTypes, setQuestionTypes] = useState<QuizQuestionType[]>(['MCQ']);
-  const [difficulty, setDifficulty] = useState<Difficulty>('mixed');
+  const [questionTypes, setQuestionTypes] = useState<QuizQuestionType[]>(defaultTypes);
   const [generated, setGenerated] = useState<GeneratedQuestion[]>([]);
   const [keepSet, setKeepSet] = useState<Set<number>>(new Set());
 
@@ -49,8 +59,7 @@ export function useAiGenerateDialog(opts: {
       setSourceFileName(null);
       setIsExtractingSource(false);
       setCount(10);
-      setQuestionTypes(['MCQ']);
-      setDifficulty('mixed');
+      setQuestionTypes(defaultTypes);
       setGenerated([]);
       setKeepSet(new Set());
     }
@@ -58,6 +67,7 @@ export function useAiGenerateDialog(opts: {
   };
 
   const toggleType = (t: QuizQuestionType) => {
+    if (lockedQuestionTypes) return;
     setQuestionTypes((prev) =>
       prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]
     );
@@ -80,7 +90,6 @@ export function useAiGenerateDialog(opts: {
       sourceMaterial,
       count,
       questionTypes,
-      difficulty,
       generateMutation,
       onPreview: (questions) => {
         setGenerated(questions);
@@ -112,6 +121,7 @@ export function useAiGenerateDialog(opts: {
       createQuizMutation,
       createQuestionMutation,
       onQuizCreated,
+      onLocalAdd,
       closeHandler
     });
 
@@ -131,8 +141,7 @@ export function useAiGenerateDialog(opts: {
     count,
     setCount,
     questionTypes,
-    difficulty,
-    setDifficulty,
+    lockedQuestionTypes,
     generated,
     keepSet,
     closeHandler,

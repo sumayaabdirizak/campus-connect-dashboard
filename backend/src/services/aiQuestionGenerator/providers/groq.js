@@ -2,7 +2,10 @@ import { SYSTEM_INSTRUCTION, JSON_SHAPE_HINT } from "../promptBuilders.js";
 import { parseQuestionsJson } from "../helpers.js";
 import { GROQ_MAX_COMPLETION_TOKENS } from "../fitSourceForGroq.js";
 
-const GROQ_DEFAULT_MODEL = "llama-3.3-70b-versatile";
+// Groq deprecated llama-3.3-70b-versatile (2026-06-17) for free/developer
+// tier usage; openai/gpt-oss-120b is their recommended replacement at the
+// same capability tier. Override with GROQ_MODEL if you need a different one.
+const GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b";
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 
 export async function generateWithGroq(userTurn) {

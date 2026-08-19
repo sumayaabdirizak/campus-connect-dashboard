@@ -33,6 +33,8 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
   // Question" button, so the editor pins its Type field to that section —
   // same pattern as the real builder's quiz-builder.tsx.
   const [lockedAddType, setLockedAddType] = useState<QuizQuestionType | null>(null);
+  const [aiOpen, setAiOpen] = useState(false);
+  const [csvOpen, setCsvOpen] = useState(false);
 
   const createMutation = useCreateQuiz(courseId);
 
@@ -105,6 +107,14 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     setQuestions((prev) => prev.filter((_, i) => i !== index));
   };
 
+  /// Bulk-append from AI generation or CSV import. Each lands in whichever
+  /// section its own question_type belongs to (or "Other questions") purely
+  /// because the section blocks filter b.questions by type — no extra
+  /// routing needed here.
+  const addQuestions = (newQuestions: DraftQuestion[]) => {
+    setQuestions((prev) => [...prev, ...newQuestions]);
+  };
+
   const totalPoints = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
 
   const handleCreate = () => {
@@ -140,6 +150,10 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     lockedAddType,
     selectedTypes,
     allocations,
+    aiOpen,
+    setAiOpen,
+    csvOpen,
+    setCsvOpen,
     startNew,
     startNewForSection,
     startEdit,
@@ -152,6 +166,7 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     setCorrectExclusive,
     saveDraft,
     deleteQuestion,
+    addQuestions,
     handleCreate,
     isCreating: createMutation.isPending
   };

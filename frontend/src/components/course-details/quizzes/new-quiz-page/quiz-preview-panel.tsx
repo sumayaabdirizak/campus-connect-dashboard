@@ -48,23 +48,25 @@ export function QuizPreviewPanel({
 
   return (
     <div className='lg:sticky lg:top-4 space-y-3'>
-      <div className='flex items-center justify-end gap-2'>
-        <Button
-          variant='outline'
-          size='sm'
-          className='gap-1.5'
-          onClick={() => printQuizPreview(previewData)}
-        >
-          <Printer className='w-3.5 h-3.5' /> Print
-        </Button>
-        <Button
-          size='sm'
-          className='gap-1.5'
-          onClick={() => downloadQuizPreview(previewData)}
-        >
-          <Download className='w-3.5 h-3.5' /> Download
-        </Button>
-      </div>
+      {mode === 'offline' ? (
+        <div className='flex items-center justify-end gap-2'>
+          <Button
+            variant='outline'
+            size='sm'
+            className='gap-1.5'
+            onClick={() => printQuizPreview(previewData)}
+          >
+            <Printer className='w-3.5 h-3.5' /> Print
+          </Button>
+          <Button
+            size='sm'
+            className='gap-1.5'
+            onClick={() => downloadQuizPreview(previewData)}
+          >
+            <Download className='w-3.5 h-3.5' /> Download
+          </Button>
+        </div>
+      ) : null}
 
       <div className='border rounded-xl bg-card shadow-sm overflow-hidden'>
         <div className='flex items-center justify-between border-b px-5 py-3'>

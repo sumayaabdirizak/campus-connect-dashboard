@@ -252,7 +252,6 @@ export interface GenerateQuestionsInput {
   sourceMaterial?: string;
   count: number;
   questionTypes: string[];
-  difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
 }
 
 export interface GeneratedQuestion {

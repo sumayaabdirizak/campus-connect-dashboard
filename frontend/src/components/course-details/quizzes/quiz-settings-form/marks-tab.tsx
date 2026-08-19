@@ -15,7 +15,12 @@ const TYPE_ORDER: QuizQuestionType[] = ['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'];
 
 interface MarksTabProps {
   form: FormState;
-  setForm: (next: FormState) => void;
+  /// Widened beyond the other tabs' plain `(next: FormState) => void` so
+  /// `toggleType` can use a functional update — two checkbox clicks fired
+  /// back-to-back (before React re-renders between them) would otherwise
+  /// both read the same stale `form` snapshot and the second click would
+  /// silently clobber the first's change instead of both applying.
+  setForm: (next: FormState | ((prev: FormState) => FormState)) => void;
 }
 
 /// Optional marks-distribution plan: total marks, which question-type
@@ -26,12 +31,14 @@ interface MarksTabProps {
 /// against actual question points.
 export function MarksTab({ form, setForm }: MarksTabProps) {
   const toggleType = (type: QuizQuestionType) => {
-    const has = form.marksPlanTypes.includes(type);
-    setForm({
-      ...form,
-      marksPlanTypes: has
-        ? form.marksPlanTypes.filter((t) => t !== type)
-        : [...form.marksPlanTypes, type]
+    setForm((prev) => {
+      const has = prev.marksPlanTypes.includes(type);
+      return {
+        ...prev,
+        marksPlanTypes: has
+          ? prev.marksPlanTypes.filter((t) => t !== type)
+          : [...prev.marksPlanTypes, type]
+      };
     });
   };
 

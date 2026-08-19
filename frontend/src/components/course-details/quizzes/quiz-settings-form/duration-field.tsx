@@ -31,9 +31,11 @@ export function DurationField({
         }
       />
       <p className='text-[11px] text-muted-foreground'>
-        {form.timing_mode === 'flexible'
-          ? 'Each student gets this many minutes once they start the quiz.'
-          : 'In fixed mode, everyone\'s timer runs for this many minutes starting at "Opens" (set on the Schedule tab).'}
+        {form.mode === 'offline'
+          ? "Not enforced in-app — use it as the suggested time limit to announce when you hand out the printed quiz."
+          : form.timing_mode === 'flexible'
+            ? 'Each student gets this many minutes once they start the quiz.'
+            : 'In fixed mode, everyone\'s timer runs for this many minutes starting at "Opens" (set on the Schedule tab).'}
       </p>
     </div>
   );

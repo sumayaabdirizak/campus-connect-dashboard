@@ -2,7 +2,16 @@
 
 import { useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { ArrowLeft, ClipboardList, ListChecks, Settings2, SlidersHorizontal, X } from 'lucide-react';
+import {
+  ArrowLeft,
+  ClipboardList,
+  FileUp,
+  ListChecks,
+  Settings2,
+  SlidersHorizontal,
+  Sparkles,
+  X
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -15,6 +24,8 @@ import { BehaviorTab } from '../quiz-settings-form/behavior-tab';
 import { DurationField } from '../quiz-settings-form/duration-field';
 import { MarksTab } from '../quiz-settings-form/marks-tab';
 import { ScheduleTab } from '../quiz-settings-form/schedule-tab';
+import { InlineAiGenerate } from './inline-ai-generate';
+import { LocalCsvImportDialog } from './local-csv-import-dialog';
 import { LocalQuestionList } from './local-question-list';
 import { LocalSectionBlock } from './local-section-block';
 import { QuizPreviewPanel } from './quiz-preview-panel';
@@ -50,6 +61,10 @@ export function NewQuizPage({
   const otherEntries = p.questions
     .map((draft, index) => ({ index, draft }))
     .filter(({ draft }) => !sectioned || !p.selectedTypes.includes(draft.question_type));
+  // Keeps exactly one editing surface active at a time — the inline AI
+  // panel, the manual question editor, and the section "Add Question"
+  // triggers would otherwise all fight for the same space in the card.
+  const anyEditorOpen = p.draft != null || p.aiOpen;
 
   const content = (
     <div className='fixed inset-0 z-[100] bg-background overflow-y-auto'>
@@ -130,7 +145,36 @@ export function NewQuizPage({
               </Badge>
             ) : null}
           </div>
+          <div className='flex gap-2'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='gap-1'
+              onClick={() => p.setCsvOpen(true)}
+              disabled={anyEditorOpen}
+            >
+              <FileUp className='w-3.5 h-3.5' /> Import CSV
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              className='gap-1'
+              onClick={() => p.setAiOpen(true)}
+              disabled={anyEditorOpen}
+            >
+              <Sparkles className='w-3.5 h-3.5' /> Generate with AI
+            </Button>
+          </div>
         </div>
+
+        {p.aiOpen ? (
+          <InlineAiGenerate
+            courseOfferingId={courseId}
+            onAdd={p.addQuestions}
+            onClose={() => p.setAiOpen(false)}
+            lockedQuestionTypes={sectioned ? p.selectedTypes : undefined}
+          />
+        ) : null}
 
         {sectioned && (
           <div className='space-y-3'>
@@ -144,7 +188,7 @@ export function NewQuizPage({
                   type={type}
                   targetMarks={p.allocations[type] ?? 0}
                   entries={entries}
-                  draftOpen={p.draft != null}
+                  draftOpen={anyEditorOpen}
                   editingIndex={p.editingIndex}
                   onAdd={() => p.startNewForSection(type)}
                   onEdit={p.startEdit}
@@ -180,7 +224,7 @@ export function NewQuizPage({
             )}
             <LocalQuestionList
               questions={otherEntries.map((e) => e.draft)}
-              draftOpen={p.draft != null}
+              draftOpen={anyEditorOpen}
               onEdit={(i) => p.startEdit(otherEntries[i].index)}
               onDelete={(i) => p.deleteQuestion(otherEntries[i].index)}
             />
@@ -225,6 +269,12 @@ export function NewQuizPage({
           totalPoints={p.totalPoints}
         />
       </div>
+
+      <LocalCsvImportDialog
+        open={p.csvOpen}
+        onOpenChange={p.setCsvOpen}
+        onImport={p.addQuestions}
+      />
       </div>
     </div>
   );

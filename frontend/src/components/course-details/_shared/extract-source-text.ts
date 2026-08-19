@@ -1,6 +1,11 @@
 /** Max chars sent to the AI generate endpoint (matches backend Joi). */
 export const AI_SOURCE_MAX_CHARS = 30_000;
 
+/// Min chars required by the AI generate endpoint (matches backend Joi) —
+/// the backend rejects generation without grounding text so the model never
+/// free-hallucinates quiz content from the prompt alone.
+export const AI_SOURCE_MIN_CHARS = 40;
+
 /** Max upload size for source files (10 MB). */
 export const AI_SOURCE_MAX_BYTES = 10 * 1024 * 1024;
 

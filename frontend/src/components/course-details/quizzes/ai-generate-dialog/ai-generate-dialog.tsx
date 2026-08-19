@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
+import { AI_SOURCE_MIN_CHARS } from '../../_shared/extract-source-text';
 import { AiGenerateConfigForm } from './ai-generate-config-form';
 import { AiGenerateFooter } from './ai-generate-footer';
 import { AiGeneratePreview } from './ai-generate-preview';
@@ -20,13 +21,17 @@ export function AiGenerateDialog({
   onOpenChange,
   courseOfferingId,
   destination,
-  onQuizCreated
+  onQuizCreated,
+  onLocalAdd,
+  lockedQuestionTypes
 }: AiGenerateDialogProps) {
   const d = useAiGenerateDialog({
     courseOfferingId,
     destination,
     onOpenChange,
-    onQuizCreated
+    onQuizCreated,
+    onLocalAdd,
+    lockedQuestionTypes
   });
 
   return (
@@ -34,7 +39,9 @@ export function AiGenerateDialog({
       <DialogContent className='max-w-3xl max-h-[90vh] overflow-hidden flex flex-col'>
         <DialogHeader>
           <DialogTitle className='flex items-center gap-2'>
-            <Sparkles className='w-5 h-5 text-primary' />
+            <span className='grid place-items-center w-8 h-8 rounded-full bg-primary/10'>
+              <Sparkles className='w-4 h-4 text-primary' />
+            </span>
             Generate with AI
             {d.phase === 'preview' ? (
               <Badge variant='secondary' className='tabular-nums'>
@@ -44,10 +51,10 @@ export function AiGenerateDialog({
           </DialogTitle>
           <DialogDescription>
             {d.phase === 'config'
-              ? 'Describe what you want and the AI will draft questions for you to review.'
+              ? 'Describe what to cover and the AI will draft questions for you to review.'
               : d.isNewQuiz
-                ? "Review and uncheck anything you don't want — the rest become a new draft quiz."
-                : "Review and uncheck anything you don't want before adding the rest to the quiz."}
+                ? "Uncheck anything you don't want — the rest become a new draft quiz."
+                : "Uncheck anything you don't want, then add the rest to the quiz."}
           </DialogDescription>
         </DialogHeader>
         {d.phase === 'config' ? (
@@ -65,11 +72,10 @@ export function AiGenerateDialog({
             onSourceFile={d.handleSourceFile}
             count={d.count}
             setCount={d.setCount}
-            difficulty={d.difficulty}
-            setDifficulty={d.setDifficulty}
             questionTypes={d.questionTypes}
             toggleType={d.toggleType}
             isGenerating={d.isGenerating}
+            lockedTypes={d.lockedQuestionTypes}
           />
         ) : (
           <AiGeneratePreview
@@ -88,6 +94,7 @@ export function AiGenerateDialog({
           isExtractingSource={d.isExtractingSource}
           isSaving={d.isSaving}
           promptReady={!!d.prompt.trim()}
+          sourceReady={d.sourceMaterial.trim().length >= AI_SOURCE_MIN_CHARS}
           titleReady={!!d.quizTitle.trim()}
           keepCount={d.keepSet.size}
           count={d.count}

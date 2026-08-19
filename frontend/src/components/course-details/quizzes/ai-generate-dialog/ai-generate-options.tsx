@@ -2,98 +2,86 @@
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
 import type { QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
-import type { Difficulty } from './types';
+
+const TYPE_LABEL: Record<QuizQuestionType, string> = {
+  MCQ: 'Multiple choice',
+  TRUE_FALSE: 'True / False',
+  SHORT_ANSWER: 'Short answer'
+};
 
 interface AiGenerateOptionsProps {
   count: number;
   setCount: (v: number) => void;
-  difficulty: Difficulty;
-  setDifficulty: (v: Difficulty) => void;
   questionTypes: QuizQuestionType[];
   toggleType: (t: QuizQuestionType) => void;
   disabled: boolean;
+  /// When set, the Question-types picker is replaced by a one-line summary
+  /// — used when the quiz already has a marks plan, so asking again here
+  /// would just duplicate config the teacher already set.
+  lockedTypes?: QuizQuestionType[];
 }
 
 export function AiGenerateOptions({
   count,
   setCount,
-  difficulty,
-  setDifficulty,
   questionTypes,
   toggleType,
-  disabled
+  disabled,
+  lockedTypes
 }: AiGenerateOptionsProps) {
-  const TYPE_LABEL: Record<QuizQuestionType, string> = {
-    MCQ: 'Multiple choice',
-    TRUE_FALSE: 'True / False',
-    SHORT_ANSWER: 'Short answer'
-  };
-
   return (
-    <div className='grid grid-cols-2 gap-3'>
-      <div className='space-y-1.5'>
-        <Label htmlFor='ai-count'>Number of questions</Label>
+    <div className='flex flex-wrap items-start gap-4'>
+      <div className='w-20 space-y-1.5'>
+        <Label htmlFor='ai-count' className='text-xs text-muted-foreground'>
+          How many
+        </Label>
         <Input
           id='ai-count'
           type='number'
           min={1}
           max={25}
           value={count}
-          onChange={(e) =>
-            setCount(Math.min(25, Math.max(1, Number(e.target.value) || 1)))
-          }
+          onChange={(e) => setCount(Math.min(25, Math.max(1, Number(e.target.value) || 1)))}
           disabled={disabled}
+          className='h-9'
         />
       </div>
-      <div className='space-y-1.5'>
-        <Label>Difficulty</Label>
-        <Select
-          value={difficulty}
-          onValueChange={(v) => setDifficulty(v as Difficulty)}
-          disabled={disabled}
-        >
-          <SelectTrigger>
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='mixed'>Mixed</SelectItem>
-            <SelectItem value='easy'>Easy</SelectItem>
-            <SelectItem value='medium'>Medium</SelectItem>
-            <SelectItem value='hard'>Hard</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className='col-span-2 space-y-1.5'>
-        <Label>Question types</Label>
-        <div className='flex flex-wrap gap-2'>
-          {(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'] as const).map((t) => {
-            const active = questionTypes.includes(t);
-            return (
-              <button
-                key={t}
-                type='button'
-                disabled={disabled}
-                onClick={() => toggleType(t)}
-                aria-pressed={active}
-                className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${
-                  active
-                    ? 'border-primary bg-primary/10 text-primary'
-                    : 'border-input text-muted-foreground hover:bg-accent hover:text-accent-foreground'
-                }`}
-              >
-                {TYPE_LABEL[t]}
-              </button>
-            );
-          })}
-        </div>
+
+      <div className='flex-1 min-w-[220px] space-y-1.5'>
+        <Label className='text-xs text-muted-foreground'>
+          {lockedTypes ? 'Types' : 'Types to include'}
+        </Label>
+        {lockedTypes ? (
+          <p className='text-xs text-muted-foreground leading-relaxed'>
+            <strong className='text-primary'>
+              {lockedTypes.map((t) => TYPE_LABEL[t]).join(', ')}
+            </strong>{' '}
+            — locked to this quiz&apos;s marks plan.
+          </p>
+        ) : (
+          <div className='flex flex-wrap gap-2'>
+            {(['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'] as const).map((t) => {
+              const active = questionTypes.includes(t);
+              return (
+                <button
+                  key={t}
+                  type='button'
+                  disabled={disabled}
+                  onClick={() => toggleType(t)}
+                  aria-pressed={active}
+                  className={`rounded-full border px-3 py-1.5 text-xs font-medium transition-colors disabled:pointer-events-none disabled:opacity-50 ${
+                    active
+                      ? 'border-primary bg-primary text-primary-foreground'
+                      : 'border-primary/25 text-muted-foreground hover:border-primary/50 hover:text-primary'
+                  }`}
+                >
+                  {TYPE_LABEL[t]}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

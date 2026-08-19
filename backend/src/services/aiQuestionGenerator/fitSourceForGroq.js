@@ -1,7 +1,7 @@
 import { SYSTEM_INSTRUCTION, JSON_SHAPE_HINT, buildUserTurn } from './promptBuilders.js';
 
-/** Groq free-tier TPM for llama-3.3-70b-versatile. */
-export const GROQ_TPM_LIMIT = 12_000;
+/** Groq free-tier TPM for openai/gpt-oss-120b (the current default model). */
+export const GROQ_TPM_LIMIT = 8_000;
 /**
  * Groq TPM "Requested" ≈ prompt tokens + max_completion_tokens.
  * Keep completion modest so source still fits.

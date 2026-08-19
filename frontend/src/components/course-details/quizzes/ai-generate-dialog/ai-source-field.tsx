@@ -1,13 +1,14 @@
 'use client';
 
 import { useRef } from 'react';
-import { FileText, Loader2, Upload, X } from 'lucide-react';
+import { FileText, FileUp, Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
   AI_SOURCE_ACCEPT,
-  AI_SOURCE_MAX_CHARS
+  AI_SOURCE_MAX_CHARS,
+  AI_SOURCE_MIN_CHARS
 } from '../../_shared/extract-source-text';
 
 interface AiSourceFieldProps {
@@ -32,14 +33,20 @@ export function AiSourceField({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <div className='space-y-1.5'>
+    <div className='space-y-2'>
       <div className='flex items-baseline justify-between gap-2'>
-        <Label htmlFor='ai-source'>
-          Source material{' '}
-          <span className='text-muted-foreground font-normal'>(optional)</span>
+        <Label htmlFor='ai-source' className='flex items-center gap-1.5 text-xs text-muted-foreground'>
+          <FileUp className='w-3.5 h-3.5' />
+          Source material *
         </Label>
         {sourceMaterial ? (
-          <span className='text-[11px] text-muted-foreground tabular-nums'>
+          <span
+            className={`text-[11px] tabular-nums ${
+              sourceMaterial.trim().length < AI_SOURCE_MIN_CHARS
+                ? 'text-amber-600 dark:text-amber-400'
+                : 'text-muted-foreground'
+            }`}
+          >
             {sourceMaterial.length.toLocaleString()} / {AI_SOURCE_MAX_CHARS.toLocaleString()}
           </span>
         ) : null}
@@ -62,7 +69,7 @@ export function AiSourceField({
           type='button'
           variant='outline'
           size='sm'
-          className='gap-1.5'
+          className='gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary dark:border-primary/30'
           disabled={disabled || isExtractingSource}
           onClick={() => fileInputRef.current?.click()}
         >
@@ -71,11 +78,11 @@ export function AiSourceField({
           ) : (
             <Upload className='w-3.5 h-3.5' />
           )}
-          {isExtractingSource ? 'Reading file…' : 'Upload file'}
+          {isExtractingSource ? 'Reading…' : 'Upload file'}
         </Button>
         {sourceFileName ? (
-          <span className='inline-flex items-center gap-1.5 rounded-full border bg-muted/50 pl-2.5 pr-1 py-0.5 text-xs'>
-            <FileText className='w-3 h-3 text-muted-foreground' />
+          <span className='inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 pl-2.5 pr-1 py-0.5 text-xs'>
+            <FileText className='w-3 h-3 text-primary' />
             <span className='max-w-[14rem] truncate'>{sourceFileName}</span>
             <button
               type='button'
@@ -87,24 +94,28 @@ export function AiSourceField({
             </button>
           </span>
         ) : (
-          <span className='text-[11px] text-muted-foreground'>
-            PDF, DOCX, or plain text — or just paste below
-          </span>
+          <span className='text-[11px] text-muted-foreground'>or paste below</span>
         )}
       </div>
 
       <Textarea
         id='ai-source'
         rows={4}
-        placeholder='Paste reference material here, or upload a file above. When provided, the AI grounds every question in this content instead of guessing.'
+        placeholder='Paste the text you want the AI to base questions on…'
         value={sourceMaterial}
         onChange={(e) => {
           setSourceMaterial(e.target.value.slice(0, AI_SOURCE_MAX_CHARS));
           if (!e.target.value.trim()) setSourceFileName(null);
         }}
         disabled={disabled || isExtractingSource}
-        className='text-xs select-text'
+        className='text-xs select-text focus-visible:ring-primary/40'
       />
+      {sourceMaterial.trim().length > 0 && sourceMaterial.trim().length < AI_SOURCE_MIN_CHARS ? (
+        <p className='text-[11px] text-amber-600 dark:text-amber-400'>
+          Add {AI_SOURCE_MIN_CHARS - sourceMaterial.trim().length} more character
+          {AI_SOURCE_MIN_CHARS - sourceMaterial.trim().length === 1 ? '' : 's'} to continue.
+        </p>
+      ) : null}
     </div>
   );
 }

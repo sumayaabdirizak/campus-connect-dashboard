@@ -1,5 +1,6 @@
 'use client';
 
+import { CalendarOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -30,6 +31,22 @@ export function ScheduleTab({ form, setForm }: ScheduleTabProps) {
   // stored on an existing quiz (e.g. one that's already live).
   const minOpen = nowLocalInput();
   const minClose = form.open_at_local && form.open_at_local > minOpen ? form.open_at_local : minOpen;
+
+  // Opens/Closes/Timing mode only govern the in-app attempt window —
+  // offline quizzes are never started in-app (blocked server-side), so
+  // there's no window to schedule. Skip straight to a plain explanation.
+  if (form.mode === 'offline') {
+    return (
+      <div className='mt-4 flex items-start gap-2 rounded-lg bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground'>
+        <CalendarOff className='w-3.5 h-3.5 shrink-0 mt-0.5' />
+        <p>
+          Scheduling doesn&apos;t apply to offline quizzes — there&apos;s no in-app window to
+          open or close since students never start it here. Print the handout when you&apos;re
+          ready to hand it out.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <div className='space-y-3 mt-4'>

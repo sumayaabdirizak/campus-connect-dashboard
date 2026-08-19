@@ -15,11 +15,13 @@ import type {
 } from '@/lib/course-details/services/quizzes-types';
 import {
   AI_SOURCE_MAX_CHARS,
+  AI_SOURCE_MIN_CHARS,
   clampSourceMaterial,
   extractSourceTextFromFile
 } from '../../_shared/extract-source-text';
-import { chosenToQuestionInputs, chosenToQuizInput } from './map-chosen';
-import type { Destination, Difficulty } from './types';
+import type { DraftQuestion } from '../quiz-builder/types';
+import { chosenToDraftQuestions, chosenToQuestionInputs, chosenToQuizInput } from './map-chosen';
+import type { Destination } from './types';
 
 type MutateFn<TData, TVars> = {
   mutate: (vars: TVars, opts?: MutateCallbacks<TData, TVars>) => void;
@@ -72,7 +74,6 @@ export function runGenerateQuestions(opts: {
   sourceMaterial: string;
   count: number;
   questionTypes: QuizQuestionType[];
-  difficulty: Difficulty;
   generateMutation: MutateFn<{ questions: GeneratedQuestion[] }, GenerateQuestionsInput>;
   onPreview: (questions: GeneratedQuestion[]) => void;
 }) {
@@ -84,13 +85,18 @@ export function runGenerateQuestions(opts: {
     toast.error('Describe what you want — even a sentence helps');
     return;
   }
+  if (opts.sourceMaterial.trim().length < AI_SOURCE_MIN_CHARS) {
+    toast.error(
+      `Add source material — at least ${AI_SOURCE_MIN_CHARS} characters, so the AI grounds questions in real content instead of guessing.`
+    );
+    return;
+  }
   opts.generateMutation.mutate(
     {
       prompt: opts.prompt.trim(),
-      sourceMaterial: opts.sourceMaterial.trim() || undefined,
+      sourceMaterial: opts.sourceMaterial.trim(),
       count: opts.count,
-      questionTypes: opts.questionTypes,
-      difficulty: opts.difficulty
+      questionTypes: opts.questionTypes
     },
     {
       onSuccess: (res) => {
@@ -113,11 +119,20 @@ export async function saveGeneratedQuestions(opts: {
   createQuizMutation: MutateFn<Quiz, CreateQuizInput>;
   createQuestionMutation: MutateAsyncFn<QuizQuestion, CreateQuestionInput>;
   onQuizCreated?: (quiz: Quiz) => void;
+  onLocalAdd?: (questions: DraftQuestion[]) => void;
   closeHandler: (next: boolean) => void;
 }) {
   const chosen = opts.generated.filter((_, i) => opts.keepSet.has(i));
   if (chosen.length === 0) {
     toast.error('Select at least one question to save');
+    return;
+  }
+  if (opts.destination.kind === 'local') {
+    opts.onLocalAdd?.(chosenToDraftQuestions(chosen));
+    toast.success(
+      `Added ${chosen.length} question${chosen.length === 1 ? '' : 's'} to the quiz`
+    );
+    opts.closeHandler(false);
     return;
   }
   if (opts.destination.kind === 'new-quiz') {

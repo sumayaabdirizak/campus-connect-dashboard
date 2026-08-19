@@ -11,6 +11,7 @@ interface AiGenerateFooterProps {
   isExtractingSource: boolean;
   isSaving: boolean;
   promptReady: boolean;
+  sourceReady: boolean;
   titleReady: boolean;
   keepCount: number;
   count: number;
@@ -26,6 +27,7 @@ export function AiGenerateFooter({
   isExtractingSource,
   isSaving,
   promptReady,
+  sourceReady,
   titleReady,
   keepCount,
   count,
@@ -42,7 +44,11 @@ export function AiGenerateFooter({
         <Button
           onClick={onGenerate}
           disabled={
-            isGenerating || isExtractingSource || !promptReady || (isNewQuiz && !titleReady)
+            isGenerating ||
+            isExtractingSource ||
+            !promptReady ||
+            !sourceReady ||
+            (isNewQuiz && !titleReady)
           }
           className='gap-1'
         >
