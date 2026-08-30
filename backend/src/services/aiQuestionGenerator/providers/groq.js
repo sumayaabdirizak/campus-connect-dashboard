@@ -8,7 +8,7 @@ import { GROQ_MAX_COMPLETION_TOKENS } from "../fitSourceForGroq.js";
 const GROQ_DEFAULT_MODEL = "openai/gpt-oss-120b";
 const GROQ_ENDPOINT = "https://api.groq.com/openai/v1/chat/completions";
 
-export async function generateWithGroq(userTurn) {
+export async function generateWithGroq(userTurn, opts = {}) {
   const key = process.env.GROQ_API_KEY;
   if (!key || !key.trim()) {
     const err = new Error(
@@ -19,6 +19,7 @@ export async function generateWithGroq(userTurn) {
   }
   const model = (process.env.GROQ_MODEL || GROQ_DEFAULT_MODEL).trim();
   const systemContent = `${SYSTEM_INSTRUCTION}\n\n${JSON_SHAPE_HINT}`;
+  const maxTokens = opts.maxTokens || GROQ_MAX_COMPLETION_TOKENS;
 
   let res;
   try {
@@ -30,8 +31,8 @@ export async function generateWithGroq(userTurn) {
       },
       body: JSON.stringify({
         model,
-        temperature: 0.7,
-        max_tokens: GROQ_MAX_COMPLETION_TOKENS,
+        temperature: 0.5,
+        max_tokens: maxTokens,
         response_format: { type: "json_object" },
         messages: [
           { role: "system", content: systemContent },
@@ -47,10 +48,20 @@ export async function generateWithGroq(userTurn) {
 
   if (!res.ok) {
     const bodyText = await res.text().catch(() => "");
-    if (
-      res.status === 413 ||
-      /rate_limit_exceeded|Request too large|tokens per minute/i.test(bodyText)
-    ) {
+    const rateLimited =
+      res.status === 429 ||
+      /rate_limit_exceeded|tokens per minute|TPM/i.test(bodyText);
+    const tooLarge =
+      res.status === 413 || /Request too large|payload.*large|context.?length/i.test(bodyText);
+
+    if (rateLimited) {
+      const err = new Error(
+        "The AI rate limit was hit. Wait a few seconds and try again."
+      );
+      err.status = 429;
+      throw err;
+    }
+    if (tooLarge) {
       const err = new Error(
         "Source material is too large for the AI model. Try a shorter document or excerpt, then generate again."
       );
@@ -60,8 +71,7 @@ export async function generateWithGroq(userTurn) {
     const err = new Error(
       `Groq API error (${res.status}): ${bodyText || res.statusText}`
     );
-    if (res.status === 429) err.status = 429;
-    else err.status = 502;
+    err.status = 502;
     throw err;
   }
 

@@ -25,6 +25,36 @@ export function assertQuizIsDraft(quiz) {
   }
 }
 
+/** Online quizzes only support auto-gradable question types. */
+export function assertQuestionTypeAllowedForQuiz(quiz, questionType) {
+  const mode = quiz?.mode ?? 'online';
+  const type = questionType || 'MCQ';
+  if (mode === 'online' && type === 'SHORT_ANSWER') {
+    const err = new Error('Short answer questions are not supported for online quizzes');
+    err.status = 400;
+    throw err;
+  }
+}
+
+export function assertMarksPlanAllowedForMode(mode, marksPlan) {
+  if (!marksPlan || mode !== 'online') return;
+  if (
+    marksPlan.allocations &&
+    Object.prototype.hasOwnProperty.call(marksPlan.allocations, 'SHORT_ANSWER')
+  ) {
+    const err = new Error('Short answer sections are not supported for online quizzes');
+    err.status = 400;
+    throw err;
+  }
+}
+
+export function assertQuestionsAllowedForMode(mode, questions) {
+  if (!Array.isArray(questions) || mode !== 'online') return;
+  for (const q of questions) {
+    assertQuestionTypeAllowedForQuiz({ mode }, q.question_type);
+  }
+}
+
 /** Strip answer keys (and optionally explanations) from a quiz payload. */
 export function stripQuizAnswerKeys(quiz) {
   return {

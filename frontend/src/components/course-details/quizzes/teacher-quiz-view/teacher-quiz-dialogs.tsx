@@ -1,7 +1,6 @@
 'use client';
 
 import { toast } from 'sonner';
-import { AiGenerateDialog } from '../ai-generate-dialog';
 import { QuizSettingsDialog } from '../quiz-settings-form';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type {
@@ -21,29 +20,21 @@ type MutateUpdate = (
 ) => void;
 
 export function TeacherQuizDialogs({
-  courseId,
   settingsTarget,
   liveEditing,
   modules,
   pending,
   mutateCreate,
   mutateUpdate,
-  aiQuizOpen,
   onCloseSettings,
-  onAiOpenChange,
-  onQuizCreated,
 }: {
-  courseId: string;
   settingsTarget: Quiz | null;
   liveEditing: Quiz | null;
   modules: CourseModule[];
   pending: boolean;
   mutateCreate: MutateCreate;
   mutateUpdate: MutateUpdate;
-  aiQuizOpen: boolean;
   onCloseSettings: () => void;
-  onAiOpenChange: (open: boolean) => void;
-  onQuizCreated: (quiz: Quiz) => void;
 }) {
   const handleSettingsSubmit = (
     payload:
@@ -73,22 +64,13 @@ export function TeacherQuizDialogs({
   };
 
   return (
-    <>
-      <QuizSettingsDialog
-        open={settingsTarget !== null}
-        onOpenChange={(open) => !open && onCloseSettings()}
-        editing={liveEditing}
-        pending={pending}
-        modules={modules}
-        onSubmit={handleSettingsSubmit}
-      />
-      <AiGenerateDialog
-        open={aiQuizOpen}
-        onOpenChange={onAiOpenChange}
-        courseOfferingId={courseId}
-        destination={{ kind: 'new-quiz' }}
-        onQuizCreated={onQuizCreated}
-      />
-    </>
+    <QuizSettingsDialog
+      open={settingsTarget !== null}
+      onOpenChange={(open) => !open && onCloseSettings()}
+      editing={liveEditing}
+      pending={pending}
+      modules={modules}
+      onSubmit={handleSettingsSubmit}
+    />
   );
 }

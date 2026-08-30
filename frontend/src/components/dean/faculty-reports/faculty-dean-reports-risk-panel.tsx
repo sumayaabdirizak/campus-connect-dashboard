@@ -8,7 +8,7 @@ export function FacultyDeanReportsRiskPanel({ data }: { data?: DeanReports }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className='xl:col-span-2 space-y-4 rounded-xl border bg-card p-4 shadow-sm'
+      className='xl:col-span-2 space-y-4 rounded-xl border bg-card p-4'
     >
       <div className='flex items-center gap-2'>
         <AlertTriangle className='size-5 text-amber-500' />

@@ -4,11 +4,28 @@ import type { RosterStudent } from '@/lib/course-details/services/roster-types';
 
 export type StatusFilter = 'all' | 'submitted' | 'in_progress' | 'not_started';
 
+/** Offline paper-quiz filters (outcome-based). */
+export type OfflineStatusFilter =
+  | 'all'
+  | 'recorded'
+  | 'absent'
+  | 'cheat'
+  | 'not_recorded';
+
 export type AttemptRow = {
   studentId: number;
   student: { id: number; full_name: string; number?: string; email?: string };
   attempt: QuizAttempt | null;
 };
+
+export function offlineOutcome(
+  attempt: QuizAttempt | null
+): 'not_recorded' | 'absent' | 'cheat' | 'recorded' {
+  if (!attempt) return 'not_recorded';
+  if (attempt.closure_reason === 'absent') return 'absent';
+  if (attempt.closure_reason === 'cheat') return 'cheat';
+  return 'recorded';
+}
 
 export function needsGrading(a: QuizAttempt) {
   return (a.answers ?? []).some(
@@ -48,12 +65,19 @@ export function rowStatus(
 
 export function filterAttemptRows(
   rows: AttemptRow[],
-  statusFilter: StatusFilter,
-  search: string
+  statusFilter: StatusFilter | OfflineStatusFilter,
+  search: string,
+  isOffline = false
 ): AttemptRow[] {
   const needle = search.trim().toLowerCase();
   return rows
-    .filter((r) => statusFilter === 'all' || rowStatus(r) === statusFilter)
+    .filter((r) => {
+      if (statusFilter === 'all') return true;
+      if (isOffline) {
+        return offlineOutcome(r.attempt) === statusFilter;
+      }
+      return rowStatus(r) === statusFilter;
+    })
     .filter((r) => {
       if (!needle) return true;
       return (
@@ -73,6 +97,16 @@ export function statusCounts(rows: AttemptRow[]) {
   };
 }
 
+export function offlineStatusCounts(rows: AttemptRow[]) {
+  return {
+    all: rows.length,
+    recorded: rows.filter((r) => offlineOutcome(r.attempt) === 'recorded').length,
+    absent: rows.filter((r) => offlineOutcome(r.attempt) === 'absent').length,
+    cheat: rows.filter((r) => offlineOutcome(r.attempt) === 'cheat').length,
+    not_recorded: rows.filter((r) => offlineOutcome(r.attempt) === 'not_recorded').length,
+  };
+}
+
 function csvSafe(value: unknown) {
   let s = String(value ?? '');
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
@@ -87,16 +121,20 @@ export function downloadAttemptsCsv(quizTitle: string, allRows: AttemptRow[]) {
     'Status',
     'Started At',
     'Submitted At',
-    'Score (%) — latest attempt',
+    'Marks (%) — latest attempt',
     'Violations',
     'Closure Reason',
   ];
   const rows = allRows.map(({ student, attempt }) => {
     const status = !attempt
       ? 'not_started'
-      : attempt.submitted_at
-        ? 'submitted'
-        : 'in_progress';
+      : attempt.closure_reason === 'absent'
+        ? 'absent'
+        : attempt.closure_reason === 'cheat'
+          ? 'cheat'
+          : attempt.submitted_at
+            ? 'submitted'
+            : 'in_progress';
     return [
       student.full_name,
       student.number ?? '',

@@ -34,7 +34,7 @@ export function TimeoutAlert({
                 in the last 1–2 seconds may not have made it.
               </p>
               <p className='text-muted-foreground'>
-                Your score and the answer review are ready below.
+                Your marks and the answer review are ready below.
               </p>
             </div>
           </AlertDialogDescription>

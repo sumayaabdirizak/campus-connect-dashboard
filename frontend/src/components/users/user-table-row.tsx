@@ -20,12 +20,12 @@ export function UserTableRow({ user, col }: Props) {
     <PosTableRow>
       {col('id') ? (
         <PosTableCell>
-          <span className='font-medium text-[#3B82F6]'>#{user.id}</span>
+          <span className='font-medium text-primary'>#{user.id}</span>
         </PosTableCell>
       ) : null}
       {col('name') ? (
         <PosTableCell>
-          <p className='text-sm font-medium text-[#101828]'>{user.full_name}</p>
+          <p className='text-sm font-medium text-foreground'>{user.full_name}</p>
           <p className='text-xs text-muted-foreground'>{user.email}</p>
         </PosTableCell>
       ) : null}

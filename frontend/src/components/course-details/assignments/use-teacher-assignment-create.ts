@@ -2,9 +2,6 @@
 
 import { toast } from 'sonner';
 import {
-  assignmentIcsUrl
-} from '@/lib/course-details/services/assignments-service';
-import {
   useCreateAssignment,
   useUploadAttachments
 } from '@/lib/course-details/queries/assignments-queries';
@@ -24,16 +21,18 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
   const createMutation = useCreateAssignment(s.courseId);
   const uploadMutation = useUploadAttachments(s.courseId);
 
-  const handlePickFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+  const addPendingFiles = (files: File[]) => {
     if (files.length === 0) return;
     const oversized = files.find((f) => f.size > 25 * 1024 * 1024);
     if (oversized) {
       toast.error(`"${oversized.name}" exceeds the 25 MB limit`);
-      event.target.value = '';
       return;
     }
-    s.setPendingFiles((prev) => [...prev, ...files]);
+    s.setPendingFiles((prev) => [...prev, ...files].slice(0, 10));
+  };
+
+  const handlePickFiles = (event: React.ChangeEvent<HTMLInputElement>) => {
+    addPendingFiles(Array.from(event.target.files ?? []));
     event.target.value = '';
   };
 
@@ -75,16 +74,6 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
           );
         }
       }
-      try {
-        const a = document.createElement('a');
-        a.href = assignmentIcsUrl(created.id);
-        a.download = `${created.title ?? 'assignment'}.ics`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-      } catch {
-        /* non-critical */
-      }
       s.setCreateOpen(false);
       s.setPendingFiles([]);
       if (s.fileInputRef.current) s.fileInputRef.current.value = '';
@@ -95,6 +84,7 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
 
   return {
     handlePickFiles,
+    addPendingFiles,
     removePendingFile,
     handleCreate,
     createPending: createMutation.isPending || uploadMutation.isPending

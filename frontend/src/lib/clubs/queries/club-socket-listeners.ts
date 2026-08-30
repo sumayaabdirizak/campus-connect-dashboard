@@ -16,6 +16,7 @@
  */
 import type { Socket } from 'socket.io-client';
 import { invalidateQueries } from '@/lib/async-query';
+import { inboxKeys } from '@/lib/inbox/queries';
 import { clubKeys } from './club-keys';
 
 let bound = false;
@@ -28,9 +29,11 @@ export function bindClubSocketListeners(s: Socket) {
   // decided, promoted, removed, invited, or their own club application
   // approved) — clubKeys.all covers detail/list/mine/recommended in one
   // invalidation, same scope the join/leave mutations already invalidate
-  // on their own actor-side success.
+  // on their own actor-side success. Inbox club rows come from /inbox,
+  // so that namespace must be invalidated too.
   const onMembershipChanged = () => {
     invalidateQueries({ queryKey: clubKeys.all });
+    invalidateQueries({ queryKey: inboxKeys.all });
   };
 
   s.on('club:joined', onMembershipChanged);

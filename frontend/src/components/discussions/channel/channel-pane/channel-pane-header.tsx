@@ -64,15 +64,14 @@ export function ChannelPaneHeader({
     <header
       className={cn(
         'flex min-h-[72px] min-w-0 shrink-0 items-center justify-between gap-3',
-        'border-b border-[rgba(145,158,171,0.3)] bg-white px-4 py-3.5 sm:px-6',
-        'shadow-[0px_4px_60px_0px_rgba(231,231,231,0.47)]'
+        'border-b border-[rgba(145,158,171,0.3)] bg-card px-4 py-3.5 sm:px-6',
       )}
     >
       <div className='flex min-w-0 flex-1 items-center gap-3'>
         <ChatIdentityAvatar
           title={identityTitle}
           avatarUrl={serverIconUrl}
-          badge={<Users className='size-2.5 text-[#667085]' aria-hidden />}
+          badge={<Users className='size-2.5 text-muted-foreground' aria-hidden />}
         />
 
         {isLoading ? (
@@ -84,7 +83,7 @@ export function ChannelPaneHeader({
           <ChatIdentityText
             title={identityTitle}
             subtitle={subtitle}
-            titleClassName='text-[15px] font-semibold leading-none text-[#101828]'
+            titleClassName='text-[15px] font-semibold leading-none text-foreground'
           />
         )}
 
@@ -120,7 +119,7 @@ export function ChannelPaneHeader({
             type='button'
             variant='ghost'
             size='icon'
-            className='hidden size-10 rounded-full text-[#101828] hover:bg-[#F2F4F7] sm:inline-flex'
+            className='hidden size-10 rounded-full text-foreground hover:bg-muted sm:inline-flex'
             aria-label='Channel settings'
             onClick={onOpenSettings}
           >
@@ -133,8 +132,8 @@ export function ChannelPaneHeader({
           variant='ghost'
           size='icon'
           className={cn(
-            'size-10 rounded-full text-[#101828] transition-colors hover:bg-[#F2F4F7]',
-            detailsOpen && 'bg-[#F2F4F7] text-[#3B82F6]'
+            'size-10 rounded-full text-foreground transition-colors hover:bg-muted',
+            detailsOpen && 'bg-muted text-primary'
           )}
           onClick={onToggleDetails}
           aria-label={detailsOpen ? 'Close details panel' : 'Open details panel'}

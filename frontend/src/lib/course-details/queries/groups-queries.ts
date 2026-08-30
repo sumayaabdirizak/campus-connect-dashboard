@@ -9,16 +9,22 @@ import {
   renameGroup,
   setGroupMemberRole
 } from '../services/groups-service';
+import {
+  type LiveQueryOptions,
+  withCourseLiveRefresh
+} from './live-query-options';
 
 export const groupKeys = {
   all: ['groups'] as const,
   list: (courseOfferingId: string) => [...groupKeys.all, courseOfferingId] as const
 };
 
-export function useGroups(courseOfferingId: string) {
+export function useGroups(courseOfferingId: string, options?: LiveQueryOptions) {
+  const live = options?.live ?? false;
   return useQuery({
     queryKey: groupKeys.list(courseOfferingId),
-    queryFn: () => getGroups(courseOfferingId)
+    queryFn: () => getGroups(courseOfferingId),
+    ...withCourseLiveRefresh(live)
   });
 }
 

@@ -17,7 +17,8 @@ const badgeVariants = cva(
         outline: 'text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground',
         // Semantic status variants — replace literal amber/emerald/sky usage.
         warning: 'border-transparent bg-warning-muted text-warning-foreground',
-        success: 'border-transparent bg-success-muted text-success-foreground',
+        success:
+          'border-success/35 bg-success-muted text-success [a&]:hover:bg-success-muted/90',
         info: 'border-transparent bg-info-muted text-info-foreground'
       },
       // Size scale ordered tight → loose so callsites converge on these three.

@@ -28,7 +28,7 @@ export function PosPageActions({
           type='button'
           variant='outline'
           size='icon'
-          className='size-9 rounded-full bg-card shadow-sm'
+          className='size-9 rounded-full bg-card'
           onClick={onRefresh}
           aria-label='Refresh'
         >

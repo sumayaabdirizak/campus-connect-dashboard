@@ -18,7 +18,7 @@ export function DmMessageAvatar({
   const src = resolvePublicAssetUrl(avatarUrl)
 
   return (
-    <Avatar className='h-8 w-8 shrink-0 self-start shadow-sm ring-1 ring-black/5'>
+    <Avatar className='h-8 w-8 shrink-0 self-start ring-1 ring-black/5'>
       {src ? <AvatarImage src={src} alt={name} /> : null}
       <AvatarFallback
         className='text-[10px] font-semibold text-white'

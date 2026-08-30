@@ -58,10 +58,10 @@ export function FeedBody(props: FeedBodyProps) {
   } = props;
 
   return (
-    <>
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
       <div
         ref={feedScrollRef}
-        className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain'
+        className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-4 py-4 [-webkit-overflow-scrolling:touch]'
       >
         {error ? (
           <div className='p-4'>
@@ -119,6 +119,6 @@ export function FeedBody(props: FeedBodyProps) {
       <div role='status' aria-live='polite' aria-atomic='true' className='sr-only'>
         {unreadAnnouncement}
       </div>
-    </>
+    </div>
   );
 }

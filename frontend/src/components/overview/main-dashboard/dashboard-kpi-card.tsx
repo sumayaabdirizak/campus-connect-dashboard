@@ -57,7 +57,7 @@ export function DashboardKpiCard({
       <div className='relative flex items-start justify-between gap-2'>
         <span
           className={cn(
-            'flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm ring-1 ring-black/[0.04] dark:ring-white/[0.06]',
+            'flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-black/[0.04] dark:ring-white/[0.06]',
             styles.icon
           )}
         >
@@ -65,7 +65,7 @@ export function DashboardKpiCard({
         </span>
         <div className='flex items-center gap-2'>
           <span
-            className={cn('size-2 rounded-full shadow-sm', statusDot[status])}
+            className={cn('size-2 rounded-full', statusDot[status])}
             title={`Status: ${status}`}
             aria-hidden
           />

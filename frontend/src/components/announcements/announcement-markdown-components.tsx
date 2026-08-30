@@ -9,25 +9,25 @@ export function useAnnouncementMarkdownComponents() {
     () =>
       ({
         p: ({ children }: { children?: React.ReactNode }) => (
-          <p className='mb-2 text-[15px] leading-relaxed text-muted-foreground last:mb-0'>{children}</p>
+          <p className='mb-1.5 text-sm leading-relaxed text-muted-foreground last:mb-0'>{children}</p>
         ),
         h1: ({ children }: { children?: React.ReactNode }) => (
-          <h1 className='mb-2 text-lg font-semibold text-foreground'>{children}</h1>
+          <h1 className='mb-1.5 text-base font-semibold text-foreground'>{children}</h1>
         ),
         h2: ({ children }: { children?: React.ReactNode }) => (
-          <h2 className='mb-2 text-base font-semibold text-foreground'>{children}</h2>
+          <h2 className='mb-1.5 text-sm font-semibold text-foreground'>{children}</h2>
         ),
         h3: ({ children }: { children?: React.ReactNode }) => (
-          <h3 className='mb-1.5 text-[15px] font-semibold text-foreground'>{children}</h3>
+          <h3 className='mb-1 text-sm font-semibold text-foreground'>{children}</h3>
         ),
         h4: ({ children }: { children?: React.ReactNode }) => (
           <h4 className='mb-1.5 text-sm font-semibold text-foreground'>{children}</h4>
         ),
         ul: ({ children }: { children?: React.ReactNode }) => (
-          <ul className='mb-2 list-inside list-disc space-y-1 text-[15px] text-muted-foreground'>{children}</ul>
+          <ul className='mb-1.5 list-inside list-disc space-y-0.5 text-sm text-muted-foreground'>{children}</ul>
         ),
         ol: ({ children }: { children?: React.ReactNode }) => (
-          <ol className='mb-2 list-inside list-decimal space-y-1 text-[15px] text-muted-foreground'>{children}</ol>
+          <ol className='mb-1.5 list-inside list-decimal space-y-0.5 text-sm text-muted-foreground'>{children}</ol>
         ),
         li: ({ children }: { children?: React.ReactNode }) => <li className='leading-relaxed'>{children}</li>,
         a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (

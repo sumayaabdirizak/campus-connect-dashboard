@@ -23,8 +23,11 @@ export function CourseHeaderActions({
   onToggleCollapse,
 }: CourseHeaderActionsProps) {
   const btnClass = compact
-    ? 'size-8 shrink-0 gap-0 rounded-lg p-0 text-[#667085] hover:bg-[#F8FAFC] hover:text-[#3B82F6]'
-    : 'h-8 shrink-0 gap-1.5 rounded-lg border border-[#E5E7EB] bg-white px-2.5 text-xs font-medium text-[#344054] shadow-none hover:border-[#BFDBFE] hover:bg-[#F8FAFC] hover:text-[#3B82F6] sm:px-3';
+    ? 'size-8 shrink-0 gap-0 rounded-lg border border-border bg-card p-0 text-foreground hover:border-border hover:bg-muted hover:text-foreground'
+    : 'h-8 shrink-0 gap-1.5 rounded-lg border border-border bg-card px-2.5 text-xs font-medium text-foreground hover:border-border hover:bg-muted hover:text-foreground sm:px-3';
+
+  const chatClass =
+    'h-8 shrink-0 gap-1.5 rounded-full bg-primary px-3 text-xs font-semibold text-white hover:bg-[#2563EB] hover:text-white';
 
   return (
     <>
@@ -32,12 +35,12 @@ export function CourseHeaderActions({
         type='button'
         size='sm'
         variant='ghost'
-        className={btnClass}
+        className={chatClass}
         onClick={onOpenChat}
         aria-label='Course chat'
       >
-        <MessageSquare className='size-3.5' aria-hidden />
-        <span className={cn(compact ? 'sr-only' : 'hidden sm:inline')}>Chat</span>
+        <MessageSquare className='size-4 stroke-[2.25]' aria-hidden />
+        Chat
       </Button>
       {canEditCover ? (
         <Button
@@ -48,13 +51,18 @@ export function CourseHeaderActions({
           onClick={onOpenCover}
           aria-label='Change cover image'
         >
-          <ImagePlus className='size-3.5' aria-hidden />
+          <ImagePlus className='size-4 stroke-[2.25]' aria-hidden />
           <span className={cn(compact ? 'sr-only' : 'hidden sm:inline')}>
             Cover
           </span>
         </Button>
       ) : null}
-      <div className='shrink-0'>
+      <div
+        className={cn(
+          'flex shrink-0 items-center justify-center rounded-lg border border-border bg-card',
+          compact ? 'h-8 px-1.5' : 'h-8 px-2'
+        )}
+      >
         <NotificationToggle compact />
       </div>
       {onToggleCollapse ? (
@@ -68,9 +76,9 @@ export function CourseHeaderActions({
           aria-label={isCollapsed ? 'Expand header' : 'Collapse header'}
         >
           {isCollapsed ? (
-            <ChevronDown className='size-3.5' aria-hidden />
+            <ChevronDown className='size-4 stroke-[2.5]' aria-hidden />
           ) : (
-            <ChevronUp className='size-3.5' aria-hidden />
+            <ChevronUp className='size-4 stroke-[2.5]' aria-hidden />
           )}
           <span className={cn(compact ? 'sr-only' : 'hidden sm:inline')}>
             {isCollapsed ? 'Expand' : 'Collapse'}

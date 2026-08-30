@@ -33,7 +33,9 @@
     "discussions:setup": "node scripts/discussions-setup.js",
     "rbac:sync": "node scripts/rbac-sync.js",
     "tokens:clean": "node scripts/clean-revoked-tokens.js",
-    "storage:ensure-bucket": "node scripts/ensure-s3-bucket.js"
+    "storage:ensure-bucket": "node scripts/ensure-s3-bucket.js",
+    "students:compare-enrollment": "node scripts/compare-student-enrollments.js",
+    "students:repair-registration-terms": "node scripts/repair-student-registration-terms.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"

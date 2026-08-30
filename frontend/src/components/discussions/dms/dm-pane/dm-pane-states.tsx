@@ -55,20 +55,19 @@ export function DmPaneHeader({
     <header
       className={cn(
         'flex min-h-[72px] min-w-0 shrink-0 items-center justify-between gap-3',
-        'border-b border-[rgba(145,158,171,0.3)] bg-white px-4 py-3.5 sm:px-6',
-        'shadow-[0px_4px_60px_0px_rgba(231,231,231,0.47)]'
+        'border-b border-[rgba(145,158,171,0.3)] bg-card px-4 py-3.5 sm:px-6',
       )}
     >
       <div className='flex min-w-0 flex-1 items-center gap-3'>
         {isOneToOne ? (
           <ChatIdentityAvatar
             title={displayName || 'DM'}
-            badge={<User className='size-2.5 text-[#667085]' aria-hidden />}
+            badge={<User className='size-2.5 text-muted-foreground' aria-hidden />}
           />
         ) : iconUrl ? (
-          <Avatar className='size-11 shrink-0 border-2 border-white shadow-sm sm:size-12'>
+          <Avatar className='size-11 shrink-0 border-2 border-white sm:size-12'>
             <AvatarImage src={resolvePublicAssetUrl(iconUrl) ?? undefined} alt={displayName} />
-            <AvatarFallback className='bg-[#3B82F6] text-[10px] font-semibold text-white'>
+            <AvatarFallback className='bg-primary text-[10px] font-semibold text-white'>
               {initialsFor(displayName)}
             </AvatarFallback>
           </Avatar>
@@ -77,9 +76,9 @@ export function DmPaneHeader({
             {previewMembers.slice(0, 3).map((m) => (
               <Avatar
                 key={m.userId}
-                className='size-11 border-2 border-white shadow-sm sm:size-12'
+                className='size-11 border-2 border-white sm:size-12'
               >
-                <AvatarFallback className='bg-[#3B82F6] text-[10px] font-semibold text-white'>
+                <AvatarFallback className='bg-primary text-[10px] font-semibold text-white'>
                   {initialsFor(m.user?.full_name ?? '?')}
                 </AvatarFallback>
               </Avatar>
@@ -96,7 +95,7 @@ export function DmPaneHeader({
           <ChatIdentityText
             title={displayName}
             subtitle={subtitle}
-            titleClassName='text-[15px] font-semibold leading-none text-[#101828]'
+            titleClassName='text-[15px] font-semibold leading-none text-foreground'
           />
         )}
       </div>
@@ -108,7 +107,7 @@ export function DmPaneHeader({
               type='button'
               variant='ghost'
               size='icon'
-              className='size-10 rounded-full text-[#101828] hover:bg-[#F2F4F7]'
+              className='size-10 rounded-full text-foreground hover:bg-muted'
               aria-label='Conversation options'
             >
               <Icons.ellipsis className='h-5 w-5' />
@@ -169,7 +168,7 @@ export function DmPaneEmpty() {
 export function DmPaneError({ message }: { message: string }) {
   return (
     <div className='flex h-full flex-1 flex-col items-center justify-center gap-3 px-6 text-center'>
-      <div className='flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10'>
+      <div className='flex h-14 w-14 items-center justify-center rounded-xl bg-destructive/10'>
         <Icons.warning className='h-7 w-7 text-destructive/80' />
       </div>
       <p className='font-display text-sm font-semibold text-foreground'>

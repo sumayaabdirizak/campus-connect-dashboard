@@ -81,16 +81,16 @@ export function DashboardQuickActions({ className }: { className?: string }) {
         <Link
           key={action.title}
           href={action.href}
-          className='group flex items-center gap-3 rounded-xl border border-[#E5E7EB] bg-white p-3 shadow-sm transition-all hover:border-[#3B82F6]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]'
+          className='group flex items-center gap-3 rounded-xl border border-border bg-card p-3 transition-all hover:border-primary/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B82F6]'
         >
-          <span className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#3B82F6]'>
+          <span className='flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary'>
             <action.icon className='size-4' aria-hidden />
           </span>
           <div className='min-w-0 flex-1'>
-            <p className='text-sm font-semibold text-[#101828]'>{action.title}</p>
-            <p className='truncate text-xs text-[#667085]'>{action.description}</p>
+            <p className='text-sm font-semibold text-foreground'>{action.title}</p>
+            <p className='truncate text-xs text-muted-foreground'>{action.description}</p>
           </div>
-          <ChevronRight className='size-4 shrink-0 text-[#98A2B3] transition-transform group-hover:translate-x-0.5 group-hover:text-[#3B82F6]' />
+          <ChevronRight className='size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5 group-hover:text-primary' />
         </Link>
       ))}
     </div>

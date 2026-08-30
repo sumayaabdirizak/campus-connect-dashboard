@@ -59,8 +59,8 @@ export function NotificationTimeline({
               href={item.href}
               onClick={() => onRead?.(item)}
               className={cn(
-                'flex items-stretch gap-4 rounded-lg px-2 transition-colors hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-                !item.read && 'bg-[#EFF6FF]/40'
+                'flex items-stretch gap-4 rounded-lg px-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+                !item.read && 'bg-primary/10/40'
               )}
             >
               {/* Icon column + connector */}
@@ -89,7 +89,7 @@ export function NotificationTimeline({
                     {item.title}
                     {!item.read && (
                       <span
-                        className='ml-1.5 inline-block size-1.5 rounded-full bg-[#3B82F6] align-middle'
+                        className='ml-1.5 inline-block size-1.5 rounded-full bg-primary align-middle'
                         aria-hidden
                       />
                     )}

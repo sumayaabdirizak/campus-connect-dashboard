@@ -16,6 +16,12 @@ type Props = {
   setStep: (n: 1 | 2 | 3) => void;
 };
 
+const STEP_META = [
+  { n: 1 as const, label: 'Compose', short: 'Write message' },
+  { n: 2 as const, label: 'Audience', short: 'Choose who sees it' },
+  { n: 3 as const, label: 'Review', short: 'Options & post' },
+];
+
 export function DialogProgressHeader({
   isEditMode,
   isDraftEdit,
@@ -28,34 +34,26 @@ export function DialogProgressHeader({
       ? 'Edit draft'
       : 'Edit announcement'
     : 'New announcement';
-  const blurb =
-    step === 1
-      ? 'Compose the message — text, images, and tone.'
-      : step === 2
-        ? 'Choose who should see it.'
-        : 'Review delivery options and publish.';
+  const blurb = STEP_META.find((s) => s.n === step)?.short ?? '';
 
   return (
-    <SheetHeader className='border-b border-border/60 bg-gradient-to-b from-background to-muted/30 px-6 pb-4 pr-14 pt-6'>
+    <SheetHeader className='shrink-0 border-b-2 border-foreground/10 bg-card px-6 pb-5 pr-14 pt-6 shadow-sm'>
       <div className='min-w-0'>
-        <SheetTitle className='text-xl font-semibold tracking-tight'>{title}</SheetTitle>
+        <SheetTitle className='text-xl font-bold tracking-tight text-foreground'>{title}</SheetTitle>
         <SheetDescription className='sr-only'>
           {stepLive}. Multi-step form to compose and publish a campus announcement.
         </SheetDescription>
-        <p className='mt-1 text-sm text-muted-foreground' aria-hidden>
+        <p className='mt-1 text-sm font-medium text-foreground/75' aria-hidden>
           {blurb}
         </p>
       </div>
       <div aria-live='polite' aria-atomic='true' className='sr-only'>
         {stepLive}
       </div>
-      <ol
-        aria-label='Progress'
-        className='mt-4 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wider text-muted-foreground'
-      >
-        {([1, 2, 3] as const).map((n) => {
-          const label = n === 1 ? 'Compose' : n === 2 ? 'Audience' : 'Review';
+      <ol aria-label='Progress' className='mt-5 flex items-center gap-2'>
+        {STEP_META.map(({ n, label }, index) => {
           const completed = step > n;
+          const active = step === n;
           const isClickable = n < step;
           return (
             <li key={n} className='flex flex-1 items-center gap-2'>
@@ -65,23 +63,36 @@ export function DialogProgressHeader({
                 onClick={() => {
                   if (isClickable) setStep(n);
                 }}
-                aria-current={step === n ? 'step' : undefined}
+                aria-current={active ? 'step' : undefined}
                 className={cn(
-                  'flex items-center gap-2 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+                  'flex min-w-0 items-center gap-2 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
                   isClickable ? 'cursor-pointer' : 'cursor-default',
                 )}
               >
                 <span
                   className={cn(
-                    'flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-semibold transition-colors',
-                    step >= n ? 'bg-foreground text-background' : 'bg-muted text-muted-foreground',
+                    'flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-bold transition-colors',
+                    active
+                      ? 'bg-primary text-primary-foreground'
+                      : completed
+                        ? 'bg-primary/15 text-primary'
+                        : 'bg-muted text-muted-foreground',
                   )}
                 >
                   {completed ? <Icons.check className='size-3.5' aria-hidden /> : n}
                 </span>
-                <span className={cn('truncate', step === n && 'text-foreground')}>{label}</span>
+                <span
+                  className={cn(
+                    'truncate text-sm font-medium',
+                    active ? 'text-foreground' : 'text-muted-foreground',
+                  )}
+                >
+                  {label}
+                </span>
               </button>
-              {n < 3 ? <span aria-hidden className='h-px flex-1 bg-border' /> : null}
+              {index < STEP_META.length - 1 ? (
+                <span aria-hidden className='h-px min-w-[8px] flex-1 bg-border' />
+              ) : null}
             </li>
           );
         })}

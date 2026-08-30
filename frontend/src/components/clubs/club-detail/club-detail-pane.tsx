@@ -76,7 +76,7 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
     <div
       ref={scrollRef}
       onScroll={handleScroll}
-      className='h-full w-full overflow-y-auto bg-gray-50'
+      className='h-full w-full overflow-y-auto bg-muted'
       style={{ '--club-accent': themeColor } as React.CSSProperties}
     >
       {isPending ? <ClubPendingBanner clubName={club.name} /> : null}
@@ -125,7 +125,7 @@ export function ClubDetailPane({ slug }: ClubDetailPaneProps) {
           · Then it STICKS and stays visible for the rest of the scroll
           · self-start prevents the flex column from stretching it tall
         */}
-        <div className='w-48 shrink-0 sticky top-4 self-start hidden lg:block'>
+        <div className='hidden w-56 shrink-0 sticky top-4 self-start lg:block'>
           <ClubDetailSidebar
             club={club}
             slug={slug}

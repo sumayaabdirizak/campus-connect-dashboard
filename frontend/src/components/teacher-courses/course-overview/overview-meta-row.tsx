@@ -13,8 +13,8 @@ export function OverviewMetaRow({
 }) {
   return (
     <div className='flex items-center justify-between gap-3'>
-      <p className='text-sm text-[#667085]'>{label}</p>
-      <div className={cn('text-sm font-semibold text-[#101828]', valueClassName)}>
+      <p className='text-sm text-muted-foreground'>{label}</p>
+      <div className={cn('text-sm font-semibold text-foreground', valueClassName)}>
         {value}
       </div>
     </div>

@@ -17,7 +17,7 @@ export function ProfileBasicInfoCard({
   const { firstName, lastName } = splitFullName(profile.full_name);
 
   return (
-    <section className='rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:p-5'>
+    <section className='rounded-xl border border-border bg-card p-4 sm:p-5'>
       <ProfileSectionHeading icon={BriefcaseMedical} title='Basic Information' />
       <div className='space-y-4'>
         <ProfileAvatarField profile={profile} onUpdated={onUpdated} />
@@ -54,7 +54,7 @@ export function ProfileBasicInfoCard({
             value={`#${profile.id}`}
           />
         </div>
-        <p className='text-xs text-[#98A2B3]'>
+        <p className='text-xs text-muted-foreground'>
           Only your photo can be changed. Contact an administrator to update other details.
         </p>
       </div>

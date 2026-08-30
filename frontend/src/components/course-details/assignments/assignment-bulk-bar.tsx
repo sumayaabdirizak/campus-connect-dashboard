@@ -26,7 +26,7 @@ export function AssignmentBulkBar({
 
   return (
     <div className='sticky top-0 z-10 -mx-1 px-1 pb-2 pt-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70'>
-      <div className='flex items-center justify-between gap-3 flex-wrap rounded-2xl border bg-card p-3 shadow-sm'>
+      <div className='flex items-center justify-between gap-3 flex-wrap rounded-xl border bg-card p-3'>
         <div className='flex items-center gap-3 min-w-0'>
           <Button
             variant='ghost'

@@ -1,13 +1,64 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SegmentedControl } from '@/components/ui/segmented-control';
-import { ArrowRight } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { CalendarClock, CheckCircle2, ClipboardCheck } from 'lucide-react';
 import type { Assignment, Submission } from '@/lib/course-details/services/assignments-types';
 import type { GroupRow, Outcome } from './shared';
 import { PerMemberGrades } from './per-member-grades';
+import { GradingDrawerSection } from './grading-drawer-section';
+import { handleExtensionDateChange, toDatetimeLocalMin } from './extension-date-utils';
+import { gradingBlue } from './grading-drawer-blue';
+
+const TAB_HELP: Record<Outcome, string> = {
+  grade: 'Enter the points this student earned.',
+  extend: 'Give this student more time to submit or resubmit.',
+  missing: 'Mark as reviewed when no grade is needed.'
+};
+
+const ACTIONS: {
+  id: Outcome;
+  label: string;
+  icon: typeof ClipboardCheck;
+}[] = [
+  { id: 'grade', label: 'Give a grade', icon: ClipboardCheck },
+  { id: 'extend', label: 'Extend deadline', icon: CalendarClock },
+  { id: 'missing', label: 'Mark reviewed', icon: CheckCircle2 }
+];
+
+const inputClass = cn(
+  'h-10 rounded-lg border-border bg-background',
+  gradingBlue.focusRing
+);
+
+function ActionTab({
+  active,
+  label,
+  icon: Icon,
+  onClick
+}: {
+  active: boolean;
+  label: string;
+  icon: typeof ClipboardCheck;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type='button'
+      onClick={onClick}
+      className={cn(
+        'flex flex-1 flex-col items-center gap-1 rounded-lg px-2 py-2.5 text-center text-xs font-medium transition-all',
+        active
+          ? gradingBlue.activeTab
+          : 'text-muted-foreground hover:bg-background/80 hover:text-foreground'
+      )}
+    >
+      <Icon className='size-4 shrink-0' aria-hidden />
+      <span className='leading-tight'>{label}</span>
+    </button>
+  );
+}
 
 export function GradingOutcomePanel({
   assignment,
@@ -26,13 +77,7 @@ export function GradingOutcomePanel({
   setMemberGrades,
   memberFeedbacks,
   setMemberFeedbacks,
-  nextSubmission,
-  gradePending,
-  extensionPending,
-  onSaveGrade,
-  onSaveIndividual,
-  onExtend,
-  onMarkMissing
+  gradePending
 }: {
   assignment: Assignment;
   submission: Submission;
@@ -50,33 +95,45 @@ export function GradingOutcomePanel({
   setMemberGrades: React.Dispatch<React.SetStateAction<Map<number, string>>>;
   memberFeedbacks: Map<number, string>;
   setMemberFeedbacks: React.Dispatch<React.SetStateAction<Map<number, string>>>;
-  nextSubmission: Submission | null;
   gradePending: boolean;
   extensionPending: boolean;
+  nextSubmission: Submission | null;
   onSaveGrade: (next: Submission | null) => void;
   onSaveIndividual: () => void;
   onExtend: () => void;
   onMarkMissing: () => void;
 }) {
   const cap = assignment.maxMarks ?? 100;
+  const isGraded = submission.is_reviewed && submission.grade != null;
   const perMember =
-    outcome === 'grade' && assignment.workMode === 'GROUP' &&
-    assignment.gradingScope === 'INDIVIDUAL' && submission.groupId != null;
+    outcome === 'grade' &&
+    assignment.workMode === 'GROUP' &&
+    assignment.gradingScope === 'INDIVIDUAL' &&
+    submission.groupId != null;
+  const gradeNum = Number(grade);
+  const gradePct =
+    grade.trim() !== '' && !Number.isNaN(gradeNum)
+      ? Math.round((Math.min(Math.max(gradeNum, 0), cap) / cap) * 100)
+      : null;
+
   return (
-    <div className='rounded-3xl border bg-card p-4 space-y-4 shadow-sm'>
-      <div className='flex items-center justify-between gap-2'>
-        <Label className='text-sm font-medium'>Outcome</Label>
-        <SegmentedControl
-          ariaLabel='Submission grading outcome'
-          value={outcome}
-          onChange={setOutcome}
-          options={[
-            { value: 'grade', label: 'Grade' },
-            { value: 'extend', label: 'Extend' },
-            { value: 'missing', label: 'Mark missing' }
-          ]}
-        />
-      </div>
+    <GradingDrawerSection
+      title={isGraded ? 'Update grade' : 'Your action'}
+      hint={isGraded ? 'Change the score or feedback, then save.' : TAB_HELP[outcome]}
+    >
+      {!isGraded ? (
+        <div className='mb-4 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1'>
+          {ACTIONS.map((action) => (
+            <ActionTab
+              key={action.id}
+              active={outcome === action.id}
+              label={action.label}
+              icon={action.icon}
+              onClick={() => setOutcome(action.id)}
+            />
+          ))}
+        </div>
+      ) : null}
 
       {perMember ? (
         <PerMemberGrades
@@ -89,64 +146,68 @@ export function GradingOutcomePanel({
           memberFeedbacks={memberFeedbacks}
           setMemberFeedbacks={setMemberFeedbacks}
           gradePending={gradePending}
-          onSave={onSaveIndividual}
+          onSave={() => {}}
+          hideSaveButton
         />
-      ) : outcome === 'grade' ? (
-        <div className='flex flex-wrap items-center gap-2'>
-          <Input
-            type='number'
-            min={0}
-            max={cap}
-            value={grade}
-            onChange={(e) => setGrade(e.target.value)}
-            placeholder={`0-${cap}`}
-            className='w-32'
-          />
-          <Button size='sm' onClick={() => onSaveGrade(null)} disabled={gradePending}>
-            {gradePending ? 'Saving…' : 'Save grade'}
-          </Button>
-          {nextSubmission ? (
-            <Button
-              size='sm'
-              variant='outline'
-              className='gap-1'
-              onClick={() => onSaveGrade(nextSubmission)}
-              disabled={gradePending}
-              title='Save this grade and jump to the next submission'
-            >
-              Save & Next
-              <ArrowRight className='w-3.5 h-3.5' />
-            </Button>
-          ) : null}
-        </div>
-      ) : null}
-      {outcome === 'extend' ? (
+      ) : outcome === 'grade' || isGraded ? (
         <div className='space-y-2'>
-          <Input
-            type='datetime-local'
-            value={extensionDate}
-            onChange={(e) => setExtensionDate(e.target.value)}
-          />
-          <Input
-            placeholder='Reason (optional)'
-            value={extensionReason}
-            onChange={(e) => setExtensionReason(e.target.value)}
-          />
-          <Button size='sm' variant='outline' onClick={onExtend} disabled={extensionPending}>
-            {assignment.gradingScope === 'GROUP' ? 'Grant to group' : 'Grant another chance'}
-          </Button>
+          <Label htmlFor='grade-score' className='text-sm font-medium text-foreground'>
+            Points earned (out of {cap})
+          </Label>
+          <div className='flex items-center gap-3'>
+            <Input
+              id='grade-score'
+              type='number'
+              min={0}
+              max={cap}
+              value={grade}
+              onChange={(e) => setGrade(e.target.value)}
+              placeholder={`e.g. ${Math.round(cap * 0.9)}`}
+              className={cn(inputClass, 'max-w-[140px] text-base font-semibold tabular-nums')}
+            />
+            {gradePct != null ? (
+              <span
+                className={cn(
+                  'rounded-full px-2.5 py-1 text-sm font-semibold tabular-nums',
+                  gradingBlue.pctBadge
+                )}
+              >
+                {gradePct}%
+              </span>
+            ) : null}
+          </div>
         </div>
       ) : null}
-      {outcome === 'missing' ? (
-        <div className='space-y-2'>
-          <p className='text-xs text-muted-foreground'>
-            Mark reviewed without a grade (no score shown).
-          </p>
-          <Button size='sm' variant='outline' onClick={onMarkMissing} disabled={gradePending}>
-            Save without grade
-          </Button>
+
+      {outcome === 'extend' && !isGraded ? (
+        <div className={cn('space-y-3 rounded-lg border p-3', gradingBlue.extendPanel)}>
+          <div className='space-y-1.5'>
+            <Label className='text-sm font-medium text-foreground'>New due date & time</Label>
+            <Input
+              type='datetime-local'
+              min={toDatetimeLocalMin()}
+              value={extensionDate}
+              onChange={(e) => handleExtensionDateChange(e.target.value, setExtensionDate)}
+              className={inputClass}
+            />
+          </div>
+          <div className='space-y-1.5'>
+            <Label className='text-sm font-medium text-foreground'>Reason (optional)</Label>
+            <Input
+              placeholder='Student can see this note'
+              value={extensionReason}
+              onChange={(e) => setExtensionReason(e.target.value)}
+              className={inputClass}
+            />
+          </div>
         </div>
       ) : null}
-    </div>
+
+      {outcome === 'missing' && !isGraded ? (
+        <p className={cn('rounded-lg border px-3 py-2.5 text-sm', gradingBlue.reviewHint)}>
+          The student will see this assignment as reviewed. No points will be added.
+        </p>
+      ) : null}
+    </GradingDrawerSection>
   );
 }

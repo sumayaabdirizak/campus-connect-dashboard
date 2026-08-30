@@ -28,15 +28,15 @@ export function InboxRowItem({
       type='button'
       onClick={() => onOpen(row)}
       className={cn(
-        'flex w-full items-center gap-3 border-0 border-b border-[#F2F4F7] bg-white px-4 py-3 text-left transition-colors duration-150',
+        'flex w-full items-center gap-3 border-0 border-b border-border bg-card px-4 py-3 text-left transition-colors duration-150',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#3B82F6]/30',
-        isActive ? 'bg-[#EFF6FF]' : 'hover:bg-[#F8FAFC]'
+        isActive ? 'bg-primary/10' : 'hover:bg-muted'
       )}
     >
       <ChatIdentityAvatar
         title={row.title}
         avatarUrl={row.avatarUrl}
-        badge={<TypeIcon className='size-2.5 text-[#667085]' aria-hidden />}
+        badge={<TypeIcon className='size-2.5 text-muted-foreground' aria-hidden />}
       />
       <ChatIdentityText
         title={row.title}
@@ -45,7 +45,7 @@ export function InboxRowItem({
         titleClassName={row.unreadCount > 0 ? 'font-bold' : undefined}
       />
       {row.unreadCount > 0 ? (
-        <span className='inline-flex min-w-[20px] shrink-0 items-center justify-center rounded-full bg-[#3B82F6] px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white'>
+        <span className='inline-flex min-w-[20px] shrink-0 items-center justify-center rounded-full bg-primary px-1.5 py-0.5 text-[10px] font-bold tabular-nums text-white'>
           {row.unreadCount > 99 ? '99+' : row.unreadCount}
         </span>
       ) : null}

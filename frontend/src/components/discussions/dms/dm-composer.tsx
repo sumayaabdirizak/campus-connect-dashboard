@@ -10,6 +10,7 @@ import { Icons } from '@/components/icons'
 import { cn } from '@/lib/utils'
 import { useSendGroupDmMessage } from '@/lib/discussions/queries/queries'
 import type { DiscussionMessage } from '@/lib/discussions/queries/types'
+import { serverNowIso } from '@/lib/format-time'
 import { COMPOSER_EMOJIS } from '@/components/discussions/composer/message-composer/types'
 import { ComposerAttachmentChips } from '@/components/discussions/composer/message-composer/composer-attachment-chips'
 import { useComposerTyping } from '@/components/discussions/composer/message-composer/use-composer-typing'
@@ -102,7 +103,7 @@ export function DmComposer({
         senderId: myUserId ?? null,
         content: trimmed,
         messageType: 'TEXT',
-        createdAt: new Date().toISOString(),
+        createdAt: serverNowIso(),
         editedAt: null,
         deletedAt: null,
         parentMessageId: null,
@@ -164,13 +165,13 @@ export function DmComposer({
   }
 
   return (
-    <div className='min-w-0 shrink-0 overflow-hidden border-t border-[#E5E7EB] bg-[#F8FAFC]'>
+    <div className='min-w-0 shrink-0 overflow-hidden border-t border-border bg-muted'>
       {replyTo ? (
         <MessageReplyBar replyTo={replyTo} onClear={() => onClearReply?.()} />
       ) : null}
       <div className='px-2 py-2 sm:px-3 sm:py-3'>
         <ComposerAttachmentChips attachments={attachments} onRemove={removeAttachment} />
-        <div className='flex min-w-0 items-end gap-1 rounded-lg border border-[#E5E7EB] bg-white px-1.5 py-1.5 shadow-sm focus-within:border-[#3B82F6]/40 focus-within:ring-2 focus-within:ring-[#3B82F6]/15 sm:gap-1.5 sm:px-2 sm:py-2'>
+        <div className='flex min-w-0 items-end gap-1 rounded-lg border border-border bg-card px-1.5 py-1.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-[#3B82F6]/15 sm:gap-1.5 sm:px-2 sm:py-2'>
           <div className='flex shrink-0 items-center gap-0.5'>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -261,7 +262,7 @@ export function DmComposer({
           <Button
             type='button'
             size='icon'
-            className='h-8 w-8 shrink-0 rounded-full bg-[#3B82F6] text-white hover:bg-[#2563EB]'
+            className='h-8 w-8 shrink-0 rounded-full bg-primary text-white hover:bg-[#2563EB]'
             disabled={
               (!value.trim() && readyAttachmentIds.length === 0) ||
               sendMutation.isPending ||

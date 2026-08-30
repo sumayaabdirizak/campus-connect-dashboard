@@ -22,7 +22,7 @@ export function MessageComposer(props: MessageComposerProps) {
   }
 
   return (
-    <div className='min-w-0 shrink-0 overflow-hidden border-t border-[#E5E7EB] bg-[#F8FAFC]'>
+    <div className='min-w-0 shrink-0 overflow-hidden border-t border-border bg-muted'>
       {c.replyTo && !props.parentMessageId ? (
         <MessageReplyBar
           replyTo={c.replyTo}
@@ -40,7 +40,7 @@ export function MessageComposer(props: MessageComposerProps) {
         onRemove={c.files.removeAttachment}
       />
       <div
-        className='flex min-w-0 items-end gap-1 rounded-lg border border-[#E5E7EB] bg-white px-1.5 py-1.5 shadow-sm focus-within:border-[#3B82F6]/40 focus-within:ring-2 focus-within:ring-[#3B82F6]/15 sm:gap-1.5 sm:px-2 sm:py-2'
+        className='flex min-w-0 items-end gap-1 rounded-lg border border-border bg-card px-1.5 py-1.5 focus-within:border-primary/40 focus-within:ring-2 focus-within:ring-[#3B82F6]/15 sm:gap-1.5 sm:px-2 sm:py-2'
         onDragOver={(e) => {
           e.preventDefault()
           e.dataTransfer.dropEffect = 'copy'
@@ -93,7 +93,7 @@ export function MessageComposer(props: MessageComposerProps) {
         <Button
           type='button'
           size='icon'
-          className='h-9 w-9 shrink-0 rounded-full bg-[#3B82F6] text-white shadow-sm transition-transform hover:bg-[#2563EB] hover:scale-[1.03] active:scale-95'
+          className='h-9 w-9 shrink-0 rounded-full bg-primary text-white transition-transform hover:bg-[#2563EB] hover:scale-[1.03] active:scale-95'
           aria-label='Send message'
           onClick={c.handleSubmit}
           disabled={!c.canSend || c.sendPending}

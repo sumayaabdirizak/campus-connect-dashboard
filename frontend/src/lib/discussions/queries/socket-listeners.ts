@@ -16,6 +16,8 @@ import {
   setListenersBound,
 } from '@/lib/discussions/queries/socket-state';
 import { rejoinAllRooms, unwrapMessage } from '@/lib/discussions/queries/socket-connection';
+import { inboxKeys } from '@/lib/inbox/queries';
+import { notificationKeys } from '@/lib/notifications/queries';
 
 export function bindGlobalListeners(s: Socket) {
   if (isListenersBound()) return;
@@ -26,7 +28,8 @@ export function bindGlobalListeners(s: Socket) {
     if (getHasConnectedOnce()) {
       bumpReconnectGeneration();
       invalidateQueries({ queryKey: discussionKeys.unreadCount() });
-      invalidateQueries({ queryKey: [...discussionKeys.all, 'notifications'] });
+      invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+      invalidateQueries({ queryKey: notificationKeys.list() });
     }
     setHasConnectedOnce(true);
   });
@@ -42,6 +45,15 @@ function bindMessageListeners(s: Socket) {
     if (!msg) return;
     if (msg.channelId) discussionCache.upsertChannelMessage(msg.channelId, msg);
     if (msg.groupDmId) discussionCache.upsertGroupDmMessage(msg.groupDmId, msg);
+    // Club feeds are keyed by DiscussionGroup id (`serverId` / `groupId`).
+    const groupId = msg.groupId ?? msg.serverId;
+    if (groupId && !msg.channelId && !msg.groupDmId) {
+      invalidateQueries({ queryKey: ['clubs', 'feed', String(groupId)] });
+    }
+    // Keep Chats sidebar preview/order in sync without waiting for poll.
+    if (msg.channelId || msg.groupDmId) {
+      invalidateQueries({ queryKey: inboxKeys.all });
+    }
   };
   s.on('message:new', onMessageNew);
   s.on('discussion:message:new', onMessageNew);
@@ -58,10 +70,13 @@ function bindMessageListeners(s: Socket) {
 
   const onMessageDelete = (raw: unknown) => {
     if (!raw || typeof raw !== 'object') return;
-    const obj = raw as { messageId?: string; channelId?: string };
+    const obj = raw as { messageId?: string; channelId?: string; groupDmId?: string };
     const messageId = obj.messageId;
     if (!messageId) return;
     if (obj.channelId) discussionCache.removeChannelMessage(obj.channelId, messageId);
+    if (obj.channelId || obj.groupDmId) {
+      invalidateQueries({ queryKey: inboxKeys.all });
+    }
   };
   s.on('message:delete', onMessageDelete);
   s.on('message:deleted', onMessageDelete);
@@ -133,11 +148,13 @@ function bindMetadataListeners(s: Socket) {
 
   s.on('notification:new', () => {
     invalidateQueries({ queryKey: discussionKeys.unreadCount() });
-    invalidateQueries({ queryKey: [...discussionKeys.all, 'notifications'] });
+    invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+    invalidateQueries({ queryKey: notificationKeys.list() });
   });
 
   s.on('groupdm:new', () => {
     invalidateQueries({ queryKey: discussionKeys.groupDms() });
+    invalidateQueries({ queryKey: inboxKeys.all });
   });
 }
 

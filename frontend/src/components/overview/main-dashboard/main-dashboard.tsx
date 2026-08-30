@@ -15,6 +15,7 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useAdminAnalytics } from '@/lib/admin/queries'
 import { useDeanClubStats } from '@/lib/dean/queries'
+import { useQueryClient } from '@/lib/async-query'
 import { QueryErrorState } from '@/components/query-error-state'
 import { SystemUsageChart } from '@/components/overview/main-dashboard/system-usage-chart'
 import { showToast } from '@/lib/notifications'
@@ -42,6 +43,7 @@ export function MainDashboard() {
     error,
   } = useAdminAnalytics({ period })
   const { data: clubStats } = useDeanClubStats()
+  const queryClient = useQueryClient()
 
   const pendingTasks =
     (analytics?.charts.assignmentAnalytics?.pending ?? 0) + (clubStats?.pending ?? 0)
@@ -55,22 +57,23 @@ export function MainDashboard() {
 
   const handleRefresh = () => {
     void refetch()
+    queryClient.invalidateQueries({ queryKey: ['announcements'] })
     showToast('success', 'Dashboard refreshed')
   }
 
   return (
     <div className='w-full space-y-3 pb-6'>
       {/* Welcome bar — DreamsPOS sales-dashboard "welcome" row */}
-      <div className='flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
+      <div className='flex w-full flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-2'>
           <Image src='/assets/dashboard-icons/hi.svg' alt='' width={28} height={28} className='shrink-0' />
           {!welcomeCollapsed ? (
-            <p className='text-sm text-[#667085]'>
-              <span className='font-bold text-[#101828]'>Hi{firstName ? `, ${firstName}` : ''},</span>{' '}
+            <p className='text-sm text-muted-foreground'>
+              <span className='font-bold text-foreground'>Hi{firstName ? `, ${firstName}` : ''},</span>{' '}
               here&apos;s what&apos;s happening with your platform today.
             </p>
           ) : (
-            <p className='text-sm font-bold text-[#101828]'>
+            <p className='text-sm font-bold text-foreground'>
               Hi{firstName ? `, ${firstName}` : ''}
             </p>
           )}
@@ -81,7 +84,7 @@ export function MainDashboard() {
             onClick={handleRefresh}
             disabled={isFetching}
             aria-label='Refresh'
-            className='flex size-8 items-center justify-center rounded-full border border-[#E5E7EB] text-[#344054] transition-colors hover:bg-[#F8FAFC] disabled:opacity-50'
+            className='flex size-8 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-muted disabled:opacity-50'
           >
             <RefreshCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
@@ -89,7 +92,7 @@ export function MainDashboard() {
             type='button'
             onClick={() => setWelcomeCollapsed((v) => !v)}
             aria-label={welcomeCollapsed ? 'Expand' : 'Collapse'}
-            className='flex size-8 items-center justify-center rounded-full border border-[#E5E7EB] text-[#344054] transition-colors hover:bg-[#F8FAFC]'
+            className='flex size-8 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-muted'
           >
             {welcomeCollapsed ? <ChevronDown className='size-3.5' /> : <ChevronUp className='size-3.5' />}
           </button>

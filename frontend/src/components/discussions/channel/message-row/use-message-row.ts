@@ -7,6 +7,7 @@ import {
   useRemoveReaction
 } from '@/lib/discussions/queries/queries';
 import { getDiscussionMessagePlaintext } from '@/lib/discussions/services/decode-web-e2e-ciphertext';
+import { serverNowIso } from '@/lib/format-time';
 import type { MessageRowProps } from './types';
 
 export function useMessageRow({
@@ -96,7 +97,7 @@ export function useMessageRow({
       const previousValue = editValue;
       const revert = onOptimisticPatch(message.id, {
         content: trimmed,
-        editedAt: new Date().toISOString()
+        editedAt: serverNowIso()
       });
       editMutation.mutate(
         { messageId: message.id, body: { content: trimmed || null } },

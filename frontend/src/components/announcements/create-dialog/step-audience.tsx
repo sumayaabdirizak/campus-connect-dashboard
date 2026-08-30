@@ -1,11 +1,18 @@
 'use client';
 
 import { Checkbox } from '@/features/ui/components/checkbox';
+import { cn } from '@/lib/utils';
 import { ChipPicker } from '../chip-picker';
 import { AudiencePreviewCard } from './audience-preview';
 import type { AnnouncementTargetType } from '@/lib/announcements/types';
 import type { ChipOption, DeanBatchLite } from './types';
-import { segmentedClass } from './utils';
+import {
+  dialogFieldsetClass,
+  dialogHintClass,
+  dialogLegendClass,
+  dialogSegmentGroupClass,
+  segmentedClass,
+} from './utils';
 
 type Preview = {
   count: number;
@@ -62,21 +69,25 @@ export function StepAudience(props: Props) {
 
   const targetTypeOptions: { value: AnnouncementTargetType; label: string; hint: string }[] = [
     ...((!isDean
-      ? [{ value: 'ALL' as AnnouncementTargetType, label: 'Everyone', hint: 'University-wide' }]
+      ? [{ value: 'ALL' as AnnouncementTargetType, label: 'Everyone', hint: 'Whole university' }]
       : []) as { value: AnnouncementTargetType; label: string; hint: string }[]),
-    { value: 'DEPARTMENT', label: 'Departments', hint: 'Pick one or many' },
-    { value: 'BATCH', label: 'Batches', hint: 'Across departments' },
-    { value: 'SECTION', label: 'Sections', hint: 'Most specific' },
+    { value: 'DEPARTMENT', label: 'Departments', hint: 'One or more' },
+    { value: 'BATCH', label: 'Batches', hint: 'Student cohorts' },
+    { value: 'SECTION', label: 'Sections', hint: 'Smallest groups' },
   ];
 
   return (
-    <div className='space-y-6'>
-      <fieldset className='space-y-3'>
-        <legend className='text-xs font-medium text-foreground'>Reach</legend>
+    <div className='space-y-4'>
+      <fieldset className={dialogFieldsetClass}>
+        <legend className={dialogLegendClass}>Who should see this?</legend>
+        <p className={dialogHintClass}>Pick the widest group that still fits your message.</p>
         <div
           role='radiogroup'
           aria-label='Reach scope'
-          className='grid grid-cols-2 gap-1 rounded-xl border border-input bg-muted/50 p-1 sm:grid-cols-4'
+          className={cn(
+            dialogSegmentGroupClass,
+            'grid grid-cols-2 sm:grid-cols-4',
+          )}
         >
           {targetTypeOptions.map((opt) => {
             const active = targetType === opt.value;
@@ -99,39 +110,48 @@ export function StepAudience(props: Props) {
                     setSelectedSections([]);
                   }
                 }}
-                className={`${segmentedClass(active)} flex-col items-start gap-0 px-2.5 py-2 text-start`}
+                className={`${segmentedClass(active)} flex-col items-start gap-0.5 px-2.5 py-2.5 text-start`}
               >
-                <span className='text-[12px] font-semibold leading-tight'>{opt.label}</span>
-                <span className='text-[10px] font-normal text-muted-foreground'>{opt.hint}</span>
+                <span className='text-sm font-semibold leading-tight'>{opt.label}</span>
+                <span
+                  className={cn(
+                    'text-[11px] font-normal leading-tight',
+                    active ? 'text-primary-foreground/85' : 'text-muted-foreground',
+                  )}
+                >
+                  {opt.hint}
+                </span>
               </button>
             );
           })}
         </div>
 
         {(targetType === 'DEPARTMENT' || targetType === 'BATCH' || targetType === 'SECTION') && (
-          <ChipPicker
-            label='Departments'
-            placeholder={
-              departmentOptions.length === 0
-                ? 'No departments in your faculty yet'
-                : 'Pick one or more departments'
-            }
-            options={departmentOptions}
-            value={selectedDepartments}
-            onChange={(ids) => {
-              setSelectedDepartments(ids);
-              const allowed = new Set(ids);
-              setSelectedBatches((prev) => {
-                const next = prev.filter((b) => {
-                  const batch = deanBatches.find((db) => String(db.id) === b);
-                  const dep = batch?.program?.department?.id ?? batch?.program?.departmentId;
-                  return dep != null && allowed.has(String(dep));
+          <div className='space-y-3 border-t border-border pt-3'>
+            <ChipPicker
+              label='Departments'
+              placeholder={
+                departmentOptions.length === 0
+                  ? 'No departments in your faculty yet'
+                  : 'Pick one or more departments'
+              }
+              options={departmentOptions}
+              value={selectedDepartments}
+              onChange={(ids) => {
+                setSelectedDepartments(ids);
+                const allowed = new Set(ids);
+                setSelectedBatches((prev) => {
+                  const next = prev.filter((b) => {
+                    const batch = deanBatches.find((db) => String(db.id) === b);
+                    const dep = batch?.program?.department?.id ?? batch?.program?.departmentId;
+                    return dep != null && allowed.has(String(dep));
+                  });
+                  if (next.length !== prev.length) setSelectedSections([]);
+                  return next;
                 });
-                if (next.length !== prev.length) setSelectedSections([]);
-                return next;
-              });
-            }}
-          />
+              }}
+            />
+          </div>
         )}
 
         {(targetType === 'BATCH' || targetType === 'SECTION') && (
@@ -172,13 +192,13 @@ export function StepAudience(props: Props) {
         )}
       </fieldset>
 
-      <fieldset className='space-y-3'>
-        <legend className='text-xs font-medium text-foreground'>Visible to</legend>
-        <p className='text-[11px] text-muted-foreground'>
-          By default everyone in your reach sees the post. Uncheck a group to exclude them.
+      <fieldset className={dialogFieldsetClass}>
+        <legend className={dialogLegendClass}>Which roles?</legend>
+        <p className={dialogHintClass}>
+          Both are selected by default. Uncheck to hide the post from that group.
         </p>
-        <div className='flex flex-col gap-3 rounded-xl border border-input bg-muted/30 px-4 py-3'>
-          <label className='flex cursor-pointer items-center gap-3 text-sm'>
+        <div className='flex flex-col gap-3 rounded-lg border-2 border-foreground/10 bg-background px-4 py-3'>
+          <label className='flex cursor-pointer items-center gap-3 text-sm font-medium text-foreground'>
             <Checkbox
               checked={includeStudents}
               onCheckedChange={(v) => setIncludeStudents(v === true)}
@@ -186,7 +206,7 @@ export function StepAudience(props: Props) {
             />
             <span>Students</span>
           </label>
-          <label className='flex cursor-pointer items-center gap-3 text-sm'>
+          <label className='flex cursor-pointer items-center gap-3 text-sm font-medium text-foreground'>
             <Checkbox
               checked={includeTeachers}
               onCheckedChange={(v) => setIncludeTeachers(v === true)}

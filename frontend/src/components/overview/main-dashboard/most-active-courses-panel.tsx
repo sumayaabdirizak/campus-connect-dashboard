@@ -24,7 +24,7 @@ export function MostActiveCoursesPanel({
   return (
     <ChartCard title='Most Active Courses' subtitle='Messages + posts' index={0} className='h-full'>
       {loading ? (
-        <p className='py-6 text-center text-sm text-[#667085]'>Loading…</p>
+        <p className='py-6 text-center text-sm text-muted-foreground'>Loading…</p>
       ) : rows.length === 0 ? (
         <EmptyChart message='No discussion activity yet' />
       ) : (

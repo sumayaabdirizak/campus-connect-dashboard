@@ -1,11 +1,28 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { FacultyReportsFilters } from './faculty-reports-filters';
 import { FacultyDeanReportsActivity } from './faculty-dean-reports-activity';
-import { FacultyDeanReportsAnalyticsCharts } from './faculty-dean-reports-analytics-charts';
 import { FacultyDeanReportsHeader } from './faculty-dean-reports-header';
-import { FacultyDeanReportsPerformance } from './faculty-dean-reports-performance';
 import { FacultyDeanReportsRiskPanel } from './faculty-dean-reports-risk-panel';
+
+/** recharts in its own chunk, as on the admin and main dashboards. */
+const chartLoading = () => (
+  <div className='h-64 animate-pulse rounded-xl border bg-card' aria-hidden />
+);
+
+const FacultyDeanReportsAnalyticsCharts = dynamic(
+  () =>
+    import('./faculty-dean-reports-analytics-charts').then(
+      (m) => m.FacultyDeanReportsAnalyticsCharts
+    ),
+  { ssr: false, loading: chartLoading }
+);
+const FacultyDeanReportsPerformance = dynamic(
+  () =>
+    import('./faculty-dean-reports-performance').then((m) => m.FacultyDeanReportsPerformance),
+  { ssr: false, loading: chartLoading }
+);
 import type { FacultyDeanReportsDashboardProps } from './faculty-dean-reports-types';
 
 export type { FacultyDeanReportsDashboardProps } from './faculty-dean-reports-types';

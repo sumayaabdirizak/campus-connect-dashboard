@@ -19,6 +19,7 @@ export function SimpleDataTable<TData>({
   toolbarRight,
   mobilePrimaryColumn,
   hideToolbar = false,
+  hideToolbarSearch = false,
   globalFilter: globalFilterProp,
   onGlobalFilterChange,
   stickyHeader = true,
@@ -52,6 +53,7 @@ export function SimpleDataTable<TData>({
           onGlobalFilterChange={setGlobalFilter}
           toolbarRight={toolbarRight}
           onExport={handleExport}
+          showSearch={!hideToolbarSearch}
         />
       )}
       <SimpleDataTableMobile

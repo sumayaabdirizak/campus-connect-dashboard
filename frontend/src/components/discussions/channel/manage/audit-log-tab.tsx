@@ -109,7 +109,7 @@ export function AuditLogTab({ channelId }: { channelId: string }) {
         {rows.map((entry) => (
           <li
             key={entry.id}
-            className='rounded-md border bg-card px-3 py-2 text-xs shadow-sm'
+            className='rounded-md border bg-card px-3 py-2 text-xs'
           >
             <div className='flex flex-wrap items-baseline justify-between gap-2'>
               <span className='font-medium'>{actionLabel(entry.action)}</span>

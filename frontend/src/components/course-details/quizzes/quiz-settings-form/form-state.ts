@@ -3,6 +3,8 @@ import type {
   Quiz,
   QuizQuestionType
 } from '@/lib/course-details/services/quizzes-types';
+import { questionTypesForMode } from '../quiz-question-types';
+import { serverNow } from '@/lib/server-clock';
 
 export const NO_MODULE = '__none__';
 
@@ -66,7 +68,29 @@ export function localInputToIso(local: string): string | null {
 /// `isoToLocalInput`, used to floor Opens/Closes pickers at "now" so a
 /// teacher can't schedule a quiz into the past.
 export function nowLocalInput(): string {
-  return isoToLocalInput(new Date().toISOString());
+  return isoToLocalInput(new Date(serverNow()).toISOString());
+}
+
+/** Fixed-mode cohort end: "Available from" + time limit (matches backend). */
+export function fixedWindowEndLocal(
+  openAtLocal: string,
+  durationMinutes: number
+): string {
+  if (!openAtLocal) return '';
+  const start = new Date(openAtLocal);
+  if (Number.isNaN(start.getTime())) return '';
+  return isoToLocalInput(
+    new Date(start.getTime() + durationMinutes * 60_000).toISOString()
+  );
+}
+
+function isPastLocal(value: string): boolean {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) || d.getTime() < serverNow();
+}
+
+function isSameSavedTime(iso: string | null | undefined, local: string): boolean {
+  return isoToLocalInput(iso) === local;
 }
 
 export function fromQuiz(q: Quiz): FormState {
@@ -76,7 +100,11 @@ export function fromQuiz(q: Quiz): FormState {
     duration_minutes: q.duration_minutes,
     is_draft: q.is_draft,
     open_at_local: isoToLocalInput(q.open_at),
-    close_at_local: isoToLocalInput(q.close_at),
+    // Fixed mode ignores close_at server-side — don't surface a stale value.
+    close_at_local:
+      (q.timing_mode ?? 'flexible') === 'fixed'
+        ? ''
+        : isoToLocalInput(q.close_at),
     shuffle_questions: q.shuffle_questions,
     shuffle_answers: q.shuffle_answers,
     passing_score: q.passing_score,
@@ -84,11 +112,7 @@ export function fromQuiz(q: Quiz): FormState {
     confidence_scoring: !!q.confidence_scoring,
     moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId),
     mode: q.mode ?? 'online',
-    marksPlanTotal: q.marksPlan?.totalMarks ?? 10,
-    marksPlanTypes: q.marksPlan
-      ? (Object.keys(q.marksPlan.allocations) as QuizQuestionType[])
-      : [],
-    marksPlanAllocations: q.marksPlan?.allocations ?? {}
+    ...marksPlanFieldsFromQuiz(q)
   };
 }
 
@@ -99,7 +123,8 @@ export function toPayload(s: FormState): CreateQuizInput {
     duration_minutes: s.duration_minutes,
     is_draft: s.is_draft,
     open_at: localInputToIso(s.open_at_local),
-    close_at: localInputToIso(s.close_at_local),
+    close_at:
+      s.timing_mode === 'fixed' ? null : localInputToIso(s.close_at_local),
     shuffle_questions: s.shuffle_questions,
     shuffle_answers: s.shuffle_answers,
     passing_score: s.passing_score,
@@ -120,16 +145,32 @@ export function toPayload(s: FormState): CreateQuizInput {
 }
 
 export function validateForm(s: FormState, editing: Quiz | null): string | null {
-  if (!s.title.trim()) return 'Title is required';
-  if (s.duration_minutes < 1) return 'Duration must be at least 1 minute';
-  if (s.passing_score < 0 || s.passing_score > 100) return 'Passing score must be 0-100';
-  if (s.open_at_local && s.close_at_local) {
-    if (new Date(s.open_at_local) >= new Date(s.close_at_local)) {
-      return 'Open time must be before close time';
+  if (!s.title.trim()) return 'Give the quiz a name first';
+  if (s.duration_minutes < 1) return 'Students need at least 1 minute';
+  if (s.passing_score < 0 || s.passing_score > 100) return 'Pass mark must be between 0 and 100';
+  if (
+    s.open_at_local &&
+    isPastLocal(s.open_at_local) &&
+    !isSameSavedTime(editing?.open_at, s.open_at_local)
+  ) {
+    return 'Pick a future “Available from” date';
+  }
+  if (s.timing_mode !== 'fixed') {
+    if (
+      s.close_at_local &&
+      isPastLocal(s.close_at_local) &&
+      !isSameSavedTime(editing?.close_at, s.close_at_local)
+    ) {
+      return 'Pick a future “Available until” date';
+    }
+    if (s.open_at_local && s.close_at_local) {
+      if (new Date(s.open_at_local) >= new Date(s.close_at_local)) {
+        return '"Available until" needs to be after "Available from"';
+      }
     }
   }
   if (s.timing_mode === 'fixed' && !s.open_at_local) {
-    return 'Fixed mode requires an Open time';
+    return 'Set "Available from" — everyone needs a shared start time';
   }
   if (!s.is_draft && editing && (editing.questions?.length ?? 0) === 0) {
     return 'Add at least one question before publishing';
@@ -140,9 +181,37 @@ export function validateForm(s: FormState, editing: Quiz | null): string | null 
   return null;
 }
 
+/** Create-quiz gate: AI / questions unlock only after Basics + Marking are set. */
+export function quizConfigReadyMessage(s: FormState): string | null {
+  if (!s.title.trim()) return 'Give the quiz a name in Basics first';
+  if (s.duration_minutes < 1) return 'Set a duration of at least 1 minute';
+  if (s.mode === 'online' && s.timing_mode === 'fixed' && !s.open_at_local) {
+    return 'Set “Available from” on the Timing tab';
+  }
+  if (s.marksPlanTypes.length === 0) {
+    return 'Pick at least one question type on the Marking tab';
+  }
+  if (s.marksPlanTotal < 1) return 'Set total marks on the Marking tab';
+  const allocated = s.marksPlanTypes.reduce(
+    (sum, t) => sum + (s.marksPlanAllocations[t] ?? 0),
+    0
+  );
+  if (s.marksPlanTypes.some((t) => (s.marksPlanAllocations[t] ?? 0) < 1)) {
+    return 'Give each selected question type at least 1 mark';
+  }
+  if (allocated !== s.marksPlanTotal) {
+    return 'Finish splitting total marks across question types on Marking';
+  }
+  return null;
+}
+
+export function isQuizConfigReady(s: FormState): boolean {
+  return quizConfigReadyMessage(s) == null;
+}
+
 export function scheduleBadgeFor(editing: Quiz | null) {
   if (!editing) return null;
-  const now = Date.now();
+  const now = serverNow();
   const o = editing.open_at ? new Date(editing.open_at).getTime() : null;
   const c = editing.close_at ? new Date(editing.close_at).getTime() : null;
   if (o && now < o) return { label: 'Scheduled', tone: 'info' as const };
@@ -152,3 +221,59 @@ export function scheduleBadgeFor(editing: Quiz | null) {
 }
 
 export type QuizSettingsTab = 'basics' | 'schedule' | 'behavior' | 'marks';
+
+/// When a quiz has questions but no saved marks plan (common for quizzes built
+/// before sections existed, or via the old question-only editor), derive a
+/// planning layout from the questions already on the quiz so the Marking tab
+/// and section blocks aren't blank on edit. Does not write to the server —
+/// the teacher still clicks Save quiz to persist it.
+export function inferMarksPlanFromQuestions(
+  questions: Quiz['questions'] | undefined,
+  mode: FormState['mode'] = 'online'
+): Pick<FormState, 'marksPlanTotal' | 'marksPlanTypes' | 'marksPlanAllocations'> | null {
+  const list = questions ?? [];
+  if (list.length === 0) return null;
+
+  const allocations: Partial<Record<QuizQuestionType, number>> = {};
+  for (const q of list) {
+    const type = q.question_type;
+    allocations[type] = (allocations[type] ?? 0) + (Number(q.points) || 0);
+  }
+
+  const typeOrder = questionTypesForMode(mode);
+  const marksPlanTypes = typeOrder.filter((t) => (allocations[t] ?? 0) > 0);
+  if (marksPlanTypes.length === 0) return null;
+
+  const marksPlanTotal = marksPlanTypes.reduce(
+    (sum, t) => sum + (allocations[t] ?? 0),
+    0
+  );
+
+  return { marksPlanTotal, marksPlanTypes, marksPlanAllocations: allocations };
+}
+
+function marksPlanFieldsFromQuiz(q: Quiz): Pick<
+  FormState,
+  'marksPlanTotal' | 'marksPlanTypes' | 'marksPlanAllocations'
+> {
+  const mode = q.mode ?? 'online';
+  const typeOrder = questionTypesForMode(mode);
+
+  if (q.marksPlan) {
+    return {
+      marksPlanTotal: q.marksPlan.totalMarks,
+      marksPlanTypes: typeOrder.filter((t) =>
+        Object.prototype.hasOwnProperty.call(q.marksPlan!.allocations, t)
+      ),
+      marksPlanAllocations: q.marksPlan.allocations
+    };
+  }
+
+  return (
+    inferMarksPlanFromQuestions(q.questions, mode) ?? {
+      marksPlanTotal: 10,
+      marksPlanTypes: [],
+      marksPlanAllocations: {}
+    }
+  );
+}

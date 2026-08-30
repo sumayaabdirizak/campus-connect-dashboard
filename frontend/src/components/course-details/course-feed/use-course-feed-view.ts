@@ -9,28 +9,24 @@ import {
   feedKeys,
   useCourseFeed,
   useCreateCoursePost,
-  useDeleteCoursePostAttachment,
   useToggleReaction,
-  useUpdateCoursePost,
-  useUploadCoursePostAttachments
+  useUpdateCoursePost
 } from '@/lib/course-details/queries/feed-queries';
 import type { CoursePost } from '@/lib/course-details/types';
 import { useDeleteWithUndo } from '../_shared/use-delete-with-undo';
-import type { FeedFilter } from './types';
 
 export function useCourseFeedView(courseId: string) {
   const { user } = useAuthStore();
   const userId = typeof user?.id === 'number' ? user.id : Number(user?.id ?? 0) || null;
   const userName = (user?.full_name ?? user?.name ?? null) as string | null;
 
-  const { data: posts = [], isLoading, isError, refetch } = useCourseFeed(courseId);
+  const { data: posts = [], isLoading, isError, refetch } = useCourseFeed(courseId, {
+    live: true
+  });
   const createMutation = useCreateCoursePost(courseId);
   const updateMutation = useUpdateCoursePost(courseId);
-  const uploadAttachmentsMutation = useUploadCoursePostAttachments(courseId);
-  const deleteAttachmentMutation = useDeleteCoursePostAttachment(courseId);
   const toggleReactionMutation = useToggleReaction(courseId, userId);
 
-  const [filter, setFilter] = useState<FeedFilter>('all');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<CoursePost | null>(null);
@@ -38,39 +34,20 @@ export function useCourseFeedView(courseId: string) {
   const queryClient = useQueryClient();
   const { run: runDelete } = useDeleteWithUndo();
 
-  const filterCounts = useMemo(
-    () => ({
-      all: posts.length,
-      important: posts.filter((p) => p.isImportant).length,
-      attachments: posts.filter((p) => p.attachments.length > 0).length,
-      auto: posts.filter((p) => p.source !== 'MANUAL').length
-    }),
-    [posts]
-  );
+  const filtered = useMemo(() => {
+    if (!search.trim()) return posts;
+    const needle = search.toLowerCase();
+    return posts.filter(
+      (p) =>
+        p.title.toLowerCase().includes(needle) ||
+        p.content.toLowerCase().includes(needle)
+    );
+  }, [posts, search]);
 
-  const filtered = posts.filter((p) => {
-    if (filter === 'important' && !p.isImportant) return false;
-    if (filter === 'attachments' && p.attachments.length === 0) return false;
-    if (filter === 'auto' && p.source === 'MANUAL') return false;
-    if (search && !p.title.toLowerCase().includes(search.toLowerCase())) return false;
-    return true;
-  });
-
-  const handleCreate = (values: CoursePostFormValues, pendingFiles: File[]) => {
+  const handleCreate = (values: CoursePostFormValues) => {
     createMutation.mutate(
-      { title: values.title, content: values.content, isImportant: values.isImportant },
-      {
-        onSuccess: (post) => {
-          if (pendingFiles.length === 0) {
-            setCreateOpen(false);
-            return;
-          }
-          uploadAttachmentsMutation.mutate(
-            { postId: post.id, files: pendingFiles },
-            { onSettled: () => setCreateOpen(false) }
-          );
-        }
-      }
+      { title: values.title, content: values.content, isImportant: false },
+      { onSuccess: () => setCreateOpen(false) }
     );
   };
 
@@ -82,7 +59,7 @@ export function useCourseFeedView(courseId: string) {
         input: {
           title: editing.title,
           content: editing.content,
-          isImportant: editing.isImportant,
+          isImportant: false,
           isPinned: editing.isPinned
         }
       },
@@ -115,12 +92,9 @@ export function useCourseFeedView(courseId: string) {
     userName,
     posts,
     filtered,
-    filterCounts,
     isLoading,
     isError,
     refetch,
-    filter,
-    setFilter,
     search,
     setSearch,
     createOpen,
@@ -129,8 +103,6 @@ export function useCourseFeedView(courseId: string) {
     setEditing,
     createMutation,
     updateMutation,
-    uploadAttachmentsMutation,
-    deleteAttachmentMutation,
     handleCreate,
     handleUpdate,
     handleDelete,

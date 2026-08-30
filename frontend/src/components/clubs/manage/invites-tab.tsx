@@ -13,6 +13,7 @@ import {
   useRevokeInvite,
 } from '@/lib/clubs/queries'
 import type { Club, ClubInvite } from '@/lib/clubs/types'
+import { isPastIso } from '@/lib/format-time'
 
 export function InvitesTab({ club }: { club: Club }) {
   const { data, isLoading } = useClubInvites(club.id)
@@ -133,7 +134,7 @@ function InviteRow({
   onRevoke: () => void
   isRevoking: boolean
 }) {
-  const isExpired = invite.expiresAt && new Date(invite.expiresAt) < new Date()
+  const isExpired = invite.expiresAt != null && isPastIso(invite.expiresAt)
   const expiresLabel = invite.expiresAt
     ? `Expires ${new Date(invite.expiresAt).toLocaleDateString()}`
     : 'No expiry'

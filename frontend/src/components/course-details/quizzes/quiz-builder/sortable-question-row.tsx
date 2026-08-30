@@ -64,11 +64,16 @@ export function SortableQuestionRow({
               <Badge variant='outline' className='text-[10px]'>
                 {q.points} pt
               </Badge>
-              {q.explanation ? (
-                <Badge variant='outline' className='text-[10px] text-muted-foreground'>
-                  Explanation
-                </Badge>
-              ) : null}
+              {/* Plain text, not a pill: an outline badge read as a button
+                      and invited clicks that did nothing. */}
+                  {q.explanation ? (
+                    <span
+                      className='text-[10px] text-muted-foreground self-center'
+                      title={q.explanation}
+                    >
+                      has explanation
+                    </span>
+                  ) : null}
             </div>
             {q.question_type !== 'SHORT_ANSWER' && q.options.length > 0 ? (
               <ul className='mt-2 space-y-1'>

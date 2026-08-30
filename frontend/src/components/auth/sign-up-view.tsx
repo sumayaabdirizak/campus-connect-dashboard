@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function SignUpViewPage() {
   return (
-    <div className='flex min-h-screen bg-[#f8fafc] font-sans text-slate-900'>
+    <div className='flex min-h-screen bg-muted font-sans text-slate-900'>
       {/* LEFT SIDE: Visual/Branding */}
       <div className='relative hidden w-1/2 flex-col justify-between overflow-hidden lg:flex'>
         {/* Background Image with Blur */}
@@ -93,7 +93,7 @@ export default function SignUpViewPage() {
           </div>
 
           {/* Info Box */}
-          <div className='rounded-2xl border border-[#e5e7eb] bg-white p-8 shadow-sm text-center'>
+          <div className='rounded-xl border border-border bg-card p-8 text-center'>
             <div className='mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-[#2563eb]'>
               <svg
                 xmlns='http://www.w3.org/2000/svg'

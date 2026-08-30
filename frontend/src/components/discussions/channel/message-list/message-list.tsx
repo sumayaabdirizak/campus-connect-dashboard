@@ -82,7 +82,7 @@ export function MessageList({
   return (
     <div
       ref={scrollRef}
-      className='relative min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto bg-white py-1.5'
+      className='relative min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto bg-card py-1.5'
     >
       {isLoading && items.length === 0 ? (
         <MessageListLoading />

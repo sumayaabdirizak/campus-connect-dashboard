@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Clock, Eye, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Clock, Eye } from 'lucide-react';
 import { formatSeconds } from '../course-quizzes-utils';
 import { getSaveStatus } from './save-status';
 
@@ -18,7 +18,6 @@ export function PreviewBanner() {
 
 export function AttemptHeader({
   title,
-  totalPoints,
   questionCount,
   remaining
 }: {
@@ -27,55 +26,28 @@ export function AttemptHeader({
   questionCount: number;
   remaining: number;
 }) {
+  // A timer that's amber from second one has spent its warning colour before
+  // there's anything to warn about. Stay neutral, then turn red at two
+  // minutes so the change actually means something.
+  const urgent = remaining < 120;
+
   return (
-    <div className='flex items-start justify-between gap-4 pb-1'>
+    <div className='flex items-center justify-between gap-4'>
       <div className='min-w-0'>
-        <h2 className='text-2xl font-bold leading-tight truncate'>{title}</h2>
-        <p className='text-sm text-muted-foreground mt-0.5'>
-          {totalPoints} points &bull; {questionCount} questions
+        <h2 className='truncate text-lg font-semibold leading-tight'>{title}</h2>
+        <p className='mt-0.5 text-sm text-muted-foreground'>
+          {questionCount} {questionCount === 1 ? 'question' : 'questions'}
         </p>
       </div>
       <div
-        className={`shrink-0 flex items-center gap-1.5 border rounded-lg px-3 py-1.5 tabular-nums font-semibold text-sm ${
-          remaining < 60
-            ? 'border-destructive/50 text-destructive'
-            : 'border-warning text-warning'
+        className={`flex h-12 shrink-0 items-center gap-2 rounded-xl border px-4 tabular-nums text-base font-semibold ${
+          urgent ? 'border-destructive/50 text-destructive' : 'border-border text-foreground'
         }`}
         role='timer'
         aria-live={remaining < 60 ? 'assertive' : 'off'}
       >
-        <Clock className='w-4 h-4' />
+        <Clock className='size-4' />
         {formatSeconds(remaining)}
-      </div>
-    </div>
-  );
-}
-
-export function AntiCheatBanner({ maxWarnings }: { maxWarnings: number }) {
-  return (
-    <div className='rounded-lg bg-warning-muted border border-warning p-4'>
-      <div className='flex items-start gap-2'>
-        <ShieldAlert className='w-5 h-5 text-warning shrink-0 mt-0.5' />
-        <div className='space-y-1.5'>
-          <p className='font-semibold text-sm text-warning-foreground'>
-            Important Anti-Cheating Instructions:
-          </p>
-          <ul className='list-disc pl-4 space-y-0.5 text-sm text-warning-foreground'>
-            <li>You cannot copy or paste any content during the quiz.</li>
-            <li>
-              Attempting to leave this tab or close the window is considered
-              suspicious.
-            </li>
-            <li>
-              Each tab switch, copy, or paste earns a warning. After{' '}
-              {maxWarnings} warnings, your quiz will automatically close and be
-              submitted with the answers completed so far.
-            </li>
-          </ul>
-          <p className='text-sm font-bold text-warning-foreground pt-0.5'>
-            Your actions are monitored to ensure fairness and academic integrity.
-          </p>
-        </div>
       </div>
     </div>
   );
@@ -108,31 +80,27 @@ export function ProgressBlock({
 }) {
   const saveStatus = getSaveStatus(saveOpts);
   return (
-    <div>
-      <div className='flex items-center justify-between text-sm font-semibold mb-2'>
-        <span>
+    <div className='space-y-2'>
+      <div className='flex items-center justify-between text-sm'>
+        <span className='font-medium text-foreground'>
           Question {currentIdx + 1} of {questionCount}
         </span>
-        <span className='text-muted-foreground font-normal'>
-          {Math.round(progressPct)}% complete
-        </span>
+        <span className='text-muted-foreground'>{Math.round(progressPct)}% done</span>
       </div>
-      <div className='h-2 rounded-full bg-muted overflow-hidden'>
+      <div className='h-2 overflow-hidden rounded-full bg-muted'>
         <div
-          className='h-full bg-primary rounded-full transition-[width] duration-300 ease-out'
+          className='h-full rounded-full bg-blue-600 transition-[width] duration-300 ease-out'
           style={{ width: `${progressPct}%` }}
           aria-hidden
         />
       </div>
       {saveStatus ? (
         <p
-          className={`text-[11px] flex items-center gap-1 mt-1 ${saveStatus.tone}`}
+          className={`mt-1 flex items-center gap-1 text-xs ${saveStatus.tone}`}
           role='status'
           aria-live='polite'
         >
-          <saveStatus.icon
-            className={`w-3 h-3 ${saveStatus.spin ? 'animate-spin' : ''}`}
-          />
+          <saveStatus.icon className={`size-3 ${saveStatus.spin ? 'animate-spin' : ''}`} />
           {saveStatus.text}
         </p>
       ) : null}

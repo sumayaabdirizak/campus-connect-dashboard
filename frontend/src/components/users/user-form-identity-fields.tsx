@@ -143,7 +143,7 @@ export function UserFormIdentityFields({
         <div className='grid grid-cols-2 gap-3'>
           <div className='space-y-1.5'>
             <Label>Primary faculty</Label>
-            <div className='flex h-9 items-center rounded-md border border-[#E5E7EB] bg-[#F9FAFB] px-3 text-sm text-[#344054]'>
+            <div className='flex h-9 items-center rounded-md border border-border bg-muted px-3 text-sm text-foreground'>
               {primaryFacultyName ?? '—'}
             </div>
           </div>

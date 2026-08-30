@@ -34,14 +34,6 @@ export function PendingClubCard({
             <h3 className='font-semibold'>{club.name}</h3>
             {club.tagline && <p className='text-xs text-muted-foreground'>{club.tagline}</p>}
           </div>
-          <div className='flex gap-1.5'>
-            <Badge variant='outline' className='text-[10px]'>
-              {club.joinPolicy?.toLowerCase().replace('_', ' ')}
-            </Badge>
-            <Badge variant='outline' className='text-[10px]'>
-              {club.scopeKind?.toLowerCase()}
-            </Badge>
-          </div>
         </div>
 
         {club.description ? (

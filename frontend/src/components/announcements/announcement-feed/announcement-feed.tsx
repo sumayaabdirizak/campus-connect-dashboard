@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { getFeedI18n } from './feed-i18n';
-import { FeedAside } from './feed-aside';
 import { FeedBody } from './feed-body';
 import { FeedHeader } from './feed-header';
 import type { AnnouncementFeedProps } from './types';
@@ -50,15 +49,14 @@ export function AnnouncementFeed({
   }, [unreadCount, i18n]);
 
   return (
-    <div className='mx-auto flex h-full min-h-0 w-full max-w-[100vw] min-w-0 flex-1 flex-col gap-6 overflow-x-hidden px-0 sm:px-4 lg:flex-row lg:items-stretch lg:gap-8'>
-      <div className='mx-auto flex min-h-0 w-full max-w-2xl flex-1 flex-col overflow-hidden rounded-3xl border border-border/60 bg-background/90 shadow-[0_1px_0_rgba(0,0,0,0.04),0_8px_24px_-12px_rgba(0,0,0,0.08)] backdrop-blur-xl dark:shadow-[0_1px_0_rgba(255,255,255,0.04)]'>
+    <div className='flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden'>
+      <div className='shrink-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
         <FeedHeader
           i18n={i18n}
           canCreate={canCreate}
           canManage={canManage}
           draftCount={draftCount}
           onOpenCreate={onOpenCreate}
-          userRole={userRole}
           currentFilter={filters.currentFilter}
           setCurrentFilter={filters.setCurrentFilter}
           searchQuery={filters.searchQuery}
@@ -67,13 +65,13 @@ export function AnnouncementFeed({
           setReadFilter={filters.setReadFilter}
           dateFilter={filters.dateFilter}
           setDateFilter={filters.setDateFilter}
-          roleFilter={filters.roleFilter}
-          setRoleFilter={filters.setRoleFilter}
           sortMode={filters.sortMode}
           setSortMode={filters.setSortMode}
           activeFilterCount={filters.activeFilterCount}
           onClearAll={filters.handleClearAllFilters}
         />
+      </div>
+      <div className='mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-foreground/10 bg-card shadow-sm'>
         <FeedBody
           i18n={i18n}
           error={error}
@@ -103,11 +101,6 @@ export function AnnouncementFeed({
           unreadAnnouncement={unreadAnnouncement}
         />
       </div>
-      <FeedAside
-        i18n={i18n}
-        unreadCount={unreadCount}
-        pinnedCount={filters.pinnedCount}
-      />
     </div>
   );
 }

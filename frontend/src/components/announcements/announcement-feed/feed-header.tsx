@@ -1,8 +1,9 @@
 'use client';
 
-import { Plus } from 'lucide-react';
+import { Plus, Search } from 'lucide-react';
 import { Badge } from '@/features/ui/components/badge';
 import { Button } from '@/features/ui/components/button';
+import { Input } from '@/features/ui/components/input';
 import type { FeedI18n } from './feed-i18n';
 import { FeedFiltersBar } from './feed-filters-bar';
 import { FeedTabs } from './feed-tabs';
@@ -14,7 +15,6 @@ interface FeedHeaderProps {
   canManage: boolean;
   draftCount: number;
   onOpenCreate: () => void;
-  userRole?: string;
   currentFilter: FeedTab;
   setCurrentFilter: (tab: FeedTab) => void;
   searchQuery: string;
@@ -23,8 +23,6 @@ interface FeedHeaderProps {
   setReadFilter: (v: ReadFilter) => void;
   dateFilter: DateFilter;
   setDateFilter: (v: DateFilter) => void;
-  roleFilter: string;
-  setRoleFilter: (v: string) => void;
   sortMode: SortMode;
   setSortMode: (v: SortMode) => void;
   activeFilterCount: number;
@@ -37,7 +35,6 @@ export function FeedHeader({
   canManage,
   draftCount,
   onOpenCreate,
-  userRole,
   currentFilter,
   setCurrentFilter,
   searchQuery,
@@ -46,61 +43,70 @@ export function FeedHeader({
   setReadFilter,
   dateFilter,
   setDateFilter,
-  roleFilter,
-  setRoleFilter,
   sortMode,
   setSortMode,
   activeFilterCount,
   onClearAll
 }: FeedHeaderProps) {
   return (
-    <header className='shrink-0 border-b border-border/60 bg-background/95 px-4 backdrop-blur-2xl'>
-      {canCreate ? (
-        <div className='flex items-center justify-between gap-2 py-3'>
-          <h1 className='text-base font-semibold tracking-tight'>{i18n.feedLabel}</h1>
-          <Button
-            type='button'
-            onClick={onOpenCreate}
-            className='relative h-9 rounded-full px-4 text-sm shadow-sm'
-            aria-label={i18n.createWithDraftsAria(draftCount)}
-          >
-            <Plus className='me-1 h-4 w-4' aria-hidden />
-            {i18n.create}
-            {draftCount > 0 ? (
-              <Badge
-                className='absolute -end-1.5 -top-1.5 min-h-5 min-w-5 justify-center rounded-full px-1.5 py-0 text-[10px] font-semibold tabular-nums'
-                variant='default'
-                aria-hidden
-              >
-                {draftCount > 99 ? '99+' : draftCount}
-              </Badge>
-            ) : null}
-          </Button>
+    <header className='shrink-0 border-b border-border/60 bg-background/95 px-4 backdrop-blur-sm'>
+      <div className='flex items-center gap-2 py-2'>
+        <div
+          className='flex min-w-0 flex-1 items-center gap-2 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
+        >
+          {canCreate ? (
+            <Button
+              type='button'
+              onClick={onOpenCreate}
+              size='sm'
+              className='relative h-7 shrink-0 rounded-full px-2.5 text-[11px] font-medium'
+              aria-label={i18n.createWithDraftsAria(draftCount)}
+            >
+              <Plus className='me-1 h-3 w-3' aria-hidden />
+              {i18n.create}
+              {draftCount > 0 ? (
+                <Badge
+                  className='absolute -end-1.5 -top-1.5 min-h-4 min-w-4 justify-center rounded-full px-1 py-0 text-[9px] font-semibold tabular-nums'
+                  variant='default'
+                  aria-hidden
+                >
+                  {draftCount > 99 ? '99+' : draftCount}
+                </Badge>
+              ) : null}
+            </Button>
+          ) : null}
+          <FeedTabs
+            i18n={i18n}
+            currentFilter={currentFilter}
+            setCurrentFilter={setCurrentFilter}
+            canManage={canManage}
+          />
+          <FeedFiltersBar
+            i18n={i18n}
+            readFilter={readFilter}
+            setReadFilter={setReadFilter}
+            dateFilter={dateFilter}
+            setDateFilter={setDateFilter}
+            sortMode={sortMode}
+            setSortMode={setSortMode}
+            activeFilterCount={activeFilterCount}
+            onClearAll={onClearAll}
+          />
         </div>
-      ) : null}
-      <FeedTabs
-        i18n={i18n}
-        currentFilter={currentFilter}
-        setCurrentFilter={setCurrentFilter}
-        canManage={canManage}
-      />
-      <FeedFiltersBar
-        i18n={i18n}
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        readFilter={readFilter}
-        setReadFilter={setReadFilter}
-        dateFilter={dateFilter}
-        setDateFilter={setDateFilter}
-        roleFilter={roleFilter}
-        setRoleFilter={setRoleFilter}
-        sortMode={sortMode}
-        setSortMode={setSortMode}
-        canManage={canManage}
-        userRole={userRole}
-        activeFilterCount={activeFilterCount}
-        onClearAll={onClearAll}
-      />
+        <div className='relative w-[10rem] shrink-0 sm:w-[12rem] md:w-[14rem]'>
+          <Search
+            aria-hidden
+            className='pointer-events-none absolute start-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground'
+          />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='h-7 border-border bg-muted/30 ps-8 text-xs transition-[border-color,box-shadow] duration-200 ease-out placeholder:text-muted-foreground focus-visible:border-border focus-visible:ring-ring/40'
+            placeholder={i18n.search}
+            aria-label={i18n.search}
+          />
+        </div>
+      </div>
     </header>
   );
 }

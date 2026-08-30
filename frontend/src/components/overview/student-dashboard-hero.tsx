@@ -35,9 +35,9 @@ export function StudentDashboardHero({
     <div className='grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4'>
       {coursesLoading || deadlinesLoading ? (
         <>
-          <Skeleton className='h-36 w-full rounded-2xl sm:col-span-2' />
+          <Skeleton className='h-36 w-full rounded-xl sm:col-span-2' />
           {Array.from({ length: 2 }).map((_, i) => (
-            <Skeleton key={i} className='h-36 w-full rounded-2xl' />
+            <Skeleton key={i} className='h-36 w-full rounded-xl' />
           ))}
         </>
       ) : (

@@ -23,16 +23,10 @@ export function GroupsContent({
   onRenameCancel,
   onStartRename,
   onDelete,
-  addingTo,
-  pickMember,
-  onPickMember,
-  onAddConfirm,
-  onAddCancel,
   onStartAdd,
   onCreate,
   onToggleLeader,
   onRemoveMember,
-  addPending,
   removePending,
   togglePending
 }: {
@@ -50,11 +44,6 @@ export function GroupsContent({
   onRenameCancel: () => void;
   onStartRename: (id: number, name: string) => void;
   onDelete: (id: number) => void;
-  addingTo: number | null;
-  pickMember: string;
-  onPickMember: (v: string) => void;
-  onAddConfirm: (groupId: number) => void;
-  onAddCancel: () => void;
   onStartAdd: (groupId: number) => void;
   onCreate: () => void;
   onToggleLeader: (
@@ -63,7 +52,6 @@ export function GroupsContent({
     role: GroupMemberRole
   ) => void;
   onRemoveMember: (groupId: number, memberId: number) => void;
-  addPending: boolean;
   removePending: boolean;
   togglePending: boolean;
 }) {
@@ -90,7 +78,7 @@ export function GroupsContent({
   }
 
   return (
-    <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3'>
+    <div className='grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3'>
       {groups.map((g) => {
         const candidates = roster.filter((s) => !allAssignedIds.has(s.id));
         return (
@@ -106,17 +94,11 @@ export function GroupsContent({
             onRenameCancel={onRenameCancel}
             onStartRename={() => onStartRename(g.id, g.name)}
             onDelete={() => onDelete(g.id)}
-            adding={addingTo === g.id}
-            pickMember={pickMember}
-            onPickMember={onPickMember}
-            onAddConfirm={() => onAddConfirm(g.id)}
-            onAddCancel={onAddCancel}
             onStartAdd={() => onStartAdd(g.id)}
             onToggleLeader={(memberId, role) =>
               onToggleLeader(g.id, memberId, role)
             }
             onRemoveMember={(memberId) => onRemoveMember(g.id, memberId)}
-            addPending={addPending}
             removePending={removePending}
             togglePending={togglePending}
           />

@@ -151,7 +151,7 @@ export function BulkStudentsModal({ open, onOpenChange }: Props) {
             minLength={8}
             required
           />
-          <p className='text-xs text-[#6A7282]'>
+          <p className='text-xs text-muted-foreground'>
             Same temporary password for all imported students.
           </p>
         </div>

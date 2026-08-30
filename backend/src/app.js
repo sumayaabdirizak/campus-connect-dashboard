@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { prisma } from './db/prisma.js';
 import { requestLogger } from './middleware/requestLogger.js';
+import { serverTimeHeader } from './middleware/serverTimeHeader.js';
 import { notFound } from './middleware/notFound.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { auth } from './middleware/auth.js';
@@ -28,6 +29,7 @@ app.use(helmet({
 }));
 
 app.use(express.json());
+app.use(serverTimeHeader);
 app.use(requestLogger());
 
 // ─── Static uploads with fallback to object storage ─────────────────────────
@@ -68,6 +70,7 @@ app.use(cors({
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,
+  exposedHeaders: ['X-Server-Time'],
 }));
 
 // Public CTR redirect (no auth). Must stay before the /api auth gate.

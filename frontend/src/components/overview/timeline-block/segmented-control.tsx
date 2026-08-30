@@ -20,7 +20,7 @@ export function SegmentedControl<T extends string>({
           onClick={() => onChange(key)}
           className={cn(
             'rounded px-2.5 py-1 font-medium transition-colors',
-            value === key ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            value === key ? 'bg-card text-foreground' : 'text-muted-foreground hover:text-foreground'
           )}
         >
           {label}

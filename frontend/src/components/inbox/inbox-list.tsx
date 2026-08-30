@@ -137,13 +137,13 @@ export function InboxList({
         showDiscover={showDiscover}
       />
 
-      <div className='min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain bg-white'>
+      <div className='min-h-0 flex-1 basis-0 overflow-y-auto overscroll-contain bg-card'>
         {isLoading && rows.length === 0 ? (
           <div className='space-y-0'>
             {Array.from({ length: 6 }).map((_, i) => (
               <div
                 key={i}
-                className='h-[72px] animate-pulse border-b border-[#F2F4F7] bg-[#F2F4F7]/50'
+                className='h-[72px] animate-pulse border-b border-border bg-muted/50'
               />
             ))}
           </div>

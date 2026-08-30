@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ReactNode } from 'react';
 import { cn } from '@/lib/utils';
 import { posTableColors as c } from './pos-colors';
 
@@ -43,7 +43,7 @@ export function PosTableHeaderCell({
   return (
     <th
       className={cn(
-        'px-3 py-2.5 text-xs font-semibold tracking-wide whitespace-nowrap uppercase sm:px-4 sm:py-3',
+        'px-3 py-3 text-[13px] font-bold whitespace-nowrap sm:px-4',
         align === 'right' && 'text-right',
         align === 'center' && 'text-center',
         align === 'left' && 'text-left',
@@ -66,14 +66,16 @@ export function PosTableBody({ children }: { children: ReactNode }) {
 
 export function PosTableRow({
   children,
-  className
+  className,
+  ...rest
 }: {
   children: ReactNode;
   className?: string;
-}) {
+} & ComponentPropsWithoutRef<'tr'>) {
   return (
     <tr
-      className={cn('bg-white transition-colors hover:bg-[#F9FAFB]', className)}
+      className={cn('bg-card transition-colors hover:bg-muted', className)}
+      {...rest}
     >
       {children}
     </tr>
@@ -92,7 +94,7 @@ export function PosTableCell({
   return (
     <td
       className={cn(
-        'px-3 py-3 align-middle text-sm whitespace-nowrap sm:px-4 sm:py-3.5',
+        'px-3 py-3 align-middle text-sm whitespace-nowrap sm:px-4',
         align === 'right' && 'text-right',
         align === 'center' && 'text-center',
         className

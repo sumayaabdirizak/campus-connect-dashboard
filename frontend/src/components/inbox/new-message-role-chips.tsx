@@ -50,7 +50,7 @@ export function NewMessageRoleChips({
             className={cn(
               'rounded-full border px-3 py-1 text-xs font-medium transition-colors',
               on
-                ? 'border-[#3B82F6] bg-[#EFF6FF] text-[#1D4ED8]'
+                ? 'border-primary bg-primary/10 text-[#1D4ED8]'
                 : 'border-border bg-background text-muted-foreground hover:bg-muted/50'
             )}
           >

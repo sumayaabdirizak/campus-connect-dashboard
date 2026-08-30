@@ -61,15 +61,18 @@ export async function getQuizAttempts(quizId: number): Promise<QuizAttempt[]> {
   return apiClient<QuizAttempt[]>(`/quizzes/${quizId}/attempts`);
 }
 
+export type OfflineAttemptOutcome =
+  | { marksEarned: number }
+  | { absent: true }
+  | { cheat: true };
+
 /// Offline quizzes are printed handouts — students never start an in-app
-/// attempt. This records a result for a chosen student in one shot: either
-/// `marksEarned` out of the quiz's point total (converted server-side to
-/// the same percentage `score`/`grade` every other attempt uses), or
-/// `absent: true` if they never sat / handed in the paper quiz.
+/// attempt. This records a result for a chosen student in one shot: paper
+/// marks, `absent` (never sat), or `cheat` (zero marks).
 export async function createOfflineAttempt(
   quizId: number,
   studentId: number,
-  outcome: { marksEarned: number } | { absent: true }
+  outcome: OfflineAttemptOutcome
 ): Promise<QuizAttempt> {
   return apiClient<QuizAttempt>(`/quizzes/${quizId}/attempts/offline`, {
     method: 'POST',

@@ -2,7 +2,6 @@
 
 import {
   ClipboardCheck,
-  ClipboardList,
   FileText,
   FolderOpen,
   GraduationCap,
@@ -25,7 +24,6 @@ const TAB_ICONS: Record<CourseTabId, LucideIcon> = {
   groups: Users,
   roster: UserCheck,
   grades: GraduationCap,
-  reviews: ClipboardList,
   chat: MessageSquare
 };
 
@@ -42,7 +40,7 @@ export function CourseTabNav({ tabs, activeTab, onTabChange, badges }: CourseTab
       className='w-full max-w-full min-w-0 overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'
       aria-label='Course sections'
     >
-      <div className='flex w-max min-w-0 items-center gap-5'>
+      <div className='flex w-max min-w-0 items-center gap-6'>
         {tabs.map((tab) => {
           const active = activeTab === tab.id;
           const badge = badges?.[tab.id];
@@ -58,7 +56,7 @@ export function CourseTabNav({ tabs, activeTab, onTabChange, badges }: CourseTab
               id={`course-tab-${tab.id}`}
               onClick={() => onTabChange(tab.id)}
               className={cn(
-                'relative flex shrink-0 items-center gap-1.5 border-b-2 py-2.5 text-sm transition-colors',
+                'relative flex shrink-0 items-center gap-1.5 border-b-2 py-3 text-sm transition-colors',
                 active
                   ? 'border-primary font-semibold text-primary'
                   : 'border-transparent font-medium text-muted-foreground hover:text-foreground'

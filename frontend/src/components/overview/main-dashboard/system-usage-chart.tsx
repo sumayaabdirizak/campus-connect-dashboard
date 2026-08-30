@@ -49,7 +49,7 @@ export function SystemUsageChart({
           <DropdownMenuTrigger asChild>
             <button
               type='button'
-              className='inline-flex items-center gap-1.5 rounded-full border border-[#E5E7EB] px-3 py-1.5 text-xs font-medium text-[#344054] transition-colors hover:bg-[#F8FAFC]'
+              className='inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-foreground transition-colors hover:bg-muted'
             >
               <Calendar className='size-3.5' />
               {PERIOD_LABELS[period]}

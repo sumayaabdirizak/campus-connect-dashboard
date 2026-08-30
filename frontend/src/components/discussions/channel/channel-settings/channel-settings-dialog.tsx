@@ -42,18 +42,18 @@ export function ChannelSettingsDialog({
       <DialogContent
         className={cn(
           'flex max-h-[min(90dvh,640px)] flex-col gap-0 overflow-hidden p-0',
-          'rounded-xl border border-[#E5E7EB] sm:max-w-lg',
+          'rounded-xl border border-border sm:max-w-lg',
           '[&_[data-slot=dialog-close]]:top-4 [&_[data-slot=dialog-close]]:right-4'
         )}
       >
-        <DialogHeader className='shrink-0 space-y-0 border-b border-[#E5E7EB] bg-[#F8FAFC] px-5 pt-5 pb-4 pr-12 text-left'>
-          <DialogTitle className='flex items-center gap-3 text-base font-bold text-[#101828]'>
-            <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-[#3B82F6] text-white'>
+        <DialogHeader className='shrink-0 space-y-0 border-b border-border bg-muted px-5 pt-5 pb-4 pr-12 text-left'>
+          <DialogTitle className='flex items-center gap-3 text-base font-bold text-foreground'>
+            <span className='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-white'>
               <Icons.hash className='size-4 text-white' />
             </span>
             <span className='min-w-0'>
               <span className='block truncate'>Channel settings</span>
-              <span className='mt-0.5 block truncate font-mono text-xs font-normal text-[#667085]'>
+              <span className='mt-0.5 block truncate font-mono text-xs font-normal text-muted-foreground'>
                 #{channel.name}
               </span>
             </span>

@@ -8,17 +8,19 @@ export async function generateQuizQuestions(args) {
   const provider = resolveProvider();
   let fitted = args;
   let sourceTruncated = false;
+  let maxCompletionTokens;
 
   if (provider === 'groq') {
     const fit = fitArgsForGroq(args);
     fitted = fit.args;
     sourceTruncated = fit.truncated;
+    maxCompletionTokens = fit.maxCompletionTokens;
   }
 
   const userTurn = buildUserTurn(fitted);
   const result =
     provider === 'groq'
-      ? await generateWithGroq(userTurn)
+      ? await generateWithGroq(userTurn, { maxTokens: maxCompletionTokens })
       : await generateWithGemini(userTurn);
   return { ...result, sourceTruncated };
 }

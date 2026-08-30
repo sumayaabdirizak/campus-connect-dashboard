@@ -11,6 +11,7 @@ import { ResourcesToolbar } from './resources-toolbar';
 import { useResourceCrud } from './use-resource-crud';
 import { useResourceDialogs } from './use-resource-dialogs';
 import { useResourceListOps } from './use-resource-list-ops';
+import { CourseTabPage } from '../_shared/course-tab-page';
 
 export function CourseResources({
   courseId,
@@ -25,8 +26,12 @@ export function CourseResources({
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<ResourceTypeFilter>('all');
 
-  const { data: resources = [], isLoading, isError, refetch } = useResources(courseId);
-  const { data: modules = [] } = useModules(courseId);
+  const { data: resources = [], isLoading, isError, refetch } = useResources(
+    courseId,
+    undefined,
+    { live: true }
+  );
+  const { data: modules = [] } = useModules(courseId, { live: true });
   const dialogs = useResourceDialogs();
   const crud = useResourceCrud(courseId, teacherId);
   const listOps = useResourceListOps(courseId);
@@ -41,7 +46,7 @@ export function CourseResources({
   });
 
   return (
-    <div className='space-y-6'>
+    <CourseTabPage>
       <ResourcesToolbar
         search={search}
         onSearchChange={setSearch}
@@ -121,6 +126,6 @@ export function CourseResources({
         analyticsResource={dialogs.analyticsResource}
         onAnalyticsOpenChange={(o) => !o && dialogs.setAnalyticsResource(null)}
       />
-    </div>
+    </CourseTabPage>
   );
 }

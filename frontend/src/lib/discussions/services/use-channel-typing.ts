@@ -25,9 +25,9 @@ const FRESHNESS_MS = 5_000;
 const SWEEP_INTERVAL_MS = 1_500;
 
 type TypingEvent = {
-  channelId?: number;
-  groupDmId?: number;
-  groupId?: number;
+  channelId?: string | number;
+  groupDmId?: string | number;
+  groupId?: string | number;
   userId?: number;
   userName?: string;
   typing?: boolean;
@@ -36,8 +36,8 @@ type TypingEvent = {
 type TyperEntry = { userName: string; expiresAt: number };
 
 type TypingScope =
-  | { kind: 'channel'; channelId: number }
-  | { kind: 'groupDm'; groupDmId: number };
+  | { kind: 'channel'; channelId: string }
+  | { kind: 'groupDm'; groupDmId: string };
 
 function useTypingForScope(
   scope: TypingScope | null,
@@ -79,9 +79,9 @@ function useTypingForScope(
 
     const matches = (payload: TypingEvent): boolean => {
       if (scope.kind === 'channel') {
-        return Number(payload?.channelId) === scope.channelId;
+        return String(payload?.channelId ?? '') === scope.channelId;
       }
-      return Number(payload?.groupDmId) === scope.groupDmId;
+      return String(payload?.groupDmId ?? '') === scope.groupDmId;
     };
 
     const onTyping = (payload: TypingEvent) => {
@@ -119,21 +119,21 @@ function useTypingForScope(
 }
 
 export function useChannelTyping(
-  channelId: number | null | undefined,
+  channelId: string | number | null | undefined,
   myUserId: number | null
 ): string[] {
-  const id = Number(channelId);
+  const id = channelId != null ? String(channelId).trim() : '';
   const scope: TypingScope | null =
-    Number.isFinite(id) && id > 0 ? { kind: 'channel', channelId: id } : null;
+    id && id !== 'NaN' ? { kind: 'channel', channelId: id } : null;
   return useTypingForScope(scope, myUserId);
 }
 
 export function useGroupDmTyping(
-  groupDmId: number | null | undefined,
+  groupDmId: string | number | null | undefined,
   myUserId: number | null
 ): string[] {
-  const id = Number(groupDmId);
+  const id = groupDmId != null ? String(groupDmId).trim() : '';
   const scope: TypingScope | null =
-    Number.isFinite(id) && id > 0 ? { kind: 'groupDm', groupDmId: id } : null;
+    id && id !== 'NaN' ? { kind: 'groupDm', groupDmId: id } : null;
   return useTypingForScope(scope, myUserId);
 }

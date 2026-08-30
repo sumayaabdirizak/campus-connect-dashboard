@@ -32,7 +32,9 @@ export function useClubs(params?: ClubListParams) {
   return useQuery<ClubListResponse>({
     queryKey: clubKeys.list(params),
     queryFn: () => listClubs(params),
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 }
 
@@ -40,7 +42,9 @@ export function useMyClubs() {
   return useQuery<ClubMineResponse>({
     queryKey: clubKeys.mine(),
     queryFn: listMyClubs,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 }
 
@@ -48,7 +52,9 @@ export function useRecommendedClubs(limit?: number) {
   return useQuery({
     queryKey: clubKeys.recommended(limit),
     queryFn: () => listRecommendedClubs(limit),
-    staleTime: 60_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 }
 
@@ -57,7 +63,9 @@ export function useClubDetail(slug: string | null) {
     queryKey: clubKeys.detail(slug ?? ''),
     queryFn: () => getClubBySlug(slug!),
     enabled: !!slug,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 }
 
@@ -65,7 +73,9 @@ export function usePendingClubs() {
   return useQuery({
     queryKey: clubKeys.pending(),
     queryFn: listPendingClubs,
-    staleTime: 15_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 }
 
@@ -82,7 +92,9 @@ export function useClubMembers(clubId: number | null) {
     queryKey: clubKeys.members(clubId!),
     queryFn: () => listClubMembers(clubId!),
     enabled: !!clubId,
-    staleTime: 30_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 15_000,
   });
 }
 
@@ -91,7 +103,9 @@ export function useClubJoinRequests(clubId: number | null) {
     queryKey: clubKeys.requests(clubId!),
     queryFn: () => listClubJoinRequests(clubId!),
     enabled: !!clubId,
-    staleTime: 15_000,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 8_000,
   });
 }
 

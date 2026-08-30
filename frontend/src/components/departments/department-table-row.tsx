@@ -18,7 +18,7 @@ export function DepartmentTableRow({
     <PosTableRow>
       {col('id') ? (
         <PosTableCell>
-          <span className='font-medium text-[#3B82F6]'>#{department.id}</span>
+          <span className='font-medium text-primary'>#{department.id}</span>
         </PosTableCell>
       ) : null}
       {col('name') ? (

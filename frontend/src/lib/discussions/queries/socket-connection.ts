@@ -50,8 +50,8 @@ function emitJoinForRoom(s: Socket, room: RoomKey) {
 
 export function unwrapMessage(raw: unknown) {
   if (!raw || typeof raw !== 'object') return null;
-  const obj = raw as { message?: { id?: number }; id?: number };
+  const obj = raw as { message?: { id?: string | number }; id?: string | number };
   if (obj.message && typeof obj.message === 'object') return obj.message;
-  if (typeof obj.id === 'number') return raw;
+  if (typeof obj.id === 'string' || typeof obj.id === 'number') return raw;
   return null;
 }

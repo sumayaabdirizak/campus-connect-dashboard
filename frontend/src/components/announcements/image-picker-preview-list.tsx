@@ -74,7 +74,7 @@ export function ImagePickerPreviewList({
         ))}
       </ul>
       {images.length < maxImages && (
-        <p className='text-xs text-gray-500'>
+        <p className='text-xs text-muted-foreground'>
           {images.length} of {maxImages} images added
         </p>
       )}

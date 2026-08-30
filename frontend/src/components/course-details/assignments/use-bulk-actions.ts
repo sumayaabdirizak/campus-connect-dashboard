@@ -2,6 +2,9 @@
 
 import { toast } from 'sonner';
 import type { Assignment, Submission } from '@/lib/course-details/services/assignments-types';
+import type { GroupRow } from './shared';
+import { isSubmissionGraded } from './shared';
+import { validateExtensionDate } from './extension-date-utils';
 
 type MutateLike = {
   mutate: (...args: any[]) => void;
@@ -10,6 +13,8 @@ type MutateLike = {
 
 export function useBulkActions(args: {
   assignment: Assignment;
+  isGroupMode: boolean;
+  allGroupRows: GroupRow[];
   submissionsByStudent: Map<number, Submission>;
   selectedRows: Set<number>;
   setSelectedRows: React.Dispatch<React.SetStateAction<Set<number>>>;
@@ -40,9 +45,22 @@ export function useBulkActions(args: {
     }
     a.setBulkGradeRunning(true);
     try {
-      const targets = Array.from(a.selectedRows)
-        .map((sid) => a.submissionsByStudent.get(sid))
-        .filter((s): s is Submission => s != null);
+      const targets = a.isGroupMode
+        ? a.allGroupRows
+            .filter((g) => a.selectedRows.has(g.groupId))
+            .map((g) => g.submission)
+            .filter(
+              (s): s is Submission => s != null && !isSubmissionGraded(s)
+            )
+        : Array.from(a.selectedRows)
+            .map((sid) => a.submissionsByStudent.get(sid))
+            .filter(
+              (s): s is Submission => s != null && !isSubmissionGraded(s)
+            );
+      if (targets.length === 0) {
+        toast.error('Selected students are already graded');
+        return;
+      }
       const results = await Promise.allSettled(
         targets.map((sub) =>
           a.gradeMutation.mutateAsync({
@@ -73,22 +91,37 @@ export function useBulkActions(args: {
   };
 
   const handleBulkExtend = () => {
-    if (!a.bulkDate || a.selectedRows.size === 0) {
+    if (a.selectedRows.size === 0) {
       toast.error('Pick students and a new due date');
       return;
     }
+    if (!validateExtensionDate(a.bulkDate)) return;
     const newDueAt = new Date(a.bulkDate).toISOString();
     const reason = a.bulkReason || undefined;
     if (selectedAssignment.gradingScope === 'GROUP') {
-      const groupIds = Array.from(
-        new Set(
-          Array.from(a.selectedRows)
-            .map((sid) => a.submissionsByStudent.get(sid)?.groupId)
-            .filter((g): g is number => typeof g === 'number')
-        )
-      );
+      const groupIds = a.isGroupMode
+        ? a.allGroupRows
+            .filter(
+              (g) =>
+                a.selectedRows.has(g.groupId) &&
+                (g.submission == null || !isSubmissionGraded(g.submission))
+            )
+            .map((g) => g.groupId)
+        : Array.from(
+            new Set(
+              Array.from(a.selectedRows)
+                .map((sid) => a.submissionsByStudent.get(sid))
+                .filter(
+                  (s): s is Submission =>
+                    s != null &&
+                    s.groupId != null &&
+                    !isSubmissionGraded(s)
+                )
+                .map((s) => s.groupId!)
+            )
+          );
       if (groupIds.length === 0) {
-        toast.error('Selected submissions have no groupId');
+        toast.error('Selected students are already graded');
         return;
       }
       a.extensionBatchMutation.mutate(
@@ -105,10 +138,26 @@ export function useBulkActions(args: {
         }
       );
     } else {
+      const studentIds = a.isGroupMode
+        ? a.allGroupRows
+            .filter(
+              (g) =>
+                a.selectedRows.has(g.groupId) &&
+                (g.submission == null || !isSubmissionGraded(g.submission))
+            )
+            .flatMap((g) => g.members.map((m) => m.id))
+        : Array.from(a.selectedRows).filter((id) => {
+            const sub = a.submissionsByStudent.get(id);
+            return sub == null || !isSubmissionGraded(sub);
+          });
+      if (studentIds.length === 0) {
+        toast.error('Selected students are already graded');
+        return;
+      }
       a.extensionBatchMutation.mutate(
         {
           assignmentId: selectedAssignment.id,
-          input: { studentIds: Array.from(a.selectedRows), newDueAt, reason }
+          input: { studentIds, newDueAt, reason }
         },
         {
           onSuccess: ({ count }: { count: number }) => {

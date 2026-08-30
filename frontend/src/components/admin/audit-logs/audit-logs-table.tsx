@@ -51,7 +51,7 @@ export function AuditLogsTable({
   if (rows.length === 0) {
     return (
       <div className='absolute inset-0 flex flex-col items-center justify-center gap-3 px-6 text-center'>
-        <div className='flex size-14 items-center justify-center rounded-2xl bg-muted'>
+        <div className='flex size-14 items-center justify-center rounded-xl bg-muted'>
           <AlertTriangle className='text-muted-foreground size-6' />
         </div>
         <div>
@@ -65,7 +65,7 @@ export function AuditLogsTable({
   return (
     <div className='absolute inset-0 overflow-x-auto overflow-y-auto overscroll-contain'>
       <Table className='w-full min-w-0'>
-        <TableHeader className='sticky top-0 z-10 bg-card shadow-sm [&_tr]:border-b'>
+        <TableHeader className='sticky top-0 z-10 bg-card [&_tr]:border-b'>
           <TableRow className='hover:bg-transparent'>
             <TableHead className='bg-card w-10'>
               <Checkbox

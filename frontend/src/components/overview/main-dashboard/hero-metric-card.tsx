@@ -17,10 +17,10 @@ export function HeroMetricCard({
   const up = trend != null && trend >= 0
 
   return (
-    <div className='flex h-full items-center justify-between rounded-2xl border border-[#E5E7EB] bg-white p-5 shadow-sm'>
+    <div className='flex h-full items-center justify-between rounded-xl border border-border bg-card p-5'>
       <div>
-        <p className='text-sm text-[#667085]'>{label}</p>
-        <p className='mt-1 text-3xl font-bold tracking-tight text-[#101828]'>{value}</p>
+        <p className='text-sm text-muted-foreground'>{label}</p>
+        <p className='mt-1 text-3xl font-bold tracking-tight text-foreground'>{value}</p>
         {trend != null ? (
           <p
             className={cn(
@@ -29,7 +29,7 @@ export function HeroMetricCard({
             )}
           >
             {up ? <TrendingUp className='size-3.5' /> : <TrendingDown className='size-3.5' />}
-            {Math.abs(trend)}%<span className='font-normal text-[#667085]'>&nbsp;vs last period</span>
+            {Math.abs(trend)}%<span className='font-normal text-muted-foreground'>&nbsp;vs last period</span>
           </p>
         ) : null}
       </div>

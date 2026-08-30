@@ -24,8 +24,8 @@ export function InboxFilterChips({
             className={cn(
               'inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1 text-xs font-medium whitespace-nowrap transition-colors',
               active
-                ? 'bg-[#3B82F6] text-white shadow-sm'
-                : 'bg-[#F2F4F7] text-[#667085] hover:bg-[#E4E7EC] hover:text-[#101828]'
+                ? 'bg-primary text-white'
+                : 'bg-muted text-muted-foreground hover:bg-[#E4E7EC] hover:text-foreground'
             )}
           >
             {f.label}

@@ -81,7 +81,7 @@ export function AnnouncementRichEditor({
         role: 'textbox',
         'aria-multiline': 'true',
         class:
-          'prose prose-sm dark:prose-invert max-w-none min-h-[160px] rounded-md border border-input bg-background px-3 py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'prose prose-sm dark:prose-invert max-w-none min-h-[180px] rounded-lg border-2 border-foreground/15 bg-background px-3 py-3 text-sm font-medium text-foreground focus:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30 [&_.ProseMirror]:min-h-[160px] [&_.ProseMirror]:text-foreground [&_.ProseMirror_p.is-editor-empty:first-child::before]:text-foreground/45',
         ...(ariaInvalid === true || ariaInvalid === 'true' ? { 'aria-invalid': 'true' as const } : {}),
         ...(ariaDescribedBy ? { 'aria-describedby': ariaDescribedBy } : {})
       }

@@ -4,13 +4,14 @@ import { useEffect, type Dispatch, type SetStateAction } from 'react'
 import { getDiscussionSocket } from '@/lib/discussions/queries/socket'
 import type { MessageReaction } from '@/lib/discussions/queries/types'
 import {
+  discussionIdsEqual,
   mergeMessages,
   unwrap,
   type ChannelMessagesState,
 } from '../use-channel-messages/message-list-helpers'
 
 export function useGroupDmSocketSync(
-  validId: number | null,
+  validId: string | null,
   setState: Dispatch<SetStateAction<ChannelMessagesState>>
 ) {
   useEffect(() => {
@@ -19,12 +20,12 @@ export function useGroupDmSocketSync(
 
     const onNew = (raw: unknown) => {
       const msg = unwrap(raw)
-      if (!msg || Number(msg.groupDmId) !== validId) return
+      if (!msg || !discussionIdsEqual(msg.groupDmId, validId)) return
       setState((s) => ({ ...s, messages: mergeMessages(s.messages, [msg]) }))
     }
     const onEdit = (raw: unknown) => {
       const msg = unwrap(raw)
-      if (!msg || Number(msg.groupDmId) !== validId) return
+      if (!msg || !discussionIdsEqual(msg.groupDmId, validId)) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === msg.id)
         if (idx < 0) return s
@@ -37,7 +38,7 @@ export function useGroupDmSocketSync(
       const messageId = payload?.messageId
       if (!messageId) return
       const groupDmId = payload?.groupDmId ? String(payload.groupDmId) : null
-      if (groupDmId != null && Number(groupDmId) !== validId) return
+      if (groupDmId != null && !discussionIdsEqual(groupDmId, validId)) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)
         if (idx < 0) return s

@@ -15,7 +15,7 @@ const skeletonTones: DashboardKpiTone[] = [
 
 export function DashboardKpiGridSkeleton() {
   return (
-    <div className='grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card shadow-sm sm:grid-cols-2 xl:grid-cols-4'>
+    <div className='grid grid-cols-1 overflow-hidden rounded-xl border border-border bg-card sm:grid-cols-2 xl:grid-cols-4'>
       {skeletonTones.map((tone, i) => (
         <div
           key={i}

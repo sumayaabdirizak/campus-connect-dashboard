@@ -31,7 +31,7 @@ const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 export function TeacherCourseCard({ offering }: TeacherCourseCardProps) {
   return (
     <Link href={`/dashboard/courses/${offering.id}`}>
-      <Card className='overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-border bg-card rounded-2xl flex flex-col h-full'>
+      <Card className='overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-border bg-card rounded-xl flex flex-col h-full'>
         <div className='relative h-48 w-full overflow-hidden shrink-0'>
           {offering.thumbnail?.trim() ? (
             // `unoptimized` bypasses the Next image optimizer, which in dev
@@ -53,7 +53,7 @@ export function TeacherCourseCard({ offering }: TeacherCourseCardProps) {
             </div>
           )}
           <div className='absolute top-3 right-3'>
-            <Button variant='secondary' size='icon' className='h-8 w-8 bg-background/90 backdrop-blur-md hover:bg-background shadow-sm'>
+            <Button variant='secondary' size='icon' className='h-8 w-8 bg-background/90 backdrop-blur-md hover:bg-background'>
               <MoreVertical className='h-5 w-5' />
             </Button>
           </div>

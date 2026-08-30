@@ -1133,7 +1133,7 @@ model QuizAttempt {
   is_graded   Boolean   @default(false)
 
   // Anti-cheating fields
-  closure_reason    String?   // null | "violations" | "time_expired" | "student_exit"
+  closure_reason    String?   // null | "violations" | "time_expired" | "student_exit" | "absent" | "cheat"
   violations_count Int   @default(0)
   warnings_shown   Int   @default(0)
 

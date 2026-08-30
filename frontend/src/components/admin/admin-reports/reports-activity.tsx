@@ -7,7 +7,7 @@ import { Badge } from '@/features/ui/components/badge'
 
 export function ReportsActivity({ data }: { data?: PlatformAnalytics }) {
   return (
-    <div className='rounded-xl border bg-card p-4 shadow-sm'>
+    <div className='rounded-xl border bg-card p-4'>
       <div className='mb-4 flex items-center gap-2'>
         <BarChart3 className='text-muted-foreground size-4' />
         <p className='text-sm font-semibold'>Recent activity</p>

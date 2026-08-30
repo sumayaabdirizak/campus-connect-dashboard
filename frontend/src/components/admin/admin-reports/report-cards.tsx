@@ -10,7 +10,7 @@ export const PIE_COLORS = ['#22c55e', '#f59e0b', '#ef4444']
 
 export function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div className='rounded-xl border bg-card p-4 shadow-sm'>
+    <div className='rounded-xl border bg-card p-4'>
       <p className='mb-3 text-sm font-semibold'>{title}</p>
       {children}
     </div>
@@ -36,7 +36,7 @@ export function KpiCard({
     <motion.div
       initial={{ opacity: 0, y: 6 }}
       animate={{ opacity: 1, y: 0 }}
-      className='rounded-xl border bg-card p-4 shadow-sm'
+      className='rounded-xl border bg-card p-4'
     >
       <div className='flex items-start justify-between'>
         <span className='flex size-9 items-center justify-center rounded-xl bg-muted text-muted-foreground'>

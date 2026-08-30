@@ -18,7 +18,7 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
   return (
     <Link
       href={`/dashboard/courses/${course.id}`}
-      className='group flex flex-col overflow-hidden rounded-lg border bg-card shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+      className='group flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
     >
       {/* Banner — course thumbnail when available, else the identity color */}
       <div

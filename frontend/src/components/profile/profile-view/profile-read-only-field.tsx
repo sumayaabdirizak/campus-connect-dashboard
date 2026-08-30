@@ -16,7 +16,7 @@ export function ProfileReadOnlyField({
     <div className='space-y-1.5'>
       <Label
         htmlFor={id}
-        className='pointer-events-none text-sm font-medium text-[#344054]'
+        className='pointer-events-none text-sm font-medium text-foreground'
       >
         {label}
         {required ? <span className='text-destructive'> *</span> : null}
@@ -24,7 +24,7 @@ export function ProfileReadOnlyField({
       <div
         id={id}
         aria-readonly='true'
-        className='border-input flex h-9 w-full cursor-default items-center rounded-md border bg-[#F9FAFB] px-3 text-sm text-[#101828] select-none pointer-events-none'
+        className='border-input flex h-9 w-full cursor-default items-center rounded-md border bg-muted px-3 text-sm text-foreground select-none pointer-events-none'
       >
         <span className='truncate'>{value.trim() ? value : '—'}</span>
       </div>

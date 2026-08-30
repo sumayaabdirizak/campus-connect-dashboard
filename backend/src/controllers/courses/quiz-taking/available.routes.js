@@ -1,13 +1,10 @@
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireCourseOfferingRead } from '../../../middleware/courseOfferingRbac.js';
-import { quizIsOpen } from './shared.js';
-
 /** @param {import('express').Router} router */
 export function register(router) {
   router.get('/:courseOfferingId/available', requireCourseOfferingRead(), asyncHandler(async (req, res) => {
     const studentId = req.user.id ?? req.user.sub;
-    const now = new Date();
 
     const quizzes = await prisma.quiz.findMany({
       where: {
@@ -54,42 +51,34 @@ export function register(router) {
       submittedByQuiz.get(a.quizId).push(a);
     }
 
-    const available = quizzes
-      .filter((q) => {
-        const ip = inProgressByQuiz.get(q.id);
-        const submittedCount = submittedByQuiz.get(q.id)?.length ?? 0;
-        // In-progress or past submissions stay visible for continue / review.
-        if (ip || submittedCount > 0) return true;
-        return quizIsOpen(q, now);
-      })
-      .map((q) => {
-        const ip = inProgressByQuiz.get(q.id) ?? null;
-        const attempts = submittedByQuiz.get(q.id) ?? [];
-        const attemptsUsed = attempts.length;
-        const last = attempts[0] ?? null;
-        const bestScore = attempts.reduce((best, a) => {
-          const s = typeof a.score === 'number' ? a.score : null;
-          if (s == null) return best;
-          return best == null || s > best ? s : best;
-        }, null);
-        return {
-          ...q,
-          attemptsUsed,
-          attemptsLeft: Math.max(0, q.max_attempts - attemptsUsed),
-          inProgressAttempt: ip,
-          lastAttempt: last
-            ? {
-                id: last.id,
-                score: last.score,
-                submitted_at: last.submitted_at,
-                is_graded: last.is_graded ?? false,
-                passed:
-                  typeof last.score === 'number' ? last.score >= q.passing_score : null,
-              }
-            : null,
-          bestScore,
-        };
-      });
+    const available = quizzes.map((q) => {
+      const ip = inProgressByQuiz.get(q.id) ?? null;
+      const attempts = submittedByQuiz.get(q.id) ?? [];
+      const attemptsUsed = attempts.length;
+      const last = attempts[0] ?? null;
+      const bestScore = attempts.reduce((best, a) => {
+        const s = typeof a.score === 'number' ? a.score : null;
+        if (s == null) return best;
+        return best == null || s > best ? s : best;
+      }, null);
+      return {
+        ...q,
+        attemptsUsed,
+        attemptsLeft: Math.max(0, q.max_attempts - attemptsUsed),
+        inProgressAttempt: ip,
+        lastAttempt: last
+          ? {
+              id: last.id,
+              score: last.score,
+              submitted_at: last.submitted_at,
+              is_graded: last.is_graded ?? false,
+              passed:
+                typeof last.score === 'number' ? last.score >= q.passing_score : null,
+            }
+          : null,
+        bestScore,
+      };
+    });
 
     res.json(available);
   }));

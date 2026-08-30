@@ -23,11 +23,11 @@ function AccessRow({
       <div className='min-w-0 space-y-0.5'>
         <Label
           htmlFor={id}
-          className='text-sm font-medium text-[#101828]'
+          className='text-sm font-medium text-foreground'
         >
           {title}
         </Label>
-        <p className='text-[11px] leading-snug text-[#667085]'>{hint}</p>
+        <p className='text-[11px] leading-snug text-muted-foreground'>{hint}</p>
       </div>
       <Switch
         id={id}

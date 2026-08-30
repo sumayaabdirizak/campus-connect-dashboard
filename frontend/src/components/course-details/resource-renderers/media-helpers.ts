@@ -44,13 +44,13 @@ export function humanizeType(type: Resource['type']): string {
     case 'ASSIGNMENT':
       return 'Assignment';
     case 'LECTURE_NOTE':
-      return 'Lecture Note';
+      return 'File';
     case 'VIDEO':
       return 'Video';
     case 'AUDIO':
       return 'Audio';
     case 'EXTERNAL_LINK':
-      return 'External Link';
+      return 'Link';
     case 'OTHER':
       return 'Other';
     default:

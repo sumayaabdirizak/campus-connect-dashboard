@@ -1,9 +1,10 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
-import { Loader2, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react';
 
 export function AttemptNav({
+  isFirst,
   isLast,
   previewMode,
   warnings,
@@ -11,10 +12,12 @@ export function AttemptNav({
   submitPending,
   isOffline,
   queuedCount,
+  onPrev,
   onNext,
   onSubmitClick,
   onClosePreview
 }: {
+  isFirst: boolean;
   isLast: boolean;
   previewMode: boolean;
   warnings: number;
@@ -22,58 +25,63 @@ export function AttemptNav({
   submitPending: boolean;
   isOffline: boolean;
   queuedCount: number;
+  onPrev: () => void;
   onNext: () => void;
   onSubmitClick: () => void;
   onClosePreview?: () => void;
 }) {
+  const submitBusy = submitPending || isOffline || queuedCount > 0;
+
   return (
-    <div className='flex items-center justify-between pt-1'>
-      <span className='text-sm text-muted-foreground cursor-not-allowed select-none'>
-        Previous
-      </span>
+    <div className='flex items-center justify-between gap-3 pt-1'>
+      <Button
+        type='button'
+        variant='outline'
+        className='h-12 min-w-[7rem] rounded-xl px-5 text-base'
+        onClick={onPrev}
+        disabled={isFirst}
+      >
+        <ArrowLeft className='size-4' />
+        Back
+      </Button>
 
       {!previewMode && warnings > 0 ? (
-        <div
-          className='flex items-center gap-1 text-xs px-2.5 py-1 rounded-full border border-destructive/40 bg-destructive/5 text-destructive tabular-nums'
-          aria-live='assertive'
-        >
-          <ShieldAlert className='w-3 h-3' />
-          {warnings}/{maxWarnings} warnings
-        </div>
-      ) : null}
+        <p className='text-center text-sm text-destructive'>
+          {warnings} of {maxWarnings} warnings
+        </p>
+      ) : (
+        <span />
+      )}
 
       {isLast ? (
         <Button
           onClick={() => (previewMode ? onClosePreview?.() : onSubmitClick())}
-          disabled={submitPending || isOffline || queuedCount > 0}
+          disabled={!previewMode && submitBusy}
           variant={previewMode ? 'outline' : 'default'}
-          className='rounded-full px-6'
-          title={
-            isOffline
-              ? 'Waiting for connection — your answers are queued'
-              : queuedCount > 0
-                ? 'Finishing pending saves before submit'
-                : undefined
-          }
+          className='h-12 min-w-[8.5rem] rounded-xl bg-blue-600 px-6 text-base text-white hover:bg-blue-700'
         >
-          {previewMode
-            ? 'Close preview'
-            : submitPending
-              ? (
-                  <>
-                    <Loader2 className='w-4 h-4 animate-spin mr-1' />
-                    Submitting…
-                  </>
-                )
-              : isOffline
-                ? 'Waiting to reconnect…'
-                : queuedCount > 0
-                  ? 'Syncing…'
-                  : 'Submit Quiz'}
+          {previewMode ? (
+            'Close preview'
+          ) : submitPending ? (
+            <>
+              <Loader2 className='size-4 animate-spin' />
+              Sending…
+            </>
+          ) : isOffline ? (
+            'Waiting…'
+          ) : queuedCount > 0 ? (
+            'Saving…'
+          ) : (
+            'Finish quiz'
+          )}
         </Button>
       ) : (
-        <Button onClick={onNext} className='rounded-full px-6'>
-          Next Question
+        <Button
+          onClick={onNext}
+          className='h-12 min-w-[7rem] rounded-xl bg-blue-600 px-5 text-base text-white hover:bg-blue-700'
+        >
+          Next
+          <ArrowRight className='size-4' />
         </Button>
       )}
     </div>

@@ -15,8 +15,6 @@ import { draftToPayload, emptyDraft, validateDraft } from '../quiz-builder/draft
 import type { DraftQuestion, OptionInput, QuizQuestionType } from '../quiz-builder/types';
 import { BLANK, toPayload, validateForm } from '../quiz-settings-form/form-state';
 
-export type NewQuizPageTab = 'setup' | 'advanced';
-
 /// Drives the single-page "Add new quiz" flow: configure the quiz AND
 /// stage its questions locally, then create everything in one request when
 /// "Create Quiz" is pressed. Nothing is persisted until that final submit —
@@ -25,7 +23,6 @@ export type NewQuizPageTab = 'setup' | 'advanced';
 /// helpers the builder uses for its own inline editor.
 export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void) {
   const [form, setForm] = useState(BLANK);
-  const [tab, setTab] = useState<NewQuizPageTab>('setup');
   const [questions, setQuestions] = useState<DraftQuestion[]>([]);
   const [draft, setDraft] = useState<DraftQuestion | null>(null);
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
@@ -34,7 +31,6 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
   // same pattern as the real builder's quiz-builder.tsx.
   const [lockedAddType, setLockedAddType] = useState<QuizQuestionType | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
-  const [csvOpen, setCsvOpen] = useState(false);
 
   const createMutation = useCreateQuiz(courseId);
 
@@ -111,8 +107,51 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
   /// section its own question_type belongs to (or "Other questions") purely
   /// because the section blocks filter b.questions by type — no extra
   /// routing needed here.
+  ///
+  /// The per-section marks plan is enforced here too. The manual editor
+  /// already caps its Points field at the section's remaining budget, but
+  /// bulk adds used to bypass that entirely — a generated batch could push
+  /// one section far past its target while another sat empty, and the
+  /// "Total / Assigned" summary still read as balanced.
   const addQuestions = (newQuestions: DraftQuestion[]) => {
-    setQuestions((prev) => [...prev, ...newQuestions]);
+    if (selectedTypes.length === 0) {
+      setQuestions((prev) => [...prev, ...newQuestions]);
+      return;
+    }
+
+    const remaining = new Map<QuizQuestionType, number>();
+    for (const type of selectedTypes) {
+      const used = questions
+        .filter((q) => q.question_type === type)
+        .reduce((sum, q) => sum + (Number(q.points) || 0), 0);
+      remaining.set(type, (allocations[type] ?? 0) - used);
+    }
+
+    const accepted: DraftQuestion[] = [];
+    let skipped = 0;
+    for (const q of newQuestions) {
+      // A type with no section of its own is unplanned — it lands under
+      // "Other questions", where no budget applies.
+      if (!remaining.has(q.question_type)) {
+        accepted.push(q);
+        continue;
+      }
+      const points = Number(q.points) || 0;
+      const left = remaining.get(q.question_type) ?? 0;
+      if (points <= left) {
+        accepted.push(q);
+        remaining.set(q.question_type, left - points);
+      } else {
+        skipped += 1;
+      }
+    }
+
+    if (accepted.length > 0) setQuestions((prev) => [...prev, ...accepted]);
+    if (skipped > 0) {
+      toast.warning(
+        `${skipped} question${skipped === 1 ? '' : 's'} skipped — no marks left in ${skipped === 1 ? 'its' : 'their'} section. Raise the section's marks in Marking, or remove a question first.`
+      );
+    }
   };
 
   const totalPoints = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
@@ -123,6 +162,10 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
       toast.error(err);
       return;
     }
+    if (questions.length === 0) {
+      toast.error('Add at least one question before creating the quiz');
+      return;
+    }
     const payload = {
       ...toPayload(form),
       questions: questions.map(draftToPayload)
@@ -130,7 +173,7 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     createMutation.mutate(payload, {
       onSuccess: (quiz) => {
         toast.success(
-          `Created "${quiz.title}"${questions.length > 0 ? ` with ${questions.length} question${questions.length === 1 ? '' : 's'}` : ''}`
+          `Created "${quiz.title}" with ${questions.length} question${questions.length === 1 ? '' : 's'}`
         );
         onCreated(quiz);
       },
@@ -141,8 +184,6 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
   return {
     form,
     setForm,
-    tab,
-    setTab,
     questions,
     totalPoints,
     draft,
@@ -152,8 +193,6 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     allocations,
     aiOpen,
     setAiOpen,
-    csvOpen,
-    setCsvOpen,
     startNew,
     startNewForSection,
     startEdit,

@@ -56,7 +56,7 @@ export function ChannelSearchPopoverHeader({
             className={cn(
               'flex-1 rounded px-2 py-1 text-[10px] font-medium transition-colors',
               scope === 'channel'
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >
@@ -68,7 +68,7 @@ export function ChannelSearchPopoverHeader({
             className={cn(
               'flex-1 rounded px-2 py-1 text-[10px] font-medium transition-colors',
               scope === 'server'
-                ? 'bg-background text-foreground shadow-sm'
+                ? 'bg-background text-foreground'
                 : 'text-muted-foreground hover:text-foreground'
             )}
           >

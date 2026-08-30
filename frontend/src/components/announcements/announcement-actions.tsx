@@ -1,20 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Heart, MessageCircle, Bookmark } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Icons } from '@/components/icons';
 import { toast } from 'sonner';
 import { toggleAnnouncementLike } from '@/lib/announcements/services';
-import { useBookmarks, toggleBookmark } from '@/lib/announcements/services/bookmark-store';
+import { useQueryClient } from '@/lib/async-query';
 import type { Announcement } from '@/lib/announcements/types';
 
-/**
- * Card footer action bar: like (server heart reaction), comment count, and a
- * client-side bookmark. Likes are optimistic and reconciled from the server
- * response; bookmarks live in localStorage (no server table yet).
- */
 export function AnnouncementActions({ announcement }: { announcement: Announcement }) {
   const id = Number(announcement.id);
+  const queryClient = useQueryClient();
   const [liked, setLiked] = useState(Boolean(announcement.likedByCurrentUser));
   const [likeCount, setLikeCount] = useState(announcement.likes ?? 0);
   const [busy, setBusy] = useState(false);
@@ -24,14 +19,22 @@ export function AnnouncementActions({ announcement }: { announcement: Announceme
     setLikeCount(announcement.likes ?? 0);
   }, [announcement.id, announcement.likedByCurrentUser, announcement.likes]);
 
-  const saved = useBookmarks();
-  const isSaved = saved.has(String(announcement.id));
+  const patchLikeInCache = (likedByCurrentUser: boolean, likes: number) => {
+    const patch = (current: Announcement[] | undefined) => {
+      const list = current ?? [];
+      return list.map((item) =>
+        String(item.id) === String(id) ? { ...item, likedByCurrentUser, likes } : item
+      );
+    };
+    queryClient.updateQueriesDataByPrefix<Announcement[]>(['announcements', 'list'], patch);
+    queryClient.updateQueriesDataByPrefix<Announcement[]>(['announcements', 'scheduled'], patch);
+    queryClient.updateQueriesDataByPrefix<Announcement[]>(['announcements', 'drafts'], patch);
+  };
 
   const onLike = async (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
     if (busy) return;
-    // Optimistic flip.
     const nextLiked = !liked;
     setLiked(nextLiked);
     setLikeCount((c) => Math.max(0, c + (nextLiked ? 1 : -1)));
@@ -40,8 +43,8 @@ export function AnnouncementActions({ announcement }: { announcement: Announceme
       const res = await toggleAnnouncementLike(id);
       setLiked(res.likedByCurrentUser);
       setLikeCount(res.likes);
+      patchLikeInCache(res.likedByCurrentUser, res.likes);
     } catch {
-      // Revert on error.
       setLiked(!nextLiked);
       setLikeCount((c) => Math.max(0, c + (nextLiked ? -1 : 1)));
       toast.error('Could not update reaction');
@@ -50,57 +53,20 @@ export function AnnouncementActions({ announcement }: { announcement: Announceme
     }
   };
 
-  const onSave = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    e.preventDefault();
-    toggleBookmark(announcement.id);
-  };
-
-  const showComments =
-    announcement.commentsEnabled && typeof announcement.commentsCount === 'number';
-
   return (
-    <div className='ms-[44px] flex items-center gap-1 border-t border-border/60 pt-2 sm:ms-[46px]'>
+    <div className='flex items-center gap-3'>
       <button
         type='button'
         onClick={onLike}
+        disabled={busy}
         aria-pressed={liked}
-        aria-label={liked ? 'Remove reaction' : 'Like'}
-        className={cn(
-          'inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium transition-colors',
-          'hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          liked ? 'text-rose-600 dark:text-rose-400' : 'text-muted-foreground'
-        )}
+        aria-label={liked ? 'Remove like' : 'Like post'}
+        className={`flex items-center gap-1 text-xs transition-colors disabled:opacity-50 ${
+          liked ? 'text-red-500' : 'text-foreground/65 hover:text-red-500'
+        }`}
       >
-        <Heart className={cn('size-4', liked && 'fill-current')} aria-hidden />
-        {likeCount > 0 && <span className='tabular-nums'>{likeCount}</span>}
-      </button>
-
-      {showComments && (
-        <span
-          className='inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium text-muted-foreground'
-          aria-label={`${announcement.commentsCount} comments`}
-        >
-          <MessageCircle className='size-4' aria-hidden />
-          {(announcement.commentsCount ?? 0) > 0 && (
-            <span className='tabular-nums'>{announcement.commentsCount}</span>
-          )}
-        </span>
-      )}
-
-      <button
-        type='button'
-        onClick={onSave}
-        aria-pressed={isSaved}
-        aria-label={isSaved ? 'Remove from saved' : 'Save'}
-        className={cn(
-          'ms-auto inline-flex min-h-9 items-center gap-1.5 rounded-full px-2.5 text-sm font-medium transition-colors',
-          'hover:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          isSaved ? 'text-primary' : 'text-muted-foreground'
-        )}
-      >
-        <Bookmark className={cn('size-4', isSaved && 'fill-current')} aria-hidden />
-        <span className='hidden sm:inline'>{isSaved ? 'Saved' : 'Save'}</span>
+        <Icons.heart className='h-3.5 w-3.5' />
+        {likeCount > 0 ? <span className='text-[10px]'>{likeCount}</span> : null}
       </button>
     </div>
   );

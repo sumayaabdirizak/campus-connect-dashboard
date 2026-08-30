@@ -87,7 +87,7 @@ export function PosPageHeader({
             type='button'
             variant='outline'
             size='icon'
-            className='size-9 rounded-full bg-card shadow-sm'
+            className='size-9 rounded-full bg-card'
             onClick={onRefresh}
             disabled={refreshing}
             aria-label='Refresh'
@@ -101,7 +101,7 @@ export function PosPageHeader({
             type='button'
             variant='outline'
             size='icon'
-            className='hidden size-9 rounded-full bg-card shadow-sm sm:inline-flex'
+            className='hidden size-9 rounded-full bg-card sm:inline-flex'
             onClick={() => void toggleFullscreen()}
             aria-label={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
           >
@@ -118,8 +118,8 @@ export function PosPageHeader({
         {onAdd ? (
           <Button
             type='button'
-            className='h-9 flex-1 gap-1.5 rounded-full px-4 text-white hover:bg-[#2563EB] sm:flex-none'
-            style={{ backgroundColor: '#3B82F6' }}
+            className='h-9 flex-1 gap-1.5 rounded-full px-4 text-primary-foreground hover:bg-primary/90 sm:flex-none'
+            style={{ backgroundColor: 'var(--primary)' }}
             onClick={onAdd}
           >
             <Icons.add className='size-4' />

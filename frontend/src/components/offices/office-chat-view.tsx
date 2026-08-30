@@ -57,14 +57,14 @@ export function OfficeChatView({ thread, onBack }: Props) {
   }
 
   return (
-    <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#F8FAFC]'>
-      <div className='shrink-0 border-b border-[#E5E7EB] bg-white px-4 py-3'>
+    <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-muted'>
+      <div className='shrink-0 border-b border-border bg-card px-4 py-3'>
         <div className='flex items-center gap-3'>
           <span className='bg-muted flex size-10 shrink-0 items-center justify-center rounded-full'>
             <Building2 className='size-5' />
           </span>
           <div className='min-w-0 flex-1'>
-            <h2 className='truncate text-base font-semibold text-[#101828]'>{peerLabel}</h2>
+            <h2 className='truncate text-base font-semibold text-foreground'>{peerLabel}</h2>
             <p className='text-muted-foreground text-xs'>Direct message</p>
           </div>
           {onBack ? (
@@ -86,7 +86,7 @@ export function OfficeChatView({ thread, onBack }: Props) {
 
       <TypingIndicator typers={typers} />
 
-      <div className='shrink-0 border-t border-[#E5E7EB] bg-white p-3'>
+      <div className='shrink-0 border-t border-border bg-card p-3'>
         <div className='flex items-end gap-2'>
           <Textarea
             value={draft}

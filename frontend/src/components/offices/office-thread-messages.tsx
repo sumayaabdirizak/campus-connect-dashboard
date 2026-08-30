@@ -5,14 +5,10 @@ import { Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { PastelSlot } from '@/lib/pastel';
 import type { OfficeThreadDetail } from '@/lib/offices/types';
+import { formatMessageDateTime } from '@/lib/format-time';
 
 function messageTime(iso: string): string {
-  return new Date(iso).toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
+  return formatMessageDateTime(iso);
 }
 
 export function OfficeThreadMessages({
@@ -27,7 +23,7 @@ export function OfficeThreadMessages({
   endRef: RefObject<HTMLDivElement | null>;
 }) {
   return (
-    <div className='mt-3 flex-1 space-y-3 overflow-y-auto rounded-2xl border bg-card p-4'>
+    <div className='mt-3 flex-1 space-y-3 overflow-y-auto rounded-xl border bg-card p-4'>
       {thread.messages.map((m) => {
         const own = m.sender?.id === myId;
         const fromStudent = m.sender?.id === thread.student.id;
@@ -46,7 +42,7 @@ export function OfficeThreadMessages({
             </div>
             <div
               className={cn(
-                'w-fit max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                'w-fit max-w-[82%] whitespace-pre-wrap break-words rounded-xl px-3 py-2 text-sm leading-relaxed',
                 m.isInternalNote
                   ? 'border border-dashed border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-500/10'
                   : own

@@ -34,7 +34,7 @@ export function TeacherQuizCard({
 
   return (
     <div
-      className={`group border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30 focus-within:ring-2 focus-within:ring-primary/40 ${
+      className={`group border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card transition-all duration-200 hover:shadow-md hover:border-primary/30 focus-within:ring-2 focus-within:ring-primary/40 ${
         isEmpty && !q.is_draft ? 'border-warning' : ''
       } ${selected ? 'ring-2 ring-primary/50 bg-primary/[0.03] border-primary/40' : ''}`}
     >

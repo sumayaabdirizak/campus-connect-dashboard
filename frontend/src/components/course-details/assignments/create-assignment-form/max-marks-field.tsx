@@ -1,5 +1,6 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { assignmentFormFieldClass } from './field-styles';
 
 interface MaxMarksFieldProps {
   value: number;
@@ -30,6 +31,7 @@ export function MaxMarksField({ value, onBlur, onChange, error }: MaxMarksFieldP
           onChange(Math.min(100, Math.max(1, Math.trunc(parsed))));
         }}
         placeholder='100'
+        className={assignmentFormFieldClass}
       />
       {error && <p className='text-xs text-destructive'>{error}</p>}
     </div>

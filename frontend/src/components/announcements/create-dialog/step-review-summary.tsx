@@ -3,7 +3,7 @@
 import { Icons } from '@/components/icons';
 import type { AnnouncementPriority, AnnouncementTargetType } from '@/lib/announcements/types';
 import type { ActiveDaysPreset } from './types';
-import { computeExpiresIsoFromPreset, htmlToPlain } from './utils';
+import { computeExpiresIsoFromPreset, dialogFieldsetClass, dialogLegendClass, htmlToPlain } from './utils';
 
 type Preview = { count: number } | null | undefined;
 
@@ -21,8 +21,6 @@ type Props = {
   activeDaysPreset: ActiveDaysPreset;
   expiresAtCustom: string;
   deadlineAtLocal: string;
-  isEditMode: boolean;
-  notifySms: boolean;
   previewLoading: boolean;
   audiencePreview: Preview;
 };
@@ -42,8 +40,6 @@ export function StepReviewSummary(props: Props) {
     activeDaysPreset,
     expiresAtCustom,
     deadlineAtLocal,
-    isEditMode,
-    notifySms,
     previewLoading,
     audiencePreview,
   } = props;
@@ -61,93 +57,80 @@ export function StepReviewSummary(props: Props) {
             : `${selectedSections.length} section${selectedSections.length === 1 ? '' : 's'}`;
 
   const activeUntil = (() => {
-    if (expiresAtCustom.trim()) return new Date(expiresAtCustom).toLocaleString();
-    if (activeDaysPreset === 'off') return 'No active-days limit';
+    if (activeDaysPreset === 'custom') {
+      return expiresAtCustom.trim()
+        ? new Date(expiresAtCustom).toLocaleString()
+        : 'Custom date not set';
+    }
+    if (activeDaysPreset === 'off') return 'No limit';
     const iso = computeExpiresIsoFromPreset(activeDaysPreset);
     return iso ? new Date(iso).toLocaleString() : '—';
   })();
 
+  const rows: { label: string; value: string; warn?: boolean }[] = [
+    { label: 'Title', value: title.trim() || '—' },
+    {
+      label: 'Message',
+      value: !plain ? '—' : plain.length > 80 ? `${plain.slice(0, 80)}…` : plain,
+    },
+    ...(imageCount > 0 ? [{ label: 'Images', value: `${imageCount} attached` }] : []),
+    {
+      label: 'Audience',
+      value: previewLoading
+        ? 'Calculating…'
+        : audiencePreview
+          ? `${audiencePreview.count} recipient${audiencePreview.count === 1 ? '' : 's'} · ${reachLabel}`
+          : '—',
+    },
+    {
+      label: 'Roles',
+      value:
+        [includeStudents && 'Students', includeTeachers && 'Teachers'].filter(Boolean).join(' + ') ||
+        '—',
+    },
+    { label: 'Priority', value: priority },
+    { label: 'Pinned until', value: activeUntil },
+    ...(deadlineAtLocal
+      ? [{ label: 'Calendar deadline', value: new Date(deadlineAtLocal).toLocaleString() }]
+      : []),
+  ];
+
   return (
-    <section
-      aria-labelledby='review-summary-heading'
-      className='space-y-3 rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-4'
-    >
-      <div className='flex items-center gap-2'>
-        <div className='flex size-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
+    <section aria-labelledby='review-summary-heading' className={dialogFieldsetClass}>
+      <div className='flex items-center gap-2.5'>
+        <div className='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground'>
           <Icons.send className='size-4' aria-hidden />
         </div>
-        <h3 id='review-summary-heading' className='text-sm font-semibold text-foreground'>
-          Review before posting
-        </h3>
+        <div>
+          <h3 id='review-summary-heading' className={dialogLegendClass}>
+            Ready to post?
+          </h3>
+          <p className='text-xs text-muted-foreground'>Double-check everything below.</p>
+        </div>
       </div>
-      <dl className='grid gap-2 text-xs'>
-        <div className='flex items-start justify-between gap-3'>
-          <dt className='text-muted-foreground'>Title</dt>
-          <dd className='max-w-[60%] truncate text-end font-medium text-foreground'>
-            {title.trim() || '—'}
-          </dd>
-        </div>
-        <div className='flex items-start justify-between gap-3'>
-          <dt className='text-muted-foreground'>Message</dt>
-          <dd className='max-w-[60%] text-end text-muted-foreground'>
-            {!plain ? '—' : plain.length > 80 ? `${plain.slice(0, 80)}…` : plain}
-          </dd>
-        </div>
-        {imageCount > 0 ? (
-          <div className='flex items-center justify-between gap-3'>
-            <dt className='text-muted-foreground'>Images</dt>
-            <dd className='font-medium text-foreground'>{imageCount} attached</dd>
-          </div>
-        ) : null}
-        <div className='flex items-center justify-between gap-3'>
-          <dt className='text-muted-foreground'>Audience</dt>
-          <dd className='text-end font-medium text-foreground'>
-            {previewLoading
-              ? 'Calculating…'
-              : audiencePreview
-                ? `${audiencePreview.count} recipient${audiencePreview.count === 1 ? '' : 's'}`
-                : '—'}
-            <span className='ms-1 font-normal text-muted-foreground'>· {reachLabel}</span>
-          </dd>
-        </div>
-        <div className='flex items-center justify-between gap-3'>
-          <dt className='text-muted-foreground'>Roles</dt>
-          <dd className='font-medium text-foreground'>
-            {[includeStudents && 'Students', includeTeachers && 'Teachers']
-              .filter(Boolean)
-              .join(' + ') || '—'}
-          </dd>
-        </div>
-        <div className='flex items-center justify-between gap-3'>
-          <dt className='text-muted-foreground'>Priority</dt>
-          <dd className='font-medium capitalize text-foreground'>{priority}</dd>
-        </div>
-        <div className='flex items-center justify-between gap-3'>
-          <dt className='text-muted-foreground'>Active until</dt>
-          <dd className='font-medium text-foreground'>{activeUntil}</dd>
-        </div>
-        {deadlineAtLocal ? (
-          <div className='flex items-center justify-between gap-3'>
-            <dt className='text-muted-foreground'>Calendar deadline</dt>
-            <dd className='font-medium text-foreground'>
-              {new Date(deadlineAtLocal).toLocaleString()}
+      <dl className='divide-y divide-foreground/10 rounded-lg border-2 border-foreground/10 bg-background'>
+        {rows.map((row) => (
+          <div
+            key={row.label}
+            className='flex items-start justify-between gap-4 px-4 py-3 text-sm'
+          >
+            <dt className='shrink-0 font-semibold text-foreground/65'>{row.label}</dt>
+            <dd
+              className={`min-w-0 text-end font-semibold ${
+                row.warn ? 'text-amber-700 dark:text-amber-400' : 'text-foreground'
+              }`}
+            >
+              {row.value}
             </dd>
           </div>
-        ) : null}
-        {!isEditMode && notifySms ? (
-          <div className='flex items-center justify-between gap-3'>
-            <dt className='text-muted-foreground'>SMS alert</dt>
-            <dd className='font-medium text-amber-600 dark:text-amber-400'>Will send via Twilio</dd>
-          </div>
-        ) : null}
+        ))}
       </dl>
       {audiencePreview && audiencePreview.count === 0 ? (
         <p
           role='alert'
-          className='rounded-lg border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[11px] text-amber-700 dark:text-amber-400'
+          className='rounded-lg border border-amber-500/50 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:bg-amber-950/40 dark:text-amber-300'
         >
-          No active users match this targeting. Go back to step 2 and widen the reach before
-          publishing.
+          No one matches this audience. Go back and widen your reach before posting.
         </p>
       ) : null}
     </section>

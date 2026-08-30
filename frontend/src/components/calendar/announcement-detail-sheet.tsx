@@ -64,10 +64,7 @@ export function AnnouncementDetailSheet({
                 className='text-xs text-muted-foreground'
               />
             ) : null}
-            <AnnouncementContent
-              announcement={sheetAnnouncement}
-              showTargetingDetails={false}
-            />
+            <AnnouncementContent announcement={sheetAnnouncement} />
             <Button variant='outline' size='sm' asChild>
               <Link href='/dashboard/announcements'>Open in feed</Link>
             </Button>

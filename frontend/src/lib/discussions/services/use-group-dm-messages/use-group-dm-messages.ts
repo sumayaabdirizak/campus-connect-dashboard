@@ -5,6 +5,7 @@ import { listGroupDmMessages } from '@/lib/discussions/queries/service'
 import { useGroupDmRoom } from '../use-discussion-room'
 import { useReconnectGeneration } from '../use-reconnect-generation'
 import {
+  asDiscussionId,
   compareByCreatedAt,
   DEFAULT_LIMIT,
   INITIAL_STATE,
@@ -15,12 +16,11 @@ import { useChannelOptimistic } from '../use-channel-messages/use-channel-optimi
 import { useGroupDmSocketSync } from './use-group-dm-socket-sync'
 
 export function useGroupDmMessages(
-  groupDmId: number | null | undefined,
+  groupDmId: string | number | null | undefined,
   options: { limit?: number } = {}
 ) {
   const limit = options.limit ?? DEFAULT_LIMIT
-  const validId =
-    Number.isFinite(Number(groupDmId)) && Number(groupDmId) > 0 ? Number(groupDmId) : null
+  const validId = asDiscussionId(groupDmId)
 
   useGroupDmRoom(validId)
   const reconnectGen = useReconnectGeneration()
@@ -40,7 +40,7 @@ export function useGroupDmMessages(
     let cancelled = false
     void (async () => {
       try {
-        const page = await listGroupDmMessages(String(validId), { limit })
+        const page = await listGroupDmMessages(validId, { limit })
         if (cancelled || requestSeqRef.current !== seq) return
         setState({
           messages: (page.results ?? []).toSorted(compareByCreatedAt),
@@ -79,7 +79,7 @@ export function useGroupDmMessages(
     const seq = requestSeqRef.current
     try {
       const cursor = stateRef.current.nextCursor
-      const page = await listGroupDmMessages(String(validId), { limit, cursor })
+      const page = await listGroupDmMessages(validId, { limit, cursor })
       if (requestSeqRef.current !== seq) return
       setState((s) => ({
         ...s,

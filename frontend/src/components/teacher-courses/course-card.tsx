@@ -27,8 +27,8 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
 
   return (
     <Link href={`/dashboard/courses/${course.id}`} className='group block'>
-      <div className='overflow-hidden rounded-xl border border-[#E5E7EB] bg-white transition-colors hover:border-[#BFDBFE] hover:bg-[#F8FAFC]'>
-        <div className='relative h-40 overflow-hidden bg-[#EFF6FF]'>
+      <div className='overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-border hover:bg-muted'>
+        <div className='relative h-40 overflow-hidden bg-primary/10'>
           {cover ? (
             <Image
               src={cover}
@@ -39,12 +39,12 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
             />
           ) : (
             <div className='flex h-full w-full items-center justify-center'>
-              <span className='text-3xl font-bold tracking-tight text-[#3B82F6]'>
+              <span className='text-3xl font-bold tracking-tight text-primary'>
                 {initials}
               </span>
             </div>
           )}
-          <span className='absolute top-3 left-3 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-[#101828] shadow-sm'>
+          <span className='absolute top-3 left-3 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-foreground'>
             {course.courseCode}
           </span>
           <span
@@ -52,7 +52,7 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
               'absolute top-3 right-3 rounded-md px-2 py-0.5 text-[10px] font-semibold capitalize',
               isActive
                 ? 'bg-emerald-50 text-emerald-700'
-                : 'bg-white/95 text-[#667085]'
+                : 'bg-white/95 text-muted-foreground'
             )}
           >
             {course.status}
@@ -60,14 +60,14 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
         </div>
 
         <div className='p-4'>
-          <h3 className='line-clamp-1 text-sm font-semibold text-[#101828]'>
+          <h3 className='line-clamp-1 text-sm font-semibold text-foreground'>
             {course.courseName}
           </h3>
-          <p className='mt-0.5 truncate text-xs text-[#667085]'>
+          <p className='mt-0.5 truncate text-xs text-muted-foreground'>
             {course.section} · {course.department}
           </p>
 
-          <div className='mt-3 flex items-center gap-3 border-t border-[#E5E7EB] pt-3 text-[11px] text-[#667085]'>
+          <div className='mt-3 flex items-center gap-3 border-t border-border pt-3 text-[11px] text-muted-foreground'>
             <span className='flex items-center gap-1'>
               <Users className='size-3' />
               {course.totalStudents}
@@ -82,7 +82,7 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
                 {course.schedule.day}
               </span>
             ) : null}
-            <span className='ml-auto flex items-center gap-0.5 font-semibold text-[#3B82F6]'>
+            <span className='ml-auto flex items-center gap-0.5 font-semibold text-primary'>
               Open <ArrowUpRight className='size-3.5' />
             </span>
           </div>

@@ -70,15 +70,15 @@ export function ProfileAvatarField({
 
   return (
     <div className='flex flex-wrap items-center gap-3'>
-      <Avatar className='size-24 border border-[#E5E7EB] bg-[#F9FAFB]'>
+      <Avatar className='size-24 border border-border bg-muted'>
         {avatarSrc ? <AvatarImage src={avatarSrc} alt={name} /> : null}
-        <AvatarFallback className='bg-[#F9FAFB] text-sm font-semibold text-[#667085]'>
+        <AvatarFallback className='bg-muted text-sm font-semibold text-muted-foreground'>
           {initialsOf(name) || <ImageIcon className='size-5' />}
         </AvatarFallback>
       </Avatar>
       <div>
-        <p className='mb-0.5 text-sm font-semibold text-[#101828]'>Upload profile image</p>
-        <p className='mb-2 text-xs text-[#667085]'>Image should be below 2MB</p>
+        <p className='mb-0.5 text-sm font-semibold text-foreground'>Upload profile image</p>
+        <p className='mb-2 text-xs text-muted-foreground'>Image should be below 2MB</p>
         <div className='flex items-center gap-2'>
           <Button
             type='button'

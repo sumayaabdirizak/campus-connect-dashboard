@@ -10,7 +10,7 @@ export function MessageBubbleMeta({
   isPending: boolean
 }) {
   return (
-    <span className='inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] leading-none text-[#98A2B3]'>
+    <span className='inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] leading-none text-muted-foreground'>
       {message.editedAt ? <span>edited</span> : null}
       {isPending ? (
         <span className='inline-flex items-center gap-1'>

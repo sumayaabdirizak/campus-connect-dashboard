@@ -58,7 +58,7 @@ export function BulkStudentsCsvField({ csvText, onCsvText, hint, parseErrors }: 
         rows={6}
         className='font-mono text-xs'
       />
-      <p className='text-xs text-[#6A7282]'>{hint}</p>
+      <p className='text-xs text-muted-foreground'>{hint}</p>
       {parseErrors.length > 0 ? (
         <p className='text-destructive text-xs'>{parseErrors.slice(0, 3).join(' · ')}</p>
       ) : null}

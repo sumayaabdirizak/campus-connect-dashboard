@@ -3,6 +3,7 @@ import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireCourseOfferingRead } from '../../../middleware/courseOfferingRbac.js';
 import { attachmentInclude } from '../../../controllers/courses/assignments/shared.js';
+import { loadStudentExtensionsForAssignments } from '../../../controllers/courses/assignments/mySubmissionHelpers.js';
 import {
   enrichAssignmentDto,
   publishedAssignmentWhere,
@@ -52,12 +53,23 @@ router.get('/:courseOfferingId', requireCourseOfferingRead(), asyncHandler(async
     pendingByAssignment = new Map(pending.map((p) => [p.assignmentId, p._count._all]));
   }
 
+  let extensionByAssignmentId = new Map();
+  if (isStudent && studentId && assignments.length > 0) {
+    extensionByAssignmentId = await loadStudentExtensionsForAssignments(
+      req.courseOffering.id,
+      studentId,
+      assignments.map((a) => ({ id: a.id, due_date: a.due_date })),
+    );
+  }
+
   res.json(
     assignments.map((a) => {
       const enriched = enrichAssignmentDto(a);
       const subs = a.submissions ?? [];
+      const studentExtension = extensionByAssignmentId.get(a.id) ?? null;
       return {
         ...enriched,
+        ...(studentExtension ? { _extension: studentExtension } : {}),
         submissions: subs.map((s) => ({
           id: s.id,
           studentId: s.studentId,

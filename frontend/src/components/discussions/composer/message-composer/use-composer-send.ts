@@ -6,6 +6,7 @@ import {
   stripQaSlashCommand
 } from '@/lib/discussions/services/discussion-qa';
 import type { DiscussionMessage } from '@/lib/discussions/queries/types';
+import { serverNowIso } from '@/lib/format-time';
 import type { PendingAttachment } from './types';
 
 type SendOpts = {
@@ -73,7 +74,7 @@ export function useComposerSend(opts: SendOpts) {
         senderId: opts.myUserId ?? null,
         content: trimmed || null,
         messageType,
-        createdAt: new Date().toISOString(),
+        createdAt: serverNowIso(),
         editedAt: null,
         deletedAt: null,
         parentMessageId: opts.parentMessageId ?? null,

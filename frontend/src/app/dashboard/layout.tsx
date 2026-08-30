@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import KBar from '@/components/kbar';
 import { PharmacyShell } from '@/features/layout/components/pharmacy/pharmacy-shell';
@@ -41,9 +41,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-2 md:p-3'
                 : isAuditLogsRoute
                   ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-1 md:p-1.5'
-                  : isViewportFitRoute
-                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-5'
-                    : 'min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-5'
+                  : isCourseDetailRoute
+                    ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-4 md:px-5 md:pb-5 md:pt-5'
+                    : isViewportFitRoute
+                      ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-5'
+                      : 'min-w-0 flex-1 overflow-x-hidden overflow-y-auto p-4 md:p-5'
             }
           >
             <InfobarProvider

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Icons } from '@/components/icons'
 import type { DiscussionNotification } from '@/lib/discussions/queries/types'
+export { relativeTime } from '@/lib/format-time'
 
 export function initialsFor(name: string | null | undefined): string {
   const source = name?.trim() ?? ''
@@ -11,19 +12,6 @@ export function initialsFor(name: string | null | undefined): string {
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('')
-}
-
-export function relativeTime(iso: string): string {
-  const ms = Date.now() - new Date(iso).getTime()
-  const s = Math.floor(ms / 1000)
-  if (s < 60) return 'just now'
-  const m = Math.floor(s / 60)
-  if (m < 60) return `${m}m ago`
-  const h = Math.floor(m / 60)
-  if (h < 24) return `${h}h ago`
-  const d = Math.floor(h / 24)
-  if (d < 7) return `${d}d ago`
-  return new Date(iso).toLocaleDateString()
 }
 
 export function notificationIcon(type: string): ReactNode {

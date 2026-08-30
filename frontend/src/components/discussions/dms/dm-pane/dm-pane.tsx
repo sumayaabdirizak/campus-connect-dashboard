@@ -37,9 +37,8 @@ export function DmPane({ groupDmId }: { groupDmId: string | null }) {
   const myMember = detail?.members?.find((m) => Number(m.userId) === myUserId) ?? null
   const canPost = !!myMember?.canPost
 
-  const numericGroupDmId = groupDmId != null ? Number(groupDmId) : null
-  const messagesStore = useGroupDmMessages(numericGroupDmId)
-  const typers = useGroupDmTyping(numericGroupDmId, myUserId)
+  const messagesStore = useGroupDmMessages(groupDmId)
+  const typers = useGroupDmTyping(groupDmId, myUserId)
   const { latestReadByOthers } = useDmReadReceipts(groupDmId, myUserId)
 
   const memberCount = detail?.members?.length ?? 0

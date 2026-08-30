@@ -1,3 +1,5 @@
+import { formatMessageClock } from '@/lib/format-time';
+
 export const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉', '🔥'] as const;
 
 export const PICKER_EMOJIS = [
@@ -29,9 +31,5 @@ export function initialsFor(name: string): string {
 }
 
 export function formatTime(iso: string): string {
-  try {
-    return new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-  } catch {
-    return '';
-  }
+  return formatMessageClock(iso);
 }

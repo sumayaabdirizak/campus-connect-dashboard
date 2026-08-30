@@ -12,8 +12,7 @@ export type CourseTabId =
   | 'roster'
   | 'groups'
   | 'chat'
-  | 'grades'
-  | 'reviews';
+  | 'grades';
 
 export interface CourseTabDef {
   id: CourseTabId;
@@ -35,8 +34,7 @@ export const TEACHER_COURSE_TABS: CourseTabDef[] = [
   { id: 'feed', label: 'Feed', visible: true },
   { id: 'roster', label: 'Roster', visible: true },
   { id: 'groups', label: 'Groups', visible: true },
-  { id: 'chat', label: 'Chat', visible: true },
-  { id: 'reviews', label: 'Reviews', visible: true },
+  { id: 'chat', label: 'Chat', visible: false },
 ];
 
 /**
@@ -48,5 +46,5 @@ export const STUDENT_COURSE_TABS: CourseTabDef[] = [
   { id: 'resources', label: 'Resources', visible: true },
   { id: 'feed', label: 'Feed', visible: true },
   { id: 'groups', label: 'Groups', visible: true },
-  { id: 'chat', label: 'Chat', visible: true },
+  { id: 'chat', label: 'Chat', visible: false },
 ];

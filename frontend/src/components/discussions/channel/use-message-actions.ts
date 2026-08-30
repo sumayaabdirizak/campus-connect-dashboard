@@ -9,6 +9,7 @@ import {
   useUnpinMessage
 } from '@/lib/discussions/queries/queries';
 import { getDiscussionMessagePlaintext } from '@/lib/discussions/services/decode-web-e2e-ciphertext';
+import { serverNowIso } from '@/lib/format-time';
 import { buildMessageActions } from './build-message-actions';
 import type { MessageActionsCommonProps } from './message-menu-types';
 
@@ -68,7 +69,7 @@ export function useMessageActions(props: MessageActionsCommonProps) {
     if (!(await confirmDelete('this message'))) return;
     if (onOptimisticPatch) {
       const revert = onOptimisticPatch(message.id, {
-        deletedAt: new Date().toISOString()
+        deletedAt: serverNowIso()
       });
       deleteMessage.mutate(message.id, {
         onError: () => {

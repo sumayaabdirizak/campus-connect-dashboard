@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/lib/auth-store';
+import { scheduleRouterPush } from '@/lib/safe-router-navigation';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { navGroups } from '@/config/nav-config';
@@ -99,7 +100,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
           if (!isAllowed) {
             console.warn(`Access denied for role ${user?.role} at ${pathname}`);
             setIsAuthorized(false);
-            router.push('/dashboard');
+            scheduleRouterPush(router, '/dashboard');
             return;
           }
         }

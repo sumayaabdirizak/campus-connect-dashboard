@@ -56,7 +56,7 @@ export function hydrateFromAnnouncement(
       (isDean ? 'DEPARTMENT' : 'ALL')) as AnnouncementTargetType,
     includeStudents: aud.students,
     includeTeachers: aud.teachers,
-    activeDaysPreset: 'off',
+    activeDaysPreset: announcement.expiresAt ? 'custom' : 'off',
     expiresAtCustom: toDatetimeLocalValue(announcement.expiresAt),
     deadlineAtLocal: toDatetimeLocalValue(announcement.deadlineAt),
     selectedDepartments: dedupe([

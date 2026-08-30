@@ -40,6 +40,9 @@ export function useClubFeed(serverId?: number | null) {
     queryKey: clubFeedKey(serverId ?? 0),
     queryFn: () => listClubFeed(serverId as number),
     enabled: Number.isFinite(serverId) && Number(serverId) > 0,
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 5_000,
   });
 }
 

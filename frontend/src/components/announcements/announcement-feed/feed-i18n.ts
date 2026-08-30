@@ -5,7 +5,7 @@ export function getFeedI18n(locale: 'en' | 'ar') {
     return {
       all: 'الكل',
       pinned: 'نشِط',
-      saved: 'المحفوظة',
+      saved: 'إعجاب',
       drafts: 'مسودات',
       search: 'بحث',
       create: 'إنشاء',
@@ -16,6 +16,7 @@ export function getFeedI18n(locale: 'en' | 'ar') {
       unread: 'غير مقروء',
       last7d: 'آخر 7 أيام',
       last30d: 'آخر 30 يوم',
+      view: 'عرض',
       feedLabel: 'الإعلانات',
       showMore: 'عرض المزيد',
       unreadHeading: 'غير مقروء',
@@ -37,7 +38,7 @@ export function getFeedI18n(locale: 'en' | 'ar') {
   return {
     all: 'All',
     pinned: 'Active',
-    saved: 'Saved',
+    saved: 'Liked',
     drafts: 'Drafts',
     search: 'Search',
     create: 'Create',
@@ -48,6 +49,7 @@ export function getFeedI18n(locale: 'en' | 'ar') {
     unread: 'Unread',
     last7d: 'Last 7 days',
     last30d: 'Last 30 days',
+    view: 'View',
     feedLabel: 'Announcements',
     showMore: 'Show more',
     unreadHeading: 'Unread',

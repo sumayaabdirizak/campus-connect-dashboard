@@ -66,7 +66,7 @@ export function DmCreateDialog({
           <Button
             onClick={form.handleCreate}
             disabled={form.tooFew || form.create.isPending}
-            className='bg-[#3B82F6] text-white hover:bg-[#2563EB]'
+            className='bg-primary text-white hover:bg-[#2563EB]'
           >
             {form.create.isPending ? (
               <Icons.spinner className='h-4 w-4 animate-spin' />

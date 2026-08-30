@@ -43,7 +43,7 @@ export function NotificationsBell() {
           type='button'
           variant='ghost'
           size='icon'
-          className='relative size-10 rounded-full text-[#101828] hover:bg-[#F2F4F7]'
+          className='relative size-10 rounded-full text-foreground hover:bg-muted'
           aria-label='Notifications'
         >
           <Icons.notification className='h-4 w-4' />

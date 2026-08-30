@@ -126,6 +126,7 @@ type Props = {
   onSortChange?: (id: string) => void;
   onExportPdf?: () => void;
   onExportExcel?: () => void;
+  toolbarStart?: ReactNode;
   toolbarEnd?: ReactNode;
   className?: string;
 };
@@ -146,6 +147,7 @@ export function PosTableToolbar({
   onSortChange,
   onExportPdf,
   onExportExcel,
+  toolbarStart,
   toolbarEnd,
   className
 }: Props) {
@@ -158,17 +160,19 @@ export function PosTableToolbar({
         className
       )}
     >
-      <div className='flex min-w-0 w-full flex-1 flex-wrap items-center gap-2 sm:w-auto'>
-        <div className='relative min-w-0 w-full flex-1 sm:max-w-xs'>
+      <div className='flex min-w-0 w-full flex-1 flex-wrap items-center gap-2'>
+        <div className='relative min-w-0 w-full flex-1 sm:min-w-[10rem] sm:max-w-md'>
           <Icons.search className='text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2' />
           <Input
             value={search ?? ''}
             onChange={(e) => onSearchChange?.(e.target.value)}
             placeholder={searchPlaceholder}
-            className='h-9 w-full rounded-full bg-card pl-9 shadow-none'
+            className='h-9 w-full rounded-full border-muted-foreground/35 bg-muted-foreground/15 pl-9'
             disabled={!onSearchChange}
           />
         </div>
+
+        {toolbarStart}
 
         {showDateRange && onDateRangeChange ? (
           <DateRangePicker value={dateRange} onChange={onDateRangeChange} />

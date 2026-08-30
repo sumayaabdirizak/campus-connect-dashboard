@@ -1,13 +1,18 @@
 'use client';
 
 import { Input } from '@/features/ui/components/input';
-import { Label } from '@/features/ui/components/label';
 import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
 import { AnnouncementRichEditor, computeReadability } from '../announcement-rich-editor';
 import { ImagePicker } from '../image-picker';
 import type { ImageFile } from './types';
-import { htmlToPlain } from './utils';
+import {
+  dialogFieldsetClass,
+  dialogHintClass,
+  dialogInputClass,
+  dialogLabelClass,
+  htmlToPlain,
+} from './utils';
 
 type Props = {
   title: string;
@@ -37,17 +42,16 @@ export function StepCompose({
   const tone = !readability
     ? ''
     : readability.score >= 60
-      ? 'text-emerald-600 dark:text-emerald-400'
+      ? 'text-emerald-700 dark:text-emerald-400'
       : readability.score >= 40
-        ? 'text-amber-600 dark:text-amber-400'
+        ? 'text-amber-700 dark:text-amber-400'
         : 'text-destructive';
 
   return (
-    <>
-      <div className='space-y-2'>
-        <Label htmlFor='title' className='text-xs font-medium text-foreground'>
-          Title
-        </Label>
+    <div className='space-y-4'>
+      <fieldset className={dialogFieldsetClass}>
+        <legend className={dialogLabelClass}>Title</legend>
+        <p className={dialogHintClass}>A short headline students and staff will see first.</p>
         <Input
           id='title'
           value={title}
@@ -55,29 +59,28 @@ export function StepCompose({
             onTitleChange(e.target.value);
             if (errors.title) onClearTitleError();
           }}
-          placeholder='Enter announcement title'
+          placeholder='e.g. Midterm exam schedule update'
           aria-invalid={!!errors.title}
-          className='h-11 rounded-xl border-input bg-background text-sm shadow-xs focus-visible:ring-2 focus-visible:ring-ring'
+          className={dialogInputClass}
         />
-        {errors.title ? <p className='text-xs text-destructive'>{errors.title}</p> : null}
-      </div>
+        {errors.title ? <p className='text-xs font-medium text-destructive'>{errors.title}</p> : null}
+      </fieldset>
 
-      <div className='space-y-2'>
-        <div className='flex items-center justify-between'>
-          <Label htmlFor='content' className='text-xs font-medium text-foreground'>
-            Message
-          </Label>
+      <fieldset className={dialogFieldsetClass}>
+        <div className='flex items-center justify-between gap-2'>
+          <legend className={dialogLabelClass}>Message</legend>
           <span
             id='content-counter'
             aria-live='polite'
             className={cn(
-              'text-[11px] tabular-nums',
+              'text-xs tabular-nums',
               plainLen > 3000 ? 'font-semibold text-destructive' : 'text-muted-foreground',
             )}
           >
             {plainLen} / 3000
           </span>
         </div>
+        <p className={dialogHintClass}>Write the full announcement. You can use bold, lists, and links.</p>
         <AnnouncementRichEditor
           id='content'
           value={content}
@@ -85,7 +88,7 @@ export function StepCompose({
             onContentChange(html);
             if (errors.content) onClearContentError();
           }}
-          placeholder='Write your announcement…'
+          placeholder='What do people need to know?'
           aria-invalid={!!errors.content}
           aria-describedby='content-counter content-readability'
         />
@@ -93,27 +96,26 @@ export function StepCompose({
           <p
             id='content-readability'
             aria-live='polite'
-            className={cn('flex items-center gap-1.5 text-[11px]', tone)}
+            className={cn('flex items-center gap-1.5 text-xs', tone)}
           >
-            <Icons.info className='size-3' aria-hidden />
+            <Icons.info className='size-3.5 shrink-0' aria-hidden />
             Reading ease {readability.score} · {readability.grade}
           </p>
         ) : null}
-        {errors.content ? <p className='text-xs text-destructive'>{errors.content}</p> : null}
-      </div>
+        {errors.content ? (
+          <p className='text-xs font-medium text-destructive'>{errors.content}</p>
+        ) : null}
+      </fieldset>
 
-      <div className='space-y-2'>
-        <Label className='text-xs font-medium text-foreground'>
+      <fieldset className={dialogFieldsetClass}>
+        <legend className={dialogLabelClass}>
           Images <span className='font-normal text-muted-foreground'>· optional</span>
-        </Label>
-        <div className='rounded-2xl border border-dashed border-border bg-muted/30 p-4'>
-          <div className='mb-3 flex items-center gap-2 text-xs text-muted-foreground'>
-            <Icons.photoPlus className='size-4' aria-hidden />
-            Drag and drop, or click to browse
-          </div>
+        </legend>
+        <p className={dialogHintClass}>Add up to 10 images. Drag and drop or click to browse.</p>
+        <div className='rounded-lg border-2 border-dashed border-foreground/15 bg-background p-4'>
           <ImagePicker images={images} onImagesChange={onImagesChange} maxImages={10} />
         </div>
-      </div>
-    </>
+      </fieldset>
+    </div>
   );
 }

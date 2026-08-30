@@ -146,7 +146,7 @@ export function OverviewTab({
         className='hidden'
       />
 
-      <div className='rounded-2xl border border-gray-200 bg-gray-50/50 p-1 overflow-hidden'>
+      <div className='rounded-xl border border-border bg-muted/50 p-1 overflow-hidden'>
         <div
           className='relative h-32 w-full overflow-hidden rounded-xl bg-slate-200'
           style={
@@ -156,7 +156,7 @@ export function OverviewTab({
           }
         />
         <div className='flex items-end gap-3 px-4 pb-2 -mt-8 relative z-10'>
-          <div className='flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-white bg-white shadow-md overflow-hidden p-0.5'>
+          <div className='flex h-16 w-16 shrink-0 items-center justify-center rounded-xl border-2 border-white bg-card shadow-md overflow-hidden p-0.5'>
             {club.iconUrl ? (
               <img src={club.iconUrl} alt='' className='h-full w-full rounded-lg object-cover' />
             ) : (
@@ -169,15 +169,15 @@ export function OverviewTab({
             )}
           </div>
           <div className='pb-1'>
-            <h3 className='font-bold text-gray-900 leading-none'>{name || club.name}</h3>
+            <h3 className='font-bold text-foreground leading-none'>{name || club.name}</h3>
             {tagline && (
-              <p className='text-xs text-gray-500 mt-1 leading-none'>{tagline}</p>
+              <p className='text-xs text-muted-foreground mt-1 leading-none'>{tagline}</p>
             )}
           </div>
         </div>
       </div>
 
-      <div className='space-y-4 py-2 border-b border-gray-100 pb-6'>
+      <div className='space-y-4 py-2 border-b border-border pb-6'>
         <div className='flex items-center gap-4'>
           <Button
             type='button'
@@ -194,7 +194,7 @@ export function OverviewTab({
             <button
               type='button'
               onClick={handleRemoveBanner}
-              className='text-xs text-gray-500 hover:text-red-600 hover:underline'
+              className='text-xs text-muted-foreground hover:text-red-600 hover:underline'
             >
               Remove banner
             </button>
@@ -217,12 +217,12 @@ export function OverviewTab({
             <button
               type='button'
               onClick={handleRemoveAvatar}
-              className='text-xs text-gray-500 hover:text-red-600 hover:underline'
+              className='text-xs text-muted-foreground hover:text-red-600 hover:underline'
             >
               Remove avatar
             </button>
           )}
-          <span className='text-[10px] text-gray-400'>
+          <span className='text-[10px] text-muted-foreground'>
             PNG, JPG, WebP or GIF · max 5 MB
           </span>
         </div>
@@ -236,7 +236,7 @@ export function OverviewTab({
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={80}
-            className='h-9 rounded-lg border-gray-200'
+            className='h-9 rounded-lg border-border'
           />
         </div>
         <div className='space-y-1.5'>
@@ -247,7 +247,7 @@ export function OverviewTab({
             onChange={(e) => setTagline(e.target.value)}
             maxLength={80}
             placeholder='Short description'
-            className='h-9 rounded-lg border-gray-200'
+            className='h-9 rounded-lg border-border'
           />
         </div>
       </div>
@@ -261,7 +261,7 @@ export function OverviewTab({
           maxLength={500}
           rows={3}
           placeholder='What is this club about?'
-          className='rounded-lg border-gray-200'
+          className='rounded-lg border-border'
         />
         <p className='text-[10px] text-muted-foreground text-right'>
           {description.length}/500
@@ -276,7 +276,7 @@ export function OverviewTab({
             onValueChange={(v) => setJoinPolicy(v as ClubJoinPolicy)}
             disabled={!isOwner}
           >
-            <SelectTrigger className='h-9 rounded-lg border-gray-200'>
+            <SelectTrigger className='h-9 rounded-lg border-border'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent className='rounded-lg'>

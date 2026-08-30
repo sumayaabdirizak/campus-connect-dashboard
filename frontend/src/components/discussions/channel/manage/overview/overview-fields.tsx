@@ -23,7 +23,7 @@ export function OverviewFields({
       <div className='space-y-1.5'>
         <Label
           htmlFor='channel-name'
-          className='text-sm font-semibold text-[#101828]'
+          className='text-sm font-semibold text-foreground'
         >
           Name
         </Label>
@@ -34,14 +34,14 @@ export function OverviewFields({
           placeholder='channel-name'
           disabled={isArchived}
           maxLength={NAME_MAX}
-          className='h-10 rounded-lg border-[#E5E7EB] text-[#101828] placeholder:text-[#9CA3AF]'
+          className='h-10 rounded-lg border-border text-foreground placeholder:text-muted-foreground'
         />
       </div>
 
       <div className='space-y-1.5'>
         <Label
           htmlFor='channel-topic'
-          className='text-sm font-semibold text-[#101828]'
+          className='text-sm font-semibold text-foreground'
         >
           Topic
         </Label>
@@ -53,7 +53,7 @@ export function OverviewFields({
           disabled={isArchived}
           rows={2}
           maxLength={TOPIC_MAX}
-          className='resize-none rounded-lg border-[#E5E7EB] text-[#101828] placeholder:text-[#9CA3AF]'
+          className='resize-none rounded-lg border-border text-foreground placeholder:text-muted-foreground'
         />
       </div>
     </div>

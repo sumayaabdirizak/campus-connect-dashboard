@@ -44,10 +44,10 @@ export function ProfileAcademicCard({ profile }: { profile: ProfileMe }) {
   }
 
   return (
-    <section className='rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:p-5'>
+    <section className='rounded-xl border border-border bg-card p-4 sm:p-5'>
       <ProfileSectionHeading icon={GraduationCap} title='Academic Information' />
       {rows.length === 0 ? (
-        <p className='text-sm text-[#667085]'>No academic affiliation on this account.</p>
+        <p className='text-sm text-muted-foreground'>No academic affiliation on this account.</p>
       ) : (
         <div className='grid gap-3 sm:grid-cols-2'>
           {rows.map((r) => (

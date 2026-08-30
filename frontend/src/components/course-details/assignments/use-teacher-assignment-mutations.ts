@@ -9,7 +9,6 @@ import {
 } from '@/lib/course-details/services/assignments-service';
 import {
   assignmentKeys,
-  useDuplicateAssignment,
   useUpdateAssignment
 } from '@/lib/course-details/queries/assignments-queries';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
@@ -27,7 +26,6 @@ type MutateSetters = {
 
 export function useTeacherAssignmentMutations(s: MutateSetters) {
   const updateAssignmentMutation = useUpdateAssignment(s.courseId);
-  const duplicateAssignmentMutation = useDuplicateAssignment(s.courseId);
   const queryClient = useQueryClient();
   const { run: runDelete } = useDeleteWithUndo();
 
@@ -50,13 +48,6 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
         }
       }
     );
-  };
-
-  const handleDuplicate = (assignment: Assignment) => {
-    duplicateAssignmentMutation.mutate(assignment.id, {
-      onSuccess: () => toast.success(`Duplicated "${assignment.title}" as a draft`),
-      onError: (e: Error) => toast.error(e.message)
-    });
   };
 
   const runAssignmentBulk = async (
@@ -136,7 +127,6 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
 
   return {
     togglePublish,
-    handleDuplicate,
     handleBulkPublishAssignments,
     handleBulkDeleteAssignments,
     handleDelete,

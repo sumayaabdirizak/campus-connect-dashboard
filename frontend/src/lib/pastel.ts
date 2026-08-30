@@ -105,7 +105,6 @@ const TAB_SLOT_INDEX: Record<string, number> = {
   groups: 1, // sky
   roster: 5, // teal
   grades: 4, // pink
-  reviews: 4 // pink
 };
 
 export function pastelForTab(tabId: string): PastelSlot {

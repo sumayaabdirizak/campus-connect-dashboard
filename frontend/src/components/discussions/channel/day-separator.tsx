@@ -1,26 +1,9 @@
 'use client';
 
-function isSameDay(a: Date, b: Date): boolean {
-  return (
-    a.getFullYear() === b.getFullYear() &&
-    a.getMonth() === b.getMonth() &&
-    a.getDate() === b.getDate()
-  );
-}
+import { formatMessageDayLabel } from '@/lib/format-time';
 
 function formatDayLabel(iso: string): string {
-  const date = new Date(iso);
-  const now = new Date();
-  if (isSameDay(date, now)) return 'Today';
-  const yesterday = new Date(now);
-  yesterday.setDate(yesterday.getDate() - 1);
-  if (isSameDay(date, yesterday)) return 'Yesterday';
-  return date.toLocaleDateString([], {
-    weekday: 'long',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
-  });
+  return formatMessageDayLabel(iso);
 }
 
 export function DaySeparator({ iso }: { iso: string }) {
@@ -30,11 +13,11 @@ export function DaySeparator({ iso }: { iso: string }) {
       aria-label={formatDayLabel(iso)}
       className='relative my-3 flex items-center px-3 sm:px-4'
     >
-      <div className='flex-1 border-t border-[#E5E7EB]' />
-      <span className='mx-3 rounded-full border border-[#E5E7EB] bg-white px-3 py-1 text-[11px] font-medium text-[#667085]'>
+      <div className='flex-1 border-t border-border' />
+      <span className='mx-3 rounded-full border border-border bg-card px-3 py-1 text-[11px] font-medium text-muted-foreground'>
         {formatDayLabel(iso)}
       </span>
-      <div className='flex-1 border-t border-[#E5E7EB]' />
+      <div className='flex-1 border-t border-border' />
     </div>
   );
 }

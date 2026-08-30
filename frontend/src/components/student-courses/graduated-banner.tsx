@@ -4,7 +4,7 @@ import { GraduationCap } from 'lucide-react';
 
 export function GraduatedBanner({ graduatedAt }: { graduatedAt?: string | null }) {
   return (
-    <div className='mb-4 flex items-center gap-3 rounded-2xl border border-[#BBF7D0] bg-[#F0FDF4] p-4'>
+    <div className='mb-4 flex items-center gap-3 rounded-xl border border-[#BBF7D0] bg-[#F0FDF4] p-4'>
       <span className='flex size-10 shrink-0 items-center justify-center rounded-full bg-[#10B981] text-white'>
         <GraduationCap className='size-5' />
       </span>

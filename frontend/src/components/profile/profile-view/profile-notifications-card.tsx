@@ -40,8 +40,8 @@ export function ProfileNotificationsCard({
 
   return (
     <>
-      <section className='rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:p-5'>
-        <div className='mb-3 flex items-center justify-between gap-3 border-b border-[#E5E7EB] pb-3'>
+      <section className='rounded-xl border border-border bg-card p-4 sm:p-5'>
+        <div className='mb-3 flex items-center justify-between gap-3 border-b border-border pb-3'>
           <ProfileSectionHeading
             icon={Bell}
             title='Notifications'
@@ -49,7 +49,7 @@ export function ProfileNotificationsCard({
           />
           <Link
             href='/dashboard/notifications'
-            className='inline-flex shrink-0 items-center gap-0.5 text-xs text-[#667085] transition-colors hover:text-[#101828]'
+            className='inline-flex shrink-0 items-center gap-0.5 text-xs text-muted-foreground transition-colors hover:text-foreground'
           >
             View all
             <ChevronRight className='size-3' aria-hidden />

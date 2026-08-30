@@ -3,11 +3,12 @@
 import { useEffect, type Dispatch, type SetStateAction } from 'react'
 import { getDiscussionSocket } from '@/lib/discussions/queries/socket'
 import type { MessageReaction } from '@/lib/discussions/queries/types'
+import { discussionIdsEqual } from '../use-channel-messages/message-list-helpers'
 import { mergeReplies, unwrap, type ThreadMessagesState } from './thread-message-helpers'
 
 export function useThreadSocketSync(
-  validChannelId: number | null,
-  validRootId: number | null,
+  validChannelId: string | null,
+  validRootId: string | null,
   setState: Dispatch<SetStateAction<ThreadMessagesState>>
 ) {
   useEffect(() => {
@@ -16,17 +17,15 @@ export function useThreadSocketSync(
 
     const onNew = (raw: unknown) => {
       const msg = unwrap(raw)
-      const rootIdStr = validRootId != null ? String(validRootId) : null
-      if (!msg || Number(msg.channelId) !== validChannelId) return
-      if (msg.parentMessageId !== rootIdStr) return
+      if (!msg || !discussionIdsEqual(msg.channelId, validChannelId)) return
+      if (msg.parentMessageId !== validRootId) return
       setState((s) => ({ ...s, replies: mergeReplies(s.replies, [msg]) }))
     }
     const onEdit = (raw: unknown) => {
       const msg = unwrap(raw)
       if (!msg) return
-      const rootIdStr = validRootId != null ? String(validRootId) : null
       setState((s) => {
-        if (msg.id === rootIdStr) {
+        if (msg.id === validRootId) {
           return { ...s, root: s.root ? { ...s.root, ...msg } : msg }
         }
         const idx = s.replies.findIndex((x) => x.id === msg.id)
@@ -39,9 +38,8 @@ export function useThreadSocketSync(
     const onDelete = (payload: { messageId?: string }) => {
       const messageId = payload?.messageId
       if (!messageId) return
-      const rootIdStr = validRootId != null ? String(validRootId) : null
       setState((s) => {
-        if (messageId === rootIdStr && s.root) {
+        if (messageId === validRootId && s.root) {
           return { ...s, root: { ...s.root, deletedAt: new Date().toISOString() } }
         }
         const idx = s.replies.findIndex((x) => x.id === messageId)
@@ -58,9 +56,8 @@ export function useThreadSocketSync(
       const messageId = payload?.messageId
       if (!messageId) return
       if (!Array.isArray(payload?.reactions)) return
-      const rootIdStr = validRootId != null ? String(validRootId) : null
       setState((s) => {
-        if (messageId === rootIdStr && s.root) {
+        if (messageId === validRootId && s.root) {
           return { ...s, root: { ...s.root, reactions: payload.reactions } }
         }
         const idx = s.replies.findIndex((x) => x.id === messageId)

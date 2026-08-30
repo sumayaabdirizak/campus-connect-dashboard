@@ -18,7 +18,3 @@ export function resolveClubRoleLabel(
   if (isMember) return 'MEMBER'
   return null
 }
-
-export function formatJoinPolicy(policy: string): string {
-  return policy.toLowerCase().replace('_', ' ')
-}

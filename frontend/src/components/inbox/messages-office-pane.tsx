@@ -10,7 +10,7 @@ type Props = {
 /** Office conversation in the Messages right pane (ticket or office↔office chat). */
 export function MessagesOfficePane({ threadId, onClose }: Props) {
   return (
-    <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-[#F8FAFC]'>
+    <div className='flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-muted'>
       <OfficeThreadView threadId={threadId} onBack={onClose} />
     </div>
   )

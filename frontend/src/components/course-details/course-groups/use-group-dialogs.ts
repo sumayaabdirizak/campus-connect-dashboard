@@ -7,7 +7,6 @@ export function useGroupDialogs() {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const [addingTo, setAddingTo] = useState<number | null>(null);
-  const [pickMember, setPickMember] = useState('');
   const [renamingId, setRenamingId] = useState<number | null>(null);
   const [renameValue, setRenameValue] = useState('');
 
@@ -20,12 +19,10 @@ export function useGroupDialogs() {
 
   const startAddMember = (groupId: number) => {
     setAddingTo(groupId);
-    setPickMember('');
   };
 
   const cancelAddMember = () => {
     setAddingTo(null);
-    setPickMember('');
   };
 
   return {
@@ -36,8 +33,6 @@ export function useGroupDialogs() {
     deleteId,
     setDeleteId,
     addingTo,
-    pickMember,
-    setPickMember,
     renamingId,
     renameValue,
     setRenameValue,

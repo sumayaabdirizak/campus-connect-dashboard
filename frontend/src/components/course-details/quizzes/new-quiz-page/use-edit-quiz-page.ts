@@ -1,0 +1,173 @@
+'use client';
+
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { toast } from 'sonner';
+import { useUpdateQuiz } from '@/lib/course-details/queries/quizzes-queries';
+import type { Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
+import { emptyDraft } from '../quiz-builder/draft-empty';
+import { useQuizBuilder } from '../quiz-builder/use-quiz-builder';
+import {
+  fromQuiz,
+  toPayload,
+  validateForm,
+  type FormState
+} from '../quiz-settings-form/form-state';
+
+/// Full-page edit flow: quiz configuration (Basics / Timing / Marking) lives in
+/// local form state while questions are persisted immediately via the same
+/// mutations the old QuizBuilder used. "Save quiz" writes config only.
+export function useEditQuizPage(
+  courseId: string,
+  quiz: Quiz,
+  onSaved?: () => void
+) {
+  const [form, setForm] = useState(() => fromQuiz(quiz));
+  const [lockedAddType, setLockedAddType] = useState<QuizQuestionType | null>(null);
+  const marksPlanTouchedRef = useRef(false);
+
+  const b = useQuizBuilder(courseId, quiz);
+  const updateMutation = useUpdateQuiz(courseId);
+
+  useEffect(() => {
+    setForm(fromQuiz(quiz));
+    setLockedAddType(null);
+    marksPlanTouchedRef.current = false;
+    b.cancel();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [quiz.id]);
+
+  const questionMarksFingerprint = useMemo(
+    () =>
+      (quiz.questions ?? [])
+        .map((q) => `${q.id}:${q.question_type}:${q.points}`)
+        .join('|'),
+    [quiz.questions]
+  );
+
+  // Re-infer marks only while the teacher hasn't edited Marking and nothing
+  // is saved yet — keyed on question content, not the whole live quiz object.
+  useEffect(() => {
+    if (quiz.marksPlan || marksPlanTouchedRef.current) return;
+    setForm((prev) => {
+      const fresh = fromQuiz(quiz);
+      return {
+        ...prev,
+        marksPlanTotal: fresh.marksPlanTotal,
+        marksPlanTypes: fresh.marksPlanTypes,
+        marksPlanAllocations: fresh.marksPlanAllocations
+      };
+    });
+  }, [questionMarksFingerprint, quiz.marksPlan]);
+
+  const setMarksForm = useCallback(
+    (next: FormState | ((prev: FormState) => FormState)) => {
+      marksPlanTouchedRef.current = true;
+      setForm(next);
+    },
+    []
+  );
+
+  const selectedTypes = form.marksPlanTypes;
+  const allocations = form.marksPlanAllocations;
+
+  const editingIndex = useMemo(() => {
+    if (b.draft?.id == null) return null;
+    return b.questions.findIndex((q) => q.id === b.draft!.id);
+  }, [b.draft, b.questions]);
+
+  const questionDrafts = useMemo(
+    () => b.questions.map((q) => emptyDraft(q)),
+    [b.questions]
+  );
+
+  const totalPoints = b.totalPoints;
+
+  const startNew = () => {
+    setLockedAddType(null);
+    b.startNew();
+  };
+
+  const startNewForSection = (type: QuizQuestionType) => {
+    setLockedAddType(type);
+    b.startNew(type);
+  };
+
+  const startEdit = (index: number) => {
+    const q = b.questions[index];
+    if (!q) return;
+    setLockedAddType(selectedTypes.includes(q.question_type) ? q.question_type : null);
+    b.startEdit(q);
+  };
+
+  const cancelDraft = () => {
+    setLockedAddType(null);
+    b.cancel();
+  };
+
+  const saveDraft = () => b.save();
+
+  const deleteQuestion = (index: number) => {
+    const q = b.questions[index];
+    if (q) b.handleDelete(q);
+  };
+
+  const handleSave = () => {
+    if (b.draft != null) {
+      toast.error('Finish editing the open question first');
+      return;
+    }
+    const err = validateForm(form, quiz);
+    if (err) {
+      toast.error(err);
+      return;
+    }
+    updateMutation.mutate(
+      { quizId: quiz.id, input: toPayload(form) },
+      {
+        onSuccess: () => {
+          toast.success(`Saved "${form.title.trim() || quiz.title}"`);
+          onSaved?.();
+        },
+        onError: (e: Error) => toast.error(e.message)
+      }
+    );
+  };
+
+  const isSaving =
+    updateMutation.isPending ||
+    b.createMutation.isPending ||
+    b.updateMutation.isPending;
+
+  return {
+    form,
+    setForm,
+    setMarksForm,
+    quiz,
+    questions: b.questions,
+    questionDrafts,
+    totalPoints,
+    selectedTypes,
+    allocations,
+    draft: b.draft,
+    setDraft: b.setDraft,
+    editingIndex,
+    lockedAddType,
+    canAddQuestions: b.canAddQuestions,
+    addLockedTitle: b.addLockedTitle,
+    setType: b.setType,
+    updateOption: b.updateOption,
+    addOption: b.addOption,
+    removeOption: b.removeOption,
+    setCorrectExclusive: b.setCorrectExclusive,
+    startNew,
+    startNewForSection,
+    startEdit,
+    cancelDraft,
+    saveDraft,
+    deleteQuestion,
+    handleSave,
+    isSaving,
+    questionSavePending: b.createMutation.isPending || b.updateMutation.isPending,
+    deletePending: b.deleteMutation.isPending
+  };
+}

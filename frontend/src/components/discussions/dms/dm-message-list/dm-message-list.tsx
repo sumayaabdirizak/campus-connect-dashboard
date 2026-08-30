@@ -64,7 +64,7 @@ export function DmMessageList({
   return (
     <div
       ref={scrollRef}
-      className='relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-white'
+      className='relative min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto bg-card'
     >
       <div ref={sentinelRef} className='h-1' aria-hidden />
 

@@ -47,8 +47,30 @@ export function mergeMessages(
 
 export function unwrap(raw: unknown): DiscussionMessage | null {
   if (!raw || typeof raw !== 'object') return null
-  const obj = raw as { message?: DiscussionMessage; id?: number }
+  const obj = raw as { message?: DiscussionMessage; id?: string | number }
   if (obj.message && typeof obj.message === 'object') return obj.message
-  if (typeof obj.id === 'number') return raw as DiscussionMessage
+  // publicId-era payloads use string ids; legacy numeric ids still accepted.
+  if (typeof obj.id === 'string' || typeof obj.id === 'number') {
+    return raw as DiscussionMessage
+  }
   return null
+}
+
+/** Normalize channel / group-DM / message ids (int or publicId UUID). */
+export function asDiscussionId(
+  id: string | number | null | undefined
+): string | null {
+  if (id == null) return null
+  const s = String(id).trim()
+  if (!s || s === 'NaN' || s === 'undefined' || s === 'null') return null
+  return s
+}
+
+export function discussionIdsEqual(
+  a: string | number | null | undefined,
+  b: string | number | null | undefined
+): boolean {
+  const left = asDiscussionId(a)
+  const right = asDiscussionId(b)
+  return left != null && right != null && left === right
 }

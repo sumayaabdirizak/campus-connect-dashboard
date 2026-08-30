@@ -1,5 +1,6 @@
-﻿'use client';
+'use client';
 
+import { Suspense } from 'react';
 import { cn } from '@/lib/utils';
 import { useAnnouncementUnreadCount } from '@/lib/announcements/queries';
 import { SidebarBrandLogo } from './sidebar-brand-logo';
@@ -40,7 +41,9 @@ export function PharmacySidebar({
       </div>
 
       <div className='flex-1 overflow-auto px-3 py-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden'>
-        <PharmacySidebarMenu mini={collapsed} unreadCount={unreadCount} />
+        <Suspense fallback={null}>
+          <PharmacySidebarMenu mini={collapsed} unreadCount={unreadCount} />
+        </Suspense>
       </div>
     </aside>
   );

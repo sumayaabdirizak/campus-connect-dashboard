@@ -39,6 +39,7 @@ import officesRouter from '../controllers/offices/offices.js';
 import inboxRouter from './inbox/inbox.js';
 import calendarRouter from './calendar/calendar.js';
 import rbacRouter from './rbac/rbac.routes.js';
+import reportsRouter from './reports/reports.routes.js';
 import rolesRouter from './rbac/roles.routes.js';
 import rateLimit from 'express-rate-limit';
 
@@ -55,6 +56,7 @@ export function mountRoutes(app) {
   app.use('/api/auth', authRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/rbac', rbacRouter);
+  app.use('/api/reports', reportsRouter);
   app.use('/api/roles', rolesRouter);
 
   // Category 2: Academic Structure

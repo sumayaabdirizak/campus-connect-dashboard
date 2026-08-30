@@ -1,6 +1,6 @@
-﻿'use client';
+'use client';
 
-import { Suspense } from 'react';
+import { Suspense, useCallback, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ArrowLeft, MessageSquareDashed } from 'lucide-react';
 import { PosPageHeader } from '@/features/pos/components/pos-page-header';
@@ -8,7 +8,11 @@ import { InboxList } from '@/components/inbox/inbox-list';
 import { MessagesDiscoverPane } from '@/components/inbox/messages-discover-pane';
 import { isOfficeMessagesOnlyRole } from '@/components/inbox/inbox-helpers';
 import { useMessagesActiveChat } from '@/lib/inbox/services/use-messages-active-chat';
-import { useInbox } from '@/lib/inbox/queries';
+import { useInbox, inboxKeys } from '@/lib/inbox/queries';
+import { useQueryClient } from '@/lib/async-query';
+import { clubKeys } from '@/lib/clubs/queries';
+import { discussionKeys } from '@/lib/discussions/queries/discussion-keys';
+import { bumpReconnectGeneration } from '@/lib/discussions/queries/socket-state';
 import { DmPane } from '@/components/discussions/dms';
 import { ChannelPane } from '@/components/discussions/channel';
 import { ClubDetailPane } from '@/components/clubs/club-detail/club-detail-pane';
@@ -25,6 +29,8 @@ function MessagesPageInner() {
   const officeOnly = isOfficeMessagesOnlyRole(role);
   const { active, openHref, openDiscover, closeChat } = useMessagesActiveChat();
   const { refetch, isFetching } = useInbox();
+  const queryClient = useQueryClient();
+  const [refreshing, setRefreshing] = useState(false);
   useOfficeMessageSocket(true);
   const searchParams = useSearchParams();
   const showDiscover = !officeOnly && active?.kind === 'discover';
@@ -37,23 +43,37 @@ function MessagesPageInner() {
   const showChat = Boolean(active) && !aoBlockedPane;
   const threadOpen = Boolean(searchParams?.get('thread'));
 
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      // Force-refresh inbox + clubs + open channel/DM panes (reconnect bump).
+      queryClient.invalidateQueries({ queryKey: inboxKeys.all });
+      queryClient.invalidateQueries({ queryKey: clubKeys.all });
+      queryClient.invalidateQueries({ queryKey: discussionKeys.all });
+      bumpReconnectGeneration();
+      await refetch();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [queryClient, refetch]);
+
   return (
     <div
       data-comm
-      className='flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-[#F8FAFC]'
+      className='flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden bg-muted'
     >
       <PosPageHeader
         title='Messages'
         parentLabel='Dashboard'
-        onRefresh={() => void refetch()}
-        refreshing={isFetching}
+        onRefresh={() => void handleRefresh()}
+        refreshing={refreshing || isFetching}
         className='mb-2 shrink-0 px-0.5 sm:mb-3'
       />
 
-      <div className='flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 overflow-hidden rounded-[10px] border border-[#E5E7EB] bg-white'>
+      <div className='flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 overflow-hidden rounded-[10px] border border-border bg-card'>
         <aside
           className={cn(
-            'flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden border-[#E5E7EB] md:w-[260px] md:border-r lg:w-[300px] xl:w-[340px]',
+            'flex h-full min-h-0 w-full shrink-0 flex-col overflow-hidden border-border md:w-[260px] md:border-r lg:w-[300px] xl:w-[340px]',
             showChat && threadOpen
               ? 'hidden'
               : showChat
@@ -87,7 +107,7 @@ function MessagesPageInner() {
               <button
                 type='button'
                 onClick={closeChat}
-                className='flex h-11 shrink-0 items-center gap-2 border-b border-[#E5E7EB] bg-white px-3 text-sm font-medium text-[#475467] hover:text-[#101828] md:hidden'
+                className='flex h-11 shrink-0 items-center gap-2 border-b border-border bg-card px-3 text-sm font-medium text-muted-foreground hover:text-foreground md:hidden'
               >
                 <ArrowLeft className='size-4' />
                 Back
@@ -123,13 +143,13 @@ function MessagesPageInner() {
             </>
           ) : (
             <div className='mx-auto flex max-w-sm flex-1 flex-col items-center justify-center space-y-3 p-8 text-center'>
-              <div className='flex size-16 items-center justify-center rounded-full bg-[#3B82F6]/10 text-[#3B82F6]'>
+              <div className='flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary'>
                 <MessageSquareDashed className='size-8' />
               </div>
-              <h2 className='text-lg font-semibold text-[#101828]'>
+              <h2 className='text-lg font-semibold text-foreground'>
                 Select a chat
               </h2>
-              <p className='text-sm text-[#6A7282]'>
+              <p className='text-sm text-muted-foreground'>
                 {officeOnly
                   ? 'Choose an office desk from the list to open a conversation.'
                   : 'Choose a conversation from the list, or tap Discover for clubs.'}

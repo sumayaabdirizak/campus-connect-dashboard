@@ -1,15 +1,16 @@
 import { differenceInCalendarDays, formatDistanceStrict } from 'date-fns';
 import { Icons } from '@/components/icons';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/features/ui/components/tooltip';
+import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/auth-store';
 import { Announcement } from '@/lib/announcements/types';
 
 export function AnnouncementExpiryRow({
   announcement,
-  canManage
+  className,
 }: {
   announcement: Announcement;
-  canManage: boolean;
+  className?: string;
 }) {
   const { user } = useAuthStore();
   const st = String(announcement.status ?? '').toUpperCase();
@@ -17,30 +18,31 @@ export function AnnouncementExpiryRow({
   const me = user?.id != null ? Number(user.id) : NaN;
   const creatorId = announcement.createdBy?.id != null ? Number(announcement.createdBy.id) : NaN;
   const isAuthor = Number.isFinite(me) && Number.isFinite(creatorId) && me === creatorId;
-  const showPublisherPin = isAuthor || Boolean(canManage);
+  const showPublisherPin = isAuthor;
 
   if (st === 'EXPIRED' && showPublisherPin) {
     return (
-      <div className='mb-2'>
-        <TooltipProvider delayDuration={200}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <span
-                role='img'
-                aria-label='Expired announcement'
-                tabIndex={0}
-                className='inline-flex cursor-default items-center gap-1 rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground'
-              >
-                <Icons.calendar className='size-3 opacity-70' aria-hidden />
-                Expired
-              </span>
-            </TooltipTrigger>
-            <TooltipContent side='top' className='max-w-xs text-xs leading-snug'>
-              This announcement is no longer active. You still see it here so you can review or archive it.
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+      <TooltipProvider delayDuration={200}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <span
+              role='img'
+              aria-label='Expired announcement'
+              tabIndex={0}
+              className={cn(
+                'inline-flex cursor-default items-center gap-0.5 rounded-full border border-border bg-muted px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-foreground/80',
+                className
+              )}
+            >
+              <Icons.calendar className='size-2.5 opacity-80' aria-hidden />
+              Expired
+            </span>
+          </TooltipTrigger>
+          <TooltipContent side='top' className='max-w-xs text-xs leading-snug'>
+            This announcement is no longer active. You still see it here so you can review or archive it.
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   }
 
@@ -57,7 +59,7 @@ export function AnnouncementExpiryRow({
     if (isPublishedVisible) {
       const distance = formatDistanceStrict(pinUntil, new Date(), { roundingMethod: 'ceil' });
       return (
-        <p className='mb-2 text-[11px] text-muted-foreground'>
+        <p className={cn('text-[10px] font-medium text-foreground/75', className)}>
           <time dateTime={pinUntil.toISOString()}>Active · ends in {distance}</time>
         </p>
       );
@@ -65,7 +67,7 @@ export function AnnouncementExpiryRow({
     if (showPublisherPin && st === 'DRAFT') {
       const distance = formatDistanceStrict(pinUntil, new Date(), { roundingMethod: 'ceil' });
       return (
-        <p className='mb-2 text-[11px] text-muted-foreground'>
+        <p className={cn('text-[10px] font-medium text-foreground/75', className)}>
           <time dateTime={pinUntil.toISOString()}>Will be active · ends in {distance}</time>
         </p>
       );

@@ -62,7 +62,7 @@ export function MessageBubble({
   return (
     <div
       className={cn(
-        'comm-bubble-in relative w-max max-w-full px-3 py-2 text-sm text-[#101828] shadow-[0px_4px_8px_0px_rgba(0,0,0,0.03)]',
+        'comm-bubble-in relative w-max max-w-full px-3 py-2 text-sm text-foreground',
         isAuthor
           ? 'rounded-[15px_0_15px_15px] bg-[rgba(255,159,67,0.12)]'
           : 'rounded-[0_15px_15px_15px] bg-[#F6F7F8]'
@@ -95,7 +95,7 @@ export function MessageBubble({
 
       {isDeleted ? (
         <div className='flex items-end gap-2'>
-          <p className='text-sm italic leading-snug text-[#667085]'>
+          <p className='text-sm italic leading-snug text-muted-foreground'>
             This message was deleted.
           </p>
           {meta}
@@ -110,14 +110,14 @@ export function MessageBubble({
           ) : null}
           {plain && plain.trim().length > 0 ? (
             <div className='flex items-end gap-2'>
-              <div className='min-w-0 max-w-full break-words leading-snug text-[#101828]'>
+              <div className='min-w-0 max-w-full break-words leading-snug text-foreground'>
                 <DiscussionMessageMarkdown text={plain} tone='hybrid' />
               </div>
               {meta}
             </div>
           ) : message.ciphertext ? (
             <div className='flex items-end gap-2'>
-              <p className='text-sm leading-snug text-[#667085]'>
+              <p className='text-sm leading-snug text-muted-foreground'>
                 🔒 Encrypted message
               </p>
               {meta}

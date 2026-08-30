@@ -50,7 +50,7 @@
   --font-sans: var(--font-inter), 'Noto Color Emoji', system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains-mono), Geist Mono, monospace;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 2px;
@@ -118,7 +118,7 @@
   --font-sans: var(--font-inter), 'Noto Color Emoji', system-ui, -apple-system, sans-serif;
   --font-serif: var(--font-inter), system-ui, -apple-system, sans-serif;
   --font-mono: var(--font-jetbrains-mono), Geist Mono, monospace;
-  --radius: 0.75rem;
+  --radius: 0.5rem;
   --shadow-x: 0px;
   --shadow-y: 1px;
   --shadow-blur: 2px;

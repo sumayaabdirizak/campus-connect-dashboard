@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import { useState } from 'react'
 import Image from 'next/image'
@@ -17,6 +17,7 @@ import {
 import { Badge } from '@/features/ui/components/badge'
 import { useDeanReports } from '@/lib/dean/queries'
 import { useAnnouncements } from '@/lib/announcements/queries'
+import { useQueryClient } from '@/lib/async-query'
 import { showToast } from '@/lib/notifications'
 import { HeroMetricCard } from '@/components/overview/main-dashboard/hero-metric-card'
 import { PlatformCountTile } from '@/components/overview/main-dashboard/platform-count-tile'
@@ -31,11 +32,14 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   const { data: reportsData, isLoading: reportsLoading, refetch, isFetching } = useDeanReports({
     period: '6m'
   })
-  const { data: announcementsData } = useAnnouncements()
+  const { data: announcementsData, refetch: refetchAnnouncements } = useAnnouncements()
   const announcements = announcementsData ?? []
+  const queryClient = useQueryClient()
 
   const handleRefresh = () => {
     void refetch()
+    void refetchAnnouncements()
+    queryClient.invalidateQueries({ queryKey: ['announcements'] })
     showToast('success', 'Dashboard refreshed')
   }
 
@@ -49,16 +53,16 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   return (
     <div className='w-full space-y-3 pb-6'>
       {/* Welcome bar — DreamsPOS sales-dashboard "welcome" row */}
-      <div className='flex w-full flex-col gap-3 rounded-2xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between'>
+      <div className='flex w-full flex-col gap-3 rounded-xl border border-border bg-card p-4 sm:flex-row sm:items-center sm:justify-between'>
         <div className='flex items-center gap-2'>
           <Image src='/assets/dashboard-icons/hi.svg' alt='' width={28} height={28} className='shrink-0' />
           {!welcomeCollapsed ? (
-            <p className='text-sm text-[#667085]'>
-              <span className='font-bold text-[#101828]'>Hi{firstName ? `, ${firstName}` : ''},</span>{' '}
+            <p className='text-sm text-muted-foreground'>
+              <span className='font-bold text-foreground'>Hi{firstName ? `, ${firstName}` : ''},</span>{' '}
               here&apos;s what&apos;s happening across your faculty today.
             </p>
           ) : (
-            <p className='text-sm font-bold text-[#101828]'>
+            <p className='text-sm font-bold text-foreground'>
               Hi{firstName ? `, ${firstName}` : ''}
             </p>
           )}
@@ -69,7 +73,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
             onClick={handleRefresh}
             disabled={isFetching}
             aria-label='Refresh'
-            className='flex size-8 items-center justify-center rounded-full border border-[#E5E7EB] text-[#344054] transition-colors hover:bg-[#F8FAFC] disabled:opacity-50'
+            className='flex size-8 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-muted disabled:opacity-50'
           >
             <RefreshCw className={`size-3.5 ${isFetching ? 'animate-spin' : ''}`} />
           </button>
@@ -77,7 +81,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
             type='button'
             onClick={() => setWelcomeCollapsed((v) => !v)}
             aria-label={welcomeCollapsed ? 'Expand' : 'Collapse'}
-            className='flex size-8 items-center justify-center rounded-full border border-[#E5E7EB] text-[#344054] transition-colors hover:bg-[#F8FAFC]'
+            className='flex size-8 items-center justify-center rounded-full border border-border text-foreground transition-colors hover:bg-muted'
           >
             {welcomeCollapsed ? <ChevronDown className='size-3.5' /> : <ChevronUp className='size-3.5' />}
           </button>
@@ -139,10 +143,10 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
         </div>
 
         <div className='xl:col-span-5'>
-          <div className='h-full rounded-2xl border border-[#E5E7EB] bg-white shadow-sm'>
-            <div className='flex items-center gap-2 border-b border-[#F2F4F7] px-4 py-3.5'>
-              <Bell className='size-4 text-[#667085]' />
-              <h2 className='text-sm font-bold text-[#101828]'>Latest Announcements</h2>
+          <div className='h-full rounded-xl border border-border bg-card'>
+            <div className='flex items-center gap-2 border-b border-border px-4 py-3.5'>
+              <Bell className='size-4 text-muted-foreground' />
+              <h2 className='text-sm font-bold text-foreground'>Latest Announcements</h2>
             </div>
             <div className='px-4 py-2'>
               {announcements.length > 0 ? (
@@ -151,15 +155,15 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
                     <li key={a.id}>
                       <Link
                         href='/dashboard/announcements'
-                        className='flex items-start gap-2 py-3 transition-colors hover:bg-[#F8FAFC]'
+                        className='flex items-start gap-2 py-3 transition-colors hover:bg-muted'
                       >
                         <Badge
                           variant='secondary'
-                          className='mt-0.5 shrink-0 rounded-full bg-[#EFF6FF] px-2 py-0.5 text-[10px] font-semibold text-[#1D4ED8] uppercase ring-1 ring-[#BFDBFE]'
+                          className='mt-0.5 shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-[#1D4ED8] uppercase ring-1 ring-[#BFDBFE]'
                         >
                           New
                         </Badge>
-                        <span className='line-clamp-2 text-sm font-medium text-[#101828] hover:underline'>
+                        <span className='line-clamp-2 text-sm font-medium text-foreground hover:underline'>
                           {a.title}
                         </span>
                       </Link>
@@ -167,7 +171,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
                   ))}
                 </ul>
               ) : (
-                <p className='py-6 text-center text-sm text-[#667085]'>No announcements.</p>
+                <p className='py-6 text-center text-sm text-muted-foreground'>No announcements.</p>
               )}
             </div>
           </div>

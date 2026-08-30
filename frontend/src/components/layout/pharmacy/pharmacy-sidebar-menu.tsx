@@ -1,16 +1,39 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useSearchParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import type { LucideIcon } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Icons } from '@/components/icons';
 import { navGroups } from '@/config/nav-config';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import type { NavItem } from '@/types';
 
-function isRouteActive(pathname: string, url: string): boolean {
-  if (url === '/dashboard') return pathname === url;
-  return pathname === url || pathname.startsWith(`${url}/`);
+function pathOf(url: string): string {
+  return url.split('?')[0];
+}
+
+function scopeOf(url: string): string | null {
+  const q = url.split('?')[1];
+  if (!q) return null;
+  return new URLSearchParams(q).get('scope');
+}
+
+function isItemActive(
+  pathname: string,
+  url: string,
+  currentScope: string | null
+): boolean {
+  const path = pathOf(url);
+  if (path === '/dashboard') return pathname === path;
+  if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;
+
+  const itemScope = scopeOf(url);
+  if (itemScope) return currentScope === itemScope;
+  return true;
 }
 
 function MenuIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean }) {
@@ -27,6 +50,132 @@ function MenuIcon({ icon: Icon, active }: { icon: LucideIcon; active: boolean })
   );
 }
 
+function SidebarNavLink({
+  item,
+  mini,
+  unreadCount,
+  pathname,
+  currentScope,
+  nested = false
+}: {
+  item: NavItem;
+  mini: boolean;
+  unreadCount: number;
+  pathname: string;
+  currentScope: string | null;
+  nested?: boolean;
+}) {
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const active = isItemActive(pathname, item.url, currentScope);
+
+  return (
+    <Link
+      href={item.url}
+      role='menuitem'
+      className={cn(
+        'group flex items-center gap-2 rounded-xl border border-transparent p-2 text-sm font-medium text-sidebar-foreground no-underline transition-colors',
+        'hover:border-sidebar-border hover:bg-sidebar-accent',
+        active && 'border-primary/30 bg-sidebar-accent text-primary',
+        nested && 'py-1.5 pl-2 text-[13px] font-normal',
+        mini && !nested && 'h-[38px] justify-center'
+      )}
+    >
+      {!nested ? <MenuIcon icon={Icon} active={active} /> : null}
+      <span className={cn('truncate', mini && !nested && 'sr-only')}>{item.title}</span>
+      {item.url === '/dashboard/announcements' && unreadCount > 0 && !mini && !nested ? (
+        <span className='ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground'>
+          {unreadCount > 99 ? '99+' : unreadCount}
+        </span>
+      ) : null}
+    </Link>
+  );
+}
+
+function SidebarNavParent({
+  item,
+  mini,
+  pathname,
+  currentScope
+}: {
+  item: NavItem;
+  mini: boolean;
+  pathname: string;
+  currentScope: string | null;
+}) {
+  const children = item.items ?? [];
+  const Icon = item.icon ? Icons[item.icon] : Icons.logo;
+  const childActive = children.some((c) => isItemActive(pathname, c.url, currentScope));
+  const parentActive = isItemActive(pathname, item.url, currentScope) || childActive;
+  const reportsSection =
+    pathname.startsWith('/dashboard/reports') ||
+    pathname === '/dashboard/admin/report' ||
+    pathname.startsWith('/dashboard/faculty-dean/reports');
+
+  const [open, setOpen] = useState(parentActive || reportsSection);
+
+  useEffect(() => {
+    if (parentActive || reportsSection) setOpen(true);
+  }, [parentActive, reportsSection]);
+
+  if (mini) {
+    return (
+      <Link
+        href={item.url}
+        className={cn(
+          'group flex h-[38px] items-center justify-center rounded-xl border border-transparent p-2 transition-colors',
+          'hover:border-sidebar-border hover:bg-sidebar-accent',
+          parentActive && 'border-sidebar-border bg-sidebar-accent'
+        )}
+        title={item.title}
+      >
+        <MenuIcon icon={Icon} active={parentActive} />
+      </Link>
+    );
+  }
+
+  return (
+    <Collapsible open={open} onOpenChange={setOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          type='button'
+          className={cn(
+            'group flex w-full items-center gap-2 rounded-xl border border-transparent p-2 text-sm font-medium text-sidebar-foreground transition-colors',
+            'hover:border-sidebar-border hover:bg-sidebar-accent',
+            open && 'border-primary/30',
+            parentActive && 'border-primary/30 bg-sidebar-accent'
+          )}
+        >
+          <MenuIcon icon={Icon} active={parentActive} />
+          <span className='truncate'>{item.title}</span>
+          <ChevronDown
+            className={cn(
+              'ml-auto size-4 shrink-0 text-sidebar-muted transition-transform',
+              open && 'rotate-180'
+            )}
+            aria-hidden
+          />
+        </button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <ul className='m-0 mt-1 list-none border-l border-primary/40 py-0.5 pl-2 ml-5 space-y-0.5'>
+          {children.map((child) => (
+            <li key={child.url}>
+              <SidebarNavLink
+                item={child}
+                mini={mini}
+                unreadCount={0}
+                pathname={pathname}
+                currentScope={currentScope}
+                nested
+              />
+            </li>
+          ))}
+        </ul>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
 export function PharmacySidebarMenu({
   mini,
   unreadCount
@@ -35,15 +184,17 @@ export function PharmacySidebarMenu({
   unreadCount: number;
 }) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentScope = searchParams?.get('scope') ?? null;
   const groups = useFilteredNavGroups(navGroups);
 
   return (
     <nav id='sidebar-menu' aria-label='Main navigation menu'>
       <ul className='m-0 list-none p-0'>
-        {groups.flatMap((group) => {
+        {groups.flatMap((group, groupIndex) => {
           const titleItem = group.label ? (
             <li
-              key={`${group.label}-title`}
+              key={`${groupIndex}-${group.label}-title`}
               className={cn('mt-3 px-2 first:mt-0', mini && 'hidden')}
             >
               <span className='block py-1.5 text-xs font-medium text-sidebar-muted'>
@@ -53,28 +204,25 @@ export function PharmacySidebarMenu({
           ) : null;
 
           const links = group.items.map((item) => {
-            const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-            const active = isRouteActive(pathname, item.url);
+            const hasChildren = item.items && item.items.length > 0;
             return (
-              <li key={item.title} className='mt-1 first:mt-0'>
-                <Link
-                  href={item.url}
-                  role='menuitem'
-                  className={cn(
-                    'group flex items-center gap-2 rounded-xl border border-transparent p-2 text-sm font-medium text-sidebar-foreground no-underline transition-colors',
-                    'hover:border-sidebar-border hover:bg-sidebar-accent',
-                    active && 'border-sidebar-border bg-sidebar-accent',
-                    mini && 'h-[38px] justify-center'
-                  )}
-                >
-                  <MenuIcon icon={Icon} active={active} />
-                  <span className={cn('truncate', mini && 'sr-only')}>{item.title}</span>
-                  {item.url === '/dashboard/announcements' && unreadCount > 0 && !mini ? (
-                    <span className='ml-auto inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1.5 text-[11px] text-primary-foreground'>
-                      {unreadCount > 99 ? '99+' : unreadCount}
-                    </span>
-                  ) : null}
-                </Link>
+              <li key={`${groupIndex}-${item.url}`} className='mt-1 first:mt-0'>
+                {hasChildren ? (
+                  <SidebarNavParent
+                    item={item}
+                    mini={mini}
+                    pathname={pathname}
+                    currentScope={currentScope}
+                  />
+                ) : (
+                  <SidebarNavLink
+                    item={item}
+                    mini={mini}
+                    unreadCount={unreadCount}
+                    pathname={pathname}
+                    currentScope={currentScope}
+                  />
+                )}
               </li>
             );
           });

@@ -26,7 +26,7 @@ export function AuthBrandLogo({
       href={href}
       className={cn(
         'inline-flex items-center text-decoration-none',
-        onDark && 'rounded-lg bg-white/95 px-2 py-1.5 shadow-sm',
+        onDark && 'rounded-lg bg-white/95 px-2 py-1.5',
         className
       )}
       aria-label={`${AUTH_BRAND.productName} home`}

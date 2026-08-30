@@ -21,9 +21,6 @@ export function useCourseChatUi(courseId: string) {
     [user]
   );
 
-  const { data: chatRoom, isLoading } = useChatRoom(courseId);
-  const { data: roster = [] } = useRoster(courseId);
-  const loadOlder = useLoadOlderMessages(courseId);
   const {
     messages: liveMessages,
     sendMessage: sendViaSocket,
@@ -34,6 +31,14 @@ export function useCourseChatUi(courseId: string) {
     liveDeletedIds,
     liveUpdated
   } = useCourseChat(courseId);
+
+  // Poll only as a fallback. The socket already pushes new messages, so the
+  // 5s poll alongside it was fetching the room twelve times a minute to learn
+  // what the socket had usually delivered already. When the socket drops, the
+  // poll takes over — which is what it is actually for.
+  const { data: chatRoom, isLoading } = useChatRoom(courseId, { live: !isConnected });
+  const { data: roster = [] } = useRoster(courseId, { live: true });
+  const loadOlder = useLoadOlderMessages(courseId);
 
   const mentionLabels = useMemo(() => {
     const labels = new Map<string, string>();

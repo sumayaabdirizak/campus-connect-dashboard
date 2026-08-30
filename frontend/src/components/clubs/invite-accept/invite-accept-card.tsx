@@ -1,9 +1,9 @@
 'use client';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import type { ClubInvitePreview } from '@/lib/clubs/types';
+import { isPastIso } from '@/lib/format-time';
 
 export interface InviteAcceptCardProps {
   data: ClubInvitePreview;
@@ -14,6 +14,7 @@ export interface InviteAcceptCardProps {
 export function InviteAcceptCard({ data, isPending, onAccept }: InviteAcceptCardProps) {
   const { club, inviter } = data;
   const themeColor = club.themeColor || '#6366f1';
+  const inviteExpired = data.expiresAt != null && isPastIso(data.expiresAt);
 
   return (
     <div className='flex h-full items-center justify-center'>
@@ -36,7 +37,7 @@ export function InviteAcceptCard({ data, isPending, onAccept }: InviteAcceptCard
 
         <div className='space-y-4 px-5 pb-5 -mt-6 relative'>
           <div
-            className='flex h-14 w-14 items-center justify-center rounded-xl border-4 border-card text-lg font-bold shadow-sm'
+            className='flex h-14 w-14 items-center justify-center rounded-xl border-4 border-card text-lg font-bold'
             style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
           >
             {club.iconUrl ? (
@@ -64,11 +65,6 @@ export function InviteAcceptCard({ data, isPending, onAccept }: InviteAcceptCard
               <Icons.teams className='h-3.5 w-3.5' />
               {club.memberCountCache} member{club.memberCountCache !== 1 ? 's' : ''}
             </span>
-            {club.scopeKind && (
-              <Badge variant='outline' className='text-[10px]'>
-                {club.scopeKind.toLowerCase()}
-              </Badge>
-            )}
           </div>
 
           {inviter && (
@@ -80,7 +76,7 @@ export function InviteAcceptCard({ data, isPending, onAccept }: InviteAcceptCard
           <Button
             className='w-full'
             onClick={onAccept}
-            disabled={isPending}
+            disabled={isPending || inviteExpired}
             style={{ backgroundColor: themeColor }}
           >
             {isPending ? (
@@ -88,6 +84,8 @@ export function InviteAcceptCard({ data, isPending, onAccept }: InviteAcceptCard
                 <Icons.spinner className='mr-1.5 h-4 w-4 animate-spin' />
                 Joining...
               </>
+            ) : inviteExpired ? (
+              'Invite expired'
             ) : (
               'Accept Invite & Join'
             )}
@@ -95,12 +93,16 @@ export function InviteAcceptCard({ data, isPending, onAccept }: InviteAcceptCard
 
           {data.expiresAt && (
             <p className='text-center text-[10px] text-muted-foreground'>
-              This invite expires on{' '}
-              {new Date(data.expiresAt).toLocaleDateString(undefined, {
-                month: 'short',
-                day: 'numeric',
-                year: 'numeric',
-              })}
+              {inviteExpired ? 'This invite has expired.' : 'This invite expires on '}
+              {!inviteExpired ? (
+                <>
+                  {new Date(data.expiresAt).toLocaleDateString(undefined, {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </>
+              ) : null}
             </p>
           )}
         </div>

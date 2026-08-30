@@ -1,7 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
 import { useGroups } from '@/lib/course-details/queries/groups-queries';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
+import { AddMembersDialog } from './add-members-dialog';
 import {
   assignedMemberIds,
   filterGroupsByName,
@@ -13,6 +15,7 @@ import { GroupsToolbar } from './groups-toolbar';
 import { useGroupCrud } from './use-group-crud';
 import { useGroupDialogs } from './use-group-dialogs';
 import { useGroupMembers } from './use-group-members';
+import { CourseTabPage } from '../_shared/course-tab-page';
 
 export function CourseGroups({
   courseId,
@@ -21,8 +24,8 @@ export function CourseGroups({
   courseId: string;
   isStudent?: boolean;
 }) {
-  const { data: groups = [], isLoading, isError, refetch } = useGroups(courseId);
-  const { data: roster = [] } = useRoster(courseId);
+  const { data: groups = [], isLoading, isError, refetch } = useGroups(courseId, { live: true });
+  const { data: roster = [] } = useRoster(courseId, { live: true });
   const dialogs = useGroupDialogs();
   const crud = useGroupCrud(courseId);
   const members = useGroupMembers(courseId);
@@ -34,8 +37,15 @@ export function CourseGroups({
     roster.length
   );
 
+  const addCandidates = useMemo(
+    () => roster.filter((s) => !assignedMemberIds(groups).has(s.id)),
+    [roster, groups]
+  );
+
+  const addingGroup = groups.find((g) => g.id === dialogs.addingTo) ?? null;
+
   return (
-    <div className='space-y-4'>
+    <CourseTabPage>
       <GroupsToolbar
         isStudent={isStudent}
         isLoading={isLoading}
@@ -65,18 +75,10 @@ export function CourseGroups({
         onRenameCancel={dialogs.cancelRename}
         onStartRename={dialogs.startRename}
         onDelete={dialogs.setDeleteId}
-        addingTo={dialogs.addingTo}
-        pickMember={dialogs.pickMember}
-        onPickMember={dialogs.setPickMember}
-        onAddConfirm={(groupId) =>
-          members.handleAddMember(groupId, dialogs.pickMember, dialogs.cancelAddMember)
-        }
-        onAddCancel={dialogs.cancelAddMember}
         onStartAdd={dialogs.startAddMember}
         onCreate={() => dialogs.setCreateOpen(true)}
         onToggleLeader={members.handleToggleLeader}
         onRemoveMember={members.handleRemoveMember}
-        addPending={members.addMemberMutation.isPending}
         removePending={members.removeMemberMutation.isPending}
         togglePending={members.setRoleMutation.isPending}
       />
@@ -96,6 +98,24 @@ export function CourseGroups({
         }}
         deletePending={crud.deleteMutation.isPending}
       />
-    </div>
+
+      <AddMembersDialog
+        open={dialogs.addingTo != null}
+        onOpenChange={(open) => {
+          if (!open) dialogs.cancelAddMember();
+        }}
+        groupName={addingGroup?.name ?? 'group'}
+        candidates={addCandidates}
+        confirming={members.bulkAdding}
+        onConfirm={(ids) => {
+          if (dialogs.addingTo == null) return;
+          void members.handleAddMembers(
+            dialogs.addingTo,
+            ids,
+            dialogs.cancelAddMember
+          );
+        }}
+      />
+    </CourseTabPage>
   );
 }

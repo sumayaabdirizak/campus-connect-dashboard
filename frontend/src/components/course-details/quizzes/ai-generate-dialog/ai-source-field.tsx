@@ -1,15 +1,19 @@
 'use client';
 
 import { useRef } from 'react';
-import { FileText, FileUp, Loader2, Upload, X } from 'lucide-react';
+import { FileText, Loader2, Upload, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   AI_SOURCE_ACCEPT,
   AI_SOURCE_MAX_CHARS,
   AI_SOURCE_MIN_CHARS
 } from '../../_shared/extract-source-text';
+import {
+  quizFormHintClass,
+  quizFormLabelClass,
+  quizFormOutlineBtnClass
+} from '../new-quiz-page/field-styles';
 
 interface AiSourceFieldProps {
   sourceMaterial: string;
@@ -31,28 +35,23 @@ export function AiSourceField({
   disabled
 }: AiSourceFieldProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const charCount = sourceMaterial.trim().length;
+  const tooShort = charCount > 0 && charCount < AI_SOURCE_MIN_CHARS;
 
   return (
     <div className='space-y-2'>
       <div className='flex items-baseline justify-between gap-2'>
-        <Label htmlFor='ai-source' className='flex items-center gap-1.5 text-xs text-muted-foreground'>
-          <FileUp className='w-3.5 h-3.5' />
-          Source material *
+        <Label htmlFor='ai-source-file' className={quizFormLabelClass}>
+          Source file *
         </Label>
         {sourceMaterial ? (
-          <span
-            className={`text-[11px] tabular-nums ${
-              sourceMaterial.trim().length < AI_SOURCE_MIN_CHARS
-                ? 'text-amber-600 dark:text-amber-400'
-                : 'text-muted-foreground'
-            }`}
-          >
+          <span className={`text-xs tabular-nums ${tooShort ? 'text-amber-600' : 'text-muted-foreground'}`}>
             {sourceMaterial.length.toLocaleString()} / {AI_SOURCE_MAX_CHARS.toLocaleString()}
           </span>
         ) : null}
       </div>
 
-      <div className='flex items-center gap-2'>
+      <div className='flex flex-wrap items-center gap-2'>
         <input
           ref={fileInputRef}
           id='ai-source-file'
@@ -68,52 +67,42 @@ export function AiSourceField({
         <Button
           type='button'
           variant='outline'
-          size='sm'
-          className='gap-1.5 border-primary/30 text-primary hover:bg-primary/5 hover:text-primary dark:border-primary/30'
+          className={`${quizFormOutlineBtnClass} gap-1.5`}
           disabled={disabled || isExtractingSource}
           onClick={() => fileInputRef.current?.click()}
         >
           {isExtractingSource ? (
-            <Loader2 className='w-3.5 h-3.5 animate-spin' />
+            <Loader2 className='size-4 animate-spin' />
           ) : (
-            <Upload className='w-3.5 h-3.5' />
+            <Upload className='size-4' />
           )}
-          {isExtractingSource ? 'Reading…' : 'Upload file'}
+          {isExtractingSource ? 'Reading…' : 'Upload PDF / DOCX'}
         </Button>
         {sourceFileName ? (
-          <span className='inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 pl-2.5 pr-1 py-0.5 text-xs'>
-            <FileText className='w-3 h-3 text-primary' />
+          <span className='inline-flex items-center gap-1.5 rounded-full border border-border/90 bg-card py-1.5 pl-3 pr-1 text-sm text-foreground'>
+            <FileText className='size-3.5 text-primary' />
             <span className='max-w-[14rem] truncate'>{sourceFileName}</span>
             <button
               type='button'
-              className='rounded-full p-0.5 text-muted-foreground hover:bg-background hover:text-foreground'
-              aria-label='Clear loaded file label'
-              onClick={() => setSourceFileName(null)}
+              className='rounded-lg p-1 text-muted-foreground hover:bg-secondary hover:text-primary'
+              aria-label='Clear loaded file'
+              onClick={() => {
+                setSourceFileName(null);
+                setSourceMaterial('');
+              }}
             >
-              <X className='w-3 h-3' />
+              <X className='size-3.5' />
             </button>
           </span>
         ) : (
-          <span className='text-[11px] text-muted-foreground'>or paste below</span>
+          <span className={quizFormHintClass}>Required for generation</span>
         )}
       </div>
 
-      <Textarea
-        id='ai-source'
-        rows={4}
-        placeholder='Paste the text you want the AI to base questions on…'
-        value={sourceMaterial}
-        onChange={(e) => {
-          setSourceMaterial(e.target.value.slice(0, AI_SOURCE_MAX_CHARS));
-          if (!e.target.value.trim()) setSourceFileName(null);
-        }}
-        disabled={disabled || isExtractingSource}
-        className='text-xs select-text focus-visible:ring-primary/40'
-      />
-      {sourceMaterial.trim().length > 0 && sourceMaterial.trim().length < AI_SOURCE_MIN_CHARS ? (
-        <p className='text-[11px] text-amber-600 dark:text-amber-400'>
-          Add {AI_SOURCE_MIN_CHARS - sourceMaterial.trim().length} more character
-          {AI_SOURCE_MIN_CHARS - sourceMaterial.trim().length === 1 ? '' : 's'} to continue.
+      {tooShort ? (
+        <p className='text-xs text-amber-600'>
+          Add {AI_SOURCE_MIN_CHARS - charCount} more character
+          {AI_SOURCE_MIN_CHARS - charCount === 1 ? '' : 's'} to continue.
         </p>
       ) : null}
     </div>

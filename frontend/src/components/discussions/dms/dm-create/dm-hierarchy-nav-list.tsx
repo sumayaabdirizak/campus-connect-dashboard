@@ -31,7 +31,7 @@ export function DmHierarchyNavList({
                 <span className='flex size-7 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-bold tabular-nums text-muted-foreground'>
                   {i + 1}
                 </span>
-                <span className='min-w-0 flex-1 truncate text-xs font-semibold text-[#101828]'>
+                <span className='min-w-0 flex-1 truncate text-xs font-semibold text-foreground'>
                   {n.label}
                 </span>
                 <span className='shrink-0 text-[11px] tabular-nums text-muted-foreground'>

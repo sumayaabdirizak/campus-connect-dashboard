@@ -77,7 +77,7 @@ export function ChatComposer({
           </Button>
         </div>
       ) : null}
-      <form onSubmit={onSubmit} className='relative border-t p-4'>
+      <form onSubmit={onSubmit} className='relative shrink-0 border-t border-[#E5E7EB] bg-white p-3 dark:border-border dark:bg-card'>
         {mentionOpen ? (
           <div className='absolute bottom-full left-4 right-4 mb-2 max-h-56 overflow-y-auto overscroll-contain rounded-lg border bg-background shadow-lg'>
             {mentionCandidates.map((candidate) => (
@@ -129,9 +129,14 @@ export function ChatComposer({
             onKeyDown={onKeyDown}
             onBlur={onBlur}
             placeholder={replyTo ? 'Write your reply...' : 'Message this course...'}
-            className='max-h-36 min-h-11 flex-1 resize-none py-2.5'
+            className='max-h-36 min-h-10 flex-1 resize-none rounded-full border-[#D0D5DD] bg-[#F9FAFB] py-2.5 pl-4 dark:border-border dark:bg-muted/30'
           />
-          <Button type='submit' size='icon' disabled={!message.trim() || sendPending}>
+          <Button
+            type='submit'
+            size='icon'
+            className='shrink-0 rounded-full bg-[#3B82F6] hover:bg-[#2563EB]'
+            disabled={!message.trim() || sendPending}
+          >
             {sendPending ? (
               <Loader2 className='size-4 animate-spin' />
             ) : (

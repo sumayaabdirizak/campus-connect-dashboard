@@ -40,21 +40,10 @@ export function initialsFor(name: string | null | undefined): string {
     .join('');
 }
 
+import { formatMessageWhen } from '@/lib/format-time';
+
 export function formatWhen(iso: string): string {
-  try {
-    const d = new Date(iso);
-    const now = new Date();
-    const sameDay =
-      d.getFullYear() === now.getFullYear() &&
-      d.getMonth() === now.getMonth() &&
-      d.getDate() === now.getDate();
-    if (sameDay) {
-      return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    }
-    return d.toLocaleDateString([], { month: 'short', day: 'numeric' });
-  } catch {
-    return '';
-  }
+  return formatMessageWhen(iso);
 }
 
 /** Wrap each query-match with a <mark> for visible highlighting. Case-insensitive. */

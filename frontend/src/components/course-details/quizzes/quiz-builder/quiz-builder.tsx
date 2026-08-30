@@ -3,19 +3,17 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { AiGenerateDialog } from '../ai-generate-dialog';
-import { QuizCsvDialog } from '../quiz-csv-dialog';
 import { DraftQuestionEditor } from './draft-question-editor';
 import { QuizBuilderHeader } from './quiz-builder-header';
 import { QuizQuestionList } from './quiz-question-list';
 import { QuizSectionBlock } from './quiz-section-block';
+import { questionTypesForMode } from '../quiz-question-types';
 import type { QuizBuilderProps, QuizQuestionType } from './types';
 import { useQuizBuilder } from './use-quiz-builder';
 
-const TYPE_ORDER: QuizQuestionType[] = ['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'];
-
 export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
   const b = useQuizBuilder(courseId, quiz);
+  const typeOrder = questionTypesForMode(quiz.mode ?? 'online');
 
   // The marks plan itself is configured in Quiz Settings → Marks (persisted
   // on the quiz record) — this page only reads it back to decide which
@@ -65,8 +63,6 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
         canAddQuestions={b.canAddQuestions}
         addLockedTitle={b.addLockedTitle}
         draftOpen={b.draft != null}
-        onCsv={() => b.setCsvOpen(true)}
-        onAi={() => b.setAiOpen(true)}
         onAdd={() => {
           setLockedAddType(null);
           b.startNew();
@@ -75,7 +71,7 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
 
       {sectioned && (
         <div className='space-y-3'>
-          {TYPE_ORDER.filter((t) => selectedTypes.includes(t)).map((type) => (
+          {typeOrder.filter((t) => selectedTypes.includes(t)).map((type) => (
             <QuizSectionBlock
               key={type}
               type={type}
@@ -88,6 +84,7 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
               onAdd={() => startNewForSection(type)}
               onEdit={startEditGeneral}
               onDelete={b.handleDelete}
+              quizMode={quiz.mode ?? 'online'}
               // Pass the inline editor only when this section owns the active draft
               inlineDraft={
                 b.draft && lockedAddType === type ? {
@@ -141,23 +138,9 @@ export function QuizBuilder({ courseId, quiz, onBack }: QuizBuilderProps) {
           onSave={b.save}
           isSaving={b.createMutation.isPending || b.updateMutation.isPending}
           lockType={false}
+          quizMode={quiz.mode ?? 'online'}
         />
       ) : null}
-
-      <AiGenerateDialog
-        open={b.aiOpen}
-        onOpenChange={b.setAiOpen}
-        courseOfferingId={courseId}
-        destination={{ kind: 'quiz', quizId: quiz.id }}
-      />
-      <QuizCsvDialog
-        open={b.csvOpen}
-        onOpenChange={b.setCsvOpen}
-        courseOfferingId={courseId}
-        quizId={quiz.id}
-        quizTitle={quiz.title}
-        canUpload={b.canAddQuestions}
-      />
     </div>
   );
 }

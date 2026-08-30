@@ -21,40 +21,43 @@ export function ResourceMediaActions({
   if (isStudent) return null;
   const trackable = isUploadedVideo(resource) || isUploadedAudio(resource);
   return (
-    <>
+    <div className='flex flex-wrap items-center gap-2'>
       {onAnalytics && trackable ? (
         <Button
-          variant='ghost'
-          size='icon'
-          className='h-7 w-7'
+          variant='outline'
+          size='sm'
+          className='h-9 gap-1.5 rounded-full border-border bg-card px-3.5 font-medium'
           onClick={() => onAnalytics(resource)}
           aria-label={`Watch analytics for ${resource.title}`}
         >
-          <BarChart3 className='w-3.5 h-3.5' />
+          <BarChart3 className='size-4' />
+          Analytics
         </Button>
       ) : null}
       {onEditResource ? (
         <Button
-          variant='ghost'
-          size='icon'
-          className='h-7 w-7'
+          variant='outline'
+          size='sm'
+          className='h-9 gap-1.5 rounded-full border-border bg-card px-3.5 font-medium'
           onClick={() => onEditResource(resource)}
           aria-label={`Edit ${resource.title}`}
         >
-          <Edit className='w-3.5 h-3.5' />
+          <Edit className='size-4' />
+          Edit
         </Button>
       ) : null}
       {onDeleteResource ? (
         <Button
-          variant='ghost'
-          size='icon'
-          className='h-7 w-7 text-destructive'
+          variant='outline'
+          size='sm'
+          className='h-9 gap-1.5 rounded-full border-destructive/30 bg-card px-3.5 font-medium text-destructive hover:bg-destructive/5'
           onClick={() => onDeleteResource(resource.id)}
           aria-label={`Delete ${resource.title}`}
         >
-          <Trash2 className='w-3.5 h-3.5' />
+          <Trash2 className='size-4' />
+          Delete
         </Button>
       ) : null}
-    </>
+    </div>
   );
 }

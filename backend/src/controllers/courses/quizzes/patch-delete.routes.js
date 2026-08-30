@@ -3,7 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireQuizManage } from '../../../middleware/courseOfferingRbac.js';
 import { patchQuizBodySchema } from '../../../validation/quizSchemas.js';
-import { resolveModuleIdForOffering } from './helpers.js';
+import { resolveModuleIdForOffering, assertMarksPlanAllowedForMode } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
 
 /** @param {import('express').Router} router */
@@ -27,10 +27,20 @@ export function register(router) {
         duration_minutes: true,
         is_draft: true,
         auto_publish_at_open: true,
+        mode: true,
+        marksPlan: true,
         _count: { select: { questions: true } },
       },
     });
     if (!existing) return res.status(404).json({ message: 'Quiz not found' });
+
+    const nextMode = mode ?? existing.mode ?? 'online';
+    if (marksPlan !== undefined) {
+      assertMarksPlanAllowedForMode(nextMode, marksPlan);
+    }
+    if (mode === 'online' && existing.marksPlan) {
+      assertMarksPlanAllowedForMode('online', existing.marksPlan);
+    }
 
     const nextDraft = is_draft !== undefined ? is_draft : undefined;
     if (nextDraft === false && existing._count.questions === 0) {

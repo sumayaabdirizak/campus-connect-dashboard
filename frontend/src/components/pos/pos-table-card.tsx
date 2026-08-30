@@ -26,6 +26,7 @@ type Props = {
   onSortChange?: (id: string) => void;
   onExportPdf?: () => void;
   onExportExcel?: () => void;
+  toolbarStart?: ReactNode;
   toolbarEnd?: ReactNode;
   className?: string;
 };
@@ -48,13 +49,14 @@ export function PosTableCard({
   onSortChange,
   onExportPdf,
   onExportExcel,
+  toolbarStart,
   toolbarEnd,
   className
 }: Props) {
   return (
     <div
       className={cn(
-        'w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm',
+        'w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card',
         className
       )}
     >
@@ -73,6 +75,7 @@ export function PosTableCard({
         onSortChange={onSortChange}
         onExportPdf={onExportPdf}
         onExportExcel={onExportExcel}
+        toolbarStart={toolbarStart}
         toolbarEnd={toolbarEnd}
       />
       {/* min-w-0 + overflow-x-auto: keep card within viewport; scroll wide tables */}

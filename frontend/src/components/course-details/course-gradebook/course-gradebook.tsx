@@ -4,6 +4,8 @@ import { useMemo, useState } from 'react';
 import { AlertCircle, Users } from 'lucide-react';
 import { EmptyState } from '../_shared/empty-state';
 import { ListSkeleton } from '../_shared/list-skeleton';
+import { CourseTabHeader } from '../_shared/course-tab-header';
+import { CourseTabPage } from '../_shared/course-tab-page';
 import { QueryErrorState } from '@/components/query-error-state';
 import { StudentProfileDrawer } from '../student-profile-drawer';
 import { useGradebook } from '@/lib/course-details/queries/gradebook-queries';
@@ -22,7 +24,7 @@ interface CourseGradebookProps {
 }
 
 export function CourseGradebook({ courseId }: CourseGradebookProps) {
-  const { data, isLoading, isError, refetch } = useGradebook(courseId);
+  const { data, isLoading, isError, refetch } = useGradebook(courseId, true, { live: true });
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<GradeFilter>('all');
   const [selectedStudent, setSelectedStudent] = useState<RosterStudent | null>(null);
@@ -48,15 +50,31 @@ export function CourseGradebook({ courseId }: CourseGradebookProps) {
     );
   }, [data, search, filter]);
 
-  if (isLoading) return <ListSkeleton variant='row' count={8} />;
+  if (isLoading) {
+    return (
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Gradebook'
+          description='Track assignment and quiz grades across the class.'
+        />
+        <ListSkeleton variant='row' count={8} />
+      </CourseTabPage>
+    );
+  }
 
   if (isError || !data) {
     return (
-      <QueryErrorState
-        title='Could not load grades'
-        message='Try reloading the page.'
-        onRetry={() => void refetch()}
-      />
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Gradebook'
+          description='Track assignment and quiz grades across the class.'
+        />
+        <QueryErrorState
+          title='Could not load grades'
+          message='Try reloading the page.'
+          onRetry={() => void refetch()}
+        />
+      </CourseTabPage>
     );
   }
 
@@ -64,38 +82,52 @@ export function CourseGradebook({ courseId }: CourseGradebookProps) {
 
   if (data.studentCount === 0) {
     return (
-      <EmptyState
-        icon={Users}
-        title='No students enrolled'
-        description='Grades will appear here once students join the course.'
-      />
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Gradebook'
+          description='Track assignment and quiz grades across the class.'
+        />
+        <EmptyState
+          icon={Users}
+          title='No students enrolled'
+          description='Grades will appear here once students join the course.'
+        />
+      </CourseTabPage>
     );
   }
 
   if (itemCount === 0) {
     return (
-      <EmptyState
-        icon={AlertCircle}
-        title='Nothing to grade yet'
-        description='Publish an assignment or quiz to start tracking grades.'
-      />
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Gradebook'
+          description='Track assignment and quiz grades across the class.'
+        />
+        <EmptyState
+          icon={AlertCircle}
+          title='Nothing to grade yet'
+          description='Publish an assignment or quiz to start tracking grades.'
+        />
+      </CourseTabPage>
     );
   }
 
   return (
-    <div className='space-y-3'>
-      <p className='text-sm text-muted-foreground'>
-        {data.studentCount} students · {data.columns.assignments.length} assignments ·{' '}
-        {data.columns.quizzes.length} quizzes · {fmtPct(data.classAverages.overall)} class
-        average
-        {needsGradingCount > 0 ? ` · ${needsGradingCount} to grade` : ''}
-      </p>
+    <CourseTabPage>
+      <CourseTabHeader
+        title='Gradebook'
+        description={`${data.studentCount} students · ${data.columns.assignments.length} assignments · ${data.columns.quizzes.length} quizzes · ${fmtPct(data.classAverages.overall)} class average${needsGradingCount > 0 ? ` · ${needsGradingCount} to grade` : ''}`}
+        search={{
+          value: search,
+          onChange: setSearch,
+          placeholder: 'Search students…',
+          'aria-label': 'Search students'
+        }}
+      />
 
-      <div className='border border-border/60'>
+      <div className='overflow-hidden rounded-xl border border-border bg-card'>
         <GradebookToolbar
           data={data}
-          search={search}
-          setSearch={setSearch}
           filter={filter}
           setFilter={setFilter}
           needsGradingCount={needsGradingCount}
@@ -113,6 +145,6 @@ export function CourseGradebook({ courseId }: CourseGradebookProps) {
         student={selectedStudent}
         onClose={() => setSelectedStudent(null)}
       />
-    </div>
+    </CourseTabPage>
   );
 }

@@ -32,16 +32,16 @@ export function OfficeChatMessages({
         return (
           <div key={m.id} className={cn('flex flex-col', own ? 'items-end' : 'items-start')}>
             {!own ? (
-              <span className='mb-0.5 text-[11px] font-medium text-[#475467]'>
+              <span className='mb-0.5 text-[11px] font-medium text-muted-foreground'>
                 {m.sender?.full_name ?? peerLabel}
               </span>
             ) : null}
             <div
               className={cn(
-                'max-w-[82%] whitespace-pre-wrap break-words rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                'max-w-[82%] whitespace-pre-wrap break-words rounded-xl px-3 py-2 text-sm leading-relaxed',
                 own
-                  ? 'rounded-br-md bg-[#3B82F6] text-white'
-                  : 'rounded-bl-md bg-white text-[#101828] shadow-sm ring-1 ring-[#E5E7EB]'
+                  ? 'rounded-br-md bg-primary text-white'
+                  : 'rounded-bl-md bg-card text-foreground ring-1 ring-[#E5E7EB]'
               )}
             >
               {m.content}

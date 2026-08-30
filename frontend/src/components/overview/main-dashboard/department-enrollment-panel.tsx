@@ -17,23 +17,23 @@ export function DepartmentEnrollmentPanel({
   const max = Math.max(1, ...rows.map((r) => r.students))
 
   return (
-    <div className='flex h-full flex-col rounded-2xl border border-[#E5E7EB] bg-white shadow-sm'>
-      <div className='flex items-center justify-between gap-2 border-b border-[#F2F4F7] px-4 py-3.5'>
-        <h2 className='text-sm font-bold text-[#101828]'>Enrollment by Department</h2>
+    <div className='flex h-full flex-col rounded-xl border border-border bg-card'>
+      <div className='flex items-center justify-between gap-2 border-b border-border px-4 py-3.5'>
+        <h2 className='text-sm font-bold text-foreground'>Enrollment by Department</h2>
       </div>
       <div className='flex-1 space-y-3 px-4 py-4'>
         {loading ? (
-          <p className='py-6 text-center text-sm text-[#667085]'>Loading…</p>
+          <p className='py-6 text-center text-sm text-muted-foreground'>Loading…</p>
         ) : rows.length === 0 ? (
-          <p className='py-6 text-center text-sm text-[#667085]'>No department data yet.</p>
+          <p className='py-6 text-center text-sm text-muted-foreground'>No department data yet.</p>
         ) : (
           rows.map((r) => (
             <div key={r.name} className='space-y-1'>
               <div className='flex items-center justify-between text-xs'>
-                <span className='truncate font-medium text-[#101828]'>{r.name}</span>
-                <span className='shrink-0 text-[#667085]'>{r.students.toLocaleString()} students</span>
+                <span className='truncate font-medium text-foreground'>{r.name}</span>
+                <span className='shrink-0 text-muted-foreground'>{r.students.toLocaleString()} students</span>
               </div>
-              <div className='h-2 overflow-hidden rounded-full bg-[#F2F4F7]'>
+              <div className='h-2 overflow-hidden rounded-full bg-muted'>
                 <div
                   className='h-full rounded-full bg-gradient-to-r from-[#3B82F6] to-[#8B5CF6]'
                   style={{ width: `${Math.round((r.students / max) * 100)}%` }}
@@ -44,7 +44,7 @@ export function DepartmentEnrollmentPanel({
         )}
       </div>
       {rows.length > 0 ? (
-        <div className='border-t border-[#F2F4F7] px-4 py-3'>
+        <div className='border-t border-border px-4 py-3'>
           <p className='flex items-center gap-1 text-xs text-[#10B981]'>
             <TrendingUp className='size-3.5' />
             {rows.length} departments with active enrollment

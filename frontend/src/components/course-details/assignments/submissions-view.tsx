@@ -1,10 +1,8 @@
 'use client';
 
-import { ListSkeleton } from '../_shared/list-skeleton';
+import { useMemo } from 'react';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import { downloadGradeCsv as exportGradeCsv } from './download-grade-csv';
-import { AssignmentSummaryCard } from './assignment-summary-card';
-import { SubmissionsFilters } from './submissions-filters';
 import { SubmissionsTable } from './submissions-table';
 import { SubmissionsModals } from './submissions-modals';
 import {
@@ -15,6 +13,7 @@ import { useGradeActions } from './use-grade-actions';
 import { useBulkActions } from './use-bulk-actions';
 import { useSubmissionsViewState } from './use-submissions-view-state';
 import { useSubmissionsData } from './use-submissions-data';
+import { getBulkSelectionCounts } from './use-submission-rows';
 
 interface SubmissionsViewProps {
   courseId: string;
@@ -54,6 +53,8 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
   });
   const bulkActions = useBulkActions({
     assignment,
+    isGroupMode: d.isGroupMode,
+    allGroupRows: d.allGroupRows,
     submissionsByStudent: d.submissionsByStudent,
     selectedRows: s.selectedRows,
     setSelectedRows: s.setSelectedRows,
@@ -71,24 +72,26 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
     gradeMutation: d.gradeMutation,
     extensionBatchMutation: d.extensionBatchMutation
   });
+  const bulkSelection = useMemo(
+    () =>
+      getBulkSelectionCounts({
+        isGroupMode: d.isGroupMode,
+        selectedRows: s.selectedRows,
+        submissionsByStudent: d.submissionsByStudent,
+        allGroupRows: d.allGroupRows
+      }),
+    [d.isGroupMode, d.submissionsByStudent, d.allGroupRows, s.selectedRows]
+  );
   return (
     <div className='space-y-5'>
       <SubmissionsToolbar
-        selectedCount={s.selectedRows.size}
+        title={assignment.title}
+        attachments={assignment.attachments}
+        gradeCount={bulkSelection.gradeCount}
+        extendCount={bulkSelection.extendCount}
         onBack={onBack}
         onBulkGrade={() => s.setBulkGradeOpen(true)}
         onBulkExtend={() => s.setBulkOpen(true)}
-        onExport={() =>
-          exportGradeCsv({
-            assignment,
-            rows: d.allStudentRows,
-            extensions: d.extensions
-          })
-        }
-      />
-      {d.multiTabGradingConflict ? <MultiTabGradingBanner /> : null}
-      <AssignmentSummaryCard
-        assignment={assignment}
         onDeleteAttachment={(att) =>
           s.setAttachmentToDelete({
             assignmentId: assignment.id,
@@ -97,31 +100,18 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
           })
         }
       />
-      <SubmissionsFilters
-        filter={s.filter}
-        setFilter={s.setFilter}
-        search={s.subSearch}
-        setSearch={s.setSubSearch}
-        isGroupMode={d.isGroupMode}
-        allGroupRows={d.allGroupRows}
-        allStudentRows={d.allStudentRows}
-        assignment={assignment}
-        extensions={d.extensions}
-      />
-      {d.subsLoading ? <ListSkeleton variant='row' count={4} /> : null}
+      {d.multiTabGradingConflict ? <MultiTabGradingBanner /> : null}
       <SubmissionsTable
         isGroupMode={d.isGroupMode}
         loading={d.subsLoading}
-        filter={s.filter}
         search={s.subSearch}
+        onSearchChange={s.setSubSearch}
+        filter={s.filter}
+        onFilterChange={s.setFilter}
+        allStudentRows={d.allStudentRows}
+        allGroupRows={d.allGroupRows}
         subSort={s.subSort}
-        onSort={(sortKey) =>
-          s.setSubSort((prev) =>
-            prev.key === sortKey
-              ? { key: sortKey, dir: prev.dir === 'asc' ? 'desc' : 'asc' }
-              : { key: sortKey, dir: 'asc' }
-          )
-        }
+        onSortChange={s.setSubSort}
         selectedRows={s.selectedRows}
         onToggleRow={(id, checked) =>
           s.setSelectedRows((prev) => {
@@ -138,6 +128,13 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
         rosterEmpty={d.roster.length === 0}
         assignment={assignment}
         extensions={d.extensions}
+        onExport={() =>
+          exportGradeCsv({
+            assignment,
+            rows: d.allStudentRows,
+            extensions: d.extensions
+          })
+        }
       />
       <SubmissionsModals
         courseId={courseId}
@@ -146,6 +143,7 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
         d={d}
         gradeActions={gradeActions}
         bulkActions={bulkActions}
+        bulkSelection={bulkSelection}
       />
     </div>
   );

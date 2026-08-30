@@ -14,6 +14,12 @@ import {
 } from '../services/service';
 import type { EditClubPayload } from '../types';
 import { clubKeys } from './club-keys';
+import { inboxKeys } from '@/lib/inbox/queries';
+
+function invalidateClubsAndInbox(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: clubKeys.all });
+  qc.invalidateQueries({ queryKey: inboxKeys.all });
+}
 
 export function useJoinClub() {
   const qc = useQueryClient();
@@ -23,7 +29,7 @@ export function useJoinClub() {
     // every list query, so invalidate the whole namespace — the mutation only
     // receives a clubId, and `clubKeys.detail` is keyed by slug.
     onSuccess: (data) => {
-      qc.invalidateQueries({ queryKey: clubKeys.all });
+      invalidateClubsAndInbox(qc);
       toast.success(
         data?.status === 'PENDING' ? 'Request sent — awaiting approval' : 'Joined!'
       );
@@ -37,7 +43,7 @@ export function useLeaveClub() {
   return useMutation({
     mutationFn: (clubId: number) => leaveClub(clubId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubKeys.all });
+      invalidateClubsAndInbox(qc);
       toast.success('You left the club');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to leave club'),
@@ -56,9 +62,13 @@ export function useDecideJoinRequest(clubId: number) {
       approve: boolean;
       reason?: string;
     }) => decideJoinRequest(clubId, requestId, approve, reason),
-    onSuccess: () => {
+    onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: clubKeys.requests(clubId) });
       qc.invalidateQueries({ queryKey: clubKeys.members(clubId) });
+      // Keep manage-tab badge (pendingRequestCount on club detail) in sync.
+      qc.invalidateQueries({ queryKey: clubKeys.all });
+      qc.invalidateQueries({ queryKey: inboxKeys.all });
+      toast.success(vars.approve ? 'Request approved' : 'Request rejected');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to process request'),
   });
@@ -145,6 +155,7 @@ export function useAcceptInvite() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: clubKeys.mine() });
       qc.invalidateQueries({ queryKey: clubKeys.all });
+      qc.invalidateQueries({ queryKey: inboxKeys.all });
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to accept invite'),
   });

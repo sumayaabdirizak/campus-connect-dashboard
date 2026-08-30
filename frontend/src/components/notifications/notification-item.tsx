@@ -20,7 +20,7 @@ const SOURCE_ICON: Record<NotifSource, typeof Megaphone> = {
 };
 /** DreamsPOS-style solid icon-chip tones, one per notification source. */
 const SOURCE_TONE: Record<NotifSource, string> = {
-  announcement: 'bg-[#3B82F6] text-white',
+  announcement: 'bg-primary text-white',
   assignment: 'bg-[#F59E0B] text-white',
   quiz: 'bg-[#10B981] text-white',
   discussion: 'bg-[#8B5CF6] text-white',
@@ -47,8 +47,8 @@ export function NotificationItem({
         onNavigate?.();
       }}
       className={cn(
-        'group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-[#F8FAFC] focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
-        !item.read && 'bg-[#EFF6FF]/40'
+        'group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
+        !item.read && 'bg-primary/10/40'
       )}
     >
       {!item.read && (
@@ -59,7 +59,7 @@ export function NotificationItem({
       )}
       <span
         className={cn(
-          'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl shadow-sm',
+          'mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl',
           SOURCE_TONE[item.source]
         )}
       >
@@ -69,17 +69,17 @@ export function NotificationItem({
         <div className='flex items-start justify-between gap-2'>
           <p
             className={cn(
-              'line-clamp-2 text-sm text-[#101828]',
+              'line-clamp-2 text-sm text-foreground',
               item.read ? 'font-medium' : 'font-semibold'
             )}
           >
             {item.title}
           </p>
           {!item.read && (
-            <span className='mt-1.5 size-2 shrink-0 rounded-full bg-[#3B82F6]' aria-hidden />
+            <span className='mt-1.5 size-2 shrink-0 rounded-full bg-primary' aria-hidden />
           )}
         </div>
-        <p className='truncate text-xs text-[#667085]'>{item.subtitle}</p>
+        <p className='truncate text-xs text-muted-foreground'>{item.subtitle}</p>
       </div>
     </Link>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useStudentCourses, useSemesterHistory } from '@/lib/student-courses/queries'
-import { useMyGrades } from '@/lib/course-details/queries/gradebook-queries'
+import { getMyGrades } from '@/lib/course-details/services/gradebook-service'
 import { CourseCard } from '@/components/teacher-courses/course-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card'
 import { Button } from '@/features/ui/components/button'
@@ -32,21 +32,25 @@ export function StudentDashboard() {
 
       try {
         setGradesLoading(true)
-        const gradeMap: Record<string, any> = {}
 
-        // Fetch grades sequentially to avoid race conditions
-        for (const course of courses) {
-          try {
-            const response = await fetch(`/api/gradebook/${course.id}/me`)
-            if (response.ok) {
-              const grades = await response.json()
-              gradeMap[course.id] = grades
+        // In parallel, and through apiClient so these share the query cache,
+        // auth refresh and CSRF handling like every other call. The previous
+        // loop awaited each course in turn "to avoid race conditions" — there
+        // is no race here, since every course writes its own key. Sequential
+        // just meant N round trips end to end instead of one.
+        const results = await Promise.all(
+          courses.map(async (course) => {
+            try {
+              return [course.id, await getMyGrades(course.id)] as const
+            } catch (err) {
+              console.error(`Failed to fetch grades for course ${course.id}:`, err)
+              return [course.id, null] as const
             }
-          } catch (err) {
-            console.error(`Failed to fetch grades for course ${course.id}:`, err)
-          }
-        }
+          })
+        )
 
+        const gradeMap: Record<string, any> = {}
+        for (const [id, grades] of results) if (grades) gradeMap[id] = grades
         setAllGrades(gradeMap)
       } finally {
         setGradesLoading(false)
@@ -56,7 +60,7 @@ export function StudentDashboard() {
     if (courses.length > 0) {
       fetchAllGrades()
     }
-  }, [courses])
+  }, [coursesQuery.data?.offerings])
 
   // Calculate overall GPA from all course grades
   const calculateGPA = (): string | null => {
@@ -212,7 +216,10 @@ export function StudentDashboard() {
           </Button>
         </div>
 
-        {isLoading ? (
+        {/* Course cards need only the courses query. Gating them on grades
+            too meant cards whose data had already arrived sat as skeletons
+            until every gradebook call finished. */}
+        {coursesQuery.isLoading ? (
           <div className='grid grid-cols-3 gap-4'>
             {[...Array(3)].map((_, i) => (
               <Skeleton key={i} className='h-48' />

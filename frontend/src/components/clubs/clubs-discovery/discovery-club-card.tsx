@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Icons } from '@/components/icons'
-import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 import { useJoinClub } from '@/lib/clubs/queries'
 import type { Club } from '@/lib/clubs/types'
@@ -21,16 +20,19 @@ function clubInitials(name: string) {
 const JOIN_POLICY_LABEL: Record<string, string> = {
   OPEN: 'Join',
   BY_REQUEST: 'Request',
-  INVITE_ONLY: 'Invite Only',
 }
 
 export interface DiscoveryClubCardProps {
-  club: Club;
-  isMember: boolean;
-  compact?: boolean;
+  club: Club
+  isMember: boolean
+  compact?: boolean
 }
 
-export function DiscoveryClubCard({ club, isMember = false, compact = false }: DiscoveryClubCardProps) {
+export function DiscoveryClubCard({
+  club,
+  isMember = false,
+  compact = false,
+}: DiscoveryClubCardProps) {
   const joinMutation = useJoinClub()
   // Joining a BY_REQUEST club doesn't make you a member — it files a
   // request pending approval. These used to collapse into one `joined`
@@ -38,8 +40,9 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
   // anyone had approved anything.
   const [joined, setJoined] = useState(false)
   const [requested, setRequested] = useState(false)
-  const themeColor = club.themeColor || '#6366f1'
-  const showJoinAction = !isMember && !joined && !requested && club.joinPolicy !== 'INVITE_ONLY'
+  const themeColor = club.themeColor || '#3B82F6'
+  const showJoinAction =
+    !isMember && !joined && !requested && club.joinPolicy !== 'INVITE_ONLY'
 
   const handleJoin = (e: React.MouseEvent) => {
     e.preventDefault()
@@ -48,17 +51,17 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
       onSuccess: (data) => {
         if (data?.status === 'PENDING') setRequested(true)
         else setJoined(true)
-      }
+      },
     })
   }
 
   const avatar = (
     <div
       className={cn(
-        'flex shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-bold',
-        compact ? 'h-9 w-9' : 'h-10 w-10'
+        'flex shrink-0 items-center justify-center overflow-hidden rounded-full text-sm font-bold ring-1 ring-black/5',
+        compact ? 'size-10' : 'size-12'
       )}
-      style={{ backgroundColor: `${themeColor}18`, color: themeColor }}
+      style={{ backgroundColor: `${themeColor}22`, color: themeColor }}
     >
       {club.iconUrl ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -70,36 +73,35 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
   )
 
   const actionButton = showJoinAction ? (
-    <Button
-      size='sm'
-      variant={club.joinPolicy === 'OPEN' ? 'default' : 'outline'}
-      className='h-7 shrink-0 rounded-full px-4 text-xs'
-      style={club.joinPolicy === 'OPEN' ? { backgroundColor: themeColor } : undefined}
+    <button
+      type='button'
       onClick={handleJoin}
       disabled={joinMutation.isPending}
+      className={cn(
+        'inline-flex h-7 shrink-0 items-center rounded-full px-3.5 text-xs font-medium transition-all duration-200 disabled:opacity-60',
+        club.joinPolicy === 'OPEN'
+          ? 'bg-primary text-white hover:bg-[#2563EB] hover:shadow'
+          : 'bg-primary/10 text-[#2563EB] hover:bg-[#DBEAFE]'
+      )}
     >
-      {joinMutation.isPending ? 'Joining...' : JOIN_POLICY_LABEL[club.joinPolicy]}
-    </Button>
+      {joinMutation.isPending ? '…' : JOIN_POLICY_LABEL[club.joinPolicy]}
+    </button>
   ) : requested && !isMember ? (
-    // Not clickable — a second request is a no-op the backend already
-    // treats as idempotent, so there's nothing useful a click would do here.
-    <span className='flex h-7 shrink-0 items-center gap-1 rounded-full border border-dashed px-4 text-xs text-muted-foreground'>
-      <Icons.clock className='h-3 w-3' />
+    <span className='inline-flex h-7 shrink-0 items-center gap-1 rounded-full bg-muted px-3.5 text-xs font-medium text-muted-foreground'>
+      <Icons.clock className='size-3' />
       Pending
     </span>
   ) : (
-    // No handler — the click bubbles to the wrapping <Link>, which already
-    // points at the club.
-    <Button size='sm' variant='outline' className='h-7 shrink-0 rounded-full px-4 text-xs gap-1'>
+    <span className='inline-flex h-7 shrink-0 items-center rounded-full bg-muted px-3.5 text-xs font-medium text-foreground transition-colors group-hover:bg-[#E4E7EC]'>
       {joined && !isMember ? (
-        <>
-          <Icons.check className='h-3 w-3' />
-          Joined!
-        </>
+        <span className='flex items-center gap-1 text-primary'>
+          <Icons.check className='size-3' />
+          Joined
+        </span>
       ) : (
         'Open'
       )}
-    </Button>
+    </span>
   )
 
   const subtitle = [
@@ -109,44 +111,31 @@ export function DiscoveryClubCard({ club, isMember = false, compact = false }: D
     .filter(Boolean)
     .join(' · ')
 
-  if (compact) {
-    return (
-      <Link
-        href={messagesClubHref(club.slug)}
-        className='group flex items-center gap-3 rounded-xl border bg-card p-3 transition-colors hover:border-foreground/20'
-      >
-        {avatar}
-        <div className='min-w-0 flex-1'>
-          <div className='flex items-center gap-1.5'>
-            <h3 className='truncate text-sm font-semibold'>{club.name}</h3>
-            {club.isOfficial && <Icons.circleCheck className='h-3.5 w-3.5 shrink-0 text-blue-500' />}
-          </div>
-          <p className='truncate text-xs text-muted-foreground'>{subtitle}</p>
-        </div>
-        {actionButton}
-      </Link>
-    )
-  }
-
   return (
     <Link
       href={messagesClubHref(club.slug)}
-      className='group flex flex-col gap-2 rounded-xl border bg-card p-4 transition-colors hover:border-foreground/20'
+      className={cn(
+        'group flex min-w-0 items-center gap-3 border border-border bg-card transition-all duration-200',
+        'hover:border-border hover:shadow-[0_2px_8px_rgba(16,24,40,0.08)]',
+        compact ? 'rounded-xl px-3 py-2.5' : 'rounded-xl p-3.5'
+      )}
     >
-      <div className='flex items-center gap-3'>
-        {avatar}
-        <div className='min-w-0 flex-1'>
-          <div className='flex items-center gap-1.5'>
-            <h3 className='truncate text-sm font-semibold'>{club.name}</h3>
-            {club.isOfficial && <Icons.circleCheck className='h-3.5 w-3.5 shrink-0 text-blue-500' />}
-          </div>
-          <p className='truncate text-xs text-muted-foreground'>{subtitle}</p>
+      {avatar}
+      <div className='min-w-0 flex-1'>
+        <div className='flex min-w-0 items-center gap-1.5'>
+          <h3 className='truncate text-[13px] font-semibold text-foreground'>{club.name}</h3>
+          {club.isOfficial ? (
+            <Icons.circleCheck className='size-3.5 shrink-0 text-primary' />
+          ) : null}
         </div>
-        {actionButton}
+        <p className='truncate text-xs font-medium text-foreground'>{subtitle}</p>
+        {!compact && (club.tagline || club.description) ? (
+          <p className='mt-0.5 line-clamp-1 text-xs text-muted-foreground'>
+            {club.tagline || club.description}
+          </p>
+        ) : null}
       </div>
-      <p className='line-clamp-2 text-xs text-muted-foreground'>
-        {club.tagline || club.description || 'No description yet.'}
-      </p>
+      {actionButton}
     </Link>
   )
 }

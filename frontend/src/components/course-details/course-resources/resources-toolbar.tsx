@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/features/ui/components/button';
-import { Input } from '@/features/ui/components/input';
 import {
   Select,
   SelectContent,
@@ -9,8 +8,9 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/features/ui/components/select';
-import { FolderPlus, Plus, Search } from 'lucide-react';
+import { FolderPlus, Plus } from 'lucide-react';
 import { humanizeType } from '../resource-renderers';
+import { CourseTabHeader } from '../_shared/course-tab-header';
 import { RESOURCE_TYPES, type ResourceTypeFilter } from './constants';
 
 export function ResourcesToolbar({
@@ -31,45 +31,54 @@ export function ResourcesToolbar({
   onAddMaterial: () => void;
 }) {
   return (
-    <div className='flex flex-wrap gap-2'>
-      <div className='relative flex-1 min-w-[10rem] max-w-xs'>
-        <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
-        <Input
-          placeholder='Search...'
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
-          className='pl-10'
-          aria-label='Search materials'
-        />
+    <div className='space-y-3'>
+      <CourseTabHeader
+        title='Resources'
+        description={
+          isStudent
+            ? 'Course materials shared by your lecturer.'
+            : 'Organize modules and share course materials.'
+        }
+        search={{
+          value: search,
+          onChange: onSearchChange,
+          placeholder: 'Search materials…',
+          'aria-label': 'Search materials'
+        }}
+        actions={
+          !isStudent ? (
+            <>
+              <Button variant='outline' size='sm' onClick={onAddModule} className='gap-1.5 rounded-full'>
+                <FolderPlus className='size-4' />
+                Add module
+              </Button>
+              <Button size='sm' onClick={onAddMaterial} className='gap-1.5 rounded-full'>
+                <Plus className='size-4' />
+                Add material
+              </Button>
+            </>
+          ) : undefined
+        }
+      />
+
+      <div className='flex flex-wrap justify-end gap-2'>
+        <Select
+          value={typeFilter}
+          onValueChange={(v) => onTypeFilterChange(v as ResourceTypeFilter)}
+        >
+          <SelectTrigger className='h-9 w-36 border-[#D0D5DD] bg-white sm:w-44 dark:border-border dark:bg-background'>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='all'>All types</SelectItem>
+            {RESOURCE_TYPES.map((t) => (
+              <SelectItem key={t} value={t}>
+                {humanizeType(t)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
-      <Select
-        value={typeFilter}
-        onValueChange={(v) => onTypeFilterChange(v as ResourceTypeFilter)}
-      >
-        <SelectTrigger className='w-36 sm:w-44'>
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value='all'>All types</SelectItem>
-          {RESOURCE_TYPES.map((t) => (
-            <SelectItem key={t} value={t}>
-              {humanizeType(t)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-      {!isStudent ? (
-        <>
-          <Button variant='outline' onClick={onAddModule} className='gap-1'>
-            <FolderPlus className='w-4 h-4' />
-            <span className='hidden sm:inline'>Add module</span>
-          </Button>
-          <Button onClick={onAddMaterial} className='gap-1'>
-            <Plus className='w-4 h-4' />
-            <span className='hidden sm:inline'>Add material</span>
-          </Button>
-        </>
-      ) : null}
     </div>
   );
 }

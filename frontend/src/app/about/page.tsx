@@ -20,7 +20,7 @@ export default function AboutPage() {
 
         {/* Content Sections */}
         <div className='space-y-8'>
-          <section className='bg-card rounded-2xl border p-8 shadow-sm'>
+          <section className='bg-card rounded-xl border p-8'>
             <h2 className='text-foreground mb-4 text-xl font-semibold'>Final Year Project</h2>
             <p className='text-muted-foreground text-lg leading-relaxed'>
               Campus Connect is a comprehensive digital communication platform designed for academic
@@ -29,7 +29,7 @@ export default function AboutPage() {
             </p>
           </section>
 
-          <section className='bg-card rounded-2xl border p-8 shadow-sm'>
+          <section className='bg-card rounded-xl border p-8'>
             <h2 className='text-foreground mb-4 text-xl font-semibold'>Local Authentication</h2>
             <p className='text-muted-foreground text-lg leading-relaxed'>
               The platform implementation uses a secure local role-based access control system to

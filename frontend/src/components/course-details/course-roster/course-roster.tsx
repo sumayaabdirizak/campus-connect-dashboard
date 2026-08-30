@@ -5,7 +5,8 @@ import { Activity, UserCheck, Users } from 'lucide-react';
 import { EmptyState } from '../_shared/empty-state';
 import { ListSkeleton } from '../_shared/list-skeleton';
 import { SimpleDataTable } from '../_shared/simple-data-table';
-import { CoursePageShell } from '../_shared/course-page-shell';
+import { CourseTabHeader } from '../_shared/course-tab-header';
+import { CourseTabPage } from '../_shared/course-tab-page';
 import { StudentProfileDrawer } from '../student-profile-drawer';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
 import { useCourseAccessList } from '@/lib/course-details/queries/access-queries';
@@ -20,7 +21,8 @@ interface CourseRosterProps {
 
 export function CourseRoster({ courseId }: CourseRosterProps) {
   const [selected, setSelected] = useState<RosterStudent | null>(null);
-  const { data: roster = [], isLoading, isError } = useRoster(courseId);
+  const [search, setSearch] = useState('');
+  const { data: roster = [], isLoading, isError } = useRoster(courseId, { live: true });
   const { data: accessRows = [] } = useCourseAccessList(courseId);
   const columns = useRosterColumns();
 
@@ -36,44 +38,61 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
 
   if (isLoading) {
     return (
-      <div className='space-y-4'>
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Roster'
+          description='Students enrolled in this section.'
+        />
         <div className='grid grid-cols-2 gap-3 lg:grid-cols-3'>
           {Array.from({ length: 3 }).map((_, i) => (
             <ListSkeleton key={i} variant='row' count={1} />
           ))}
         </div>
         <ListSkeleton variant='row' count={5} />
-      </div>
+      </CourseTabPage>
     );
   }
 
   if (isError) {
     return (
-      <CoursePageShell title='Roster'>
+      <CourseTabPage>
+        <CourseTabHeader title='Roster' description='Students enrolled in this section.' />
         <EmptyState
           icon={Users}
           title='Could not load roster'
           description='Something went wrong fetching students. Try reloading the page.'
         />
-      </CoursePageShell>
+      </CourseTabPage>
     );
   }
 
   if (rows.length === 0) {
     return (
-      <CoursePageShell title='Roster' description='Students enrolled in this section.'>
+      <CourseTabPage>
+        <CourseTabHeader title='Roster' description='Students enrolled in this section.' />
         <EmptyState
           icon={Users}
           title='No students yet'
           description='Students assigned to this section will appear here once they enrol.'
         />
-      </CoursePageShell>
+      </CourseTabPage>
     );
   }
 
   return (
-    <div className='flex min-h-0 flex-col gap-4'>
-      <div className='grid shrink-0 grid-cols-2 gap-3 lg:grid-cols-3'>
+    <CourseTabPage>
+      <CourseTabHeader
+        title='Roster'
+        description={`${stats.total} enrolled · last seen based on course page visits.`}
+        search={{
+          value: search,
+          onChange: setSearch,
+          placeholder: 'Search students…',
+          'aria-label': 'Search students'
+        }}
+      />
+
+      <div className='grid grid-cols-2 gap-3 lg:grid-cols-3'>
         <StatCard label='Enrolled' value={String(stats.total)} icon={Users} />
         <StatCard
           label='Active'
@@ -89,13 +108,8 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
         />
       </div>
 
-      <CoursePageShell
-        title='Student roster'
-        description={`${stats.total} enrolled`}
-        flush
-        className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'
-      >
-        <div className='flex min-h-0 flex-1 flex-col px-4 pt-4 sm:px-6'>
+      <div className='overflow-hidden rounded-xl border border-border bg-card'>
+        <div className='px-4 pt-4 sm:px-5'>
           <SimpleDataTable
             embedded
             data={rows}
@@ -108,18 +122,21 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
             mobilePrimaryColumn='full_name'
             stickyHeader
             scrollContainerClassName='max-h-[min(720px,calc(100dvh-18rem))] min-h-[200px] overflow-auto'
+            globalFilter={search}
+            onGlobalFilterChange={setSearch}
+            hideToolbarSearch
           />
         </div>
-        <p className='border-t border-border/60 px-4 py-3 text-[11px] text-muted-foreground sm:px-6'>
+        <p className='border-t border-border px-4 py-3 text-[11px] text-muted-foreground sm:px-5'>
           Last seen is based on course page visits.
         </p>
-      </CoursePageShell>
+      </div>
 
       <StudentProfileDrawer
         courseId={courseId}
         student={selected}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </CourseTabPage>
   );
 }

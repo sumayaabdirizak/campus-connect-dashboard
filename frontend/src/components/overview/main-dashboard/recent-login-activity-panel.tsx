@@ -18,20 +18,20 @@ export function RecentLoginActivityPanel() {
   const rows = data?.results ?? []
 
   return (
-    <div className='overflow-hidden rounded-2xl border border-[#E5E7EB] bg-white shadow-sm'>
-      <div className='flex items-center justify-between gap-2 border-b border-[#F2F4F7] px-4 py-3.5'>
+    <div className='overflow-hidden rounded-xl border border-border bg-card'>
+      <div className='flex items-center justify-between gap-2 border-b border-border px-4 py-3.5'>
         <div className='flex items-center gap-2'>
           <span className='flex size-7 items-center justify-center rounded-lg bg-[#ECFDF5] text-[#10B981]'>
             <LogIn className='size-3.5' />
           </span>
-          <h2 className='text-sm font-bold text-[#101828]'>Recent Login Activity</h2>
+          <h2 className='text-sm font-bold text-foreground'>Recent Login Activity</h2>
         </div>
       </div>
       <div className='px-2 py-2'>
         {isLoading ? (
-          <p className='py-6 text-center text-sm text-[#667085]'>Loading…</p>
+          <p className='py-6 text-center text-sm text-muted-foreground'>Loading…</p>
         ) : rows.length === 0 ? (
-          <p className='py-6 text-center text-sm text-[#667085]'>No login activity recorded yet.</p>
+          <p className='py-6 text-center text-sm text-muted-foreground'>No login activity recorded yet.</p>
         ) : (
           <ul className='divide-y divide-[#F2F4F7]'>
             {rows.map((r) => (
@@ -40,15 +40,15 @@ export function RecentLoginActivityPanel() {
                   <AvatarFallback className='text-[10px]'>{userInitials(r.fullName)}</AvatarFallback>
                 </Avatar>
                 <div className='min-w-0 flex-1'>
-                  <p className='truncate text-sm font-medium text-[#101828]'>{r.fullName}</p>
-                  <p className='truncate text-xs text-[#667085]'>{r.email}</p>
+                  <p className='truncate text-sm font-medium text-foreground'>{r.fullName}</p>
+                  <p className='truncate text-xs text-muted-foreground'>{r.email}</p>
                 </div>
                 {r.role ? (
                   <Badge variant='outline' className='shrink-0 font-normal capitalize'>
                     {r.role.replace('_', ' ').toLowerCase()}
                   </Badge>
                 ) : null}
-                <span className='shrink-0 text-right text-xs text-[#98A2B3]' title={new Date(r.loginAt).toLocaleString()}>
+                <span className='shrink-0 text-right text-xs text-muted-foreground' title={new Date(r.loginAt).toLocaleString()}>
                   {formatDistanceToNow(new Date(r.loginAt), { addSuffix: true })}
                 </span>
               </li>

@@ -25,8 +25,7 @@ export function useDetailsPanelData(channelId: string) {
   const serverPerms = useDiscussionPermissions(serverData?.myServerPermissions);
   const removeMemberMut = useRemoveServerMember(serverId ?? '');
   const { data: presenceData } = useServerPresence(serverId);
-  const numericChannelId = channelId != null ? Number(channelId) : null;
-  const { messages } = useChannelMessages(numericChannelId);
+  const { messages } = useChannelMessages(channelId);
 
   const [tab, setTab] = useState<DetailsTab>('members');
   const [memberSearch, setMemberSearch] = useState('');

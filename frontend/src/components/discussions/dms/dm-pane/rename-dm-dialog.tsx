@@ -84,15 +84,15 @@ export function RenameDmDialog({
         </DialogHeader>
 
         <div className='flex flex-wrap items-center gap-3 py-2'>
-          <Avatar className='size-16 border border-[#E5E7EB] bg-[#F9FAFB]'>
+          <Avatar className='size-16 border border-border bg-muted'>
             {iconSrc ? <AvatarImage src={iconSrc} alt={currentName || 'Group icon'} /> : null}
-            <AvatarFallback className='bg-[#F9FAFB] text-sm font-semibold text-[#667085]'>
+            <AvatarFallback className='bg-muted text-sm font-semibold text-muted-foreground'>
               {initialsFor(currentName || 'Group') || <ImageIcon className='size-5' />}
             </AvatarFallback>
           </Avatar>
           <div>
-            <p className='mb-0.5 text-sm font-semibold text-[#101828]'>Conversation icon</p>
-            <p className='mb-2 text-xs text-[#667085]'>Image should be below 2MB</p>
+            <p className='mb-0.5 text-sm font-semibold text-foreground'>Conversation icon</p>
+            <p className='mb-2 text-xs text-muted-foreground'>Image should be below 2MB</p>
             <div className='flex items-center gap-2'>
               <Button
                 type='button'
@@ -144,7 +144,7 @@ export function RenameDmDialog({
             maxLength={120}
             placeholder='e.g. Math study group'
           />
-          <p className='text-xs text-[#667085]'>
+          <p className='text-xs text-muted-foreground'>
             Leave blank to use the default member-list name.
           </p>
         </div>
@@ -156,7 +156,7 @@ export function RenameDmDialog({
           <Button
             onClick={handleSave}
             disabled={rename.isPending}
-            className='bg-[#3B82F6] text-white hover:bg-[#2563EB]'
+            className='bg-primary text-white hover:bg-[#2563EB]'
           >
             {rename.isPending ? <Icons.spinner className='h-4 w-4 animate-spin' /> : 'Save name'}
           </Button>

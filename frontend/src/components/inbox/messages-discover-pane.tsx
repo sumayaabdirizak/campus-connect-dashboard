@@ -8,7 +8,7 @@ import { Icons } from '@/components/icons'
 import {
   useClubs,
   useMyClubs,
-  useRecommendedClubs
+  useRecommendedClubs,
 } from '@/lib/clubs/queries'
 import type { Club } from '@/lib/clubs/types'
 import { DiscoveryClubCard } from '@/components/clubs/clubs-discovery/discovery-club-card'
@@ -23,8 +23,7 @@ import { cn } from '@/lib/utils'
 export function MessagesDiscoverPane() {
   const [q, setQ] = useState('')
   const [activeTab, setActiveTab] = useState<'all' | 'my'>('all')
-  const [sortBy, setSortBy] = useState<'popular' | 'new' | 'active'>('popular')
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list')
 
   const user = useAuthStore((s) => s.user)
   // AO manages clubs via nav admin, not Messages Discover (Discover is hidden for AO).
@@ -33,8 +32,8 @@ export function MessagesDiscoverPane() {
 
   const { data: catalog, isLoading } = useClubs({
     q: q.trim() || undefined,
-    sort: sortBy,
-    limit: 30
+    sort: 'popular',
+    limit: 30,
   })
   const { data: mine } = useMyClubs()
   const { data: recommended } = useRecommendedClubs(12)
@@ -73,7 +72,9 @@ export function MessagesDiscoverPane() {
     // of 3 with just their 1 memberOf club rendered underneath.
     if (activeTab === 'my') return myActiveClubs
 
-    const list = catalog?.clubs?.length ? catalog.clubs : [...(recommended?.clubs ?? [])]
+    const list = catalog?.clubs?.length
+      ? catalog.clubs
+      : [...(recommended?.clubs ?? [])]
     const seen = new Set<number>()
     const out: Club[] = []
     for (const c of list) {
@@ -86,149 +87,113 @@ export function MessagesDiscoverPane() {
     return out
   }, [catalog, recommended, activeTab, myIds, myActiveClubs])
 
-  const clubsToDisplay = useMemo(() => {
-    return clubs.length > 0 ? clubs : []
-  }, [clubs])
-
-  const totalToExplore = clubsToDisplay.length + (activeTab === 'all' ? myActiveClubs.length : 0)
+  const clubsToDisplay = clubs.length > 0 ? clubs : []
+  const gridClass =
+    viewMode === 'grid' ? 'grid gap-2 sm:grid-cols-2' : 'flex flex-col gap-2'
 
   return (
-    <div className='flex h-full min-h-0 flex-col bg-[#F9FAFB]'>
-      <div className='shrink-0 border-b border-[#E5E7EB] bg-white'>
-        <div className='px-4 py-4'>
-          <div className='mb-4 flex items-center justify-between'>
-            <div className='flex items-center gap-2.5'>
-              <div className='flex size-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#EEF2FF] to-[#F5F3FF]'>
-                <Icons.sparkles className='size-4 text-[#6366F1]' />
-              </div>
-              <div>
-                <h2 className='text-lg font-semibold text-[#101828]'>Discover</h2>
-                <p className='text-xs text-[#667085]'>{totalToExplore} clubs to explore</p>
-              </div>
-            </div>
-            <ClubCreateDialog isDean={isDean} isSuperAdmin={isSuperAdmin} label='Apply for Club' />
+    <div className='flex h-full min-h-0 flex-col bg-muted'>
+      <div className='shrink-0 border-b border-border bg-card'>
+        <div className='flex items-center justify-between gap-3 px-4 py-3'>
+          <div className='flex min-w-0 items-center gap-2.5'>
+            <Icons.sparkles className='size-8 shrink-0 text-primary' stroke={1.5} />
+            <h2 className='truncate text-lg font-semibold tracking-tight text-foreground'>
+              Discover
+            </h2>
           </div>
+          <ClubCreateDialog
+            isDean={isDean}
+            isSuperAdmin={isSuperAdmin}
+            label='Apply'
+          />
+        </div>
 
-          <div className='mb-3 flex items-center justify-between gap-2'>
-            <div className='flex gap-2'>
-              <button
-                onClick={() => setActiveTab('all')}
-                className={cn(
-                  'px-3 py-2 text-sm font-medium rounded-lg transition-all',
-                  activeTab === 'all'
-                    ? 'bg-[#F3F4F6] text-[#101828] border border-[#D1D5DB]'
-                    : 'text-[#667085] hover:text-[#101828]'
-                )}
-              >
-                All Clubs
-              </button>
-              <button
-                onClick={() => setActiveTab('my')}
-                className={cn(
-                  'flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg transition-all',
-                  activeTab === 'my'
-                    ? 'bg-[#F3F4F6] text-[#101828] border border-[#D1D5DB]'
-                    : 'text-[#667085] hover:text-[#101828]'
-                )}
-              >
-                My Clubs
-                {myActiveClubs.length > 0 ? (
-                  <span className='flex size-4 items-center justify-center rounded-full bg-[#3B82F6] text-[10px] font-semibold text-white'>
-                    {myActiveClubs.length}
-                  </span>
-                ) : null}
-              </button>
-            </div>
-
-            <div className='flex gap-1 border border-[#E5E7EB] rounded-lg p-1'>
-              <button
-                onClick={() => setViewMode('list')}
-                className={cn(
-                  'p-1.5 rounded transition-all',
-                  viewMode === 'list'
-                    ? 'bg-[#F3F4F6]'
-                    : 'hover:bg-[#F9FAFB]'
-                )}
-                title='List view'
-              >
-                <List className='h-4 w-4 text-[#667085]' />
-              </button>
-              <button
-                onClick={() => setViewMode('grid')}
-                className={cn(
-                  'p-1.5 rounded transition-all',
-                  viewMode === 'grid'
-                    ? 'bg-[#F3F4F6]'
-                    : 'hover:bg-[#F9FAFB]'
-                )}
-                title='Grid view'
-              >
-                <Grid3x3 className='h-4 w-4 text-[#667085]' />
-              </button>
-            </div>
+        <div className='flex items-center gap-2 px-4 pb-3'>
+          <div className='relative min-w-0 flex-1'>
+            <Icons.search className='pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground' />
+            <Input
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder='Search clubs…'
+              className='h-9 rounded-md border-0 bg-muted pl-8 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-[#3B82F6]/25'
+            />
+          </div>
+          <div className='flex shrink-0 gap-0.5 rounded-md border border-border p-0.5'>
+            <button
+              type='button'
+              onClick={() => setViewMode('list')}
+              className={cn(
+                'rounded p-1.5 transition-colors',
+                viewMode === 'list'
+                  ? 'bg-primary text-white'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+              title='List view'
+            >
+              <List className='size-3.5' />
+            </button>
+            <button
+              type='button'
+              onClick={() => setViewMode('grid')}
+              className={cn(
+                'rounded p-1.5 transition-colors',
+                viewMode === 'grid'
+                  ? 'bg-primary text-white'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+              title='Grid view'
+            >
+              <Grid3x3 className='size-3.5' />
+            </button>
           </div>
         </div>
 
-        <div className='px-4 py-3 border-t border-[#E5E7EB]'>
-          <div className='flex items-center gap-2'>
-            <div className='relative flex-1'>
-              <Icons.search className='pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-[#98A2B3]' />
-              <Input
-                value={q}
-                onChange={(e) => setQ(e.target.value)}
-                placeholder='Search clubs...'
-                className='h-9 rounded-full border-[#E5E7EB] bg-[#F8FAFC] pl-8 text-sm'
-              />
-            </div>
-
-            <div className='flex shrink-0 gap-1.5'>
-              <button
-                onClick={() => setSortBy('popular')}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-                  sortBy === 'popular'
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'bg-[#F3F4F6] text-[#667085] hover:bg-[#E5E7EB]'
-                )}
-              >
-                Popular
-              </button>
-              <button
-                onClick={() => setSortBy('new')}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-                  sortBy === 'new'
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'bg-[#F3F4F6] text-[#667085] hover:bg-[#E5E7EB]'
-                )}
-              >
-                New
-              </button>
-              <button
-                onClick={() => setSortBy('active')}
-                className={cn(
-                  'px-3 py-1.5 text-xs font-medium rounded-lg transition-all',
-                  sortBy === 'active'
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'bg-[#F3F4F6] text-[#667085] hover:bg-[#E5E7EB]'
-                )}
-              >
-                Active
-              </button>
-            </div>
-          </div>
+        <div className='flex gap-0 border-t border-border px-2'>
+          <button
+            type='button'
+            onClick={() => setActiveTab('all')}
+            className={cn(
+              'relative px-3 py-2.5 text-sm font-semibold transition-colors',
+              activeTab === 'all'
+                ? 'text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            All
+          </button>
+          <button
+            type='button'
+            onClick={() => setActiveTab('my')}
+            className={cn(
+              'relative flex items-center gap-1.5 px-3 py-2.5 text-sm font-semibold transition-colors',
+              activeTab === 'my'
+                ? 'text-foreground after:absolute after:inset-x-3 after:bottom-0 after:h-0.5 after:bg-primary'
+                : 'text-muted-foreground hover:text-foreground'
+            )}
+          >
+            Mine
+            {myActiveClubs.length > 0 ? (
+              <span className='flex size-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-white'>
+                {myActiveClubs.length}
+              </span>
+            ) : null}
+          </button>
         </div>
       </div>
 
-      <ScrollArea className='min-h-0 flex-1'>
-        <div className='space-y-5 p-4'>
+      <ScrollArea className='min-h-0 flex-1 bg-muted'>
+        <div className='space-y-4 p-3'>
           {isDean && activeTab === 'all' ? <DiscoverPendingApprovalsLink /> : null}
-          {activeTab === 'all' ? <DiscoverMyApplications clubs={myApplications} /> : null}
+          {activeTab === 'all' ? (
+            <DiscoverMyApplications clubs={myApplications} />
+          ) : null}
 
           {activeTab === 'all' && myActiveClubs.length > 0 ? (
-            <div className='space-y-3'>
-              <h3 className='text-sm font-bold text-[#101828]'>Your clubs</h3>
-              <div className={cn(viewMode === 'grid' ? 'grid gap-3 sm:grid-cols-2' : 'space-y-3')}>
+            <section className='space-y-2'>
+              <h3 className='px-0.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground'>
+                Your clubs
+              </h3>
+              <div className={gridClass}>
                 {myActiveClubs.map((club) => (
                   <DiscoveryClubCard
                     key={club.id}
@@ -238,24 +203,24 @@ export function MessagesDiscoverPane() {
                   />
                 ))}
               </div>
-            </div>
+            </section>
           ) : null}
 
-          <div className='space-y-3'>
-            {activeTab === 'all' && (
-              <h3 className='text-sm font-bold text-[#101828]'>Recommended for you</h3>
-            )}
+          <section className='space-y-2'>
+            {activeTab === 'all' ? (
+              <h3 className='px-0.5 text-[11px] font-bold uppercase tracking-wide text-muted-foreground'>
+                Recommended
+              </h3>
+            ) : null}
 
             {isLoading && clubsToDisplay.length === 0 ? (
-              <div className={cn(
-                viewMode === 'grid' ? 'grid gap-3 sm:grid-cols-2' : 'space-y-3'
-              )}>
+              <div className={gridClass}>
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
                     className={cn(
-                      'animate-pulse rounded-xl border border-[#E5E7EB] bg-white',
-                      viewMode === 'grid' ? 'h-28' : 'h-16'
+                      'animate-pulse rounded-xl border border-border bg-card',
+                      viewMode === 'grid' ? 'h-16' : 'h-14'
                     )}
                   />
                 ))}
@@ -263,15 +228,11 @@ export function MessagesDiscoverPane() {
             ) : null}
 
             {!isLoading && clubsToDisplay.length === 0 ? (
-              <div className='rounded-xl border border-dashed border-[#E5E7EB] bg-white px-4 py-10 text-center'>
-                <p className='text-sm text-[#667085]'>No clubs to show yet.</p>
+              <div className='rounded-xl border border-dashed border-border bg-card px-4 py-8 text-center'>
+                <p className='text-sm font-medium text-muted-foreground'>No clubs to show yet.</p>
               </div>
             ) : (
-              <div className={cn(
-                viewMode === 'grid'
-                  ? 'grid gap-3 sm:grid-cols-2'
-                  : 'space-y-3'
-              )}>
+              <div className={gridClass}>
                 {clubsToDisplay.map((club) => (
                   <DiscoveryClubCard
                     key={club.id}
@@ -282,10 +243,9 @@ export function MessagesDiscoverPane() {
                 ))}
               </div>
             )}
-          </div>
+          </section>
         </div>
       </ScrollArea>
     </div>
   )
 }
-

@@ -42,13 +42,7 @@ export function SubmitForm({
   };
 
   return (
-    <div className='mt-3 space-y-2'>
-      {hasSubmitted ? (
-        <p className='text-[11px] text-muted-foreground'>
-          Submit a new version — this will <strong>replace</strong> your current submission and
-          reset the grade.
-        </p>
-      ) : null}
+    <div className='space-y-2'>
       <div className='inline-flex rounded-md border p-0.5 text-xs'>
         <button
           type='button'
@@ -73,10 +67,11 @@ export function SubmitForm({
           <Upload className='w-3 h-3' /> File
         </button>
       </div>
-      <div className='flex gap-2'>
+      <div className='flex min-w-0 flex-wrap gap-2'>
         {submitMode === 'link' ? (
           <Input
-            placeholder='Paste a link to your work…'
+            placeholder='Paste a link to your work...'
+            className='min-w-0 flex-1 bg-background'
             value={submitUrl}
             onChange={(e) => onSubmitUrlChange(e.target.value)}
           />
@@ -95,7 +90,7 @@ export function SubmitForm({
               className='gap-1 shrink-0'
               onClick={() => fileInputRef.current?.click()}
             >
-              <Paperclip className='w-3.5 h-3.5' /> Pick file
+              <Paperclip className='w-3.5 h-3.5' /> Choose a file
             </Button>
             {pendingFile ? (
               <div className='flex items-center gap-2 text-xs min-w-0 flex-1'>
@@ -113,7 +108,7 @@ export function SubmitForm({
                 </button>
               </div>
             ) : (
-              <span className='text-xs text-muted-foreground'>No file selected · 25 MB max</span>
+              <span className='text-xs text-muted-foreground'>No file yet · 25 MB max</span>
             )}
           </div>
         )}

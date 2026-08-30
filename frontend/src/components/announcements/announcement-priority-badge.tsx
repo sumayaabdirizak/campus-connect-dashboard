@@ -16,16 +16,16 @@ export function PriorityBadge({ priority }: { priority: Announcement['priority']
       role='img'
       aria-label={`${label} priority`}
       className={cn(
-        'inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.08em] ring-1 ring-inset',
+        'inline-flex items-center gap-0.5 rounded-full px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] ring-1 ring-inset',
         isUrgent
-          ? 'bg-destructive/10 text-destructive ring-destructive/20'
-          : 'bg-amber-500/10 text-amber-700 ring-amber-500/20 dark:text-amber-400'
+          ? 'bg-destructive/15 text-destructive ring-destructive/40'
+          : 'bg-amber-500/15 text-amber-800 ring-amber-500/35 dark:text-amber-300'
       )}
     >
       {isUrgent ? (
-        <Icons.warning className='size-3' aria-hidden />
+        <Icons.warning className='size-2.5' aria-hidden />
       ) : (
-        <Icons.info className='size-3' aria-hidden />
+        <Icons.info className='size-2.5' aria-hidden />
       )}
       {label}
     </span>

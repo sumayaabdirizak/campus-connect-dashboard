@@ -28,19 +28,19 @@ export function ChannelSettingsTabs({
 }) {
   return (
     <>
-      <TabsList className='h-auto w-full shrink-0 justify-start gap-0 rounded-none border-b border-[#E5E7EB] bg-white p-0 px-2'>
+      <TabsList className='h-auto w-full shrink-0 justify-start gap-0 rounded-none border-b border-border bg-card p-0 px-2'>
         {visibleTabs.map((t) => (
           <TabsTrigger
             key={t.value}
             value={t.value}
-            className='rounded-none border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-[#667085] shadow-none data-[state=active]:border-[#3B82F6] data-[state=active]:bg-transparent data-[state=active]:text-[#101828] data-[state=active]:shadow-none'
+            className='rounded-none border-b-2 border-transparent px-3 py-2.5 text-xs font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:text-foreground data-[state=active]:shadow-none'
           >
             {t.label}
           </TabsTrigger>
         ))}
       </TabsList>
 
-      <div className='min-h-0 flex-1 overflow-y-auto bg-white px-5 py-4'>
+      <div className='min-h-0 flex-1 overflow-y-auto bg-card px-5 py-4'>
         {perms.canManageChannel ? (
           <TabsContent
             value='overview'

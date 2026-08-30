@@ -22,6 +22,10 @@ import {
   UpdateModuleData,
   ReorderItem
 } from '../types';
+import {
+  type LiveQueryOptions,
+  withCourseLiveRefresh
+} from './live-query-options';
 
 export const resourceKeys = {
   all: ['resources'] as const,
@@ -34,30 +38,44 @@ export const resourceKeys = {
     [...resourceKeys.all, 'analytics', resourceId] as const
 };
 
-export const resourcesQueryOptions = (courseId: string, filters?: ResourceFilters) =>
+export const resourcesQueryOptions = (
+  courseId: string,
+  filters?: ResourceFilters,
+  options?: LiveQueryOptions
+) =>
   queryOptions({
     queryKey: resourceKeys.list(courseId, filters),
-    queryFn: () => getResources(courseId, filters)
+    queryFn: () => getResources(courseId, filters),
+    ...withCourseLiveRefresh(options?.live)
   });
 
 export const resourceDetailQueryOptions = (resourceId: string) =>
   queryOptions({
     queryKey: resourceKeys.detail(resourceId),
-    queryFn: () => getResource(resourceId)
+    queryFn: () => getResource(resourceId),
+    refetchOnWindowFocus: true
   });
 
-export const modulesQueryOptions = (courseOfferingId: string) =>
+export const modulesQueryOptions = (
+  courseOfferingId: string,
+  options?: LiveQueryOptions
+) =>
   queryOptions({
     queryKey: resourceKeys.modules(courseOfferingId),
-    queryFn: () => getModules(courseOfferingId)
+    queryFn: () => getModules(courseOfferingId),
+    ...withCourseLiveRefresh(options?.live)
   });
 
-export function useResources(courseId: string, filters?: ResourceFilters) {
-  return useQuery(resourcesQueryOptions(courseId, filters));
+export function useResources(
+  courseId: string,
+  filters?: ResourceFilters,
+  options?: LiveQueryOptions
+) {
+  return useQuery(resourcesQueryOptions(courseId, filters, options));
 }
 
-export function useModules(courseOfferingId: string) {
-  return useQuery(modulesQueryOptions(courseOfferingId));
+export function useModules(courseOfferingId: string, options?: LiveQueryOptions) {
+  return useQuery(modulesQueryOptions(courseOfferingId, options));
 }
 
 /// Teacher watch-analytics for a single resource. `enabled` lets the caller
@@ -66,7 +84,8 @@ export function useResourceAnalytics(resourceId: number, enabled = true) {
   return useQuery({
     queryKey: resourceKeys.analytics(resourceId),
     queryFn: () => getResourceAnalytics(resourceId),
-    enabled: enabled && Number.isFinite(resourceId) && resourceId > 0
+    enabled: enabled && Number.isFinite(resourceId) && resourceId > 0,
+    refetchOnWindowFocus: true
   });
 }
 

@@ -67,7 +67,7 @@ export function NotificationCenter({ variant = 'default' }: { variant?: 'default
       </PopoverTrigger>
       <PopoverContent
         align='end'
-        className='relative w-[calc(100vw-2rem)] overflow-hidden rounded-2xl border-[#E5E7EB] p-0 shadow-lg sm:w-[380px]'
+        className='relative w-[calc(100vw-2rem)] overflow-hidden rounded-xl border-border p-0 shadow-lg sm:w-[380px]'
         sideOffset={8}
       >
         <div
@@ -76,34 +76,34 @@ export function NotificationCenter({ variant = 'default' }: { variant?: 'default
         />
         <div className='flex items-center justify-between px-4 py-3.5'>
           <Link href='/dashboard/notifications' className='group flex items-center gap-1.5'>
-            <h4 className='text-sm font-bold text-[#101828] group-hover:underline'>
+            <h4 className='text-sm font-bold text-foreground group-hover:underline'>
               Notifications
             </h4>
             {unreadCount > 0 ? (
-              <span className='inline-flex items-center rounded-full bg-[#EFF6FF] px-1.5 py-0.5 text-[10px] font-bold text-[#1D4ED8] ring-1 ring-[#BFDBFE]'>
+              <span className='inline-flex items-center rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold text-[#1D4ED8] ring-1 ring-[#BFDBFE]'>
                 {unreadCount}
               </span>
             ) : null}
-            <Icons.chevronRight className='size-3.5 text-[#98A2B3] transition-transform group-hover:translate-x-0.5' />
+            <Icons.chevronRight className='size-3.5 text-muted-foreground transition-transform group-hover:translate-x-0.5' />
           </Link>
           {unreadCount > 0 ? (
             <button
               type='button'
               onClick={markAllRead}
-              className='text-xs font-semibold text-[#3B82F6] hover:underline'
+              className='text-xs font-semibold text-primary hover:underline'
             >
               Mark all read
             </button>
           ) : null}
         </div>
-        <Separator className='bg-[#F2F4F7]' />
+        <Separator className='bg-muted' />
         <ScrollArea className='h-[400px]'>
           {recent.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-12'>
               <span className='mb-2 flex size-12 items-center justify-center rounded-full bg-[#F5F3FF] text-[#8B5CF6]'>
                 <Icons.notification className='size-5' />
               </span>
-              <p className='text-sm text-[#667085]'>You&apos;re all caught up</p>
+              <p className='text-sm text-muted-foreground'>You&apos;re all caught up</p>
             </div>
           ) : (
             <div className='flex flex-col divide-y divide-[#F2F4F7]'>

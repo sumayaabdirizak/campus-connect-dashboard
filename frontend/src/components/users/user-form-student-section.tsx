@@ -161,9 +161,9 @@ export function UserFormStudentSection({
   }
 
   return (
-    <div className='mt-2 space-y-3 rounded-lg border border-[#E5E7EB] bg-[#F8FAFC] p-3'>
-      <h4 className='text-sm font-semibold text-[#101828]'>Student enrollment</h4>
-      <p className='text-xs text-[#6A7282]'>
+    <div className='mt-2 space-y-3 rounded-lg border border-border bg-muted p-3'>
+      <h4 className='text-sm font-semibold text-foreground'>Student enrollment</h4>
+      <p className='text-xs text-muted-foreground'>
         Faculty → department → program → batch → section
       </p>
 

@@ -33,8 +33,8 @@ export function StudentCourseCard({
 
   return (
     <Link href={`/dashboard/courses/${course.id}`} className='group block'>
-      <div className='overflow-hidden rounded-xl border border-[#E5E7EB] bg-white transition-colors hover:border-[#BFDBFE] hover:bg-[#F8FAFC]'>
-        <div className='relative h-36 w-full overflow-hidden bg-[#EFF6FF]'>
+      <div className='overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-border hover:bg-muted'>
+        <div className='relative h-36 w-full overflow-hidden bg-primary/10'>
           {showCover ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -45,41 +45,41 @@ export function StudentCourseCard({
             />
           ) : (
             <div className='flex h-full w-full items-center justify-center'>
-              <span className='text-3xl font-bold tracking-tight text-[#3B82F6]'>
+              <span className='text-3xl font-bold tracking-tight text-primary'>
                 {initials}
               </span>
             </div>
           )}
-          <span className='absolute top-3 left-3 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-[#101828] shadow-sm'>
+          <span className='absolute top-3 left-3 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-foreground'>
             {course.courseCode}
           </span>
         </div>
 
         <div className='space-y-3 p-4'>
           <div>
-            <h3 className='line-clamp-1 text-sm font-semibold text-[#101828]'>
+            <h3 className='line-clamp-1 text-sm font-semibold text-foreground'>
               {course.courseName}
             </h3>
-            <p className='mt-0.5 truncate text-xs text-[#667085]'>
+            <p className='mt-0.5 truncate text-xs text-muted-foreground'>
               {course.instructor}
             </p>
           </div>
 
           <div className='space-y-1.5'>
             <div className='flex items-center justify-between text-[11px]'>
-              <span className='text-[#667085]'>Progress</span>
-              <span className='font-medium tabular-nums text-[#101828]'>
+              <span className='text-muted-foreground'>Progress</span>
+              <span className='font-medium tabular-nums text-foreground'>
                 {course.progress}%
               </span>
             </div>
             <Progress
               value={course.progress}
-              className='h-1.5 bg-[#EEF2F6] [&>div]:bg-[#3B82F6]'
+              className='h-1.5 bg-[#EEF2F6] [&>div]:bg-primary'
             />
           </div>
 
           {schedule.length > 0 ? (
-            <p className='flex items-center gap-1.5 text-[11px] text-[#667085]'>
+            <p className='flex items-center gap-1.5 text-[11px] text-muted-foreground'>
               <Clock className='size-3.5 shrink-0' />
               <span className='truncate'>
                 {schedule.map((s) => dayAbbr[s.day]).join(' / ')} —{' '}

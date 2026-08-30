@@ -28,17 +28,18 @@ export function useSubmissionsData(
   sort: { key: SubmissionSortKey; dir: 'asc' | 'desc' },
   selectedSubmissionId: number | null
 ) {
-  const { data: groups = [] } = useGroups(courseId);
+  const { data: groups = [] } = useGroups(courseId, { live: true });
   const deleteAttachmentMutation = useDeleteAttachment(courseId);
   const multiTabGradingConflict = useMultiTabGradingGuard(assignment.id);
   const gradeMutation = useGradeSubmission();
   const extensionMutation = useGrantExtension();
   const extensionBatchMutation = useGrantExtensionBatch();
   const { data: submissions = [], isLoading: subsLoading } = useSubmissions(
-    assignment.id
+    assignment.id,
+    { live: true }
   );
-  const { data: extensions = [] } = useExtensions(assignment.id);
-  const { data: roster = [] } = useRoster(courseId);
+  const { data: extensions = [] } = useExtensions(assignment.id, { live: true });
+  const { data: roster = [] } = useRoster(courseId, { live: true });
   const { submissionsByStudent, allStudentRows, allGroupRows } = useSubmissionRowMaps({
     submissions,
     roster,

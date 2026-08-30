@@ -32,24 +32,24 @@ export function MembersTab({
     <div className='space-y-4'>
       <div className='flex items-center gap-2'>
         <div className='relative min-w-0 flex-1'>
-          <Icons.search className='pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-[#9CA3AF]' />
+          <Icons.search className='pointer-events-none absolute top-1/2 left-3 size-3.5 -translate-y-1/2 text-muted-foreground' />
           <Input
             value={m.query}
             onChange={(e) => m.setQuery(e.target.value)}
             placeholder='Search members'
-            className='h-10 rounded-lg border-[#E5E7EB] pl-9 text-[#101828] placeholder:text-[#9CA3AF]'
+            className='h-10 rounded-lg border-border pl-9 text-foreground placeholder:text-muted-foreground'
             aria-label='Search channel members'
           />
         </div>
         {!m.isLoading ? (
-          <span className='shrink-0 rounded-md bg-[#F8FAFC] px-2.5 py-2 text-xs font-medium tabular-nums text-[#667085]'>
+          <span className='shrink-0 rounded-md bg-muted px-2.5 py-2 text-xs font-medium tabular-nums text-muted-foreground'>
             {m.total}
           </span>
         ) : null}
       </div>
 
       {m.isLoading ? (
-        <div className='divide-y divide-[#E5E7EB] overflow-hidden rounded-lg border border-[#E5E7EB]'>
+        <div className='divide-y divide-[#E5E7EB] overflow-hidden rounded-lg border border-border'>
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className='flex items-center gap-3 px-3.5 py-3'>
               <Skeleton className='size-9 rounded-full' />
@@ -61,21 +61,21 @@ export function MembersTab({
           ))}
         </div>
       ) : m.total === 0 ? (
-        <div className='flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-[#E5E7EB] py-12 text-center'>
-          <span className='flex size-10 items-center justify-center rounded-full bg-[#F8FAFC]'>
-            <Icons.teams className='size-4 text-[#9CA3AF]' />
+        <div className='flex flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border py-12 text-center'>
+          <span className='flex size-10 items-center justify-center rounded-full bg-muted'>
+            <Icons.teams className='size-4 text-muted-foreground' />
           </span>
-          <p className='text-sm font-medium text-[#101828]'>
+          <p className='text-sm font-medium text-foreground'>
             {m.query.trim().length > 0 ? 'No matches' : 'No members yet'}
           </p>
-          <p className='text-xs text-[#667085]'>
+          <p className='text-xs text-muted-foreground'>
             {m.query.trim().length > 0
               ? 'Try a different name or email.'
               : 'People who join this channel will show up here.'}
           </p>
         </div>
       ) : (
-        <div className='divide-y divide-[#E5E7EB] overflow-hidden rounded-lg border border-[#E5E7EB]'>
+        <div className='divide-y divide-[#E5E7EB] overflow-hidden rounded-lg border border-border'>
           {m.pageRows.map((row) => {
             const isOwner =
               m.ownerId != null && Number(row.userId) === Number(m.ownerId)

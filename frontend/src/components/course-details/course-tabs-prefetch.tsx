@@ -3,17 +3,11 @@
 /**
  * Headless tab warm-up for the course detail page.
  *
- * Mounts the exact same list hooks the tab components use, so their caches
- * fill in the background while the user is still reading the Overview. The
- * first click on any tab then renders instantly from cache, and the
- * stale-while-revalidate layer in `@/lib/async-query` keeps it silently
- * fresh afterwards. In-flight coalescing means no duplicate requests when
- * the real tab mounts mid-prefetch.
- *
- * Renders nothing. Mount it only after the course detail query succeeds —
- * prefetching a course the user can't access would just spray 403s.
+ * Mounts the same list hooks the tab components use with live refresh so
+ * caches stay current while the user reads any tab (chat, feed, etc.).
+ * Renders nothing — mount only after course detail succeeds.
  */
-import { useAssignments, useMyAssignmentSummary } from '@/lib/course-details/queries/assignments-queries';
+import { useAssignments } from '@/lib/course-details/queries/assignments-queries';
 import { useQuizzes, useAvailableQuizzes } from '@/lib/course-details/queries/quizzes-queries';
 import { useChatRoom } from '@/lib/course-details/queries/chat-queries';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
@@ -22,29 +16,39 @@ import { useResources, useModules } from '@/lib/course-details/queries/resources
 import { useCourseFeed } from '@/lib/course-details/queries/feed-queries';
 import { useGradebook, useMyGrades } from '@/lib/course-details/queries/gradebook-queries';
 
+/**
+ * Warm the cache, do not poll it.
+ *
+ * This ran with `live: true`, which is what a *visible* tab asks for — so all
+ * eight tabs polled every 10s whether or not you were looking at them, and a
+ * course page sat at roughly eleven pollers. Prefetching only needs the first
+ * fetch; the tab you actually open sets up its own live refresh, and
+ * `refetchOnWindowFocus` still catches anything stale on return.
+ */
+const PREFETCH = { live: false } as const;
+
 /** Tabs both roles can open. Roster is included for students too — the chat
  *  tab needs it for @mention autocomplete. */
 function CommonPrefetch({ courseId }: { courseId: string }) {
-  useAssignments(courseId);
-  useQuizzes(courseId);
-  useChatRoom(courseId);
-  useRoster(courseId);
-  useGroups(courseId);
-  useResources(courseId);
-  useModules(courseId);
-  useCourseFeed(courseId);
+  useAssignments(courseId, PREFETCH);
+  useQuizzes(courseId, PREFETCH);
+  useChatRoom(courseId, PREFETCH);
+  useRoster(courseId, PREFETCH);
+  useGroups(courseId, PREFETCH);
+  useResources(courseId, undefined, PREFETCH);
+  useModules(courseId, PREFETCH);
+  useCourseFeed(courseId, PREFETCH);
   return null;
 }
 
 function TeacherPrefetch({ courseId }: { courseId: string }) {
-  useGradebook(courseId);
+  useGradebook(courseId, true, PREFETCH);
   return null;
 }
 
 function StudentPrefetch({ courseId }: { courseId: string }) {
-  useAvailableQuizzes(courseId);
-  useMyAssignmentSummary(courseId);
-  useMyGrades(courseId);
+  useAvailableQuizzes(courseId, PREFETCH);
+  useMyGrades(courseId, true, PREFETCH);
   return null;
 }
 

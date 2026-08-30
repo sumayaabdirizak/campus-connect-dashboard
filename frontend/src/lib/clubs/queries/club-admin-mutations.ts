@@ -9,6 +9,12 @@ import {
 } from '../services/service';
 import type { CreateClubPayload } from '../types';
 import { clubKeys } from './club-keys';
+import { inboxKeys } from '@/lib/inbox/queries';
+
+function invalidateClubsAndInbox(qc: ReturnType<typeof useQueryClient>) {
+  qc.invalidateQueries({ queryKey: clubKeys.all });
+  qc.invalidateQueries({ queryKey: inboxKeys.all });
+}
 
 export function useCreateClub() {
   const qc = useQueryClient();
@@ -27,7 +33,7 @@ export function useCreateClubAsDean() {
   return useMutation({
     mutationFn: (payload: CreateClubPayload) => createClubAsDean(payload),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubKeys.all });
+      invalidateClubsAndInbox(qc);
       toast.success('Club created successfully!');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to create club'),
@@ -40,7 +46,7 @@ export function useApproveClub() {
     mutationFn: (clubId: number) => approveClub(clubId),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: clubKeys.pending() });
-      qc.invalidateQueries({ queryKey: clubKeys.all });
+      invalidateClubsAndInbox(qc);
       toast.success('Club approved!');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to approve club'),
@@ -66,7 +72,7 @@ export function useSuspendClub() {
     mutationFn: ({ clubId, reason }: { clubId: number; reason?: string }) =>
       suspendClub(clubId, reason),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubKeys.all });
+      invalidateClubsAndInbox(qc);
       toast.success('Club suspended');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to suspend club'),

@@ -70,7 +70,7 @@ export function MessageListEmpty({ channelName }: { channelName?: string }) {
 export function MessageListBeginning({ channelName }: { channelName?: string }) {
   return (
     <div className='mx-auto max-w-md px-6 py-8 text-center'>
-      <span className='mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-muted/80 text-muted-foreground'>
+      <span className='mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-muted/80 text-muted-foreground'>
         <Icons.hash className='h-5 w-5' />
       </span>
       <p className='mt-3 font-display text-sm font-medium tracking-tight text-foreground'>

@@ -4,7 +4,7 @@ import { Skeleton } from '@/features/ui/components/skeleton';
 
 export function PostSkeleton() {
   return (
-    <Card className='overflow-hidden rounded-2xl border-border/60 border-s-[3px] border-s-transparent bg-background py-0 shadow-[0_1px_0_rgba(0,0,0,0.03)]'>
+    <Card className='overflow-hidden rounded-xl border-border/60 border-s-[3px] border-s-transparent bg-background py-0'>
       <CardContent className='space-y-3 p-4 sm:p-5'>
         <div className='flex items-center gap-3'>
           <Skeleton className='size-9 rounded-full' />

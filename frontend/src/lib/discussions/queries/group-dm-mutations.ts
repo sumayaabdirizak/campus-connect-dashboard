@@ -13,13 +13,20 @@ import {
   uploadGroupDmIcon
 } from '@/lib/discussions/queries/service';
 import type { CreateGroupDmPayload } from '@/lib/discussions/queries/types';
+import { inboxKeys } from '@/lib/inbox/queries';
+
+function invalidateGroupDmAndInbox(qc: ReturnType<typeof useQueryClient>, groupDmId?: string) {
+  if (groupDmId) qc.invalidateQueries({ queryKey: discussionKeys.groupDm(groupDmId) });
+  qc.invalidateQueries({ queryKey: discussionKeys.groupDms() });
+  qc.invalidateQueries({ queryKey: inboxKeys.all });
+}
 
 export const useCreateGroupDm = () => {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: CreateGroupDmPayload) => createGroupDm(body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDms() });
+      invalidateGroupDmAndInbox(qc);
     },
     onError: (error: Error) => {
       toast.error('Failed to create group DM', { description: error.message });
@@ -36,8 +43,7 @@ export const useSendGroupDmMessage = (groupDmId: string) => {
       parentMessageId?: string | null;
     }) => sendGroupDmMessage(groupDmId, body),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDm(groupDmId) });
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDms() });
+      invalidateGroupDmAndInbox(qc, groupDmId);
     },
     onError: (error: Error) => {
       toast.error('Failed to send message', { description: error.message });
@@ -60,8 +66,7 @@ export const useRenameGroupDm = (groupDmId: string) => {
   return useMutation({
     mutationFn: (name: string | null) => renameGroupDm(groupDmId, name),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDm(groupDmId) });
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDms() });
+      invalidateGroupDmAndInbox(qc, groupDmId);
     },
     onError: (error: Error) => {
       toast.error('Failed to rename conversation', { description: error.message });
@@ -116,8 +121,7 @@ export const useRemoveGroupDmMember = (groupDmId: string) => {
   return useMutation({
     mutationFn: (targetUserId: number) => removeGroupDmMember(groupDmId, targetUserId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDm(groupDmId) });
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDms() });
+      invalidateGroupDmAndInbox(qc, groupDmId);
     }
   });
 };
@@ -131,8 +135,7 @@ export const useLeaveGroupDm = (groupDmId: string) => {
   return useMutation({
     mutationFn: () => leaveGroupDm(groupDmId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDm(groupDmId) });
-      qc.invalidateQueries({ queryKey: discussionKeys.groupDms() });
+      invalidateGroupDmAndInbox(qc, groupDmId);
     }
   });
 };

@@ -12,6 +12,24 @@ import {
 import type { ChatMessage, ChatRoom } from '@/lib/course-details/types';
 import { deleteChatMessage as deleteChatMessageCall } from '@/lib/course-details/services/chat-service';
 import { useDeleteWithUndo } from '../_shared/use-delete-with-undo';
+import type { DisplayChatFile } from './chat-file-utils';
+
+function pendingFilesFromList(files: File[]): DisplayChatFile[] {
+  return files.map((file, i) => ({
+    id: `pending-${Date.now()}-${i}`,
+    name: file.name,
+    size: file.size,
+    mimeType: file.type || null,
+    pending: true,
+    previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : undefined
+  }));
+}
+
+function revokePendingPreviews(files: DisplayChatFile[]) {
+  for (const f of files) {
+    if (f.previewUrl?.startsWith('blob:')) URL.revokeObjectURL(f.previewUrl);
+  }
+}
 
 export function useChatMessageMutations(courseId: string) {
   const sendViaHttp = useSendChatMessage(courseId);
@@ -22,7 +40,22 @@ export function useChatMessageMutations(courseId: string) {
 
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editDraft, setEditDraft] = useState('');
+  const [pendingByMessageId, setPendingByMessageId] = useState<
+    Map<number, DisplayChatFile[]>
+  >(() => new Map());
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const clearPending = (messageId: number) => {
+    setPendingByMessageId((prev) => {
+      const next = new Map(prev);
+      const pending = next.get(messageId);
+      if (pending) {
+        revokePendingPreviews(pending);
+        next.delete(messageId);
+      }
+      return next;
+    });
+  };
 
   const startEdit = (item: ChatMessage) => {
     setEditingId(item.id);
@@ -77,14 +110,27 @@ export function useChatMessageMutations(courseId: string) {
       showToast('warning', 'File too large', `"${oversized.name}" exceeds the 10 MB limit`);
       return;
     }
-    const content =
-      opts.message.trim() ||
-      `Shared ${files.length} file${files.length === 1 ? '' : 's'}`;
+
+    const pendingPreview = pendingFilesFromList(files);
+    const content = opts.message.trim();
+
     sendViaHttp.mutate(
       { content, replyToId: opts.replyToId },
       {
         onSuccess: (created) => {
-          uploadMutation.mutate({ messageId: created.id, files });
+          setPendingByMessageId((prev) => new Map(prev).set(created.id, pendingPreview));
+          uploadMutation.mutate(
+            { messageId: created.id, files },
+            {
+              onError: () => {
+                showToast('error', 'Could not upload file(s). Try again.');
+              },
+              onSettled: () => clearPending(created.id)
+            }
+          );
+        },
+        onError: () => {
+          revokePendingPreviews(pendingPreview);
         }
       }
     );
@@ -103,6 +149,7 @@ export function useChatMessageMutations(courseId: string) {
     saveEdit,
     undoDeleteMessage,
     pickFiles,
-    fileInputRef
+    fileInputRef,
+    pendingByMessageId
   };
 }

@@ -15,7 +15,7 @@ export function FacultyTableRow({
     <PosTableRow>
       {col('id') ? (
         <PosTableCell>
-          <span className='font-medium text-[#3B82F6]'>#{faculty.id}</span>
+          <span className='font-medium text-primary'>#{faculty.id}</span>
         </PosTableCell>
       ) : null}
       {col('name') ? (

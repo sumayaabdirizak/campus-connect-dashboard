@@ -101,7 +101,6 @@ export function useAnnouncementFeedFilters(
 
   const activeFilterCount =
     (searchQuery.trim() ? 1 : 0) +
-    (roleFilter !== 'ALL' ? 1 : 0) +
     (readFilter !== 'ALL' ? 1 : 0) +
     (dateFilter !== 'ALL' ? 1 : 0) +
     (currentFilter !== 'all' ? 1 : 0) +
@@ -109,14 +108,12 @@ export function useAnnouncementFeedFilters(
 
   const contentFilterCount =
     (searchQuery.trim() ? 1 : 0) +
-    (roleFilter !== 'ALL' ? 1 : 0) +
     (readFilter !== 'ALL' ? 1 : 0) +
     (dateFilter !== 'ALL' ? 1 : 0) +
     (sortMode !== 'NEWEST' ? 1 : 0);
 
   const handleClearAllFilters = useCallback(() => {
     setSearchQuery('');
-    setRoleFilter('ALL');
     setReadFilter('ALL');
     setDateFilter('ALL');
     setCurrentFilter('all');

@@ -59,3 +59,7 @@ export const fetchUpcomingDeadlines = (
     `${basePath(scope)}/upcoming-deadlines${query ? `?${query}` : ''}`
   );
 };
+
+// Entity-scoped reports (course / teacher / student / batch / faculty).
+export { useReport, useReportSubjects, entityReportKeys } from './entity-reports';
+export { useReportList, type ReportListResponse } from './entity-reports';

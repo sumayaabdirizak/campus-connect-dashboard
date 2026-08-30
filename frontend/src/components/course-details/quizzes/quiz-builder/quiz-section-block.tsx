@@ -7,6 +7,8 @@ import type { QuizQuestion, QuizQuestionType } from './types';
 import { DraftQuestionEditor } from './draft-question-editor';
 import type { ComponentProps } from 'react';
 
+import type { QuizDeliveryMode } from '../quiz-question-types';
+
 const TYPE_META: Record<QuizQuestionType, string> = {
   MCQ: 'Multiple Choice',
   TRUE_FALSE: 'True / False',
@@ -25,7 +27,8 @@ interface QuizSectionBlockProps {
   onEdit: (q: QuizQuestion) => void;
   onDelete: (q: QuizQuestion) => void;
   /** When set, renders the DraftQuestionEditor inline below the questions list */
-  inlineDraft?: Omit<ComponentProps<typeof DraftQuestionEditor>, 'lockType'> | null;
+  inlineDraft?: Omit<ComponentProps<typeof DraftQuestionEditor>, 'lockType' | 'quizMode'> | null;
+  quizMode?: QuizDeliveryMode;
 }
 
 /// A section grouped by question type, driven by the marks plan. Questions
@@ -47,6 +50,7 @@ export function QuizSectionBlock({
   onEdit,
   onDelete,
   inlineDraft = null,
+  quizMode = 'online',
 }: QuizSectionBlockProps) {
   const used = questions.reduce((sum, q) => sum + q.points, 0);
   const complete = targetMarks > 0 && used === targetMarks;
@@ -91,10 +95,15 @@ export function QuizSectionBlock({
                   <Badge variant='outline' className='text-[10px]'>
                     {q.points} pt
                   </Badge>
+                  {/* Plain text, not a pill: an outline badge read as a button
+                      and invited clicks that did nothing. */}
                   {q.explanation ? (
-                    <Badge variant='outline' className='text-[10px] text-muted-foreground'>
-                      Explanation
-                    </Badge>
+                    <span
+                      className='text-[10px] text-muted-foreground self-center'
+                      title={q.explanation}
+                    >
+                      has explanation
+                    </span>
                   ) : null}
                 </div>
                 {q.question_type !== 'SHORT_ANSWER' && q.options.length > 0 ? (
@@ -144,6 +153,7 @@ export function QuizSectionBlock({
                 (questions.find((q) => q.id === inlineDraft.draft.id)?.points ?? 0)
               : undefined
           }
+          quizMode={quizMode}
         />
       ) : null}
 

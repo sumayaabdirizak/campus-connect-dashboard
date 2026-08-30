@@ -30,18 +30,18 @@ export function ChartCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.28, delay: index * 0.04, ease: [0.22, 1, 0.36, 1] }}
       className={cn(
-        'overflow-hidden rounded-xl border border-[#E5E7EB] bg-white shadow-sm',
+        'overflow-hidden rounded-xl border border-border bg-card',
         className
       )}
     >
-      <div className='flex items-start justify-between gap-2 border-b border-[#F2F4F7] px-4 py-3'>
+      <div className='flex items-start justify-between gap-2 border-b border-border px-4 py-3'>
         <div className='min-w-0'>
           <div className='flex items-center gap-2'>
-            <span className='h-4 w-1 shrink-0 rounded-full bg-[#3B82F6]' aria-hidden />
-            <p className='text-sm font-semibold text-[#101828]'>{title}</p>
+            <span className='h-4 w-1 shrink-0 rounded-full bg-primary' aria-hidden />
+            <p className='text-sm font-semibold text-foreground'>{title}</p>
           </div>
           {subtitle ? (
-            <p className='mt-0.5 pl-3 text-[11px] text-[#667085]'>{subtitle}</p>
+            <p className='mt-0.5 pl-3 text-[11px] text-muted-foreground'>{subtitle}</p>
           ) : null}
         </div>
         {action ? <div className='shrink-0'>{action}</div> : null}
@@ -53,8 +53,8 @@ export function ChartCard({
 
 export function EmptyChart({ message }: { message: string }) {
   return (
-    <div className='flex h-[200px] items-center justify-center rounded-lg border border-dashed border-[#E5E7EB] bg-[#F8FAFC]'>
-      <p className='text-sm text-[#667085]'>{message}</p>
+    <div className='flex h-[200px] items-center justify-center rounded-lg border border-dashed border-border bg-muted'>
+      <p className='text-sm text-muted-foreground'>{message}</p>
     </div>
   )
 }

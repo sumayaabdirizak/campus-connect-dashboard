@@ -101,9 +101,9 @@ export function AcademicYearFormSheet({ open, onOpenChange }: Props) {
             onChange={(e) => setEndDate(e.target.value)}
           />
         </div>
-        <div className='rounded-lg border border-[#E5E7EB] bg-[#F8FAFC] px-3 py-2 text-sm'>
-          <p className='font-semibold text-[#101828]'>Auto-assigned semesters</p>
-          <p className='mt-0.5 text-xs text-[#6A7282]'>
+        <div className='rounded-lg border border-border bg-muted px-3 py-2 text-sm'>
+          <p className='font-semibold text-foreground'>Auto-assigned semesters</p>
+          <p className='mt-0.5 text-xs text-muted-foreground'>
             {nextA != null && nextB != null
               ? `This year gets Semester #${nextA} and #${nextB}.`
               : 'Loading next semester numbers…'}

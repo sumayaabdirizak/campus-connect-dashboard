@@ -3,6 +3,7 @@
 import { use, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { messagesClubHref } from '@/lib/inbox/services/messages-href'
+import { scheduleRouterReplace } from '@/lib/safe-router-navigation'
 
 /** Legacy club URL → Messages shell (Chats + club). */
 export default function ClubSlugRedirect({
@@ -14,12 +15,12 @@ export default function ClubSlugRedirect({
   const router = useRouter()
 
   useEffect(() => {
-    if (slug) router.replace(messagesClubHref(slug))
+    if (slug) scheduleRouterReplace(router, messagesClubHref(slug))
   }, [router, slug])
 
   return (
-    <div className='flex flex-1 items-center justify-center text-sm text-[#667085]'>
+    <div className='flex flex-1 items-center justify-center text-sm text-muted-foreground'>
       Opening club…
-    </div>
+      </div>
   )
 }

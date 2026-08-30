@@ -23,7 +23,7 @@ export function MembersPagination({
   onNext,
 }: MembersPaginationProps) {
   return (
-    <div className='flex items-center justify-between gap-2 pt-1 text-xs text-[#667085]'>
+    <div className='flex items-center justify-between gap-2 pt-1 text-xs text-muted-foreground'>
       <span className='tabular-nums'>
         {start + 1}–{Math.min(end, total)} of {total}
       </span>
@@ -32,7 +32,7 @@ export function MembersPagination({
           type='button'
           variant='outline'
           size='sm'
-          className='h-8 rounded-lg border-[#E5E7EB] px-2.5 text-[#101828]'
+          className='h-8 rounded-lg border-border px-2.5 text-foreground'
           onClick={onPrev}
           disabled={safePage === 0}
         >
@@ -45,7 +45,7 @@ export function MembersPagination({
           type='button'
           variant='outline'
           size='sm'
-          className='h-8 rounded-lg border-[#E5E7EB] px-2.5 text-[#101828]'
+          className='h-8 rounded-lg border-border px-2.5 text-foreground'
           onClick={onNext}
           disabled={safePage >= pageCount - 1}
         >

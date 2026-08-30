@@ -17,7 +17,7 @@ export function AcademicYearTableRow({
     <PosTableRow>
       {col('id') ? (
         <PosTableCell>
-          <span className='font-medium text-[#3B82F6]'>#{year.id}</span>
+          <span className='font-medium text-primary'>#{year.id}</span>
         </PosTableCell>
       ) : null}
       {col('name') ? (

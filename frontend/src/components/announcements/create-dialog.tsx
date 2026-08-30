@@ -134,7 +134,7 @@ export function CreateDialog({
         expiresAtCustom: fields.expiresAtCustom,
         activeDaysPreset: fields.activeDaysPreset,
         deadlineAtLocal: fields.deadlineAtLocal,
-        notifySms: fields.notifySms,
+        notifySms: false,
         images: fields.images,
         targeting: targeting(),
         isEditMode,
@@ -165,7 +165,7 @@ export function CreateDialog({
     <Sheet open={open} onOpenChange={handleSheetOpenChange} modal>
       <SheetContent
         side='right'
-        className='flex w-full flex-col border-s border-border bg-background p-0 shadow-2xl sm:max-w-[560px]'
+        className='flex w-full flex-col border-s-2 border-foreground/10 bg-[#F2F4F7] p-0 shadow-2xl dark:bg-muted/30 sm:max-w-[560px]'
         onOpenAutoFocus={(e) => {
           if (fields.step === 1) {
             e.preventDefault();

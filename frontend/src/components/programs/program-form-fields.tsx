@@ -89,7 +89,7 @@ export function ProgramFormFields({
           placeholder={buildDefaultProgramCode(form.level, selectedDeptCode || 'CS')}
         />
         {!isEdit ? (
-          <p className='text-xs text-[#6A7282]'>
+          <p className='text-xs text-muted-foreground'>
             Default: {LEVEL_CODE_PREFIX[form.level]}-
             {selectedDeptCode ? selectedDeptCode : '…'} (level + department). You can edit.
           </p>

@@ -3,7 +3,6 @@
 import type { StudentAttemptProps } from './types';
 import { useStudentAttemptController } from './use-student-attempt-controller';
 import {
-  AntiCheatBanner,
   AttemptHeader,
   MultiTabBanner,
   PreviewBanner,
@@ -22,7 +21,7 @@ export function StudentAttempt({
   const c = useStudentAttemptController(data, previewMode, onSubmitted);
 
   return (
-    <div className='space-y-4'>
+    <div className='mx-auto max-w-2xl space-y-6'>
       {previewMode ? <PreviewBanner /> : null}
       <AttemptHeader
         title={data.quiz.title}
@@ -30,7 +29,9 @@ export function StudentAttempt({
         questionCount={data.questions.length}
         remaining={c.remaining}
       />
-      {!previewMode ? <AntiCheatBanner maxWarnings={c.violations.maxWarnings} /> : null}
+      {/* The integrity rules live in RulesGateDialog, which blocks the quiz
+          until acknowledged and covers strictly more than the old banner did.
+          Repeating them above every question only intimidated. */}
       {c.multiTabConflict ? <MultiTabBanner /> : null}
       <ProgressBlock
         currentIdx={c.currentIdx}
@@ -55,6 +56,7 @@ export function StudentAttempt({
         />
       ) : null}
       <AttemptNav
+        isFirst={c.currentIdx === 0}
         isLast={c.currentIdx === data.questions.length - 1}
         previewMode={previewMode}
         warnings={c.violations.warnings}
@@ -62,6 +64,7 @@ export function StudentAttempt({
         submitPending={c.submitPending}
         isOffline={c.autosave.isOffline}
         queuedCount={c.autosave.queuedCount}
+        onPrev={() => c.navigateTo(c.currentIdx - 1)}
         onNext={() => c.navigateTo(c.currentIdx + 1)}
         onSubmitClick={() => c.setConfirmingSubmit(true)}
         onClosePreview={onClosePreview}
@@ -80,6 +83,7 @@ export function StudentAttempt({
         totalQuestions={data.questions.length}
         answers={c.autosave.answers}
         questions={data.questions}
+        currentIdx={c.currentIdx}
         onNavigate={c.navigateTo}
         onConfirmSubmit={() => {
           c.setConfirmingSubmit(false);

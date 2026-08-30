@@ -34,7 +34,7 @@ export function AnnouncementEmpty({
       className='relative overflow-hidden rounded-3xl border border-dashed border-border/70 bg-gradient-to-br from-muted/30 via-background to-background py-20 text-center'
     >
       <span aria-hidden className='pointer-events-none absolute inset-x-1/2 -top-12 h-32 w-32 -translate-x-1/2 rounded-full bg-primary/10 blur-3xl' />
-      <div className='relative mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-background shadow-sm ring-1 ring-border/60'>
+      <div className='relative mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-background ring-1 ring-border/60'>
         <Icons.speakerphone className='size-7 text-primary/60' aria-hidden />
       </div>
       <h3 className='relative mb-2 text-lg font-semibold tracking-tight text-foreground'>{title}</h3>

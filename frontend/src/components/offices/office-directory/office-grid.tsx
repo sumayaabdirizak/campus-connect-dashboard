@@ -22,7 +22,7 @@ export function OfficeGrid({
     return (
       <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
         {[1, 2, 3].map((i) => (
-          <Skeleton key={i} className='h-36 rounded-2xl' />
+          <Skeleton key={i} className='h-36 rounded-xl' />
         ))}
       </div>
     );
@@ -43,7 +43,7 @@ export function OfficeGrid({
         return (
           <div
             key={office.id}
-            className='flex flex-col overflow-hidden rounded-2xl border bg-card shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md'
+            className='flex flex-col overflow-hidden rounded-xl border bg-card transition-all hover:-translate-y-0.5 hover:shadow-md'
           >
             <div className={cn('flex items-center gap-3 px-4 py-3', hue.tile)}>
               <span

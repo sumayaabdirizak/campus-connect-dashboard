@@ -3,6 +3,7 @@
 import { MessagesSquare } from 'lucide-react';
 import type { ChatMessage } from '@/lib/course-details/types';
 import { ChatMessageBubble } from './chat-message-bubble';
+import type { DisplayChatFile } from './chat-file-utils';
 import { buildRenderPlan } from './render-plan';
 
 type BubbleShared = {
@@ -14,6 +15,7 @@ type BubbleShared = {
   editPending: boolean;
   mentionLabels: Map<string, string>;
   meSlug: string | null;
+  pendingByMessageId: Map<number, DisplayChatFile[]>;
   onRegisterRef: (id: number, node: HTMLDivElement | null) => void;
   onJumpToReply: (id: number) => void;
   onReply: (item: ChatMessage) => void;
@@ -31,13 +33,13 @@ interface ChatTimelineProps extends BubbleShared {
 export function ChatTimeline({ messages, firstUnreadId, ...bubble }: ChatTimelineProps) {
   if (messages.length === 0) {
     return (
-      <div className='flex h-full flex-col items-center justify-center gap-3 text-center'>
-        <div className='flex size-14 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm'>
-          <MessagesSquare className='size-7' />
+      <div className='flex h-full min-h-[12rem] flex-col items-center justify-center gap-3 px-4 text-center'>
+        <div className='flex size-12 items-center justify-center rounded-xl bg-[#EFF6FF] text-[#3B82F6] dark:bg-blue-950/40'>
+          <MessagesSquare className='size-6' />
         </div>
         <div>
-          <p className='font-medium'>No messages yet</p>
-          <p className='text-sm text-muted-foreground'>
+          <p className='font-medium text-[#101828] dark:text-foreground'>No messages yet</p>
+          <p className='text-sm text-[#667085] dark:text-muted-foreground'>
             Say hello — start the conversation for this course.
           </p>
         </div>
@@ -51,7 +53,7 @@ export function ChatTimeline({ messages, firstUnreadId, ...bubble }: ChatTimelin
         if (entry.kind === 'day') {
           return (
             <div key={entry.key} className='sticky top-0 z-10 flex justify-center py-1'>
-              <span className='rounded-full bg-background/80 px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm ring-1 ring-border backdrop-blur'>
+              <span className='rounded-full bg-background/80 px-3 py-1 text-[11px] font-medium text-muted-foreground ring-1 ring-border backdrop-blur'>
                 {entry.label}
               </span>
             </div>
@@ -85,6 +87,7 @@ export function ChatTimeline({ messages, firstUnreadId, ...bubble }: ChatTimelin
             editPending={bubble.editPending}
             mentionLabels={bubble.mentionLabels}
             meSlug={bubble.meSlug}
+            pendingFiles={bubble.pendingByMessageId.get(item.id) ?? []}
             onRegisterRef={bubble.onRegisterRef}
             onJumpToReply={bubble.onJumpToReply}
             onReply={bubble.onReply}

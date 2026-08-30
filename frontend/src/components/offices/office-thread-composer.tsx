@@ -32,7 +32,7 @@ export function OfficeThreadComposer({
 
   if (resolved && !thread.isStaff) {
     return (
-      <p className='mt-3 rounded-2xl border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground'>
+      <p className='mt-3 rounded-xl border bg-muted/40 px-4 py-3 text-center text-xs text-muted-foreground'>
         This conversation is resolved — start a new one from the office page if you need more
         help.
       </p>

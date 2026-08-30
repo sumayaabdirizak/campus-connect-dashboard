@@ -49,15 +49,15 @@ export function InboxListHeader({
   const router = useRouter();
 
   return (
-    <div className='shrink-0 space-y-3 border-b border-[#E5E7EB] bg-white px-4 pb-3 pt-4'>
+    <div className='shrink-0 space-y-3 border-b border-border bg-card px-4 pb-3 pt-4'>
       <div className='flex items-center justify-between gap-2'>
-        <h4 className='text-[17px] font-bold tracking-tight text-[#101828]'>Chats</h4>
+        <h4 className='text-[17px] font-bold tracking-tight text-foreground'>Chats</h4>
         <div className='flex items-center gap-2'>
           {showDiscover ? (
             <button
               type='button'
               className={cn(
-                'text-sm font-medium text-[#3B82F6] transition-colors hover:text-[#2563EB]',
+                'text-sm font-medium text-primary transition-colors hover:text-[#2563EB]',
                 discoverActive && 'underline underline-offset-2'
               )}
               onClick={() => {
@@ -72,7 +72,7 @@ export function InboxListHeader({
           <DropdownMenuTrigger asChild>
             <Button
               size='icon'
-              className='size-9 shrink-0 rounded-full bg-[#3B82F6] text-white shadow-sm hover:bg-[#2563EB]'
+              className='size-9 shrink-0 rounded-full bg-primary text-white hover:bg-[#2563EB]'
               aria-label='New conversation'
             >
               <Plus className='size-5' strokeWidth={2.5} />
@@ -105,12 +105,12 @@ export function InboxListHeader({
       </div>
 
       <div className='relative'>
-        <Search className='pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-[#98A2B3]' />
+        <Search className='pointer-events-none absolute left-3.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground' />
         <Input
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder='Search For Contacts or Messages'
-          className='h-10 rounded-full border-0 bg-[#F2F4F7] pl-10 text-sm text-[#101828] shadow-none placeholder:text-[#98A2B3] focus-visible:ring-2 focus-visible:ring-[#3B82F6]/25'
+          className='h-10 rounded-full border-0 bg-muted pl-10 text-sm text-foreground shadow-none placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-[#3B82F6]/25'
         />
       </div>
 

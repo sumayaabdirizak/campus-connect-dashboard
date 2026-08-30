@@ -7,6 +7,7 @@ import type { ChatMessage } from '@/lib/course-details/types';
 import { ChatAttachments } from './chat-attachments';
 import { ChatEditForm } from './chat-edit-form';
 import { ChatMessageActions } from './chat-message-actions';
+import { shouldShowMessageText, type DisplayChatFile } from './chat-file-utils';
 import { initialsOf, messageTime } from './chat-utils';
 import { MessageContent } from './message-content';
 
@@ -21,6 +22,7 @@ interface ChatMessageBubbleProps {
   editPending: boolean;
   mentionLabels: Map<string, string>;
   meSlug: string | null;
+  pendingFiles?: DisplayChatFile[];
   onRegisterRef: (id: number, node: HTMLDivElement | null) => void;
   onJumpToReply: (id: number) => void;
   onReply: (item: ChatMessage) => void;
@@ -41,6 +43,7 @@ export function ChatMessageBubble({
   editPending,
   mentionLabels,
   meSlug,
+  pendingFiles = [],
   onRegisterRef,
   onJumpToReply,
   onReply,
@@ -49,6 +52,14 @@ export function ChatMessageBubble({
   onSaveEdit,
   onDelete
 }: ChatMessageBubbleProps) {
+  const hasFiles = item.attachments.length > 0 || pendingFiles.length > 0;
+  const showText = shouldShowMessageText(
+    item.content,
+    item.attachments.length,
+    pendingFiles.length
+  );
+  const fileOnly = hasFiles && !showText;
+
   return (
     <div
       ref={(node) => onRegisterRef(item.id, node)}
@@ -109,24 +120,52 @@ export function ChatMessageBubble({
             onSave={onSaveEdit}
           />
         ) : (
-          <div
-            className={cn(
-              'select-text w-fit max-w-full rounded-2xl px-3 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap',
-              isOwn
-                ? 'rounded-br-md bg-primary text-primary-foreground'
-                : 'rounded-bl-md bg-muted',
-              iWasMentioned && !isOwn && 'bg-primary/15 ring-1 ring-primary/30'
-            )}
-          >
-            <MessageContent
-              content={item.content}
-              mentionLabels={mentionLabels}
-              meSlug={meSlug}
-              isOwn={isOwn}
-            />
-          </div>
+          <>
+            {showText ? (
+              <div
+                className={cn(
+                  'select-text w-fit max-w-full rounded-xl px-3 py-2 text-sm leading-relaxed break-words whitespace-pre-wrap',
+                  isOwn
+                    ? 'rounded-br-md bg-[#3B82F6] text-white'
+                    : 'rounded-bl-md border border-[#E5E7EB] bg-white text-[#344054] dark:border-border dark:bg-card dark:text-foreground',
+                  iWasMentioned && !isOwn && 'bg-primary/15 ring-1 ring-primary/30'
+                )}
+              >
+                <MessageContent
+                  content={item.content}
+                  mentionLabels={mentionLabels}
+                  meSlug={meSlug}
+                  isOwn={isOwn}
+                />
+              </div>
+            ) : null}
+            {hasFiles ? (
+              fileOnly ? (
+                <div
+                  className={cn(
+                    'w-fit max-w-full rounded-xl p-2',
+                    isOwn
+                      ? 'rounded-br-md bg-[#3B82F6]'
+                      : 'rounded-bl-md border border-[#E5E7EB] bg-white dark:border-border dark:bg-card'
+                  )}
+                >
+                  <ChatAttachments
+                    attachments={item.attachments}
+                    pendingFiles={pendingFiles}
+                    isOwn={isOwn}
+                    embedded
+                  />
+                </div>
+              ) : (
+                <ChatAttachments
+                  attachments={item.attachments}
+                  pendingFiles={pendingFiles}
+                  isOwn={isOwn}
+                />
+              )
+            ) : null}
+          </>
         )}
-        <ChatAttachments attachments={item.attachments} isOwn={isOwn} />
         <ChatMessageActions
           item={item}
           isOwn={isOwn}

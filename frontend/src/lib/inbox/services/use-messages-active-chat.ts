@@ -28,6 +28,7 @@ import {
   isServerInboxRow,
 } from '@/components/inbox/inbox-helpers'
 import { useAuthStore } from '@/lib/auth-store'
+import { scheduleRouterReplace } from '@/lib/safe-router-navigation'
 
 export type { ActiveChat } from '@/lib/inbox/services/messages-active-chat-types'
 
@@ -47,44 +48,49 @@ export function useMessagesActiveChat() {
   )
   const [active, setActive] = useState<ActiveChat | null>(null)
 
+  const replaceRoute = useCallback(
+    (href: string) => scheduleRouterReplace(router, href),
+    [router]
+  )
+
   const closeChat = useCallback(() => {
     setActive(null)
-    router.replace('/dashboard/messages')
-  }, [router])
+    replaceRoute('/dashboard/messages')
+  }, [replaceRoute])
 
   const openDiscover = useCallback(() => {
     if (officeOnly) return
     const href = messagesDiscoverHref()
     setActive({ kind: 'discover', href })
-    router.replace(href)
-  }, [router, officeOnly])
+    replaceRoute(href)
+  }, [replaceRoute, officeOnly])
 
   const openClub = useCallback(
     (slug: string) => {
       if (officeOnly) return
       const href = messagesClubHref(slug)
       setActive({ kind: 'club', slug, href })
-      router.replace(href)
+      replaceRoute(href)
     },
-    [router, officeOnly]
+    [replaceRoute, officeOnly]
   )
 
   const openOffice = useCallback(
     (threadId: number) => {
       const href = messagesOfficeThreadHref(threadId)
       setActive({ kind: 'office', id: threadId, href })
-      router.replace(href)
+      replaceRoute(href)
     },
-    [router]
+    [replaceRoute]
   )
 
   const openOfficeDesk = useCallback(
     (slug: string) => {
       const href = messagesOfficeDeskHref(slug)
       setActive({ kind: 'office-desk', slug, href })
-      router.replace(href)
+      replaceRoute(href)
     },
-    [router]
+    [replaceRoute]
   )
 
   const openChannel = useCallback(
@@ -97,9 +103,9 @@ export function useMessagesActiveChat() {
       }
       const href = messagesChannelHref(channelId, serverId)
       setActive({ kind: 'channel', id: channelId, href })
-      router.replace(href)
+      replaceRoute(href)
     },
-    [router, clubs, openClub]
+    [replaceRoute, clubs, openClub]
   )
 
   const openHref = useCallback(
@@ -160,7 +166,7 @@ export function useMessagesActiveChat() {
           openChannel(server.defaultChannelId, server.id)
           return
         }
-        router.replace(messagesServerHref(parsed.serverId))
+        replaceRoute(messagesServerHref(parsed.serverId))
         return
       }
       if (parsed.kind === 'dm') {
@@ -169,7 +175,7 @@ export function useMessagesActiveChat() {
           id: parsed.groupDmId,
           href: parsed.href,
         })
-        router.replace(messagesDmHref(parsed.groupDmId))
+        replaceRoute(messagesDmHref(parsed.groupDmId))
         return
       }
       if (officeOnly) return
@@ -177,6 +183,7 @@ export function useMessagesActiveChat() {
     },
     [
       router,
+      replaceRoute,
       serversData?.results,
       openChannel,
       clubs,
@@ -193,7 +200,7 @@ export function useMessagesActiveChat() {
     servers: serversData?.results,
     setActive,
     openChannel,
-    replace: router.replace,
+    replace: replaceRoute,
     blockDiscover: officeOnly,
   })
 

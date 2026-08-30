@@ -2,6 +2,10 @@
 
 import { useEffect, useRef } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import {
+  hrefWithSearchParams,
+  scheduleRouterReplace
+} from '@/lib/safe-router-navigation';
 import type { DateFilter, FeedTab, ReadFilter, SortMode } from './types';
 
 /** Debounced URL sync for feed filters (role syncs immediately via a separate effect). */
@@ -23,10 +27,15 @@ export function useFeedUrlSync(opts: {
     const params = new URLSearchParams(Array.from(searchParams?.entries() ?? []));
     if (opts.roleFilter && opts.roleFilter !== 'ALL') params.set('role', opts.roleFilter);
     else params.delete('role');
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.roleFilter, pathname, router]);
+    const next = hrefWithSearchParams(pathname, params);
+    const current = hrefWithSearchParams(
+      pathname,
+      new URLSearchParams(searchParams?.toString() ?? '')
+    );
+    if (next !== current) {
+      scheduleRouterReplace(router, next, { scroll: false });
+    }
+  }, [opts.roleFilter, pathname, router, searchParams]);
 
   const hasMountedRef = useRef(false);
   useEffect(() => {
@@ -45,10 +54,14 @@ export function useFeedUrlSync(opts: {
     setOrDelete('read', opts.readFilter, 'ALL');
     setOrDelete('date', opts.dateFilter, 'ALL');
     setOrDelete('sort', opts.sortMode, 'NEWEST');
-    const qs = params.toString();
-    const next = qs ? `${pathname}?${qs}` : pathname;
+    const next = hrefWithSearchParams(pathname, params);
+    const current = hrefWithSearchParams(
+      pathname,
+      new URLSearchParams(searchParams?.toString() ?? '')
+    );
+    if (next === current) return;
     const handle = window.setTimeout(() => {
-      router.replace(next, { scroll: false });
+      scheduleRouterReplace(router, next, { scroll: false });
     }, 250);
     return () => window.clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps

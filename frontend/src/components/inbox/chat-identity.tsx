@@ -37,7 +37,7 @@ export function ChatIdentityAvatar({
         </span>
       )}
       {badge ? (
-        <span className='absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full bg-white shadow-sm ring-1 ring-[#E5E7EB]'>
+        <span className='absolute -bottom-0.5 -right-0.5 flex size-[18px] items-center justify-center rounded-full bg-card ring-1 ring-[#E5E7EB]'>
           {badge}
         </span>
       ) : null}
@@ -62,20 +62,20 @@ export function ChatIdentityText({
       <div className='flex items-center justify-between gap-2'>
         <p
           className={cn(
-            'truncate text-[14px] font-semibold leading-5 text-[#101828]',
+            'truncate text-[14px] font-semibold leading-5 text-foreground',
             titleClassName
           )}
         >
           {title}
         </p>
         {trailing ? (
-          <span className='shrink-0 text-[11px] leading-4 tabular-nums text-[#98A2B3]'>
+          <span className='shrink-0 text-[11px] leading-4 tabular-nums text-muted-foreground'>
             {trailing}
           </span>
         ) : null}
       </div>
       {subtitle ? (
-        <p className='mt-0.5 truncate text-[12px] leading-4 text-[#667085]'>
+        <p className='mt-0.5 truncate text-[12px] leading-4 text-muted-foreground'>
           {subtitle}
         </p>
       ) : null}

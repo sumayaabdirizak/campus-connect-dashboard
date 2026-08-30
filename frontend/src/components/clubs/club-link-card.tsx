@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Icons } from '@/components/icons'
 import { useInvitePreview, useAcceptInvite } from '@/lib/clubs/queries'
 import type { AcceptInviteResponse } from '@/lib/clubs/types'
@@ -95,11 +94,6 @@ export function ClubLinkCard({ token }: { token: string }) {
             <Icons.teams className='h-3 w-3' />
             {club.memberCountCache} members
           </span>
-          {club.scopeKind && (
-            <Badge variant='outline' className='h-3.5 px-1 text-[8px]'>
-              {club.scopeKind.toLowerCase()}
-            </Badge>
-          )}
           {inviter && (
             <span className='truncate'>
               via {inviter.full_name}

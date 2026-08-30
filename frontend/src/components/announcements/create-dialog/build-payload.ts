@@ -46,10 +46,10 @@ export function resolveScheduleIso({
   deadlineAtLocal,
 }: ScheduleArgs) {
   let expiresAtIso: string | null = null;
-  if (expiresAtCustom.trim()) {
+  if (activeDaysPreset === 'custom' && expiresAtCustom.trim()) {
     const d = new Date(expiresAtCustom);
     expiresAtIso = Number.isNaN(d.getTime()) ? null : d.toISOString();
-  } else if (activeDaysPreset !== 'off') {
+  } else if (activeDaysPreset !== 'off' && activeDaysPreset !== 'custom') {
     expiresAtIso = computeExpiresIsoFromPreset(activeDaysPreset);
   }
   let deadlineAtIso: string | null = null;

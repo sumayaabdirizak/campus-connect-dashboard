@@ -3,6 +3,7 @@
 import { Switch } from '@/features/ui/components/switch';
 import { usePushSubscription } from '@/lib/notifications/services';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 interface NotificationToggleProps {
   compact?: boolean;
@@ -40,6 +41,10 @@ export function NotificationToggle({ compact }: NotificationToggleProps) {
       onCheckedChange={handleChange}
       disabled={loading}
       aria-label='Browser push notifications'
+      className={cn(
+        compact &&
+          'h-5 w-9 border-border data-[state=unchecked]:border-[#667085] data-[state=unchecked]:bg-[#D0D5DD]'
+      )}
     />
   );
 }

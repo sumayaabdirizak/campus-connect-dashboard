@@ -30,13 +30,13 @@ export function MemberRow({
   const joined = formatJoinedAt(member.joinedAt)
 
   return (
-    <div className='group/member flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-[#F8FAFC]'>
+    <div className='group/member flex items-center gap-3 px-3.5 py-3 transition-colors hover:bg-muted'>
       <div className='relative shrink-0'>
         <Avatar className='size-9'>
           {member.user?.avatarUrl ? (
             <AvatarImage src={resolvePublicAssetUrl(member.user.avatarUrl) ?? undefined} alt={name} />
           ) : null}
-          <AvatarFallback className='bg-[#EFF6FF] text-xs font-semibold text-[#3B82F6]'>
+          <AvatarFallback className='bg-primary/10 text-xs font-semibold text-primary'>
             {initialsFor(name)}
           </AvatarFallback>
         </Avatar>
@@ -45,7 +45,7 @@ export function MemberRow({
 
       <div className='min-w-0 flex-1'>
         <div className='flex min-w-0 items-center gap-2'>
-          <span className='truncate text-sm font-semibold text-[#101828]'>
+          <span className='truncate text-sm font-semibold text-foreground'>
             {name}
           </span>
           <span
@@ -58,7 +58,7 @@ export function MemberRow({
           </span>
         </div>
         {joined ? (
-          <p className='mt-0.5 truncate text-[11px] text-[#667085]'>
+          <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>
             Joined {joined}
           </p>
         ) : null}

@@ -1,70 +1,36 @@
 'use client';
 
-import { Button } from '@/features/ui/components/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/features/ui/components/select';
 import { UserPlus } from 'lucide-react';
-import type { RosterStudent } from '@/lib/course-details/services/roster-types';
+import { Button } from '@/features/ui/components/button';
 
 export function AddMemberControls({
-  isAdding,
-  candidates,
-  pickMember,
-  onPickMember,
-  onConfirm,
-  onCancel,
   onStart,
-  confirmPending
+  disabled,
+  availableCount
 }: {
-  isAdding: boolean;
-  candidates: RosterStudent[];
-  pickMember: string;
-  onPickMember: (v: string) => void;
-  onConfirm: () => void;
-  onCancel: () => void;
   onStart: () => void;
-  confirmPending: boolean;
+  disabled: boolean;
+  availableCount: number;
 }) {
-  if (isAdding) {
-    return (
-      <div className='mt-3 flex gap-1'>
-        <Select value={pickMember} onValueChange={onPickMember}>
-          <SelectTrigger className='h-8 text-xs'>
-            <SelectValue placeholder='Pick student' />
-          </SelectTrigger>
-          <SelectContent>
-            {candidates.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.full_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Button size='sm' onClick={onConfirm} disabled={!pickMember || confirmPending}>
-          Add
-        </Button>
-        <Button size='sm' variant='ghost' onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    );
-  }
-
   return (
     <div className='mt-3'>
       <Button
         variant='outline'
         size='sm'
-        className='gap-1 w-full'
+        className='h-10 w-full gap-1.5 border-2 border-border text-sm font-semibold hover:border-primary/40 hover:bg-primary/5'
         onClick={onStart}
-        disabled={candidates.length === 0}
+        disabled={disabled}
+        title={
+          disabled
+            ? 'Every student is already in a group'
+            : `${availableCount} student${availableCount === 1 ? '' : 's'} available`
+        }
       >
-        <UserPlus className='w-3.5 h-3.5' /> Add member
+        <UserPlus className='size-4' />
+        Add students
+        {availableCount > 0 ? (
+          <span className='font-medium text-muted-foreground'>({availableCount})</span>
+        ) : null}
       </Button>
     </div>
   );

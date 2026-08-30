@@ -25,8 +25,11 @@ export default defineConfig({
     },
   },
   resolve: {
+    // Must mirror `paths` in tsconfig.json. `@shared` was missing, so every
+    // test touching src/types/auth.ts failed to resolve its imports.
     alias: {
       '@': path.resolve(__dirname, './src'),
+      '@shared': path.resolve(__dirname, '../shared'),
     },
   },
 })

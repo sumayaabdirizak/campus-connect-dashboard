@@ -59,41 +59,8 @@ export function ResourceFormBody({
           rows={2}
         />
 
-        {!editing ? (
-          <form.Subscribe
-            selector={(state) => ({
-              originalName: state.values.originalName,
-              mimeType: state.values.mimeType
-            })}
-          >
-            {({ originalName, mimeType }) => (
-              <ResourceUploadSection
-                fileInputRef={fileInputRef}
-                audioInputRef={audioInputRef}
-                videoInputRef={videoInputRef}
-                uploading={uploading}
-                originalName={originalName}
-                mimeType={mimeType}
-                onPickFile={onPickFile}
-              />
-            )}
-          </form.Subscribe>
-        ) : null}
-
-        <form.AppField name='url'>
-          {(field) => (
-            <ResourceUrlField
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              field={field as any}
-              onUrlChange={(value) => {
-                field.handleChange(value);
-                form.setFieldValue('originalName', null);
-                form.setFieldValue('mimeType', null);
-              }}
-            />
-          )}
-        </form.AppField>
-
+        {/* Type leads — it decides whether the teacher uploads a file or
+            pastes a link, so asking after the inputs meant choosing twice. */}
         <div className='grid grid-cols-2 gap-3'>
           <FormSelectField
             name='type'
@@ -106,6 +73,53 @@ export function ResourceFormBody({
             {(field) => <ResourceModuleField field={field as any} modules={modules} />}
           </form.AppField>
         </div>
+
+        <form.Subscribe
+          selector={(state) => ({
+            type: state.values.type,
+            originalName: state.values.originalName,
+            mimeType: state.values.mimeType
+          })}
+        >
+          {({ type, originalName, mimeType }) => {
+            // One input per type: a link is typed, everything else is
+            // uploaded. When editing, the upload pickers are hidden, so the
+            // URL stays visible as the only way to repoint the resource.
+            const showUrl = editing || type === 'EXTERNAL_LINK';
+            return (
+              <>
+                {!editing ? (
+                  <ResourceUploadSection
+                    type={type}
+                    fileInputRef={fileInputRef}
+                    audioInputRef={audioInputRef}
+                    videoInputRef={videoInputRef}
+                    uploading={uploading}
+                    originalName={originalName}
+                    mimeType={mimeType}
+                    onPickFile={onPickFile}
+                  />
+                ) : null}
+
+                {showUrl ? (
+                  <form.AppField name='url'>
+                    {(field) => (
+                      <ResourceUrlField
+                        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                        field={field as any}
+                        onUrlChange={(value) => {
+                          field.handleChange(value);
+                          form.setFieldValue('originalName', null);
+                          form.setFieldValue('mimeType', null);
+                        }}
+                      />
+                    )}
+                  </form.AppField>
+                ) : null}
+              </>
+            );
+          }}
+        </form.Subscribe>
 
         <form.AppField name='is_draft'>
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}

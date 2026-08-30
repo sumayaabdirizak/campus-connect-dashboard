@@ -5,8 +5,6 @@ export interface CourseFeedProps {
   isStudent?: boolean;
 }
 
-export type FeedFilter = 'all' | 'important' | 'attachments' | 'auto';
-
 export const SOURCE_LABEL: Record<CoursePostSource, string> = {
   MANUAL: '',
   SESSION: 'Session',
@@ -14,5 +12,3 @@ export const SOURCE_LABEL: Record<CoursePostSource, string> = {
   DEAN: 'Dean',
   REGISTRATION: 'Registration'
 };
-
-export const REACTION_PALETTE = ['👍', '❤️', '🎉', '🤔', '😮', '👏'];

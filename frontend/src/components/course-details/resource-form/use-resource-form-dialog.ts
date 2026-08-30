@@ -10,7 +10,7 @@ import type {
   UpdateResourceData
 } from '@/lib/course-details/types';
 import { resourceFormSchema, type ResourceFormValues } from '@/lib/course-details/schemas/resource';
-import { blankValues, inferTypeFromMime } from './helpers';
+import { blankValues } from './helpers';
 
 type SubmitPayload =
   | { mode: 'create'; data: Omit<CreateResourceData, 'teacherId'> & { is_draft?: boolean } }
@@ -103,7 +103,10 @@ export function useResourceFormDialog({
         form.setFieldValue('url', result.url);
         form.setFieldValue('originalName', result.originalName);
         form.setFieldValue('mimeType', result.mimeType);
-        form.setFieldValue('type', inferTypeFromMime(result.mimeType));
+        // Type is chosen up front now and gates which picker (and which
+        // `accept` filter) the teacher even sees, so their choice stands.
+        // Inferring from mime used to overwrite it — and would land on
+        // OTHER for .docx/.zip/images, which is no longer selectable.
         if (!form.getFieldValue('title').trim()) {
           form.setFieldValue('title', result.originalName);
         }

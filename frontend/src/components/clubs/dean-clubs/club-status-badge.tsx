@@ -9,7 +9,7 @@ export function ClubStatusBadge({ status }: { status: string }) {
   }
   return (
     <span
-      className={`rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? 'bg-gray-100 text-gray-700'}`}
+      className={`rounded-full px-2 py-0.5 text-xs font-medium ${map[status] ?? 'bg-muted text-muted-foreground'}`}
     >
       {status}
     </span>

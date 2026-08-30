@@ -1,7 +1,6 @@
 'use client';
 
 import { Button } from '@/features/ui/components/button';
-import { Checkbox } from '@/features/ui/components/checkbox';
 import { Input } from '@/features/ui/components/input';
 import { Textarea } from '@/features/ui/components/textarea';
 import {
@@ -42,26 +41,9 @@ export function EditPostDialog({
             <Textarea
               value={editing.content}
               onChange={(e) => setEditing({ ...editing, content: e.target.value })}
-              rows={4}
+              rows={5}
+              placeholder='Write your update…'
             />
-            <label className='flex items-center gap-2 text-sm'>
-              <Checkbox
-                checked={editing.isImportant}
-                onCheckedChange={(v) =>
-                  setEditing({ ...editing, isImportant: Boolean(v) })
-                }
-              />
-              Mark as important
-            </label>
-            <label className='flex items-center gap-2 text-sm'>
-              <Checkbox
-                checked={editing.isPinned}
-                onCheckedChange={(v) =>
-                  setEditing({ ...editing, isPinned: Boolean(v) })
-                }
-              />
-              Pin to top
-            </label>
           </div>
         ) : null}
         <DialogFooter>

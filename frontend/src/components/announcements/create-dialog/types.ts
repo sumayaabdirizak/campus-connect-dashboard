@@ -1,7 +1,7 @@
 import type { Announcement, AnnouncementPriority, AnnouncementTargetType } from '@/lib/announcements/types';
 import type { CreateAnnouncementDTO } from '@/lib/announcements/types';
 
-export type ActiveDaysPreset = 'off' | '1' | '3' | '5' | '7';
+export type ActiveDaysPreset = 'off' | '1' | '3' | '5' | 'custom';
 
 export interface ImageFile {
   id: string;

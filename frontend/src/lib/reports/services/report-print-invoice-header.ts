@@ -13,6 +13,15 @@ const TAB_CODE: Record<ReportTabId, string> = {
   'teacher-activity': 'TAC',
 };
 
+const ENTITY_SCOPE_CODE: Record<string, string> = {
+  course: 'CRS',
+  teacher: 'TCH',
+  student: 'STU',
+  batch: 'BAT',
+  section: 'SEC',
+  faculty: 'FAC',
+};
+
 export type ReportInvoiceMeta = {
   documentTitle: string;
   documentSubtitle?: string;
@@ -45,6 +54,15 @@ export function facultyReportId(tab: ReportTabId = 'overview'): string {
 
 export function adminReportId(tab: ReportTabId = 'overview'): string {
   return makeReportId(`RPT-ADM-${TAB_CODE[tab]}`);
+}
+
+/** Entity-scoped reports at `/dashboard/reports`. */
+export function entityReportId(
+  scope: string,
+  kind: 'list' | 'detail' = 'detail'
+): string {
+  const code = ENTITY_SCOPE_CODE[scope] ?? 'ENT';
+  return makeReportId(`RPT-${code}-${kind === 'list' ? 'LST' : 'DTL'}`);
 }
 
 export function buildReportInvoiceHeader(meta: ReportInvoiceMeta): string {

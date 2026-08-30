@@ -16,7 +16,8 @@ export function PerMemberGrades({
   memberFeedbacks,
   setMemberFeedbacks,
   gradePending,
-  onSave
+  onSave,
+  hideSaveButton = false
 }: {
   assignment: Assignment;
   submission: Submission;
@@ -28,6 +29,7 @@ export function PerMemberGrades({
   setMemberFeedbacks: React.Dispatch<React.SetStateAction<Map<number, string>>>;
   gradePending: boolean;
   onSave: () => void;
+  hideSaveButton?: boolean;
 }) {
   const groupRow = allGroupRows.find((r) => r.groupId === submission.groupId);
   if (!groupRow) return null;
@@ -43,7 +45,7 @@ export function PerMemberGrades({
       {groupRow.members.map((member) => {
         const sub = subsByStudent.get(member.id);
         return (
-          <div key={member.id} className='rounded-2xl border bg-muted/20 p-3 space-y-2'>
+          <div key={member.id} className='space-y-2 rounded-md border border-border/60 p-2.5'>
             <div className='flex items-center gap-2'>
               <p className='text-sm font-medium'>{member.full_name}</p>
               <span className='text-xs text-muted-foreground'>{member.number}</span>
@@ -85,9 +87,11 @@ export function PerMemberGrades({
           </div>
         );
       })}
-      <Button size='sm' onClick={onSave} disabled={gradePending}>
-        {gradePending ? 'Saving…' : 'Save all grades'}
-      </Button>
+      {!hideSaveButton ? (
+        <Button size='sm' onClick={onSave} disabled={gradePending}>
+          {gradePending ? 'Saving…' : 'Save all grades'}
+        </Button>
+      ) : null}
     </div>
   );
 }

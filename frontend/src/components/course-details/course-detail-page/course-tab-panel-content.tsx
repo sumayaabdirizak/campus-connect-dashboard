@@ -1,7 +1,6 @@
 'use client';
 
 import { CourseOverview } from '@/components/teacher-courses/course-overview';
-import type { ReviewQueueItem } from '@/lib/course-details/queries/question-bank-queries';
 import type { CourseTabId } from '@/lib/course-details/queries/types';
 import type { OverviewData } from '@/components/teacher-courses/course-overview/types';
 import {
@@ -12,7 +11,6 @@ import {
   CourseGroups,
   CourseQuizzes,
   CourseResources,
-  CourseReviews,
   CourseRoster
 } from './dynamic-tab-imports';
 
@@ -21,7 +19,6 @@ interface CourseTabPanelContentProps {
   offeringId: string;
   isStudent: boolean;
   data: OverviewData & { course: { code: string }; section: unknown; batch: unknown };
-  reviewItems: ReviewQueueItem[];
   onTabChange: (tab: CourseTabId) => void;
 }
 
@@ -30,7 +27,6 @@ export function CourseTabPanelContent({
   offeringId,
   isStudent,
   data,
-  reviewItems,
   onTabChange
 }: CourseTabPanelContentProps) {
   return (
@@ -46,7 +42,13 @@ export function CourseTabPanelContent({
 
       {activeTab === 'feed' && <CourseFeed courseId={offeringId} isStudent={isStudent} />}
 
-      {activeTab === 'chat' && <CourseChat courseId={offeringId} isStudent={isStudent} />}
+      {activeTab === 'chat' && (
+        <CourseChat
+          courseId={offeringId}
+          isStudent={isStudent}
+          courseCode={data.course.code}
+        />
+      )}
 
       {activeTab === 'assignments' && (
         <CourseAssignments courseId={offeringId} isStudent={isStudent} />
@@ -67,14 +69,6 @@ export function CourseTabPanelContent({
       {activeTab === 'roster' && !isStudent && <CourseRoster courseId={offeringId} />}
 
       {activeTab === 'grades' && !isStudent && <CourseGradebook courseId={offeringId} />}
-
-      {activeTab === 'reviews' && !isStudent && (
-        <CourseReviews
-          items={reviewItems}
-          isStudent={isStudent}
-          onOpenTab={onTabChange}
-        />
-      )}
     </>
   );
 }

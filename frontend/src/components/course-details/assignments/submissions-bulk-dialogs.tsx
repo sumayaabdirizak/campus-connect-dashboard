@@ -12,6 +12,11 @@ import {
   DialogTitle
 } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
+import {
+  handleExtensionDateChange,
+  isPastExtensionDate,
+  toDatetimeLocalMin
+} from './extension-date-utils';
 
 export function BulkGradeDialog({
   open,
@@ -116,10 +121,14 @@ export function BulkExtendDialog({
           <DialogTitle>Grant extension to {selectedCount} students</DialogTitle>
         </DialogHeader>
         <div className='space-y-3 py-2'>
+          <p className='text-xs text-muted-foreground'>
+            Sets a new due date for missing or ungraded students only.
+          </p>
           <Input
             type='datetime-local'
+            min={toDatetimeLocalMin()}
             value={date}
-            onChange={(e) => setDate(e.target.value)}
+            onChange={(e) => handleExtensionDateChange(e.target.value, setDate)}
           />
           <Input
             placeholder='Reason (optional)'
@@ -131,7 +140,10 @@ export function BulkExtendDialog({
           <Button variant='outline' onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={onGrant} disabled={pending}>
+          <Button
+            onClick={onGrant}
+            disabled={pending || !date || isPastExtensionDate(date)}
+          >
             {pending ? 'Granting…' : 'Grant'}
           </Button>
         </DialogFooter>

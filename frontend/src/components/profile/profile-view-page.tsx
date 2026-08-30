@@ -40,13 +40,13 @@ export default function ProfileViewPage() {
       />
       <div className='mx-auto w-full max-w-4xl space-y-4'>
         {isLoading && !data ? (
-          <div className='h-40 animate-pulse rounded-xl bg-[#F2F4F7]' />
+          <div className='h-40 animate-pulse rounded-xl bg-muted' />
         ) : error && !data ? (
-          <div className='rounded-xl border border-[#E5E7EB] bg-white px-4 py-6 text-center text-sm text-[#667085]'>
+          <div className='rounded-xl border border-border bg-card px-4 py-6 text-center text-sm text-muted-foreground'>
             Could not load profile.{' '}
             <button
               type='button'
-              className='text-[#3B82F6] underline'
+              className='text-primary underline'
               onClick={() => void refetch()}
             >
               Retry

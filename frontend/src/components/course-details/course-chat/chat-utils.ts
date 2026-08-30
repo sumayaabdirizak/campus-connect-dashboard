@@ -1,3 +1,5 @@
+import { formatMessageClock, formatMessageDayLabel } from '@/lib/format-time';
+
 export function slugifyName(name: string): string {
   return name
     .toLowerCase()
@@ -17,21 +19,10 @@ export function initialsOf(name: string): string {
 }
 
 export function messageTime(value: string): string {
-  return new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  return formatMessageClock(value);
 }
 
 /** "Today" / "Yesterday" / a short date for the day-divider pills. */
 export function dayLabel(value: string): string {
-  const d = new Date(value);
-  const today = new Date();
-  const yesterday = new Date();
-  yesterday.setDate(today.getDate() - 1);
-  if (d.toDateString() === today.toDateString()) return 'Today';
-  if (d.toDateString() === yesterday.toDateString()) return 'Yesterday';
-  return d.toLocaleDateString([], {
-    weekday: 'short',
-    month: 'short',
-    day: 'numeric',
-    ...(d.getFullYear() !== today.getFullYear() ? { year: 'numeric' } : {})
-  });
+  return formatMessageDayLabel(value);
 }

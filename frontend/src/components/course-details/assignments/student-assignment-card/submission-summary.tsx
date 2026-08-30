@@ -1,48 +1,91 @@
 'use client';
 
-import { Link as LinkIcon } from 'lucide-react';
+import { Download, ExternalLink, FileText, MessageSquareText } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Submission } from '@/lib/course-details/services/assignments-types';
+import { parseSubmissionContent } from './helpers';
 
 export function SubmissionSummary({
   submission,
   isGroupAssignment,
   isGraded,
+  maxMarks,
 }: {
   submission: Submission;
   isGroupAssignment: boolean;
   isGraded: boolean;
+  maxMarks: number;
 }) {
+  const content = submission.content_url
+    ? parseSubmissionContent(submission.content_url)
+    : null;
+  const teacherFeedback = submission.feedback?.trim() ?? '';
+  const showFeedback = submission.is_reviewed && teacherFeedback.length > 0;
+
   return (
-    <div className='mt-3 border-l-2 border-primary/50 bg-primary/[0.03] rounded-r-md px-3 py-2 space-y-1.5'>
-      <div className='flex items-center justify-between gap-2 flex-wrap'>
-        <p className='text-xs font-medium'>
-          {isGroupAssignment ? 'Group submission' : 'Your submission'}
-        </p>
-        <p className='text-[11px] text-muted-foreground tabular-nums'>
+    <div className='space-y-2'>
+      <p className='text-sm text-success'>
+        {isGroupAssignment ? 'Group work sent' : 'You sent this'}
+        <span className='ml-2 text-foreground'>
           {format(new Date(submission.submitted_at), 'MMM d, h:mm a')}
-          {submission.is_late ? (
-            <span className='text-warning ml-1'>· late</span>
-          ) : null}
-        </p>
-      </div>
-      {submission.content_url ? (
-        <a
-          href={submission.content_url}
-          target='_blank'
-          rel='noreferrer'
-          className='inline-flex items-center gap-1 text-xs text-primary hover:underline truncate max-w-full'
-        >
-          <LinkIcon className='w-3 h-3 shrink-0' />
-          <span className='truncate'>{submission.content_url}</span>
-        </a>
+        </span>
+        {submission.is_late ? (
+          <span className='ml-2 text-warning'>Late</span>
+        ) : null}
+      </p>
+
+      {content ? (
+        <div className='flex items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2.5'>
+          {content.type === 'file' ? (
+            <FileText className='size-4 shrink-0 text-primary' aria-hidden />
+          ) : (
+            <ExternalLink className='size-4 shrink-0 text-primary' aria-hidden />
+          )}
+          <div className='min-w-0 flex-1'>
+            <a
+              href={content.href}
+              target='_blank'
+              rel='noreferrer'
+              className='block truncate text-sm font-medium text-foreground hover:text-primary'
+            >
+              {content.label}
+            </a>
+            <p className='truncate text-xs text-muted-foreground'>
+              {content.type === 'link' ? content.subtitle : content.kind}
+            </p>
+          </div>
+          <a
+            href={content.href}
+            target='_blank'
+            rel='noreferrer'
+            download={content.type === 'file' ? content.label : undefined}
+            className='inline-flex size-8 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary/90'
+            title={content.type === 'file' ? 'Download file' : 'Open link'}
+            aria-label={content.type === 'file' ? `Download ${content.label}` : 'Open submission link'}
+          >
+            {content.type === 'file' ? (
+              <Download className='size-4' aria-hidden />
+            ) : (
+              <ExternalLink className='size-4' aria-hidden />
+            )}
+          </a>
+        </div>
       ) : null}
-      {isGraded && submission.feedback ? (
-        <div className='mt-2 pt-2 border-t border-primary/20'>
-          <p className='text-[11px] font-medium text-muted-foreground mb-0.5'>
+
+      {showFeedback ? (
+        <div className='rounded-xl border border-primary/20 bg-primary/5 px-3 py-2.5'>
+          <p className='mb-1 flex items-center gap-1.5 text-xs font-medium text-primary'>
+            <MessageSquareText className='size-3.5 shrink-0' aria-hidden />
             Teacher feedback
+            {isGraded && submission.grade != null ? (
+              <span className='font-semibold text-foreground'>
+                · {submission.grade}/{maxMarks}
+              </span>
+            ) : null}
           </p>
-          <p className='select-text text-xs whitespace-pre-wrap'>{submission.feedback}</p>
+          <p className='select-text whitespace-pre-wrap text-sm text-foreground'>
+            {teacherFeedback}
+          </p>
         </div>
       ) : null}
     </div>

@@ -27,7 +27,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
       role='status'
       aria-live='polite'
       className={cn(
-        'animate-fade-up flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/70 p-10 text-center',
+        'animate-fade-up flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-border/70 p-10 text-center',
         className
       )}
     >
@@ -40,7 +40,7 @@ export function EmptyState({ icon: Icon, title, description, action, className }
         <span className='absolute right-4 bottom-1 size-5 rounded-full bg-emerald-200/90 dark:bg-emerald-500/30' />
         <span className='absolute bottom-3 left-0 size-3 rounded-full bg-amber-200/90 dark:bg-amber-500/30' />
         {Icon && (
-          <span className='absolute top-1/2 left-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-2xl bg-card shadow-md ring-1 ring-border/60'>
+          <span className='absolute top-1/2 left-1/2 flex size-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-xl bg-card shadow-md ring-1 ring-border/60'>
             <Icon className='size-5 text-violet-500 dark:text-violet-300' />
           </span>
         )}

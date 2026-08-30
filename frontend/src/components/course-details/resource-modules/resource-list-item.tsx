@@ -9,6 +9,7 @@ import {
   ResourceCard,
   VideoRenderer
 } from '../resource-renderers';
+import { isPdfResource } from '../resource-renderers/resource-pdf-dialog';
 import { TrackedMediaPlayer } from '../tracked-media-player';
 import { resourceDownloadUrl } from '@/lib/course-details/services/resources-service';
 import type { Resource } from '@/lib/course-details/types';
@@ -43,10 +44,10 @@ export function ResourceListItem({
 
   if (r.type === 'VIDEO') {
     return (
-      <div className='space-y-2 border rounded-lg p-3'>
-        <div className='flex items-center gap-2'>
+      <div className='space-y-3 rounded-xl border-2 border-border bg-card p-4'>
+        <div className='flex flex-wrap items-center gap-2'>
           {dragHandle}
-          <p className='font-medium text-sm flex-1 truncate'>{r.title}</p>
+          <p className='min-w-0 flex-1 truncate text-base font-semibold text-foreground'>{r.title}</p>
           {mediaActions}
         </div>
         {isUploadedVideo(r) ? (
@@ -64,11 +65,14 @@ export function ResourceListItem({
     );
   }
 
-  if (r.type === 'EXTERNAL_LINK') {
+  // A PDF is previewable whether it was uploaded or pasted as a link, so it
+  // falls through to ResourceCard (which carries the Preview action) instead
+  // of rendering as a bare outbound link.
+  if (r.type === 'EXTERNAL_LINK' && !isPdfResource(r)) {
     return (
       <div className='flex items-center gap-2'>
         {dragHandle}
-        <div className='flex-1'>
+        <div className='min-w-0 flex-1'>
           <LinkRenderer url={r.url} title={r.title} />
         </div>
       </div>
@@ -77,10 +81,10 @@ export function ResourceListItem({
 
   if (isAudio(r)) {
     return (
-      <div className='space-y-1 border rounded-lg p-3'>
-        <div className='flex items-center gap-2'>
+      <div className='space-y-3 rounded-xl border-2 border-border bg-card p-4'>
+        <div className='flex flex-wrap items-center gap-2'>
           {dragHandle}
-          <p className='font-medium text-sm flex-1 truncate'>{r.title}</p>
+          <p className='min-w-0 flex-1 truncate text-base font-semibold text-foreground'>{r.title}</p>
           {mediaActions}
         </div>
         {isUploadedAudio(r) ? (

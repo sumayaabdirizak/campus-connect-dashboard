@@ -53,7 +53,7 @@ export function AdminReportsDashboard({
       />
       <ReportsKpiGrid data={data} isLoading={isLoading} />
 
-      <div className='rounded-xl border bg-card p-4 shadow-sm'>
+      <div className='rounded-xl border bg-card p-4'>
         <div className='mb-2 flex items-center justify-between gap-2'>
           <p className='text-sm font-semibold'>Global filters</p>
           <AdminReportFilters

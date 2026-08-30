@@ -54,7 +54,7 @@ export function AddMembersDialog({
           <Button
             onClick={form.handleAdd}
             disabled={form.tooFew || form.addMembers.isPending}
-            className='bg-[#3B82F6] text-white hover:bg-[#2563EB]'
+            className='bg-primary text-white hover:bg-[#2563EB]'
           >
             {form.addMembers.isPending ? (
               <Icons.spinner className='h-4 w-4 animate-spin' />

@@ -63,7 +63,7 @@ function FacultyKpiGridSkeleton() {
   return (
     <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-4'>
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className='rounded-xl border bg-card p-4 shadow-sm'>
+        <div key={i} className='rounded-xl border bg-card p-4'>
           <Skeleton className='size-9 rounded-xl' />
           <Skeleton className='mt-3 h-8 w-16' />
           <Skeleton className='mt-2 h-4 w-24' />

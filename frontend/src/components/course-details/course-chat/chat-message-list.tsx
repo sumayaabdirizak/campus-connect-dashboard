@@ -4,6 +4,7 @@ import type { RefObject } from 'react';
 import { ChevronDown, Loader2 } from 'lucide-react';
 import { Button } from '@/features/ui/components/button';
 import type { ChatMessage } from '@/lib/course-details/types';
+import type { DisplayChatFile } from './chat-file-utils';
 import { ChatTimeline } from './chat-timeline';
 
 interface ChatMessageListProps {
@@ -27,6 +28,7 @@ interface ChatMessageListProps {
   editPending: boolean;
   mentionLabels: Map<string, string>;
   meSlug: string | null;
+  pendingByMessageId: Map<number, DisplayChatFile[]>;
   onRegisterRef: (id: number, node: HTMLDivElement | null) => void;
   onJumpToReply: (id: number) => void;
   onReply: (item: ChatMessage) => void;
@@ -53,16 +55,11 @@ export function ChatMessageList(props: ChatMessageListProps) {
   } = props;
 
   return (
-    <div className='relative'>
+    <div className='relative flex min-h-0 flex-1 flex-col'>
       <div
         ref={scrollRef}
         onScroll={onScroll}
-        className='h-[500px] overflow-y-auto bg-muted/40 px-4 py-4'
-        style={{
-          backgroundImage:
-            'radial-gradient(circle, color-mix(in oklch, var(--muted-foreground) 14%, transparent) 1px, transparent 1px)',
-          backgroundSize: '22px 22px'
-        }}
+        className='min-h-0 flex-1 overflow-y-auto bg-[#F2F4F7] px-4 py-4 dark:bg-muted/20'
       >
         {hasMore && nextCursor != null ? (
           <div className='mb-4 flex justify-center'>
@@ -95,6 +92,7 @@ export function ChatMessageList(props: ChatMessageListProps) {
           onCancelEdit={props.onCancelEdit}
           onSaveEdit={props.onSaveEdit}
           onDelete={props.onDelete}
+          pendingByMessageId={props.pendingByMessageId}
         />
         <div ref={messagesEndRef} />
       </div>

@@ -28,7 +28,7 @@ export function MainDashboardHeader({
           type='button'
           variant='outline'
           size='sm'
-          className='h-9 border-[#E5E7EB]'
+          className='h-9 border-border'
           onClick={onRefresh}
           disabled={isFetching}
         >
@@ -39,7 +39,7 @@ export function MainDashboardHeader({
           type='button'
           variant='outline'
           size='sm'
-          className='h-9 border-[#E5E7EB]'
+          className='h-9 border-border'
           onClick={onExport}
         >
           <Download className='mr-1.5 size-3.5' />
@@ -47,7 +47,7 @@ export function MainDashboardHeader({
         </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button type='button' size='sm' className='h-9 bg-[#3B82F6] hover:bg-[#2563EB]'>
+            <Button type='button' size='sm' className='h-9 bg-primary hover:bg-[#2563EB]'>
               <Plus className='mr-1.5 size-3.5' />
               Add New
             </Button>

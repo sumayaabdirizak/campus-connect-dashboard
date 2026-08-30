@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Dialog,
@@ -12,14 +11,13 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog';
-import { Calendar, ClipboardCheck, FileText, Settings2, Shuffle } from 'lucide-react';
+import { Calendar, ClipboardCheck, FileText, Shuffle } from 'lucide-react';
 import { toast } from 'sonner';
 import { BasicsTab } from './basics-tab';
 import { BehaviorTab } from './behavior-tab';
 import {
   BLANK,
   fromQuiz,
-  scheduleBadgeFor,
   toPayload,
   validateForm,
   type QuizSettingsTab
@@ -60,40 +58,19 @@ export function QuizSettingsDialog({
     }
     const data = toPayload(form);
     if (editing) onSubmit({ mode: 'edit', quizId: editing.id, data });
-    else onSubmit({ mode: 'create', data });
+    else     onSubmit({ mode: 'create', data });
   };
-
-  const scheduleBadge = scheduleBadgeFor(editing);
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className='max-w-2xl max-h-[90vh] overflow-y-auto'>
         <DialogHeader>
-          <div className='flex items-center gap-3'>
-            <span className='shrink-0 grid place-items-center w-9 h-9 rounded-lg bg-accent text-accent-foreground'>
-              <Settings2 className='w-4 h-4' />
-            </span>
-            <div className='min-w-0'>
-              <div className='flex items-center gap-2 flex-wrap'>
-                <DialogTitle>{editing ? 'Quiz settings' : 'New quiz'}</DialogTitle>
-                {editing?.is_draft ? (
-                  <Badge variant='secondary' size='xs' className='rounded-full'>
-                    Draft
-                  </Badge>
-                ) : null}
-                {scheduleBadge ? (
-                  <Badge variant={scheduleBadge.tone} size='xs' className='rounded-full'>
-                    {scheduleBadge.label}
-                  </Badge>
-                ) : null}
-              </div>
-              <DialogDescription>
-                {editing
-                  ? 'Change scheduling or behavior. Existing attempts are not affected.'
-                  : 'Configure how this quiz opens and behaves while taken.'}
-              </DialogDescription>
-            </div>
-          </div>
+          <DialogTitle>{editing ? 'Quiz settings' : 'New quiz'}</DialogTitle>
+          <DialogDescription>
+            {editing
+              ? 'Update the name, time, or how the quiz works.'
+              : 'Give it a name and set when students can take it.'}
+          </DialogDescription>
         </DialogHeader>
 
         <Tabs
@@ -109,10 +86,10 @@ export function QuizSettingsDialog({
               <Calendar className='w-3.5 h-3.5' /> Schedule
             </TabsTrigger>
             <TabsTrigger value='behavior' className='gap-1'>
-              <Shuffle className='w-3.5 h-3.5' /> Behavior
+              <Shuffle className='w-3.5 h-3.5' /> Timing
             </TabsTrigger>
             <TabsTrigger value='marks' className='gap-1'>
-              <ClipboardCheck className='w-3.5 h-3.5' /> Marks
+              <ClipboardCheck className='w-3.5 h-3.5' /> Marking
             </TabsTrigger>
           </TabsList>
 
@@ -131,11 +108,15 @@ export function QuizSettingsDialog({
         </Tabs>
 
         <DialogFooter>
-          <Button variant='outline' onClick={() => onOpenChange(false)} disabled={pending}>
+          <Button variant='outline' className='h-11 rounded-xl' onClick={() => onOpenChange(false)} disabled={pending}>
             Cancel
           </Button>
-          <Button onClick={handleSubmit} disabled={pending}>
-            {pending ? 'Saving…' : editing ? 'Save changes' : 'Create quiz'}
+          <Button
+            className='h-11 rounded-xl bg-primary px-5 text-primary-foreground hover:bg-primary/90'
+            onClick={handleSubmit}
+            disabled={pending}
+          >
+            {pending ? 'Saving…' : editing ? 'Save' : 'Create quiz'}
           </Button>
         </DialogFooter>
       </DialogContent>

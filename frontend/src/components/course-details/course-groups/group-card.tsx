@@ -18,15 +18,9 @@ export function GroupCard({
   onRenameCancel,
   onStartRename,
   onDelete,
-  adding,
-  pickMember,
-  onPickMember,
-  onAddConfirm,
-  onAddCancel,
   onStartAdd,
   onToggleLeader,
   onRemoveMember,
-  addPending,
   removePending,
   togglePending
 }: {
@@ -40,22 +34,16 @@ export function GroupCard({
   onRenameCancel: () => void;
   onStartRename: () => void;
   onDelete: () => void;
-  adding: boolean;
-  pickMember: string;
-  onPickMember: (v: string) => void;
-  onAddConfirm: () => void;
-  onAddCancel: () => void;
   onStartAdd: () => void;
   onToggleLeader: (memberId: number, role: GroupMemberRole) => void;
   onRemoveMember: (memberId: number) => void;
-  addPending: boolean;
   removePending: boolean;
   togglePending: boolean;
 }) {
   const hasLeader = group.members.some((m) => m.role === 'LEADER');
 
   return (
-    <div className='border rounded-lg p-4'>
+    <article className='rounded-xl border-2 border-border bg-card p-4 transition-shadow hover:shadow-md'>
       <GroupCardHeader
         name={group.name}
         isStudent={isStudent}
@@ -68,41 +56,47 @@ export function GroupCard({
         onDelete={onDelete}
       />
 
-      <div className='flex items-center gap-2 mb-3'>
-        <p className='text-sm text-muted-foreground'>{group.members.length} members</p>
+      <div className='mb-3 flex flex-wrap items-center gap-2'>
+        <span className='rounded-full border border-border bg-muted px-2.5 py-0.5 text-xs font-semibold text-foreground'>
+          {group.members.length} member{group.members.length === 1 ? '' : 's'}
+        </span>
         {!hasLeader && group.members.length > 0 && !isStudent ? (
-          <Badge variant='outline' className='text-warning border-warning text-[10px]'>
-            No leader
+          <Badge
+            variant='outline'
+            className='rounded-full border-amber-400 bg-amber-50 text-[10px] font-semibold text-amber-800'
+          >
+            No leader yet
           </Badge>
         ) : null}
       </div>
 
       <div className='space-y-2'>
-        {group.members.map((m) => (
-          <GroupMemberRow
-            key={m.id}
-            member={m}
-            isStudent={isStudent}
-            onToggleLeader={() => onToggleLeader(m.memberId, m.role)}
-            onRemove={() => onRemoveMember(m.memberId)}
-            togglePending={togglePending}
-            removePending={removePending}
-          />
-        ))}
+        {group.members.length === 0 ? (
+          <p className='rounded-xl border border-dashed border-border bg-muted px-3 py-4 text-center text-sm font-medium text-muted-foreground'>
+            No students yet. Click Add students below.
+          </p>
+        ) : (
+          group.members.map((m) => (
+            <GroupMemberRow
+              key={m.id}
+              member={m}
+              isStudent={isStudent}
+              onToggleLeader={() => onToggleLeader(m.memberId, m.role)}
+              onRemove={() => onRemoveMember(m.memberId)}
+              togglePending={togglePending}
+              removePending={removePending}
+            />
+          ))
+        )}
       </div>
 
       {!isStudent ? (
         <AddMemberControls
-          isAdding={adding}
-          candidates={candidates}
-          pickMember={pickMember}
-          onPickMember={onPickMember}
-          onConfirm={onAddConfirm}
-          onCancel={onAddCancel}
           onStart={onStartAdd}
-          confirmPending={addPending}
+          disabled={candidates.length === 0}
+          availableCount={candidates.length}
         />
       ) : null}
-    </div>
+    </article>
   );
 }

@@ -1,5 +1,6 @@
 import { buildApiUrl } from '@/lib/api-config';
 import { ensureCsrfToken } from '@/lib/api-client';
+import { syncServerTimeFromResponse } from '@/lib/server-clock';
 
 export type UploadFetchOptions = Omit<RequestInit, 'body' | 'method'> & {
   method?: 'POST' | 'PUT' | 'PATCH';
@@ -18,13 +19,15 @@ export async function uploadWithAuth(
   const headers = new Headers(options.headers);
   if (csrf) headers.set('X-CSRF-Token', csrf);
 
-  return fetch(buildApiUrl(endpoint), {
+  const res = await fetch(buildApiUrl(endpoint), {
     ...options,
     method: options.method ?? 'POST',
     credentials: 'include',
     headers,
     body: formData,
   });
+  syncServerTimeFromResponse(res);
+  return res;
 }
 
 /** Parse JSON from an upload response or throw a readable error. */

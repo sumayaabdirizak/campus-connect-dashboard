@@ -51,7 +51,10 @@ export function AttemptGrader({
           </p>
         </div>
         <div className='shrink-0 text-right'>
-          <p className='text-2xl font-bold tabular-nums'>{Math.round(g.liveScore)}%</p>
+          <p className='text-2xl font-bold tabular-nums'>
+            {Math.round(g.earnedPoints)}/{Math.round(g.totalPoints)}
+          </p>
+          <p className='text-[11px] text-muted-foreground'>marks · {Math.round(g.liveScore)}%</p>
         </div>
       </div>
 

@@ -1,7 +1,6 @@
 'use client';
 
-import { Search, Download } from 'lucide-react';
-import { Input } from '@/features/ui/components/input';
+import { Download } from 'lucide-react';
 import { Button } from '@/features/ui/components/button';
 import { cn } from '@/lib/utils';
 import type { Gradebook } from '@/lib/course-details/services/gradebook-types';
@@ -10,8 +9,6 @@ import type { GradeFilter } from './gradebook-math';
 
 interface GradebookToolbarProps {
   data: Gradebook;
-  search: string;
-  setSearch: (v: string) => void;
   filter: GradeFilter;
   setFilter: (v: GradeFilter) => void;
   needsGradingCount: number;
@@ -19,8 +16,6 @@ interface GradebookToolbarProps {
 
 export function GradebookToolbar({
   data,
-  search,
-  setSearch,
   filter,
   setFilter,
   needsGradingCount
@@ -52,19 +47,6 @@ export function GradebookToolbar({
             ) : null}
           </button>
         ))}
-      </div>
-      <div className='relative min-w-[160px] flex-1 max-w-xs'>
-        <Search
-          className='pointer-events-none absolute left-2.5 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground'
-          aria-hidden
-        />
-        <Input
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          placeholder='Search students…'
-          className='h-8 border-0 bg-transparent pl-8 shadow-none focus-visible:ring-0'
-          aria-label='Search students'
-        />
       </div>
       <Button
         variant='ghost'

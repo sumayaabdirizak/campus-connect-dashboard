@@ -56,11 +56,16 @@ export async function GET(request: NextRequest) {
   }
 
   const isBackendOrigin = targetUrl.origin === API_ORIGIN;
+  const isSameOrigin = targetUrl.origin === request.nextUrl.origin;
   // Same-origin Next rewrite: /uploads/* → backend (auth cookies must go to API origin).
-  const isAppUpload =
-    targetUrl.origin === request.nextUrl.origin &&
-    targetUrl.pathname.startsWith('/uploads/');
-  const isPrivateBackendAsset = isBackendOrigin || isAppUpload;
+  const isAppUpload = isSameOrigin && targetUrl.pathname.startsWith('/uploads/');
+  // Uploaded resources are served through /api/download/:id, which
+  // next.config rewrites to /api/resources/:id/download — a different shape,
+  // not a passthrough. Left unrecognised it skipped cookie forwarding and the
+  // backend answered 401. Fetching it on the app origin lets that rewrite do
+  // the path translation, so the mapping lives in one place.
+  const isAppDownload = isSameOrigin && targetUrl.pathname.startsWith('/api/download/');
+  const isPrivateBackendAsset = isBackendOrigin || isAppUpload || isAppDownload;
 
   // ── 2. Auth check for backend / gated upload URLs ─────────────────────────
   if (isPrivateBackendAsset && !request.cookies.get('auth_token')) {

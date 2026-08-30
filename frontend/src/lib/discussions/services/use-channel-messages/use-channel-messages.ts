@@ -10,18 +10,18 @@ import {
   INITIAL_STATE,
   isMainThreadMessage,
   mergeMessages,
+  asDiscussionId,
   type ChannelMessagesState,
 } from './message-list-helpers'
 import { useChannelOptimistic } from './use-channel-optimistic'
 import { useChannelSocketSync } from './use-channel-socket-sync'
 
 export function useChannelMessages(
-  channelId: number | null | undefined,
+  channelId: string | number | null | undefined,
   options: { limit?: number } = {}
 ) {
   const limit = options.limit ?? DEFAULT_LIMIT
-  const validId =
-    Number.isFinite(Number(channelId)) && Number(channelId) > 0 ? Number(channelId) : null
+  const validId = asDiscussionId(channelId)
 
   useChannelRoom(validId)
   const reconnectGen = useReconnectGeneration()
@@ -41,7 +41,7 @@ export function useChannelMessages(
     let cancelled = false
     void (async () => {
       try {
-        const page = await listChannelMessages(String(validId), { limit })
+        const page = await listChannelMessages(validId, { limit })
         if (cancelled || requestSeqRef.current !== seq) return
         const main = (page.results ?? []).filter(isMainThreadMessage)
         setState({
@@ -80,17 +80,18 @@ export function useChannelMessages(
 
     const seq = requestSeqRef.current
     try {
-      const cursor = stateRef.current.nextCursor
-      const page = await listChannelMessages(String(validId), { limit, cursor })
+      const page = await listChannelMessages(validId, {
+        limit,
+        cursor: stateRef.current.nextCursor ?? undefined,
+      })
       if (requestSeqRef.current !== seq) return
-      const older = (page.results ?? []).filter(isMainThreadMessage)
+      const main = (page.results ?? []).filter(isMainThreadMessage)
       setState((s) => ({
         ...s,
-        messages: mergeMessages(s.messages, older),
+        messages: mergeMessages(s.messages, main),
         nextCursor: page.nextCursor ?? null,
         hasMore: Boolean(page.hasMore),
         isLoadingOlder: false,
-        error: null,
       }))
     } catch (e) {
       if (requestSeqRef.current !== seq) return

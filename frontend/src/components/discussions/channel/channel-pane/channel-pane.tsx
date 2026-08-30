@@ -40,7 +40,6 @@ export function ChannelPane({ channelId }: { channelId: string | null }) {
 
   const { data: channelData, isLoading } = useChannel(channelId)
   const channel = channelData?.channel ?? null
-  const numericChannelId = channelId != null ? Number(channelId) : null
   const serverId = channel?.serverId ?? null
   const { data: serverData } = useServer(serverId)
   useDiscussionServerRoom(serverId)
@@ -53,8 +52,8 @@ export function ChannelPane({ channelId }: { channelId: string | null }) {
     [pinsData]
   )
 
-  const messagesStore = useChannelMessages(numericChannelId)
-  const typers = useChannelTyping(numericChannelId, myUserId ?? null)
+  const messagesStore = useChannelMessages(channelId)
+  const typers = useChannelTyping(channelId, myUserId ?? null)
 
   const {
     highlightedId,

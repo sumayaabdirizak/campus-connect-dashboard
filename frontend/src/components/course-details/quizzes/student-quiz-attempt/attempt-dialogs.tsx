@@ -23,6 +23,7 @@ export function AttemptDialogs(props: {
   totalQuestions: number;
   answers: Record<number, QuizAttemptAnswer>;
   questions: { id: number }[];
+  currentIdx: number;
   onNavigate: (idx: number) => void;
   onConfirmSubmit: () => void;
   activeWarning: { kind: string; index: number } | null;
@@ -48,6 +49,7 @@ export function AttemptDialogs(props: {
         totalQuestions={p.totalQuestions}
         answers={p.answers}
         questions={p.questions}
+        currentIdx={p.currentIdx}
         onNavigate={p.onNavigate}
         onConfirm={p.onConfirmSubmit}
       />

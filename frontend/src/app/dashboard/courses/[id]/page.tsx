@@ -24,16 +24,15 @@ export default function CourseDetailPage() {
     tabPanelRef,
     tabBadges,
     handleTabChange,
-    reviewItems
   } = useCourseDetailPage(offeringId);
 
   if (isLoading) {
     return (
       <div className='flex w-full flex-col gap-4'>
-        <Skeleton className='h-44 w-full rounded-xl border border-[#E5E7EB]' />
+        <Skeleton className='h-44 w-full rounded-xl border border-border' />
         <div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
-          <Skeleton className='h-40 rounded-xl border border-[#E5E7EB]' />
-          <Skeleton className='h-40 rounded-xl border border-[#E5E7EB] lg:col-span-2' />
+          <Skeleton className='h-40 rounded-xl border border-border' />
+          <Skeleton className='h-40 rounded-xl border border-border lg:col-span-2' />
         </div>
       </div>
     );
@@ -57,7 +56,7 @@ export default function CourseDetailPage() {
         isStudent={isStudent}
         offeringId={offeringId}
         compact={headerCompact}
-        onExpand={() => setHeaderCompact(false)}
+        onCompactChange={setHeaderCompact}
       />
 
       <div
@@ -66,7 +65,7 @@ export default function CourseDetailPage() {
         id={`course-panel-${activeTab}`}
         role='tabpanel'
         aria-labelledby={`course-tab-${activeTab}`}
-        className='mt-4 h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto [overflow-anchor:none] sm:mt-5'
+        className='mt-5 h-0 min-h-0 flex-1 overflow-x-hidden overflow-y-auto [overflow-anchor:none] sm:mt-6'
       >
         {data && (
           <CourseTabPanelContent
@@ -74,7 +73,6 @@ export default function CourseDetailPage() {
             offeringId={offeringId}
             isStudent={isStudent}
             data={data as any}
-            reviewItems={reviewItems}
             onTabChange={handleTabChange}
           />
         )}

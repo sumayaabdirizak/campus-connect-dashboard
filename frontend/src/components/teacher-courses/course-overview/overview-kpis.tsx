@@ -23,15 +23,15 @@ const TILES: {
     tab: 'assignments',
     icon: AlertCircle,
     tone: 'bg-[#FFF7ED]',
-    iconTone: 'bg-white text-[#C2410C]',
+    iconTone: 'bg-card text-[#C2410C]',
   },
   {
     key: 'assignments',
     label: 'Assignments',
     tab: 'assignments',
     icon: FileText,
-    tone: 'bg-[#EFF6FF]',
-    iconTone: 'bg-white text-[#3B82F6]',
+    tone: 'bg-primary/10',
+    iconTone: 'bg-card text-primary',
   },
   {
     key: 'quizzes',
@@ -39,15 +39,15 @@ const TILES: {
     tab: 'quizzes',
     icon: ClipboardCheck,
     tone: 'bg-[#F0FDF4]',
-    iconTone: 'bg-white text-[#16A34A]',
+    iconTone: 'bg-card text-[#16A34A]',
   },
   {
     key: 'resources',
     label: 'Resources',
     tab: 'resources',
     icon: FolderOpen,
-    tone: 'bg-[#F8FAFC]',
-    iconTone: 'bg-white text-[#475467]',
+    tone: 'bg-muted',
+    iconTone: 'bg-card text-muted-foreground',
   },
 ];
 
@@ -87,14 +87,14 @@ export function OverviewKpis({
           >
             <span
               className={cn(
-                'mb-3 flex size-10 items-center justify-center rounded-lg shadow-sm',
+                'mb-3 flex size-10 items-center justify-center rounded-lg',
                 tile.iconTone
               )}
             >
               <Icon className='size-5' />
             </span>
-            <p className='text-sm text-[#667085]'>{tile.label}</p>
-            <p className='mt-1 text-2xl font-bold tabular-nums text-[#101828]'>
+            <p className='text-sm text-muted-foreground'>{tile.label}</p>
+            <p className='mt-1 text-2xl font-bold tabular-nums text-foreground'>
               {values[tile.key]}
             </p>
           </button>

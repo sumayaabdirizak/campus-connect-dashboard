@@ -26,7 +26,7 @@ export function DmMessageHoverToolbar({
       data-message-toolbar
       className={cn(
         // Overlay top of bubble (no gap) so hover never drops before click.
-        'absolute -top-8 z-20 flex items-center gap-0.5 rounded-lg border border-[#E5E7EB] bg-white p-0.5 shadow-md',
+        'absolute -top-8 z-20 flex items-center gap-0.5 rounded-lg border border-border bg-card p-0.5 shadow-md',
         'opacity-0 pointer-events-none transition-opacity duration-100',
         isAuthor ? 'right-0' : 'left-0',
         'group-hover/row:pointer-events-auto group-hover/row:opacity-100',
@@ -41,7 +41,7 @@ export function DmMessageHoverToolbar({
           type='button'
           variant='ghost'
           size='icon'
-          className='h-7 w-7 text-base hover:bg-[#F2F4F7]'
+          className='h-7 w-7 text-base hover:bg-muted'
           onClick={() => onReact(emoji)}
           aria-label={`React with ${emoji}`}
         >
@@ -53,7 +53,7 @@ export function DmMessageHoverToolbar({
           type='button'
           variant='ghost'
           size='icon'
-          className='h-7 w-7 hover:bg-[#F2F4F7]'
+          className='h-7 w-7 hover:bg-muted'
           onClick={(e) => {
             e.stopPropagation()
             onReply()
@@ -68,7 +68,7 @@ export function DmMessageHoverToolbar({
           type='button'
           variant='ghost'
           size='icon'
-          className='h-7 w-7 hover:bg-[#F2F4F7]'
+          className='h-7 w-7 hover:bg-muted'
           onClick={(e) => {
             e.stopPropagation()
             onEdit()

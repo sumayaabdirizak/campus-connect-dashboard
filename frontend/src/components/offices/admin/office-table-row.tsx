@@ -22,7 +22,7 @@ export function OfficeTableRow({
     <PosTableRow>
       {col('id') ? (
         <PosTableCell>
-          <span className='font-medium text-[#3B82F6]'>#{office.id}</span>
+          <span className='font-medium text-primary'>#{office.id}</span>
         </PosTableCell>
       ) : null}
       {col('name') ? (

@@ -21,7 +21,6 @@ export function useCreateDialogFields(isDean: boolean) {
   const [activeDaysPreset, setActiveDaysPreset] = useState<ActiveDaysPreset>('off');
   const [expiresAtCustom, setExpiresAtCustom] = useState('');
   const [deadlineAtLocal, setDeadlineAtLocal] = useState('');
-  const [notifySms, setNotifySms] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [errors, setErrors] = useState<{ title?: string; content?: string }>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -56,8 +55,6 @@ export function useCreateDialogFields(isDean: boolean) {
     setExpiresAtCustom,
     deadlineAtLocal,
     setDeadlineAtLocal,
-    notifySms,
-    setNotifySms,
     formError,
     setFormError,
     errors,

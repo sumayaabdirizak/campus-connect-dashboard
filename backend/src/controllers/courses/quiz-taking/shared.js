@@ -64,11 +64,9 @@ export function stripAttemptAnswerKey(attempt) {
   };
 }
 
-/** Student-facing attempt payload: keys only after the cohort window ends. */
+/** Student-facing attempt payload — marks and auto-grade are visible after submit. */
 export function shapeStudentAttemptReview(attempt) {
-  const revealed = quizAnswerKeyReleased(attempt.quiz ?? {});
-  const payload = revealed ? attempt : stripAttemptAnswerKey(attempt);
-  return { ...payload, answers_revealed: revealed };
+  return { ...attempt, answers_revealed: true };
 }
 
 export const MAX_WARNINGS = 3;

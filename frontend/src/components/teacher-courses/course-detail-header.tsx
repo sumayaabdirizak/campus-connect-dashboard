@@ -5,9 +5,7 @@ import { cn } from '@/lib/utils';
 import {
   Sheet,
   SheetContent,
-  SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from '@/features/ui/components/sheet';
 import { CourseCoverDialog } from './course-cover-dialog';
 import { CourseTabNav } from '@/components/course-details/_shared/course-tab-nav';
@@ -31,8 +29,9 @@ export interface CourseDetailHeaderProps {
   tabBadges?: Partial<Record<CourseTabId, number>>;
   isStudent?: boolean;
   offeringId?: string;
+  /** When true, show the compact header bar. Defaults to collapsed. */
   compact?: boolean;
-  onExpand?: () => void;
+  onCompactChange?: (compact: boolean) => void;
 }
 
 export function CourseDetailHeader({
@@ -45,24 +44,32 @@ export function CourseDetailHeader({
   tabBadges,
   isStudent,
   offeringId,
-  compact = false,
-  onExpand,
+  compact = true,
+  onCompactChange,
 }: CourseDetailHeaderProps) {
   const [coverOpen, setCoverOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
-  const [isCollapsed, setIsCollapsed] = useState(compact);
+  const [internalCompact, setInternalCompact] = useState(compact);
   const canEditCover = !isStudent && Boolean(offeringId);
   const coverUrl = course.thumbnail ?? null;
 
-  const showCompact = isCollapsed || compact;
-  const handleToggleCollapse = () => setIsCollapsed((prev) => !prev);
+  const isControlled = onCompactChange != null;
+  const showCompact = isControlled ? compact : internalCompact;
+
+  const setCompact = (next: boolean) => {
+    if (isControlled) onCompactChange(next);
+    else setInternalCompact(next);
+  };
+
+  const handleToggleCollapse = () => setCompact(!showCompact);
+  const handleExpand = () => setCompact(false);
 
   return (
     <>
       <header
         data-course-header
         className={cn(
-          'z-10 w-full min-w-0 max-w-full shrink-0 overflow-hidden rounded-xl border border-[#E5E7EB] bg-white transition-all',
+          'z-10 w-full min-w-0 max-w-full shrink-0 overflow-hidden rounded-xl border border-border bg-card transition-all',
           showCompact && 'shadow-sm'
         )}
       >
@@ -70,7 +77,7 @@ export function CourseDetailHeader({
           <CourseHeaderCompact
             course={course}
             canEditCover={canEditCover}
-            onExpand={onExpand ?? handleToggleCollapse}
+            onExpand={handleExpand}
             onOpenChat={() => setChatOpen(true)}
             onOpenCover={() => setCoverOpen(true)}
             isCollapsed={true}
@@ -91,7 +98,12 @@ export function CourseDetailHeader({
           />
         )}
 
-        <div className={cn('min-w-0 px-4 sm:px-5', compact ? 'pt-1' : 'border-t border-[#E5E7EB]')}>
+        <div
+          className={cn(
+            'min-w-0 px-4 sm:px-5',
+            showCompact ? 'pt-2' : 'border-t border-border'
+          )}
+        >
           <CourseTabNav
             tabs={tabs}
             activeTab={activeTab}
@@ -104,19 +116,19 @@ export function CourseDetailHeader({
       <Sheet open={chatOpen} onOpenChange={setChatOpen}>
         <SheetContent
           side='right'
-          className='flex w-full flex-col gap-0 border-l border-[#E5E7EB] bg-white p-0 sm:max-w-lg'
+          className='flex w-full flex-col gap-0 border-l border-border bg-card p-0 sm:max-w-lg'
         >
-          <SheetHeader className='shrink-0 space-y-1 border-b border-[#E5E7EB] px-4 py-4 text-left'>
-            <SheetTitle className='text-base font-semibold tracking-tight text-[#101828]'>
-              Course chat
-            </SheetTitle>
-            <SheetDescription className='text-sm text-[#667085]'>
-              Real-time discussion for {course.code}
-            </SheetDescription>
-          </SheetHeader>
-          <div className='min-h-0 flex-1 overflow-hidden'>
+          <SheetTitle className='sr-only'>
+            {course.code} course chat
+          </SheetTitle>
+          <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
             {offeringId ? (
-              <CourseChat courseId={offeringId} isStudent={isStudent ?? false} />
+              <CourseChat
+                courseId={offeringId}
+                isStudent={isStudent ?? false}
+                courseCode={course.code}
+                variant='sheet'
+              />
             ) : null}
           </div>
         </SheetContent>

@@ -9,6 +9,7 @@ import {
   sendChannelMessage
 } from '@/lib/discussions/queries/service';
 import type { EditMessagePayload, SendMessagePayload } from '@/lib/discussions/queries/types';
+import { inboxKeys } from '@/lib/inbox/queries';
 
 export const useSendChannelMessage = (channelId: string) => {
   const qc = useQueryClient();
@@ -16,6 +17,7 @@ export const useSendChannelMessage = (channelId: string) => {
     mutationFn: (body: SendMessagePayload) => sendChannelMessage(channelId, body),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: discussionKeys.channel(channelId) });
+      qc.invalidateQueries({ queryKey: inboxKeys.all });
     },
     onError: (error: Error) => {
       toast.error('Failed to send message', { description: error.message });

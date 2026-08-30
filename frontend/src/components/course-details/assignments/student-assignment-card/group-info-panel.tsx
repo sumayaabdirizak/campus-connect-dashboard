@@ -13,32 +13,22 @@ export function GroupInfoPanel({
 }) {
   if (groupInfo) {
     return (
-      <div className='mt-3 border rounded-md bg-muted/20 px-3 py-2'>
-        <div className='flex items-center gap-1.5 mb-1.5'>
-          <Users className='w-3.5 h-3.5 text-muted-foreground' />
-          <p className='text-xs font-medium'>{groupInfo.groupName}</p>
+      <div className='space-y-1'>
+        <div className='flex items-center gap-1.5'>
+          <Users className='size-4 text-primary' />
+          <p className='text-sm text-foreground'>{groupInfo.groupName}</p>
           {isLeader ? (
-            <Badge
-              variant='outline'
-              className='text-[10px] gap-0.5 text-amber-600 border-amber-300'
-            >
-              <Crown className='w-2.5 h-2.5' /> You are the leader
+            <Badge className='gap-0.5 border-transparent bg-warning text-white' size='xs'>
+              <Crown className='w-2.5 h-2.5' /> Leader
             </Badge>
           ) : null}
         </div>
-        <div className='flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-muted-foreground'>
-          {groupInfo.members.map((m) => (
-            <span key={m.id} className='inline-flex items-center gap-0.5'>
-              {m.role === 'LEADER' ? (
-                <Crown className='w-2.5 h-2.5 text-amber-500' />
-              ) : null}
-              {m.name}
-            </span>
-          ))}
-        </div>
+        <p className='text-sm text-foreground'>
+          {groupInfo.members.map((m) => m.name).join(', ')}
+        </p>
         {!isLeader ? (
-          <p className='text-[11px] text-muted-foreground mt-1.5'>
-            Your group leader will submit on behalf of the group.
+          <p className='text-sm text-warning'>
+            Only the group leader can turn this in
           </p>
         ) : null}
       </div>
@@ -46,10 +36,8 @@ export function GroupInfoPanel({
   }
 
   return (
-    <div className='mt-3 border rounded-md bg-destructive/5 px-3 py-2'>
-      <p className='text-xs text-destructive'>
-        You are not assigned to any group. Ask your teacher to add you to a group.
-      </p>
-    </div>
+    <p className='text-sm text-destructive'>
+      You are not in a group yet. Ask your teacher to add you.
+    </p>
   );
 }

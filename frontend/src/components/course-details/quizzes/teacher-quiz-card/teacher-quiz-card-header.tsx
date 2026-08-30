@@ -44,7 +44,9 @@ export function TeacherQuizCardHeader({
           <span className='shrink-0 grid place-items-center w-7 h-7 rounded-lg bg-accent text-accent-foreground'>
             <ClipboardList className='w-3.5 h-3.5' />
           </span>
-          <p className='font-medium truncate select-none'>{q.title}</p>
+          <p className='truncate text-sm font-semibold tracking-tight text-foreground font-display select-none'>
+            {q.title}
+          </p>
           {q.is_draft ? (
             <Badge variant='secondary' size='xs' className='rounded-full'>
               Draft
@@ -78,7 +80,7 @@ export function TeacherQuizCardHeader({
           )}
         </div>
         <p className='text-xs text-muted-foreground mt-1 tabular-nums'>
-          {q.duration_minutes} min · pass ≥ {q.passing_score}%
+          {q.duration_minutes} min
           {q.max_attempts > 1 && (
             <>
               {' · '}

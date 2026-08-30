@@ -71,7 +71,7 @@ export function AcademicYearToolsMenu() {
             type='button'
             variant='outline'
             size='icon'
-            className='size-9 rounded-full bg-card shadow-sm'
+            className='size-9 rounded-full bg-card'
             aria-label='Year tools'
           >
             <Wrench className='size-4' />

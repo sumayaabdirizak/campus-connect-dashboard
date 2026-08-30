@@ -54,7 +54,7 @@ export function DashboardKpiStrip({ items, loading }: Props) {
         {Array.from({ length: 6 }).map((_, i) => (
           <div
             key={i}
-            className='space-y-3 rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm'
+            className='space-y-3 rounded-xl border border-border bg-card p-4'
           >
             <Skeleton className='size-10 rounded-lg' />
             <Skeleton className='h-7 w-16' />
@@ -75,10 +75,10 @@ export function DashboardKpiStrip({ items, loading }: Props) {
             initial={reduce ? false : { opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: i * 0.04, ease: [0.22, 1, 0.36, 1] }}
-            className='rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm'
+            className='rounded-xl border border-border bg-card p-4'
           >
             <div className='flex items-start justify-between gap-2'>
-              <span className='flex size-10 items-center justify-center rounded-lg bg-[#EFF6FF] text-[#3B82F6]'>
+              <span className='flex size-10 items-center justify-center rounded-lg bg-primary/10 text-primary'>
                 <Icon className='size-5' aria-hidden />
               </span>
               {item.trend != null && item.trend !== 0 ? (
@@ -99,11 +99,11 @@ export function DashboardKpiStrip({ items, loading }: Props) {
                 </span>
               ) : null}
             </div>
-            <p className='mt-3 text-2xl font-bold tracking-tight text-[#101828] tabular-nums'>
+            <p className='mt-3 text-2xl font-bold tracking-tight text-foreground tabular-nums'>
               {item.value}
             </p>
-            <p className='mt-0.5 text-sm font-medium text-[#344054]'>{item.label}</p>
-            <p className='mt-1 text-[11px] text-[#98A2B3]'>{item.hint ?? 'Platform'}</p>
+            <p className='mt-0.5 text-sm font-medium text-foreground'>{item.label}</p>
+            <p className='mt-1 text-[11px] text-muted-foreground'>{item.hint ?? 'Platform'}</p>
           </motion.div>
         )
       })}

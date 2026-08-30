@@ -54,20 +54,20 @@ export function ViewMembersDialog({
             return (
               <div
                 key={m.userId}
-                className='flex items-center gap-3 px-6 py-3 hover:bg-[#F8FAFC]'
+                className='flex items-center gap-3 px-6 py-3 hover:bg-muted'
               >
                 <Avatar className='size-9 shrink-0'>
                   {src ? <AvatarImage src={src} alt={name} /> : null}
-                  <AvatarFallback className='bg-[#EFF6FF] text-xs font-semibold text-[#3B82F6]'>
+                  <AvatarFallback className='bg-primary/10 text-xs font-semibold text-primary'>
                     {initialsFor(name)}
                   </AvatarFallback>
                 </Avatar>
                 <div className='min-w-0 flex-1'>
-                  <p className='truncate text-sm font-medium text-[#101828]'>
+                  <p className='truncate text-sm font-medium text-foreground'>
                     {name}
                     {m.userId === myUserId ? ' (You)' : ''}
                   </p>
-                  <p className='text-xs text-[#667085]'>
+                  <p className='text-xs text-muted-foreground'>
                     {m.role === 'OWNER' ? 'Owner' : 'Member'}
                     {m.canPost === false ? ' · Can’t send messages' : ''}
                   </p>
@@ -87,7 +87,7 @@ export function ViewMembersDialog({
                     type='button'
                     variant='ghost'
                     size='icon'
-                    className='size-8 shrink-0 text-[#667085] hover:text-destructive'
+                    className='size-8 shrink-0 text-muted-foreground hover:text-destructive'
                     aria-label={`Remove ${name}`}
                     disabled={removeMember.isPending}
                     onClick={() => removeMember.mutate(m.userId)}

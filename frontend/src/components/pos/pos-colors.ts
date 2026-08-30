@@ -1,14 +1,21 @@
-/** Shared Batches/Sections table palette (matches list UI). */
+/**
+ * Shared Batches/Sections table palette (matches list UI).
+ *
+ * These are applied as inline `style` values, which no `dark:` class variant
+ * can reach — so they were hardcoded light hexes that rendered #101828 body
+ * text on the near-black dark background, i.e. invisible. Pointing them at the
+ * theme variables lets inline styles resolve per theme like everything else.
+ */
 export const posTableColors = {
-  primary: '#3B82F6',
-  primaryHover: '#2563EB',
-  primaryMuted: '#93C5FD',
-  heading: '#101828',
-  text: '#4A5568',
-  muted: '#8E99A7',
-  border: '#E5E7EB',
-  rowBorder: '#F1F5F9',
-  headerBg: '#F8FAFC',
-  hover: '#F9FAFB',
-  white: '#FFFFFF'
+  primary: 'var(--primary)',
+  primaryHover: 'var(--primary)',
+  primaryMuted: 'var(--primary)',
+  heading: 'var(--foreground)',
+  text: 'var(--muted-foreground)',
+  muted: 'var(--muted-foreground)',
+  border: 'var(--border)',
+  rowBorder: 'var(--border)',
+  headerBg: 'var(--muted)',
+  hover: 'var(--muted)',
+  white: 'var(--primary-foreground)'
 } as const;

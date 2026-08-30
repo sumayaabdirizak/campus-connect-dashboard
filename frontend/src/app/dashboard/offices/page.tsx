@@ -8,6 +8,7 @@ import { OfficeDirectory } from '@/components/offices/office-directory';
 import { OfficeInbox } from '@/components/offices/office-inbox';
 import { useOfficeMessageSocket } from '@/lib/offices/queries';
 import { messagesOfficeThreadHref } from '@/lib/inbox/services/messages-href';
+import { scheduleRouterReplace } from '@/lib/safe-router-navigation';
 
 /**
  * Office directory / staff inbox. Conversation threads open in Messages
@@ -21,13 +22,13 @@ export default function OfficesPage() {
 
   useEffect(() => {
     if (threadId != null && threadId > 0) {
-      router.replace(messagesOfficeThreadHref(threadId));
+      scheduleRouterReplace(router, messagesOfficeThreadHref(threadId));
     }
   }, [threadId, router]);
 
   if (threadId != null && threadId > 0) {
     return (
-      <div className='flex flex-1 items-center justify-center text-sm text-[#667085]'>
+      <div className='flex flex-1 items-center justify-center text-sm text-muted-foreground'>
         Opening chat…
       </div>
     );

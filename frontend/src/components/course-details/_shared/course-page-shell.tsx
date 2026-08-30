@@ -30,7 +30,7 @@ export function CoursePageShell({
   return (
     <section
       className={cn(
-        'rounded-xl border border-border/60 bg-card shadow-sm',
+        'rounded-xl border border-border/60 bg-card',
         !flush && 'overflow-hidden',
         className
       )}

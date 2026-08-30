@@ -16,7 +16,9 @@ export function downloadGradeCsv(args: {
   const { assignment, rows, extensions } = args;
   const header = ['Name', 'Student ID', 'Email', 'Submitted At', 'Status', 'Grade (%)', 'Feedback'];
   const body = rows.map(({ student, submission: sub }) => {
-    const status = sub ? statusOf(assignment, sub, extensions) : 'missing';
+    const status = statusOf(assignment, sub ?? undefined, extensions, {
+      studentId: student.id
+    });
     return [
       student.full_name,
       student.number,

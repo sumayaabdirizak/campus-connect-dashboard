@@ -39,8 +39,8 @@ export function CourseHeaderBanner({
   const initials = (course.code || course.name || 'C').slice(0, 2).toUpperCase();
 
   return (
-    <div className='flex flex-col gap-4 p-4 sm:flex-row sm:items-stretch sm:gap-5 sm:p-5'>
-      <div className='relative h-36 w-full shrink-0 overflow-hidden rounded-lg bg-[#EFF6FF] sm:h-auto sm:w-44 md:w-52'>
+    <div className='flex flex-col gap-5 p-5 sm:flex-row sm:items-stretch sm:gap-6 sm:p-6'>
+      <div className='relative h-36 w-full shrink-0 overflow-hidden rounded-lg bg-primary/10 sm:h-auto sm:w-44 md:w-52'>
         {resolved ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
@@ -50,12 +50,12 @@ export function CourseHeaderBanner({
           />
         ) : (
           <div className='flex h-full min-h-36 w-full items-center justify-center sm:min-h-0'>
-            <span className='text-3xl font-bold tracking-tight text-[#3B82F6]'>
+            <span className='text-3xl font-bold tracking-tight text-primary'>
               {initials}
             </span>
           </div>
         )}
-        <span className='absolute top-3 left-3 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-[#101828] shadow-sm'>
+        <span className='absolute top-3 left-3 rounded-md bg-white/95 px-2 py-0.5 text-[11px] font-semibold text-foreground'>
           {course.code}
         </span>
       </div>
@@ -64,12 +64,12 @@ export function CourseHeaderBanner({
         <div className='flex min-w-0 items-start justify-between gap-3'>
           <Link
             href='/dashboard/courses'
-            className='inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-[#667085] transition-colors hover:text-[#3B82F6]'
+            className='inline-flex shrink-0 items-center gap-1.5 text-xs font-medium text-muted-foreground transition-colors hover:text-primary'
           >
             <ArrowLeft className='size-3.5' aria-hidden />
             My Courses
           </Link>
-          <div className='flex shrink-0 items-center gap-1'>
+          <div className='flex shrink-0 items-center gap-2.5'>
             <CourseHeaderActions
               compact={false}
               canEditCover={canEditCover}
@@ -82,17 +82,17 @@ export function CourseHeaderBanner({
         </div>
 
         <div className='min-w-0'>
-          <h1 className='truncate text-2xl font-bold tracking-tight text-black sm:text-3xl'>
+          <h1 className='truncate text-2xl font-bold tracking-tight text-foreground sm:text-3xl'>
             {course.name}
           </h1>
           <p className='mt-1 truncate text-base text-[#1D2939]'>
             {course.department.name}
-            <span className='mx-1.5 text-[#98A2B3]' aria-hidden>
+            <span className='mx-1.5 text-muted-foreground' aria-hidden>
               ·
             </span>
             {batch.name} · {section.name}
           </p>
-          <p className='mt-2 text-sm font-semibold text-[#3B82F6]'>
+          <p className='mt-2 text-sm font-semibold text-primary'>
             {isStudent ? 'Student view' : 'Instructor view'}
           </p>
         </div>

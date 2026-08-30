@@ -20,10 +20,14 @@ export function attachSocketAuthRecovery(socket: Socket): () => void {
     if (recovering || !AUTH_ERROR_PATTERN.test(err.message)) return;
     recovering = true;
     void tryRefreshAccessToken()
-      .then((refreshed) => {
-        // A failed refresh means the session is genuinely over; api-client
-        // already redirects to sign-in, so don't reconnect into another 401.
-        if (refreshed) socket.connect();
+      .then((outcome) => {
+        // 'signed-out': api-client has already redirected — reconnecting would
+        // just handshake into another 401.
+        // 'unavailable': the refresh endpoint was unreachable, which says
+        // nothing about the session. Leave the socket down for now; the next
+        // connect_error (or any API call) retries, and crucially the user is
+        // not signed out over a blip.
+        if (outcome === 'refreshed') socket.connect();
       })
       .finally(() => {
         recovering = false;

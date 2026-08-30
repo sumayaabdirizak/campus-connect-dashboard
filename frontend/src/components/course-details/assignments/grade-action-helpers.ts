@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import type { Assignment, Submission } from '@/lib/course-details/services/assignments-types';
 import type { GroupRow } from './shared';
+import { validateExtensionDate } from './extension-date-utils';
 
 export type GradeMutateLike = {
   mutate: (...args: any[]) => void;
@@ -95,10 +96,7 @@ export function grantAnotherChance(opts: {
     extensionBatchMutation,
     setDrawerOpen
   } = opts;
-  if (!extensionDate) {
-    toast.error('Pick a new due date');
-    return;
-  }
+  if (!validateExtensionDate(extensionDate)) return;
   const newDueAt = new Date(extensionDate).toISOString();
   const reason = extensionReason || undefined;
   if (assignment.gradingScope === 'GROUP' && selectedSubmission.groupId != null) {

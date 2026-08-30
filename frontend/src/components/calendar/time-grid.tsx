@@ -134,7 +134,7 @@ export function TimeGrid({
                     type='button'
                     onClick={() => onOpen(item)}
                     title={`${itemLabel(item)} — ${fmtTime(item.startsAt, false)}`}
-                    className='absolute z-10 overflow-hidden rounded-md border-l-2 px-1.5 py-0.5 text-left text-[11px] leading-tight shadow-sm transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
+                    className='absolute z-10 overflow-hidden rounded-md border-l-2 px-1.5 py-0.5 text-left text-[11px] leading-tight transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
                     style={{
                       top,
                       height,

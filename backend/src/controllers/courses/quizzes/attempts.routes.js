@@ -36,7 +36,7 @@ export function register(router) {
     validateBody(createOfflineAttemptBodySchema),
     asyncHandler(async (req, res) => {
       const quiz = req.quiz;
-      const { studentId, marksEarned, absent } = req.body;
+      const { studentId, marksEarned, absent, cheat } = req.body;
 
       if (quiz.mode !== 'offline') {
         return res.status(400).json({
@@ -68,9 +68,14 @@ export function register(router) {
         return res.status(400).json({ message: 'Add at least one question before recording scores.' });
       }
 
-      // Absent/excused: no score at all, just a marker so the row stops
-      // showing up as "not recorded" — reuses the same `closure_reason`
-      // field online attempts use for their own non-completion reasons.
+      const emptyAnswers = {
+        create: questions.map((q) => ({
+          questionId: q.id,
+          question_type: q.question_type,
+        })),
+      };
+
+      // Absent: no score — row is recorded but gradebook ignores null scores.
       if (absent) {
         const attempt = await prisma.quizAttempt.create({
           data: {
@@ -79,12 +84,25 @@ export function register(router) {
             submitted_at: new Date(),
             is_graded: true,
             closure_reason: 'absent',
-            answers: {
-              create: questions.map((q) => ({
-                questionId: q.id,
-                question_type: q.question_type,
-              })),
-            },
+            answers: emptyAnswers,
+          },
+          include: ATTEMPT_INCLUDE,
+        });
+        return res.status(201).json(attempt);
+      }
+
+      // Cheat: zero marks with an explicit reason so teachers/students see it.
+      if (cheat) {
+        const attempt = await prisma.quizAttempt.create({
+          data: {
+            quizId: quiz.id,
+            studentId,
+            submitted_at: new Date(),
+            score: 0,
+            grade: 0,
+            is_graded: true,
+            closure_reason: 'cheat',
+            answers: emptyAnswers,
           },
           include: ATTEMPT_INCLUDE,
         });
@@ -107,12 +125,7 @@ export function register(router) {
           score,
           grade: score,
           is_graded: true,
-          answers: {
-            create: questions.map((q) => ({
-              questionId: q.id,
-              question_type: q.question_type,
-            })),
-          },
+          answers: emptyAnswers,
         },
         include: ATTEMPT_INCLUDE,
       });

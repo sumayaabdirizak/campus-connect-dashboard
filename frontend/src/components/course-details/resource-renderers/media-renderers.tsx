@@ -35,16 +35,20 @@ export function LinkRenderer({ url, title }: { url: string; title: string }) {
       href={url}
       target='_blank'
       rel='noreferrer'
-      className='flex items-center justify-between gap-3 p-3 border rounded-lg hover:bg-muted/30'
+      className='flex items-center justify-between gap-3 rounded-xl border-2 border-border bg-card p-4 hover:border-primary/30 hover:bg-primary/5'
     >
-      <div className='flex items-center gap-3 min-w-0'>
-        <LinkIcon className='w-5 h-5 text-muted-foreground shrink-0' />
+      <div className='flex min-w-0 items-center gap-3'>
+        <div className='flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10'>
+          <LinkIcon className='size-6 text-primary' />
+        </div>
         <div className='min-w-0'>
-          <p className='font-medium truncate'>{title}</p>
-          <p className='text-xs text-muted-foreground truncate'>{host}</p>
+          <p className='truncate text-base font-semibold text-foreground'>{title}</p>
+          <p className='truncate text-sm font-medium text-muted-foreground'>{host}</p>
         </div>
       </div>
-      <Badge variant='outline'>Link</Badge>
+      <Badge variant='outline' className='shrink-0 rounded-full border-border'>
+        Open link
+      </Badge>
     </a>
   );
 }

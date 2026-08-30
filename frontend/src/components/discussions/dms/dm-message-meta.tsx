@@ -15,7 +15,7 @@ export function DmMessageMeta({
   tickStatus?: 'seen' | 'sent' | null
 }) {
   return (
-    <span className='inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] leading-none text-[#98A2B3]'>
+    <span className='inline-flex shrink-0 items-center gap-1 whitespace-nowrap text-[11px] leading-none text-muted-foreground'>
       {message.editedAt ? <span>edited</span> : null}
       {isPending ? (
         <span className='inline-flex items-center gap-1'>
@@ -28,7 +28,7 @@ export function DmMessageMeta({
         <Icons.checks
           className={cn(
             'h-3.5 w-3.5',
-            tickStatus === 'seen' ? 'text-[#FF9F43]' : 'text-[#98A2B3]'
+            tickStatus === 'seen' ? 'text-[#FF9F43]' : 'text-muted-foreground'
           )}
           aria-label={tickStatus === 'seen' ? 'Seen' : 'Delivered'}
         />

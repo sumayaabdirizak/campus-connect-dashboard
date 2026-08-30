@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import type { Submission } from '@/lib/course-details/services/assignments-types';
 import type { CourseGroup } from '@/lib/course-details/services/groups-types';
-import { type GroupRow, type SubmissionRow } from './shared';
+import { isSubmissionGraded, type GroupRow, type SubmissionRow } from './shared';
 
 export type SubmissionSortKey = 'name' | 'submitted_at' | 'grade' | 'status';
 export type SubmissionFilter =
@@ -62,6 +62,41 @@ export function useSubmissionRowMaps(args: {
 }
 
 export {
+  filterAndSortGroupRows,
   filterAndSortStudentRows,
-  filterAndSortGroupRows
+  submissionStatusCounts
 } from './filter-sort-submission-rows';
+
+export function getBulkSelectionCounts(opts: {
+  isGroupMode: boolean;
+  selectedRows: Set<number>;
+  submissionsByStudent: Map<number, Submission>;
+  allGroupRows: GroupRow[];
+}) {
+  const { isGroupMode, selectedRows, submissionsByStudent, allGroupRows } = opts;
+  if (selectedRows.size === 0) {
+    return { gradeCount: 0, extendCount: 0 };
+  }
+
+  if (isGroupMode) {
+    const selectedGroups = allGroupRows.filter((g) => selectedRows.has(g.groupId));
+    const gradeCount = selectedGroups.filter(
+      (g) => g.submission != null && !isSubmissionGraded(g.submission)
+    ).length;
+    const extendCount = selectedGroups.filter(
+      (g) => g.submission == null || !isSubmissionGraded(g.submission)
+    ).length;
+    return { gradeCount, extendCount };
+  }
+
+  const studentIds = Array.from(selectedRows);
+  const gradeCount = studentIds.filter((id) => {
+    const sub = submissionsByStudent.get(id);
+    return sub != null && !isSubmissionGraded(sub);
+  }).length;
+  const extendCount = studentIds.filter((id) => {
+    const sub = submissionsByStudent.get(id);
+    return sub == null || !isSubmissionGraded(sub);
+  }).length;
+  return { gradeCount, extendCount };
+}

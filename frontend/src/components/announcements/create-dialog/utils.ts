@@ -46,7 +46,7 @@ export function computeExpiresIsoFromPreset(
   preset: ActiveDaysPreset,
   anchor?: Date,
 ): string | null {
-  if (preset === 'off') return null;
+  if (preset === 'off' || preset === 'custom') return null;
   const days = Number(preset);
   const base =
     anchor && !Number.isNaN(anchor.getTime()) ? new Date(anchor.getTime()) : new Date();
@@ -111,10 +111,25 @@ export function inferResumeStep(announcement: Announcement): 1 | 2 {
 
 export function segmentedClass(active: boolean) {
   return cn(
-    'flex-1 min-h-[44px] rounded-lg px-3 py-2 text-xs font-medium transition-all',
-    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
+    'flex-1 min-h-[44px] rounded-lg px-3 py-2.5 text-sm font-semibold transition-all',
+    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
     active
-      ? 'bg-background text-foreground shadow-sm ring-1 ring-border'
-      : 'text-muted-foreground hover:text-foreground',
+      ? 'bg-primary text-primary-foreground shadow-md ring-2 ring-primary/50'
+      : 'border-2 border-foreground/15 bg-background text-foreground hover:border-primary/45 hover:bg-muted/40',
   );
 }
+
+export const dialogFieldsetClass =
+  'space-y-3 rounded-xl border-2 border-foreground/10 bg-card p-4 shadow-sm';
+
+export const dialogLegendClass = 'text-base font-semibold text-foreground';
+
+export const dialogHintClass = 'text-sm leading-relaxed text-foreground/70';
+
+export const dialogInputClass =
+  'h-11 rounded-lg border-2 border-foreground/15 bg-background text-sm font-medium text-foreground shadow-sm placeholder:text-foreground/45 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30';
+
+export const dialogSegmentGroupClass =
+  'flex flex-wrap gap-2 rounded-lg border-2 border-foreground/10 bg-background p-2';
+
+export const dialogLabelClass = 'text-base font-semibold text-foreground';

@@ -23,8 +23,9 @@ export const useAnnouncements = (opts?: {
   return useQuery({
     queryKey: ['announcements', mode, audienceKey],
     queryFn: () => getAnnouncements(opts),
-    refetchInterval: 120_000,
-    staleTime: 60_000
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 };
 
@@ -33,8 +34,9 @@ export const useAnnouncementDraftsCount = (opts?: { enabled?: boolean }) => {
     queryKey: ['announcements', 'drafts-count'],
     queryFn: getAnnouncementDraftsCount,
     enabled: Boolean(opts?.enabled),
-    refetchInterval: 120_000,
-    staleTime: 30_000
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 };
 
@@ -42,8 +44,9 @@ export const useAnnouncementUnreadCount = () => {
   return useQuery({
     queryKey: ['announcements', 'unread-count'],
     queryFn: getAnnouncementUnreadCount,
-    refetchInterval: 120_000,
-    staleTime: 60_000
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 };
 

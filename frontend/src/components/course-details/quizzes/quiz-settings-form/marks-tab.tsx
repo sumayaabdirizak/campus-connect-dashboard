@@ -4,14 +4,21 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import type { QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
+import {
+  quizFormCheckboxClass,
+  quizFormFieldClass,
+  quizFormHintClass,
+  quizFormLabelClass,
+  quizFormRowClass
+} from '../new-quiz-page/field-styles';
 import type { FormState } from './form-state';
+import { questionTypesForMode } from '../quiz-question-types';
 
 const TYPE_META: Record<QuizQuestionType, string> = {
   MCQ: 'Multiple Choice',
   TRUE_FALSE: 'True / False',
   SHORT_ANSWER: 'Short Answer'
 };
-const TYPE_ORDER: QuizQuestionType[] = ['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'];
 
 interface MarksTabProps {
   form: FormState;
@@ -21,6 +28,9 @@ interface MarksTabProps {
   /// both read the same stale `form` snapshot and the second click would
   /// silently clobber the first's change instead of both applying.
   setForm: (next: FormState | ((prev: FormState) => FormState)) => void;
+  /// Skips the intro line — the create-quiz page carries the same
+  /// explanation on its section header, so showing both repeats it.
+  hideIntro?: boolean;
 }
 
 /// Optional marks-distribution plan: total marks, which question-type
@@ -29,7 +39,9 @@ interface MarksTabProps {
 /// back and render one section per selected type, each with its own
 /// type-locked "Add Question" button. Doesn't affect scoring or validation
 /// against actual question points.
-export function MarksTab({ form, setForm }: MarksTabProps) {
+export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
+  const typeOrder = questionTypesForMode(form.mode);
+
   const toggleType = (type: QuizQuestionType) => {
     setForm((prev) => {
       const has = prev.marksPlanTypes.includes(type);
@@ -56,42 +68,71 @@ export function MarksTab({ form, setForm }: MarksTabProps) {
     return Math.max(form.marksPlanTotal - otherAllocated, 0);
   };
 
-  const setAllocation = (type: QuizQuestionType, value: number) => {
-    const clamped = Math.min(Math.max(value, 0), maxFor(type));
-    setForm({
-      ...form,
-      marksPlanAllocations: { ...form.marksPlanAllocations, [type]: clamped }
+  const setAllocation = (type: QuizQuestionType, value: number, input?: HTMLInputElement) => {
+    setForm((prev) => {
+      const parsed = Math.max(0, value);
+      const otherAllocated = prev.marksPlanTypes.reduce(
+        (sum, t) => (t === type ? sum : sum + (prev.marksPlanAllocations[t] ?? 0)),
+        0
+      );
+      const nextTotal = Math.max(prev.marksPlanTotal, otherAllocated + parsed);
+      const clamped = Math.min(parsed, Math.max(nextTotal - otherAllocated, 0));
+      if (input) syncInput(input, clamped);
+      return {
+        ...prev,
+        marksPlanTotal: nextTotal,
+        marksPlanAllocations: { ...prev.marksPlanAllocations, [type]: clamped }
+      };
     });
+  };
+
+  /// Typing "5" into a field showing "0" leaves the DOM holding "05". The
+  /// parsed value is still 5, so React sees the same `value` prop as before
+  /// and skips the DOM write that would have normalised it — the field keeps
+  /// showing "05" until something else forces a re-render. Writing the
+  /// canonical string back onto the element closes that gap.
+  const syncInput = (el: HTMLInputElement, canonical: number) => {
+    if (el.value !== String(canonical)) el.value = String(canonical);
   };
 
   return (
     <div className='space-y-4 mt-4'>
-      <p className='text-xs text-muted-foreground'>
-        Optional — sketch out how marks split across question types. The Questions page will
-        show a section per type you pick here, each with its own "Add Question" button.
-      </p>
+      {hideIntro ? null : (
+        <p className={quizFormHintClass}>
+          Optional — decide how many marks each kind of question is worth. Pick any below and
+          you&apos;ll get a separate section for it when you add questions.
+        </p>
+      )}
 
       <div className='w-40'>
-        <Label className='text-xs font-medium'>Total Marks</Label>
+        <Label className={quizFormLabelClass}>Total marks</Label>
         <Input
           type='number'
           min={1}
           value={form.marksPlanTotal}
-          onChange={(e) =>
-            setForm({ ...form, marksPlanTotal: Math.max(1, parseInt(e.target.value, 10) || 1) })
-          }
-          className='mt-1.5 h-9 text-sm'
+          onChange={(e) => {
+            const next = Math.max(1, parseInt(e.target.value, 10) || 1);
+            syncInput(e.target, next);
+            setForm((prev) => ({ ...prev, marksPlanTotal: next }));
+          }}
+          className={`mt-1.5 ${quizFormFieldClass} max-w-[10rem]`}
         />
       </div>
 
       <div>
-        <Label className='text-xs font-medium mb-2 block'>Sections</Label>
-        <div className='flex flex-wrap gap-4'>
-          {TYPE_ORDER.map((type) => (
-            <label key={type} className='flex items-center gap-2 text-sm cursor-pointer'>
+        <Label className={`${quizFormLabelClass} mb-2 block`}>
+          Which kinds of question will this quiz have?
+        </Label>
+        <div className='flex flex-wrap gap-3'>
+          {typeOrder.map((type) => (
+            <label
+              key={type}
+              className='flex cursor-pointer items-center gap-2.5 rounded-full border border-border/90 bg-card px-4 py-2.5 text-sm text-foreground hover:border-primary/30 hover:bg-secondary/50'
+            >
               <Checkbox
                 checked={form.marksPlanTypes.includes(type)}
                 onCheckedChange={() => toggleType(type)}
+                className={quizFormCheckboxClass}
               />
               {TYPE_META[type]}
             </label>
@@ -102,26 +143,29 @@ export function MarksTab({ form, setForm }: MarksTabProps) {
       {form.marksPlanTypes.length > 0 && (
         <div className='space-y-3'>
           {form.marksPlanTypes.map((type) => (
-            <div key={type} className='flex items-center gap-4 rounded-lg border p-3'>
+            <div key={type} className={`flex items-center gap-4 ${quizFormRowClass}`}>
               <div className='w-32 shrink-0'>
-                <Label className='text-xs font-medium'>{TYPE_META[type]}</Label>
+                <Label className={quizFormLabelClass}>{TYPE_META[type]}</Label>
               </div>
               <div className='flex items-center gap-2'>
-                <span className='text-xs text-muted-foreground'>Marks</span>
+                <span className={quizFormHintClass}>Marks</span>
                 <Input
                   type='number'
                   min={0}
                   max={maxFor(type)}
                   value={form.marksPlanAllocations[type] ?? 0}
-                  onChange={(e) => setAllocation(type, parseInt(e.target.value, 10) || 0)}
-                  className='h-8 w-20 text-sm'
+                  onChange={(e) => {
+                    const parsed = parseInt(e.target.value, 10) || 0;
+                    setAllocation(type, parsed, e.target);
+                  }}
+                  className={`${quizFormFieldClass} h-10 w-24 px-3`}
                 />
               </div>
             </div>
           ))}
 
           <div
-            className={`rounded-lg border p-3 text-sm ${
+            className={`rounded-xl border p-3 text-sm ${
               remaining === 0
                 ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/30'
                 : 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30'
@@ -132,17 +176,21 @@ export function MarksTab({ form, setForm }: MarksTabProps) {
                 Total: <strong>{form.marksPlanTotal}</strong>
               </span>
               <span>
-                Allocated: <strong>{allocated}</strong>
+                Assigned: <strong>{allocated}</strong>
               </span>
               <span>
                 {remaining === 0 ? (
                   <span className='text-emerald-700 dark:text-emerald-400 font-medium'>
-                    ✓ Fully allocated
+                    ✓ All {form.marksPlanTotal} marks assigned
                   </span>
                 ) : remaining > 0 ? (
-                  <span className='text-amber-700 dark:text-amber-400'>{remaining} remaining</span>
+                  <span className='text-amber-700 dark:text-amber-400'>
+                    {remaining} still to assign
+                  </span>
                 ) : (
-                  <span className='text-amber-700 dark:text-amber-400'>Over by {-remaining}</span>
+                  <span className='text-amber-700 dark:text-amber-400'>
+                    {-remaining} too many assigned
+                  </span>
                 )}
               </span>
             </div>

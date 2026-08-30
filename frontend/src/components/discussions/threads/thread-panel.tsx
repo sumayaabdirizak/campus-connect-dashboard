@@ -37,9 +37,7 @@ export function ThreadPanel({
   // Joining the channel room here is redundant when the parent ChannelPane
   // also has this hook active (refcounted), but it keeps ThreadPanel
   // standalone if it's ever rendered without the main pane.
-  const numericChannelId = channelId != null ? Number(channelId) : null;
-  const numericThreadRootId = threadRootId != null ? Number(threadRootId) : null;
-  useChannelRoom(numericChannelId);
+  useChannelRoom(channelId);
 
   const {
     root,
@@ -51,7 +49,7 @@ export function ThreadPanel({
     addOptimisticReply,
     replaceOptimisticReply,
     removeOptimisticReply
-  } = useThreadMessages(numericChannelId, numericThreadRootId);
+  } = useThreadMessages(channelId, threadRootId);
 
   const { scrollRef, sentinelRef } = useThreadPanelScroll({
     threadRootId,
@@ -88,7 +86,7 @@ export function ThreadPanel({
 
       <div
         ref={scrollRef}
-        className='relative min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto bg-white py-1.5'
+        className='relative min-h-0 min-w-0 flex-1 overflow-x-clip overflow-y-auto bg-card py-1.5'
       >
         {isLoading && !root ? (
           <div className='space-y-4 px-3 py-4'>

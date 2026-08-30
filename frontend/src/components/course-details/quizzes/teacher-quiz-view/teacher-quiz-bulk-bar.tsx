@@ -26,7 +26,7 @@ export function TeacherQuizBulkBar({
 
   return (
     <div className='sticky top-0 z-10 -mx-1 px-1 pb-2 pt-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/70'>
-      <div className='border rounded-xl p-2.5 shadow-sm bg-card flex items-center justify-between gap-3 flex-wrap'>
+      <div className='border rounded-xl p-2.5 bg-card flex items-center justify-between gap-3 flex-wrap'>
         <div className='flex items-center gap-3 min-w-0'>
           <Button variant='ghost' size='sm' onClick={onToggleSelectAll} className='gap-1'>
             {allSelected ? (

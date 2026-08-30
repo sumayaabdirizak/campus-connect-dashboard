@@ -1,37 +1,40 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import {
   ArrowLeft,
-  ClipboardList,
-  FileUp,
-  ListChecks,
-  Settings2,
-  SlidersHorizontal,
-  Sparkles,
-  X
+  Calendar,
+  ClipboardCheck,
+  FileText,
+  Sparkles
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import type { AiSectionPlanItem } from '../ai-generate-dialog/section-plan';
+import {
+  quizFormCardClass,
+  quizFormOutlineBtnClass,
+  quizFormPrimaryBtnClass
+} from './field-styles';
 import { DraftQuestionEditor } from '../quiz-builder/draft-question-editor';
-import type { QuizQuestionType } from '../quiz-builder/types';
+import { questionTypesForMode } from '../quiz-question-types';
 import { BasicsTab } from '../quiz-settings-form/basics-tab';
 import { BehaviorTab } from '../quiz-settings-form/behavior-tab';
-import { DurationField } from '../quiz-settings-form/duration-field';
+import {
+  isQuizConfigReady,
+  quizConfigReadyMessage,
+  type QuizSettingsTab
+} from '../quiz-settings-form/form-state';
 import { MarksTab } from '../quiz-settings-form/marks-tab';
 import { ScheduleTab } from '../quiz-settings-form/schedule-tab';
 import { InlineAiGenerate } from './inline-ai-generate';
-import { LocalCsvImportDialog } from './local-csv-import-dialog';
 import { LocalQuestionList } from './local-question-list';
 import { LocalSectionBlock } from './local-section-block';
 import { QuizPreviewPanel } from './quiz-preview-panel';
 import { useNewQuizPage } from './use-new-quiz-page';
-
-const TYPE_ORDER: QuizQuestionType[] = ['MCQ', 'TRUE_FALSE', 'SHORT_ANSWER'];
 
 export function NewQuizPage({
   courseId,
@@ -45,6 +48,7 @@ export function NewQuizPage({
   onCreated: (quiz: Quiz) => void;
 }) {
   const p = useNewQuizPage(courseId, onCreated);
+  const [configTab, setConfigTab] = useState<QuizSettingsTab>('basics');
 
   // Escapes the dashboard's sidebar/topbar chrome — this flow is big enough
   // (config + live question sections + preview panel) that it deserves the
@@ -57,7 +61,54 @@ export function NewQuizPage({
     };
   }, []);
 
+  const isOffline = p.form.mode === 'offline';
+  const typeOrder = questionTypesForMode(p.form.mode);
+
+  // Timing (schedule + shuffle) only applies to online quizzes — drop back
+  // to Basics if the teacher switches to printed while that tab is open.
+  useEffect(() => {
+    if (isOffline && (configTab === 'schedule' || configTab === 'behavior')) {
+      setConfigTab('basics');
+    }
+  }, [isOffline, configTab]);
+
   const sectioned = p.selectedTypes.length > 0;
+  const configReady = isQuizConfigReady(p.form);
+  const configBlockedReason = quizConfigReadyMessage(p.form);
+  const visibleTypes = typeOrder.filter((t) => p.selectedTypes.includes(t));
+
+  // Close the AI panel if the teacher clears required settings mid-flow.
+  useEffect(() => {
+    if (!configReady && p.aiOpen) {
+      p.setAiOpen(false);
+    }
+  }, [configReady, p.aiOpen, p.setAiOpen]);
+
+  const aiSectionPlan = useMemo<AiSectionPlanItem[] | undefined>(() => {
+    if (p.selectedTypes.length === 0) return undefined;
+    const types = typeOrder.filter((t) => p.selectedTypes.includes(t));
+    return types.map((type) => {
+      const marks = p.allocations[type] ?? 0;
+      const used = p.questions
+        .filter((q) => q.question_type === type)
+        .reduce((sum, q) => sum + (Number(q.points) || 0), 0);
+      return {
+        type,
+        marks,
+        remainingMarks: Math.max(0, marks - used)
+      };
+    });
+  }, [p.selectedTypes, p.allocations, p.questions, typeOrder]);
+  // An open draft is normally rendered by the section that owns its type.
+  // If that section is not on screen — the teacher unchecked the type in
+  // Marking while the editor was open — the draft would otherwise render
+  // nowhere while still counting as "an editor is open", silently disabling
+  // Edit, Add Question and Create with AI with no visible reason why.
+  const draftOwnedBySection =
+    p.draft != null &&
+    p.lockedAddType != null &&
+    sectioned &&
+    visibleTypes.includes(p.lockedAddType);
   const otherEntries = p.questions
     .map((draft, index) => ({ index, draft }))
     .filter(({ draft }) => !sectioned || !p.selectedTypes.includes(draft.question_type));
@@ -67,105 +118,123 @@ export function NewQuizPage({
   const anyEditorOpen = p.draft != null || p.aiOpen;
 
   const content = (
-    <div className='fixed inset-0 z-[100] bg-background overflow-y-auto'>
-      <div className='max-w-[1400px] mx-auto p-4 sm:p-6 space-y-4'>
-      <div className='flex items-center justify-between gap-2'>
-        <Button variant='ghost' onClick={onBack} className='gap-1 -ml-2'>
-          <ArrowLeft className='w-4 h-4' /> Back to quizzes
-        </Button>
-        <Button variant='ghost' size='icon' onClick={onBack} aria-label='Close'>
-          <X className='w-5 h-5' />
-        </Button>
-      </div>
-
-      <div className='flex items-center gap-3'>
-        <span className='shrink-0 grid place-items-center w-10 h-10 rounded-xl bg-accent text-accent-foreground'>
-          <ClipboardList className='w-5 h-5' />
-        </span>
-        <div>
-          <h1 className='text-xl font-bold'>Add new quiz</h1>
-          <p className='text-sm text-muted-foreground'>
-            Configure the quiz and add its questions, then create it in one step.
+    <div className='fixed inset-0 z-[100] overflow-y-auto bg-[#f8f9fb] text-foreground'>
+      <div className='mx-auto max-w-[1400px] space-y-5 p-4 pb-24 sm:p-6'>
+      <header className='flex items-center justify-between gap-3'>
+        <div className='min-w-0'>
+          <Button variant='ghost' onClick={onBack} className='-ml-2 mb-1 h-9 gap-1 text-sm text-primary hover:bg-secondary hover:text-primary'>
+            <ArrowLeft className='size-4' /> Quizzes
+          </Button>
+          <h1 className='text-2xl font-semibold tracking-tight text-foreground'>Create a quiz</h1>
+          <p className='mt-1 text-sm text-muted-foreground'>
+            Name it, set the time, then add questions.
           </p>
         </div>
-      </div>
-
-      <div className='grid grid-cols-1 lg:grid-cols-[1fr_420px] gap-4 items-start'>
-        <div className='space-y-4 min-w-0'>
-      {/* Step 1 — configuration */}
-      <div className='border rounded-xl p-4 bg-card shadow-sm space-y-3'>
-        <div className='flex items-center gap-2'>
-          <span className='grid place-items-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0'>
-            1
-          </span>
-          <h2 className='font-semibold'>Quiz configuration</h2>
+        <div className='flex shrink-0 items-center gap-2'>
+          <Button variant='outline' className={quizFormOutlineBtnClass} onClick={onBack} disabled={p.isCreating}>
+            Cancel
+          </Button>
+          <Button
+            className={quizFormPrimaryBtnClass}
+            onClick={p.handleCreate}
+            disabled={p.isCreating || p.draft != null || p.questions.length === 0}
+            title={
+              p.questions.length === 0
+                ? 'Add at least one question with Create with AI first'
+                : p.draft != null
+                  ? 'Save or cancel the open question editor first'
+                  : undefined
+            }
+          >
+            {p.isCreating ? 'Creating…' : 'Create quiz'}
+          </Button>
         </div>
+      </header>
 
-        <Tabs value={p.tab} onValueChange={(v) => p.setTab(v as typeof p.tab)}>
-          <TabsList className='grid grid-cols-2 w-full'>
-            <TabsTrigger value='setup' className='gap-1'>
-              <Settings2 className='w-3.5 h-3.5' /> Setup
+      <div
+        className={
+          isOffline
+            ? 'grid grid-cols-1 gap-4 items-start lg:grid-cols-[1fr_420px]'
+            : 'grid grid-cols-1 gap-4 items-start'
+        }
+      >
+        <div className='space-y-4 min-w-0'>
+      <div className={quizFormCardClass}>
+        <Tabs
+          value={configTab}
+          onValueChange={(v) => setConfigTab(v as QuizSettingsTab)}
+        >
+          <TabsList
+            className={`grid h-11 w-full rounded-full border border-border/90 bg-card p-1 text-sm ${
+              isOffline ? 'grid-cols-2' : 'grid-cols-3'
+            }`}
+          >
+            <TabsTrigger value='basics' className='gap-1.5 rounded-full text-sm text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm'>
+              <FileText className='size-3.5' /> Basics
             </TabsTrigger>
-            <TabsTrigger value='advanced' className='gap-1'>
-              <SlidersHorizontal className='w-3.5 h-3.5' /> Advanced
+            {!isOffline ? (
+              <TabsTrigger value='schedule' className='gap-1.5 rounded-full text-sm text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm'>
+                <Calendar className='size-3.5' /> Timing
+              </TabsTrigger>
+            ) : null}
+            <TabsTrigger value='marks' className='gap-1.5 rounded-full text-sm text-muted-foreground data-[state=active]:bg-primary data-[state=active]:text-primary-foreground data-[state=active]:shadow-sm'>
+              <ClipboardCheck className='size-3.5' /> Marking
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value='setup' className='space-y-4'>
+          <TabsContent value='basics' className='mt-5'>
             <BasicsTab form={p.form} setForm={p.setForm} modules={modules} />
-            <div className='border-t pt-4'>
-              <DurationField form={p.form} setForm={p.setForm} />
-            </div>
-            <div className='border-t pt-4'>
-              <ScheduleTab form={p.form} setForm={p.setForm} />
-            </div>
           </TabsContent>
-          <TabsContent value='advanced' className='space-y-4'>
-            <BehaviorTab form={p.form} setForm={p.setForm} hideDuration />
-            <div className='border-t pt-4'>
-              <MarksTab form={p.form} setForm={p.setForm} />
-            </div>
+
+          {!isOffline ? (
+            <TabsContent value='schedule' className='mt-5 space-y-5'>
+              <ScheduleTab form={p.form} setForm={p.setForm} withDuration />
+              <div className='border-t border-border pt-5'>
+                <BehaviorTab form={p.form} setForm={p.setForm} hideDuration />
+              </div>
+            </TabsContent>
+          ) : null}
+
+          <TabsContent value='marks' className='mt-5'>
+            <MarksTab form={p.form} setForm={p.setForm} />
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Step 2 — questions */}
-      <div className='border rounded-xl p-4 bg-card shadow-sm space-y-3'>
-        <div className='flex items-center justify-between gap-2 flex-wrap'>
-          <div className='flex items-center gap-2'>
-            <span className='grid place-items-center w-6 h-6 rounded-full bg-primary text-primary-foreground text-xs font-bold shrink-0'>
-              2
-            </span>
-            <h2 className='font-semibold'>Add questions</h2>
-            {p.questions.length > 0 ? (
-              <Badge variant='secondary' size='xs' className='rounded-full gap-1'>
-                <ListChecks className='w-3 h-3' />
-                {p.questions.length} question{p.questions.length === 1 ? '' : 's'} ·{' '}
-                {p.totalPoints} pt
-              </Badge>
-            ) : null}
+      {/* Questions */}
+      <div className={`space-y-4 ${quizFormCardClass}`}>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <div>
+            <h2 className='text-base font-semibold text-foreground'>Questions</h2>
+            <p className='text-sm text-muted-foreground'>
+              {p.questions.length === 0
+                ? configReady
+                  ? 'Use Create with AI to generate questions for this quiz.'
+                  : 'Finish Basics and Marking above, then create questions with AI.'
+                : `${p.questions.length} question${p.questions.length === 1 ? '' : 's'} · ${p.totalPoints} points`}
+            </p>
           </div>
-          <div className='flex gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              className='gap-1'
-              onClick={() => p.setCsvOpen(true)}
-              disabled={anyEditorOpen}
-            >
-              <FileUp className='w-3.5 h-3.5' /> Import CSV
-            </Button>
-            <Button
-              variant='outline'
-              size='sm'
-              className='gap-1'
-              onClick={() => p.setAiOpen(true)}
-              disabled={anyEditorOpen}
-            >
-              <Sparkles className='w-3.5 h-3.5' /> Generate with AI
-            </Button>
-          </div>
+          <Button
+            className={`${quizFormPrimaryBtnClass} gap-1.5`}
+            onClick={() => p.setAiOpen(true)}
+            disabled={!configReady || anyEditorOpen}
+            title={
+              !configReady
+                ? (configBlockedReason ?? undefined)
+                : anyEditorOpen
+                  ? 'Finish or close the open editor first'
+                  : undefined
+            }
+          >
+            <Sparkles className='size-4' /> Create with AI
+          </Button>
         </div>
+
+        {!configReady && !p.aiOpen ? (
+          <p className='rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900'>
+            {configBlockedReason}
+          </p>
+        ) : null}
 
         {p.aiOpen ? (
           <InlineAiGenerate
@@ -173,12 +242,14 @@ export function NewQuizPage({
             onAdd={p.addQuestions}
             onClose={() => p.setAiOpen(false)}
             lockedQuestionTypes={sectioned ? p.selectedTypes : undefined}
+            sectionPlan={aiSectionPlan}
+            quizMode={p.form.mode}
           />
         ) : null}
 
         {sectioned && (
           <div className='space-y-3'>
-            {TYPE_ORDER.filter((t) => p.selectedTypes.includes(t)).map((type) => {
+            {visibleTypes.map((type) => {
               const entries = p.questions
                 .map((draft, index) => ({ index, draft }))
                 .filter(({ draft }) => draft.question_type === type);
@@ -193,6 +264,8 @@ export function NewQuizPage({
                   onAdd={() => p.startNewForSection(type)}
                   onEdit={p.startEdit}
                   onDelete={p.deleteQuestion}
+                  quizMode={p.form.mode}
+                  showAddButton={false}
                   inlineDraft={
                     p.draft && p.lockedAddType === type
                       ? {
@@ -223,15 +296,34 @@ export function NewQuizPage({
               </h3>
             )}
             <LocalQuestionList
-              questions={otherEntries.map((e) => e.draft)}
+              entries={otherEntries}
               draftOpen={anyEditorOpen}
-              onEdit={(i) => p.startEdit(otherEntries[i].index)}
-              onDelete={(i) => p.deleteQuestion(otherEntries[i].index)}
+              editingIndex={p.editingIndex}
+              onEdit={p.startEdit}
+              onDelete={p.deleteQuestion}
+              quizMode={p.form.mode}
+              inlineDraft={
+                p.draft && p.editingIndex != null && !draftOwnedBySection
+                  ? {
+                      draft: p.draft,
+                      setDraft: p.setDraft,
+                      setType: p.setType,
+                      updateOption: p.updateOption,
+                      addOption: p.addOption,
+                      removeOption: p.removeOption,
+                      setCorrectExclusive: p.setCorrectExclusive,
+                      onCancel: p.cancelDraft,
+                      onSave: p.saveDraft,
+                      isSaving: false
+                    }
+                  : null
+              }
             />
           </div>
         )}
 
-        {p.draft && p.lockedAddType === null ? (
+        {/* New question only — edits render in place on the row above. */}
+        {p.draft && !draftOwnedBySection && p.editingIndex == null ? (
           <DraftQuestionEditor
             draft={p.draft}
             setDraft={p.setDraft}
@@ -244,37 +336,27 @@ export function NewQuizPage({
             onSave={p.saveDraft}
             isSaving={false}
             lockType={false}
+            quizMode={p.form.mode}
           />
         ) : null}
       </div>
 
-      <div className='flex justify-end gap-2 pb-4'>
-        <Button variant='outline' onClick={onBack} disabled={p.isCreating}>
-          Cancel
-        </Button>
-        <Button onClick={p.handleCreate} disabled={p.isCreating || p.draft != null} size='lg'>
-          {p.isCreating ? 'Creating…' : 'Create Quiz'}
-        </Button>
-      </div>
-        </div>
-
-        <QuizPreviewPanel
-          title={p.form.title}
-          description={p.form.description}
-          mode={p.form.mode}
-          is_draft={p.form.is_draft}
-          duration_minutes={p.form.duration_minutes}
-          passing_score={p.form.passing_score}
-          questions={p.questions}
-          totalPoints={p.totalPoints}
-        />
       </div>
 
-      <LocalCsvImportDialog
-        open={p.csvOpen}
-        onOpenChange={p.setCsvOpen}
-        onImport={p.addQuestions}
-      />
+        {isOffline ? (
+          <QuizPreviewPanel
+            title={p.form.title}
+            description={p.form.description}
+            mode={p.form.mode}
+            is_draft={p.form.is_draft}
+            duration_minutes={p.form.duration_minutes}
+            passing_score={p.form.passing_score}
+            questions={p.questions}
+            totalPoints={p.totalPoints}
+          />
+        ) : null}
+      </div>
+
       </div>
     </div>
   );

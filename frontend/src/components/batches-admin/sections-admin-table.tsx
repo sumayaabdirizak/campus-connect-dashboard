@@ -125,7 +125,7 @@ export function SectionsAdminTable() {
               <PosTableRow key={section.id}>
                 {col('id') ? (
                   <PosTableCell>
-                    <span className='font-medium text-[#3B82F6]'>#{section.id}</span>
+                    <span className='font-medium text-primary'>#{section.id}</span>
                   </PosTableCell>
                 ) : null}
                 {col('name') ? (

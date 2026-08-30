@@ -3,94 +3,107 @@
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { TableCell, TableRow } from '@/components/ui/table';
-import { AlertTriangle, Check, Users, X as XIcon } from 'lucide-react';
+import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
+import { AlertTriangle, CalendarClock, Check, Users, X as XIcon } from 'lucide-react';
 import { format } from 'date-fns';
-import type { Submission } from '@/lib/course-details/services/assignments-types';
-import { SubmissionFileCell, type GroupRow } from './shared';
+import { cn } from '@/lib/utils';
+import type { Assignment, Submission, SubmissionExtension } from '@/lib/course-details/services/assignments-types';
+import { SubmissionFileCell, statusOf, type GroupRow, type SubmissionStatus } from './shared';
 
 export function GroupSubmissionRow({
   row,
+  assignment,
+  extensions,
+  col,
   selected,
   onToggle,
   onGrade
 }: {
   row: GroupRow;
+  assignment: Assignment;
+  extensions: SubmissionExtension[];
+  col: (id: string) => boolean;
   selected: boolean;
   onToggle: (groupId: number, checked: boolean) => void;
   onGrade: (sub: Submission) => void;
 }) {
   const { groupId, groupName, members, submission: sub } = row;
-  const status: 'submitted' | 'late' | 'missing' = sub
-    ? sub.is_late
-      ? 'late'
-      : 'submitted'
-    : 'missing';
+  const status = statusOf(assignment, sub ?? undefined, extensions, { groupId });
 
   return (
-    <TableRow
-      className={`transition-colors hover:bg-muted/35 [&>td]:py-3 ${
-        !sub ? 'bg-muted/15 text-muted-foreground' : ''
-      }`}
-    >
-      <TableCell className='align-top'>
+    <PosTableRow className={cn(selected && 'bg-primary/[0.04]', !sub && 'bg-muted')}>
+      <PosTableCell className='w-10'>
         <Checkbox
           checked={selected}
           onCheckedChange={(v) => onToggle(groupId, !!v)}
+          className='size-[18px] border-2 border-[#94A3B8] bg-card data-[state=checked]:border-primary'
         />
-      </TableCell>
-      <TableCell className='align-top font-medium text-foreground'>
-        <div className='flex items-center gap-2'>
-          <Users className='w-4 h-4 text-muted-foreground shrink-0' />
-          {groupName}
-        </div>
-      </TableCell>
-      <TableCell className='align-top'>
-        <div className='flex flex-wrap gap-1'>
-          {members.map((m) => (
-            <span
-              key={m.id}
-              className='text-xs bg-muted/50 rounded px-1.5 py-0.5'
-              title={m.email}
-            >
-              {m.full_name}
+      </PosTableCell>
+      {col('name') ? (
+        <PosTableCell className='min-w-[160px]'>
+          <div className='flex items-center gap-2'>
+            <Users className='size-4 shrink-0 text-muted-foreground' />
+            <span className='text-sm font-medium'>{groupName}</span>
+          </div>
+        </PosTableCell>
+      ) : null}
+      {col('members') ? (
+        <PosTableCell className='max-w-[280px] whitespace-normal'>
+          <div className='flex flex-wrap gap-1'>
+            {members.map((m) => (
+              <span
+                key={m.id}
+                className='rounded-full bg-[#F1F5F9] px-2 py-0.5 text-xs text-foreground'
+              >
+                {m.full_name}
+              </span>
+            ))}
+            {members.length === 0 ? (
+              <span className='text-xs italic text-muted-foreground'>No members</span>
+            ) : null}
+          </div>
+        </PosTableCell>
+      ) : null}
+      {col('submitted') ? (
+        <PosTableCell>
+          {sub?.submitted_at ? (
+            <span className='text-muted-foreground text-sm'>
+              {format(new Date(sub.submitted_at), 'MMM d, h:mm a')}
             </span>
-          ))}
-          {members.length === 0 ? (
-            <span className='text-xs text-muted-foreground italic'>No members</span>
-          ) : null}
-        </div>
-      </TableCell>
-      <TableCell className='align-top whitespace-nowrap'>
-        {sub?.submitted_at ? (
-          format(new Date(sub.submitted_at), 'MMM d, h:mm a')
-        ) : (
-          <span className='text-muted-foreground text-xs'>—</span>
-        )}
-      </TableCell>
-      <TableCell className='align-top'>
-        <StatusBadge status={status} />
-      </TableCell>
-      <TableCell className='align-top'>
-        <GradeCell sub={sub} />
-      </TableCell>
-      <TableCell className='align-top'>
-        <SubmissionFileCell submission={sub} label={`${groupName} submission`} />
-      </TableCell>
-      <TableCell className='align-top text-right'>
+          ) : (
+            <span className='text-muted-foreground text-sm'>—</span>
+          )}
+        </PosTableCell>
+      ) : null}
+      {col('status') ? (
+        <PosTableCell>
+          <StatusBadge status={status} />
+        </PosTableCell>
+      ) : null}
+      {col('grade') ? (
+        <PosTableCell>
+          <GradeCell sub={sub} />
+        </PosTableCell>
+      ) : null}
+      {col('file') ? (
+        <PosTableCell>
+          <SubmissionFileCell submission={sub} label={`${groupName} submission`} />
+        </PosTableCell>
+      ) : null}
+      <PosTableCell align='right'>
         {sub ? (
-          <Button variant='outline' size='sm' onClick={() => onGrade(sub)}>
-            Grade
+          <Button variant='outline' size='sm' className='h-8' onClick={() => onGrade(sub)}>
+            {sub.is_reviewed && sub.grade != null ? 'Review' : 'Grade'}
           </Button>
         ) : (
-          <span className='text-xs text-muted-foreground px-3'>No submission</span>
+          <span className='text-xs text-muted-foreground'>No submission</span>
         )}
-      </TableCell>
-    </TableRow>
+      </PosTableCell>
+    </PosTableRow>
   );
 }
 
-function StatusBadge({ status }: { status: 'submitted' | 'late' | 'missing' }) {
+function StatusBadge({ status }: { status: SubmissionStatus }) {
   return (
     <Badge
       variant='outline'
@@ -99,12 +112,15 @@ function StatusBadge({ status }: { status: 'submitted' | 'late' | 'missing' }) {
           ? 'text-success border-success'
           : status === 'late'
             ? 'text-warning border-warning'
-            : 'text-destructive border-destructive/40'
+            : status === 'extended'
+              ? 'text-primary border-primary/40'
+              : 'text-destructive border-destructive/40'
       }`}
     >
-      {status === 'submitted' ? <Check className='w-3 h-3' /> : null}
-      {status === 'late' ? <AlertTriangle className='w-3 h-3' /> : null}
-      {status === 'missing' ? <XIcon className='w-3 h-3' /> : null}
+      {status === 'submitted' ? <Check className='size-3' /> : null}
+      {status === 'late' ? <AlertTriangle className='size-3' /> : null}
+      {status === 'extended' ? <CalendarClock className='size-3' /> : null}
+      {status === 'missing' ? <XIcon className='size-3' /> : null}
       {status}
     </Badge>
   );
@@ -112,7 +128,7 @@ function StatusBadge({ status }: { status: 'submitted' | 'late' | 'missing' }) {
 
 function GradeCell({ sub }: { sub: Submission | null }) {
   if (sub?.grade != null) {
-    return <span className='tabular-nums font-medium'>{sub.grade}%</span>;
+    return <span className='font-medium tabular-nums'>{sub.grade}%</span>;
   }
   if (sub?.is_reviewed) {
     return <span className='text-xs text-muted-foreground'>reviewed</span>;

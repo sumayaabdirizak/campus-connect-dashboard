@@ -5,12 +5,28 @@ const exactListeners = new Map<string, Set<() => void>>();
 const lastFetchedAt = new Map<string, number>();
 const errorCache = new Map<string, Error>();
 const inFlightFetches = new Map<string, Promise<unknown>>();
+/** Bumped on invalidate / force so abandoned in-flight responses cannot commit. */
+const fetchGeneration = new Map<string, number>();
 
 type InvalidateSubscriber = { key: QueryKey; invalidate: () => void };
 const invalidateSubs = new Set<InvalidateSubscriber>();
 
 function notifyExactSerialized(serialized: string) {
   exactListeners.get(serialized)?.forEach((fn) => fn());
+}
+
+function bumpGeneration(serialized: string): number {
+  const next = (fetchGeneration.get(serialized) ?? 0) + 1;
+  fetchGeneration.set(serialized, next);
+  return next;
+}
+
+export function getFetchGeneration(serialized: string): number {
+  return fetchGeneration.get(serialized) ?? 0;
+}
+
+export function bumpFetchGeneration(serialized: string): number {
+  return bumpGeneration(serialized);
 }
 
 export function subscribeExact(key: QueryKey, listener: () => void) {
@@ -32,7 +48,15 @@ export function subscribeInvalidate(key: QueryKey, invalidate: () => void) {
 
 export function invalidateQueries(opts: { queryKey: QueryKey }) {
   const filter = opts.queryKey;
-  const snapshot = Array.from(lastFetchedAt.keys());
+  const touch = (serialized: string) => {
+    lastFetchedAt.delete(serialized);
+    errorCache.delete(serialized);
+    inFlightFetches.delete(serialized);
+    bumpGeneration(serialized);
+  };
+  const snapshot = Array.from(
+    new Set([...lastFetchedAt.keys(), ...dataCache.keys(), ...inFlightFetches.keys()])
+  );
   for (const serialized of snapshot) {
     let parsed: QueryKey | null = null;
     try {
@@ -41,8 +65,7 @@ export function invalidateQueries(opts: { queryKey: QueryKey }) {
       parsed = null;
     }
     if (parsed && Array.isArray(parsed) && prefixMatch(filter, parsed as QueryKey)) {
-      lastFetchedAt.delete(serialized);
-      errorCache.delete(serialized);
+      touch(serialized);
     }
   }
   for (const sub of invalidateSubs) {

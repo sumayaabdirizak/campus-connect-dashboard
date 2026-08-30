@@ -4,14 +4,15 @@ import { useEffect, type Dispatch, type SetStateAction } from 'react'
 import { getDiscussionSocket } from '@/lib/discussions/queries/socket'
 import type { MessageReaction } from '@/lib/discussions/queries/types'
 import {
+  discussionIdsEqual,
   isMainThreadMessage,
   mergeMessages,
   unwrap,
   type ChannelMessagesState,
-} from './message-list-helpers'
+} from '../use-channel-messages/message-list-helpers'
 
 export function useChannelSocketSync(
-  validId: number | null,
+  validId: string | null,
   setState: Dispatch<SetStateAction<ChannelMessagesState>>
 ) {
   useEffect(() => {
@@ -20,7 +21,7 @@ export function useChannelSocketSync(
 
     const onNew = (raw: unknown) => {
       const msg = unwrap(raw)
-      if (!msg || Number(msg.channelId) !== validId) return
+      if (!msg || !discussionIdsEqual(msg.channelId, validId)) return
       if (isMainThreadMessage(msg)) {
         setState((s) => ({ ...s, messages: mergeMessages(s.messages, [msg]) }))
         return
@@ -62,7 +63,7 @@ export function useChannelSocketSync(
 
     const onEdit = (raw: unknown) => {
       const msg = unwrap(raw)
-      if (!msg || Number(msg.channelId) !== validId) return
+      if (!msg || !discussionIdsEqual(msg.channelId, validId)) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === msg.id)
         if (idx < 0) return s
@@ -76,7 +77,7 @@ export function useChannelSocketSync(
       const messageId = payload?.messageId
       if (!messageId) return
       const channelId = payload?.channelId ? String(payload.channelId) : null
-      if (channelId != null && Number(channelId) !== validId) return
+      if (channelId != null && !discussionIdsEqual(channelId, validId)) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)
         if (idx < 0) return s

@@ -1,11 +1,6 @@
 'use client';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
+import { AssignmentModalShell } from './assignment-modal-shell';
 import {
   CreateAssignmentForm,
   type AssignmentFormValues
@@ -28,20 +23,25 @@ export function EditAssignmentDialog({
   pending
 }: EditAssignmentDialogProps) {
   return (
-    <Dialog open={target !== null} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className='max-w-md max-h-[90vh] overflow-y-auto'>
-        <DialogHeader>
-          <DialogTitle>Edit assignment</DialogTitle>
-        </DialogHeader>
-        {target ? (
-          <CreateAssignmentForm
-            initialValues={initialValues}
-            onSubmit={onSubmit}
-            pending={pending}
-            onCancel={onClose}
-          />
-        ) : null}
-      </DialogContent>
-    </Dialog>
+    <AssignmentModalShell
+      open={target !== null}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      title='Edit assignment'
+      mode='edit'
+    >
+      {target ? (
+        <CreateAssignmentForm
+          initialValues={initialValues}
+          onSubmit={onSubmit}
+          pending={pending}
+          onCancel={onClose}
+          submitLabel='Save'
+          pendingLabel='Saving…'
+          showSubmitIcon={false}
+        />
+      ) : null}
+    </AssignmentModalShell>
   );
 }

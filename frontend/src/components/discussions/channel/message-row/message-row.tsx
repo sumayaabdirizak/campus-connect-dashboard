@@ -49,7 +49,7 @@ export function MessageRow({
     >
       {!row.isAuthor &&
         (showHeader ? (
-          <Avatar className='mt-0.5 h-8 w-8 shrink-0 self-start shadow-sm ring-1 ring-black/5'>
+          <Avatar className='mt-0.5 h-8 w-8 shrink-0 self-start ring-1 ring-black/5'>
             {!message.isAnonymous && message.sender?.avatarUrl ? (
               <AvatarImage
                 src={resolvePublicAssetUrl(message.sender.avatarUrl) ?? undefined}

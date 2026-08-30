@@ -1,6 +1,5 @@
 import { Icons } from '@/components/icons'
 import type { Club } from '@/lib/clubs/types'
-import { formatJoinPolicy } from './helpers'
 import { useState } from 'react'
 
 type Props = {
@@ -35,68 +34,68 @@ export function ClubDetailSidebar({ club, themeColor }: Props) {
   return (
     <aside className='w-full space-y-3'>
       {club.rules ? (
-        <div className='overflow-hidden rounded border' style={{ borderColor: `${themeColor}30` }}>
+        <div className='overflow-hidden rounded-lg border border-border bg-card'>
           <div
-            className='px-2 py-1.5 text-xs font-semibold uppercase tracking-tight text-white'
+            className='px-2.5 py-2 text-xs font-bold uppercase tracking-wide text-white'
             style={{ backgroundColor: themeColor }}
           >
             Rules
           </div>
-          <div className='divide-y p-0'>
+          <div className='divide-y divide-[#E5E7EB]'>
             {club.rules
               .split('\n')
               .filter(Boolean)
-              .slice(0, 2)
+              .slice(0, 3)
               .map((rule, i) => (
-                <div key={i} className='flex gap-2 px-2 py-1.5'>
+                <div key={i} className='flex gap-2 px-2.5 py-2'>
                   <span
-                    className='mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-xs font-bold'
-                    style={{ backgroundColor: `${themeColor}15`, color: themeColor }}
+                    className='mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[11px] font-bold'
+                    style={{ backgroundColor: `${themeColor}22`, color: themeColor }}
                   >
                     {i + 1}
                   </span>
-                  <p className='text-xs leading-tight text-muted-foreground'>{rule.trim().substring(0, 40)}</p>
+                  <p className='text-xs font-medium leading-snug text-foreground'>
+                    {rule.trim()}
+                  </p>
                 </div>
               ))}
           </div>
         </div>
       ) : null}
 
-      <div className='rounded border bg-card'>
-        <div className='border-b px-2 py-1 text-xs font-semibold uppercase tracking-tighter'>About</div>
-        <div className='space-y-0.5 p-1.5'>
-          {club.description && (
-            <p className='text-xs text-muted-foreground leading-tight line-clamp-2'>
+      <div className='overflow-hidden rounded-lg border border-border bg-card'>
+        <div className='border-b border-border bg-muted px-2.5 py-2 text-xs font-bold uppercase tracking-wide text-foreground'>
+          About
+        </div>
+        <div className='space-y-2 p-2.5'>
+          {club.description ? (
+            <p className='text-xs font-medium leading-snug text-foreground line-clamp-3'>
               {club.description}
             </p>
-          )}
+          ) : null}
           {club.faculty ? (
-            <div className='flex items-center justify-between gap-1 text-xs'>
-              <span className='text-muted-foreground'>Faculty</span>
-              <span className='font-medium truncate'>{club.faculty.name}</span>
+            <div className='flex items-center justify-between gap-2 text-xs'>
+              <span className='shrink-0 font-semibold text-muted-foreground'>Faculty</span>
+              <span className='truncate font-semibold text-foreground'>{club.faculty.name}</span>
             </div>
           ) : null}
           {club.owner ? (
-            <div className='flex items-center justify-between gap-1 text-xs'>
-              <span className='text-muted-foreground'>Owner</span>
-              <div className='flex items-center gap-0.5 min-w-0'>
-                <Icons.pro className='h-2 w-2 text-amber-500 flex-shrink-0' />
-                <span className='font-medium truncate text-xs'>{club.owner.full_name}</span>
+            <div className='flex items-center justify-between gap-2 text-xs'>
+              <span className='shrink-0 font-semibold text-muted-foreground'>Owner</span>
+              <div className='flex min-w-0 items-center gap-1'>
+                <Icons.pro className='h-3 w-3 shrink-0 text-amber-500' />
+                <span className='truncate font-semibold text-foreground'>
+                  {club.owner.full_name}
+                </span>
               </div>
             </div>
           ) : null}
-          <div className='flex items-center justify-between gap-1 text-xs'>
-            <span className='text-muted-foreground'>Members</span>
-            <span className='font-medium'>{club.memberCountCache}</span>
-          </div>
-          <div className='flex items-center justify-between gap-1 text-xs'>
-            <span className='text-muted-foreground'>Privacy</span>
-            <span className='font-medium capitalize'>
-              {formatJoinPolicy(club.joinPolicy)}
-            </span>
+          <div className='flex items-center justify-between gap-2 text-xs'>
+            <span className='font-semibold text-muted-foreground'>Members</span>
+            <span className='font-semibold text-foreground'>{club.memberCountCache}</span>
           </div>
           {club.status === 'PENDING' ? (
-            <div className='flex items-center gap-1.5 rounded-lg bg-yellow-50 px-3 py-2 text-xs text-yellow-700 dark:bg-yellow-950/30 dark:text-yellow-400'>
+            <div className='flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2.5 py-2 text-xs font-semibold text-amber-800'>
               <Icons.alertCircle className='h-3.5 w-3.5' />
               Pending approval
             </div>

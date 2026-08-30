@@ -19,7 +19,7 @@ export function InviteAcceptSuccess({ club, acceptResult }: InviteAcceptSuccessP
     <div className='flex h-full items-center justify-center'>
       <div className='flex flex-col items-center gap-4 text-center'>
         <div
-          className='flex h-16 w-16 items-center justify-center rounded-2xl text-2xl'
+          className='flex h-16 w-16 items-center justify-center rounded-xl text-2xl'
           style={{ backgroundColor: `${themeColor}20`, color: themeColor }}
         >
           <Icons.check className='h-8 w-8' />

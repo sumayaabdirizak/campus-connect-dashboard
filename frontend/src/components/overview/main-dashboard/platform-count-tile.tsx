@@ -19,12 +19,12 @@ export function PlatformCountTile({
     cyan: 'bg-[#0E7490]',
     navy: 'bg-[#172554]',
     green: 'bg-[#10B981]',
-    blue: 'bg-[#3B82F6]',
+    blue: 'bg-primary',
     lightGreen: 'bg-[#4ADE80]',
   }
 
   return (
-    <div className={cn('relative flex h-full flex-col justify-between rounded-2xl p-4 text-white shadow-sm', tones[tone])}>
+    <div className={cn('relative flex h-full flex-col justify-between rounded-xl p-4 text-white', tones[tone])}>
       <div className='flex items-start justify-between'>
         <Icon className='size-6 text-white/90' />
         <RotateCcw className='size-3.5 text-white/50' aria-hidden />

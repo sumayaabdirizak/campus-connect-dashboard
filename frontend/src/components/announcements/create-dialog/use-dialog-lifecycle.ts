@@ -38,7 +38,6 @@ export function useDialogLifecycle(args: {
     fields.setActiveDaysPreset('off');
     fields.setExpiresAtCustom('');
     fields.setDeadlineAtLocal('');
-    fields.setNotifySms(false);
     fields.setFormError(null);
     fields.setErrors({});
     fields.setImages((prev) => {
@@ -78,7 +77,6 @@ export function useDialogLifecycle(args: {
     fields.setSelectedBatches(h.selectedBatches);
     fields.setSelectedSections(h.selectedSections);
     fields.setImages(h.images);
-    fields.setNotifySms(false);
     fields.setFormError(null);
     fields.setErrors({});
     // eslint-disable-next-line react-hooks/exhaustive-deps -- hydrate once per open/edit

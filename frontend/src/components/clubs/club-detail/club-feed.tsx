@@ -17,6 +17,8 @@ import {
 } from '@/lib/clubs/queries'
 import { useAuthStore } from '@/lib/auth-store'
 import { uploadDiscussionFile } from '@/lib/discussions/services/discussion-upload'
+import { useDiscussionServerRoom } from '@/lib/discussions/services/use-discussion-room'
+import { timeAgoLong } from '@/lib/format-time'
 import { toast } from 'sonner'
 import type { DiscussionMessage } from '@/lib/discussions/queries/types'
 
@@ -28,23 +30,6 @@ function initials(name?: string | null) {
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? '')
     .join('')
-}
-
-/** Spelled-out relative time for the post byline: "about 1 month ago". */
-function timeAgoLong(iso: string) {
-  const then = new Date(iso).getTime()
-  if (!Number.isFinite(then)) return ''
-  const mins = Math.floor((Date.now() - then) / 60000)
-  if (mins < 1) return 'just now'
-  const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? '' : 's'} ago`
-  if (mins < 60) return plural(mins, 'minute')
-  const hours = Math.floor(mins / 60)
-  if (hours < 24) return plural(hours, 'hour')
-  const days = Math.floor(hours / 24)
-  if (days < 30) return plural(days, 'day')
-  const months = Math.floor(days / 30)
-  if (months < 12) return `about ${plural(months, 'month')}`
-  return `about ${plural(Math.floor(months / 12), 'year')}`
 }
 
 /**
@@ -73,7 +58,7 @@ const FILE_KIND_BY_EXT: Record<string, { label: string; className: string }> = {
   tsx: { label: 'TypeScript', className: 'bg-blue-50 text-blue-600' },
   js: { label: 'JavaScript', className: 'bg-amber-50 text-amber-600' },
   jsx: { label: 'JavaScript', className: 'bg-amber-50 text-amber-600' },
-  json: { label: 'JSON', className: 'bg-gray-100 text-gray-600' },
+  json: { label: 'JSON', className: 'bg-muted text-muted-foreground' },
   pdf: { label: 'PDF', className: 'bg-red-50 text-red-600' },
   doc: { label: 'Word', className: 'bg-sky-50 text-sky-600' },
   docx: { label: 'Word', className: 'bg-sky-50 text-sky-600' },
@@ -81,12 +66,12 @@ const FILE_KIND_BY_EXT: Record<string, { label: string; className: string }> = {
   xlsx: { label: 'Excel', className: 'bg-emerald-50 text-emerald-600' },
   zip: { label: 'Archive', className: 'bg-purple-50 text-purple-600' },
   csv: { label: 'CSV', className: 'bg-emerald-50 text-emerald-600' },
-  txt: { label: 'Text', className: 'bg-gray-100 text-gray-600' },
+  txt: { label: 'Text', className: 'bg-muted text-muted-foreground' },
 }
 
 function fileKind(fileName: string) {
   const ext = fileName.split('.').pop()?.toLowerCase() ?? ''
-  return FILE_KIND_BY_EXT[ext] ?? { label: ext ? ext.toUpperCase() : 'File', className: 'bg-gray-100 text-gray-600' }
+  return FILE_KIND_BY_EXT[ext] ?? { label: ext ? ext.toUpperCase() : 'File', className: 'bg-muted text-muted-foreground' }
 }
 
 /** Renders body text with bare URLs turned into links. */
@@ -137,7 +122,7 @@ function CommentThread({
   }
 
   return (
-    <div className='mt-3 space-y-3 border-t border-gray-100 pt-3'>
+    <div className='mt-3 space-y-3 border-t border-border pt-3'>
       {isLoading ? (
         <div className='space-y-2'>
           <Skeleton className='h-10 rounded-lg' />
@@ -161,15 +146,15 @@ function CommentThread({
                     initials(name)
                   )}
                 </div>
-                <div className='min-w-0 flex-1 rounded-xl bg-gray-50 px-3 py-2'>
+                <div className='min-w-0 flex-1 rounded-xl bg-muted px-3 py-2'>
                   <div className='flex items-baseline gap-2'>
-                    <p className='truncate text-xs font-bold text-gray-900'>{name}</p>
-                    <p className='shrink-0 text-[10px] text-gray-400'>
+                    <p className='truncate text-xs font-bold text-foreground'>{name}</p>
+                    <p className='shrink-0 text-[10px] text-muted-foreground'>
                       {timeAgoLong(c.createdAt)}
                     </p>
                   </div>
                   {c.content ? (
-                    <p className='mt-0.5 whitespace-pre-wrap break-words text-xs text-gray-700'>
+                    <p className='mt-0.5 whitespace-pre-wrap break-words text-xs text-muted-foreground'>
                       {c.content}
                     </p>
                   ) : null}
@@ -179,7 +164,7 @@ function CommentThread({
           })}
         </div>
       ) : (
-        <p className='text-xs text-gray-400'>No comments yet — be the first to reply.</p>
+        <p className='text-xs text-muted-foreground'>No comments yet — be the first to reply.</p>
       )}
 
       {/* Reply composer */}
@@ -206,14 +191,14 @@ function CommentThread({
           }}
           placeholder='Write a comment...'
           maxLength={20000}
-          className='min-w-0 flex-1 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-300'
+          className='min-w-0 flex-1 rounded-full border border-border bg-muted px-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-gray-300'
         />
         <button
           type='button'
           onClick={submit}
           disabled={!trimmed || postComment.isPending}
           aria-label='Send comment'
-          className='shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+          className='shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40'
         >
           <Icons.send className='h-4 w-4' />
         </button>
@@ -282,7 +267,7 @@ function FeedMessage({
   const firstLiker = likes.find((r) => r.user?.full_name)?.user?.full_name
 
   return (
-    <div className='w-full rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition-shadow duration-200 hover:shadow-md'>
+    <div className='w-full rounded-xl border border-border bg-card p-5 transition-shadow duration-200 hover:shadow-md'>
       {/* Header */}
       <div className='mb-4 flex items-start justify-between gap-3'>
         <div className='flex min-w-0 flex-1 items-center gap-3'>
@@ -298,9 +283,9 @@ function FeedMessage({
             )}
           </div>
           <div className='min-w-0 flex-1'>
-            <p className='truncate text-sm font-bold text-gray-900'>{name}</p>
+            <p className='truncate text-sm font-bold text-foreground'>{name}</p>
             <p
-              className='mt-0.5 flex items-center gap-1 text-xs text-gray-500'
+              className='mt-0.5 flex items-center gap-1 text-xs text-muted-foreground'
               title={new Date(message.createdAt).toLocaleString()}
             >
               <Icons.clock className='h-3.5 w-3.5' />
@@ -321,7 +306,7 @@ function FeedMessage({
               <button
                 type='button'
                 aria-label='Post options'
-                className='shrink-0 rounded-full p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700'
+                className='shrink-0 rounded-full p-1.5 text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground'
               >
                 <Icons.ellipsis className='h-4 w-4' />
               </button>
@@ -335,7 +320,7 @@ function FeedMessage({
                     setIsEditing(true)
                     setMenuOpen(false)
                   }}
-                  className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-gray-700 transition-colors hover:bg-gray-100'
+                  className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted'
                 >
                   <Icons.edit className='h-3.5 w-3.5' />
                   Edit post
@@ -358,7 +343,7 @@ function FeedMessage({
                   <button
                     type='button'
                     onClick={() => setConfirmingDelete(true)}
-                    className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-gray-700 transition-colors hover:bg-gray-100'
+                    className='flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-xs text-muted-foreground transition-colors hover:bg-muted'
                   >
                     <Icons.trash className='h-3.5 w-3.5' />
                     Delete post
@@ -398,7 +383,7 @@ function FeedMessage({
                 setIsEditing(false)
                 setEditDraft(message.content ?? '')
               }}
-              className='rounded-full px-3 py-1.5 text-xs font-medium text-gray-500 transition-colors hover:bg-gray-100'
+              className='rounded-full px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted'
             >
               Cancel
             </button>
@@ -413,7 +398,7 @@ function FeedMessage({
           </div>
         </div>
       ) : body ? (
-        <p className='whitespace-pre-wrap break-words text-sm leading-relaxed text-gray-900'>
+        <p className='whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground'>
           {renderBody(body)}
         </p>
       ) : null}
@@ -429,7 +414,7 @@ function FeedMessage({
               href={img.accessUrl ?? img.url ?? '#'}
               target='_blank'
               rel='noopener noreferrer'
-              className='block overflow-hidden bg-gray-100'
+              className='block overflow-hidden bg-muted'
             >
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -451,9 +436,9 @@ function FeedMessage({
               href={file.accessUrl ?? file.url ?? '#'}
               target='_blank'
               rel='noopener noreferrer'
-              className='flex items-center gap-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-700 transition-colors hover:bg-gray-100'
+              className='flex items-center gap-2 rounded-lg bg-muted px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted'
             >
-              <Icons.paperclip className='h-3.5 w-3.5 shrink-0 text-gray-400' />
+              <Icons.paperclip className='h-3.5 w-3.5 shrink-0 text-muted-foreground' />
               <span className='truncate'>{file.fileType}</span>
             </a>
           ))}
@@ -466,7 +451,7 @@ function FeedMessage({
           {tags.map((tag) => (
             <span
               key={tag}
-              className='rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600'
+              className='rounded-md bg-muted px-2 py-1 text-xs font-medium text-muted-foreground'
             >
               {tag}
             </span>
@@ -475,7 +460,7 @@ function FeedMessage({
       ) : null}
 
       {/* Divider */}
-      <div className='my-3 h-px bg-gray-200' />
+      <div className='my-3 h-px bg-border' />
 
       {/* Actions — like and comment only */}
       <div className='flex items-center gap-5'>
@@ -487,7 +472,7 @@ function FeedMessage({
           disabled={toggleReaction.isPending}
           aria-pressed={liked}
           aria-label={liked ? 'Remove like' : 'Like post'}
-          className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-50 ${liked ? 'text-red-500' : 'text-gray-500 hover:text-red-500'}`}
+          className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-50 ${liked ? 'text-red-500' : 'text-muted-foreground hover:text-red-500'}`}
         >
           <Icons.heart className='h-5 w-5' />
           {likeCount > 0 ? <span className='text-xs'>{likeCount}</span> : null}
@@ -496,7 +481,7 @@ function FeedMessage({
           type='button'
           onClick={() => setShowComments((v) => !v)}
           aria-expanded={showComments}
-          className={`flex items-center gap-1.5 text-sm transition-colors ${showComments ? 'text-blue-500' : 'text-gray-500 hover:text-blue-500'}`}
+          className={`flex items-center gap-1.5 text-sm transition-colors ${showComments ? 'text-blue-500' : 'text-muted-foreground hover:text-blue-500'}`}
         >
           <Icons.chat className='h-5 w-5' />
           {commentCount > 0 ? <span className='text-xs'>{commentCount}</span> : null}
@@ -505,7 +490,7 @@ function FeedMessage({
 
       {/* Who liked it */}
       {firstLiker ? (
-        <p className='mt-3 text-xs text-gray-400'>
+        <p className='mt-3 text-xs text-muted-foreground'>
           {serverReactions.length > 1
             ? `${firstLiker} and ${serverReactions.length - 1} other${serverReactions.length - 1 === 1 ? '' : 's'} liked this`
             : `${firstLiker} liked this`}
@@ -541,6 +526,7 @@ export function ClubFeed({
   >([])
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  useDiscussionServerRoom(serverId)
   const { data, isLoading, error } = useClubFeed(serverId)
   const postMutation = usePostClubMessage(serverId)
   const user = useAuthStore((s) => s.user)
@@ -612,7 +598,7 @@ export function ClubFeed({
   return (
     <div className='space-y-3'>
       {canPost ? (
-        <div className='rounded-lg border border-gray-200 bg-white p-2.5 shadow-sm'>
+        <div className='rounded-lg border border-border bg-card p-2.5'>
           {/* Author row */}
           <div className='flex items-start justify-between gap-2'>
             <div className='flex min-w-0 items-center gap-2'>
@@ -628,7 +614,7 @@ export function ClubFeed({
                 )}
               </div>
               <div className='min-w-0'>
-                <p className='truncate text-xs font-bold leading-tight text-gray-900'>
+                <p className='truncate text-xs font-bold leading-tight text-foreground'>
                   {user?.full_name ?? 'You'}
                 </p>
               </div>
@@ -658,7 +644,7 @@ export function ClubFeed({
             placeholder='Write something to the group...'
             rows={2}
             maxLength={20000}
-            className='mt-2 min-h-[30px] resize-none border-0 bg-transparent p-0 text-xs shadow-none placeholder:text-gray-400 focus-visible:ring-0'
+            className='mt-2 min-h-[30px] resize-none border-0 bg-transparent p-0 text-xs shadow-none placeholder:text-muted-foreground focus-visible:ring-0'
           />
 
           {attachments.length > 0 ? (
@@ -668,16 +654,16 @@ export function ClubFeed({
                 return (
                   <div
                     key={a.id}
-                    className='flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-2 pr-1.5'
+                    className='flex items-center gap-2 rounded-lg border border-border bg-muted py-1.5 pl-2 pr-1.5'
                   >
                     <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-md ${kind.className}`}>
                       <Icons.page className='h-4 w-4' />
                     </div>
                     <div className='min-w-0'>
-                      <p className='max-w-[160px] truncate text-xs font-medium text-gray-900'>
+                      <p className='max-w-[160px] truncate text-xs font-medium text-foreground'>
                         {a.name}
                       </p>
-                      <p className='text-[10px] text-gray-500'>
+                      <p className='text-[10px] text-muted-foreground'>
                         {kind.label} · {formatFileSize(a.size)}
                       </p>
                     </div>
@@ -685,7 +671,7 @@ export function ClubFeed({
                       type='button'
                       onClick={() => removeAttachment(a.id)}
                       aria-label={`Remove ${a.name}`}
-                      className='shrink-0 rounded-full p-1 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-700'
+                      className='shrink-0 rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-muted-foreground'
                     >
                       <Icons.close className='h-3.5 w-3.5' />
                     </button>
@@ -696,7 +682,7 @@ export function ClubFeed({
           ) : null}
 
           {/* Divider */}
-          <div className='my-2 h-px bg-gray-200' />
+          <div className='my-2 h-px bg-border' />
 
           {/* Toolbar */}
           <div className='flex items-center justify-between'>
@@ -706,7 +692,7 @@ export function ClubFeed({
                 onClick={() => pickFiles('image/*')}
                 disabled={uploading}
                 aria-label='Attach photo'
-                className='rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+                className='rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40'
               >
                 <Icons.media className='h-3.5 w-3.5' />
               </button>
@@ -715,7 +701,7 @@ export function ClubFeed({
                 onClick={() => pickFiles('')}
                 disabled={uploading}
                 aria-label='Attach file'
-                className='rounded-full p-1 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-900 disabled:opacity-40'
+                className='rounded-full p-1 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40'
               >
                 <Icons.paperclip className='h-3.5 w-3.5' />
               </button>

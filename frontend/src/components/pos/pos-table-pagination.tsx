@@ -71,7 +71,7 @@ export function PosTablePagination({
           aria-label='Previous page'
           disabled={safePage <= 1}
           onClick={() => onPageChange(safePage - 1)}
-          className='size-8 rounded-full bg-white shadow-none disabled:opacity-40 sm:size-9'
+          className='size-8 rounded-full bg-card shadow-none disabled:opacity-40 sm:size-9'
           style={{ borderColor: c.border, color: c.text }}
         >
           <ChevronLeft className='size-4' />
@@ -92,7 +92,7 @@ export function PosTablePagination({
                 'size-8 rounded-full shadow-none sm:size-9',
                 active
                   ? 'border-0 text-white hover:opacity-90'
-                  : 'bg-white hover:bg-[#F9FAFB]'
+                  : 'bg-card hover:bg-muted'
               )}
               style={
                 active
@@ -112,7 +112,7 @@ export function PosTablePagination({
           aria-label='Next page'
           disabled={safePage >= totalPages}
           onClick={() => onPageChange(safePage + 1)}
-          className='size-8 rounded-full bg-white shadow-none disabled:opacity-40 sm:size-9'
+          className='size-8 rounded-full bg-card shadow-none disabled:opacity-40 sm:size-9'
           style={{ borderColor: c.border, color: c.text }}
         >
           <ChevronRight className='size-4' />
@@ -132,7 +132,7 @@ export function PosTablePagination({
           }}
         >
           <SelectTrigger
-            className='h-9 w-[4.5rem] rounded-lg bg-white shadow-none'
+            className='h-9 w-[4.5rem] rounded-lg bg-card shadow-none'
             style={{ borderColor: c.border, color: c.heading }}
           >
             <SelectValue />

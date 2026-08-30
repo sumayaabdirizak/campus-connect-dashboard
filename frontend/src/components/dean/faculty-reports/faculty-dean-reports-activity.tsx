@@ -12,7 +12,7 @@ export function FacultyDeanReportsActivity({
   isLoading: boolean;
 }) {
   return (
-    <div className='rounded-xl border bg-card p-4 shadow-sm'>
+    <div className='rounded-xl border bg-card p-4'>
       <div className='mb-3 flex items-center gap-2'>
         <LineChart className='text-muted-foreground size-4' />
         <h2 className='text-sm font-semibold'>Recent activities</h2>

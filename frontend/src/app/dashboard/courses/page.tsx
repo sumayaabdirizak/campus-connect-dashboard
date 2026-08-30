@@ -34,16 +34,16 @@ export default function CoursesPage() {
     return (
       <PageContainer>
         <PosPageHeader title='My Courses' showFullscreen={false} />
-        <div className='flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-[#E5E7EB] bg-white px-6 text-center'>
-          <h1 className='text-lg font-semibold text-[#101828]'>
+        <div className='flex min-h-[320px] flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card px-6 text-center'>
+          <h1 className='text-lg font-semibold text-foreground'>
             For students and teachers
           </h1>
-          <p className='mt-1 max-w-sm text-sm text-[#667085]'>
+          <p className='mt-1 max-w-sm text-sm text-muted-foreground'>
             Use Course Management for the university catalogue.
           </p>
           <Link
             href='/dashboard/dean/courses'
-            className='mt-4 inline-flex h-10 items-center rounded-lg bg-[#3B82F6] px-4 text-sm font-semibold text-white hover:bg-[#2563EB]'
+            className='mt-4 inline-flex h-10 items-center rounded-lg bg-primary px-4 text-sm font-semibold text-white hover:bg-[#2563EB]'
           >
             Open Course Management
           </Link>

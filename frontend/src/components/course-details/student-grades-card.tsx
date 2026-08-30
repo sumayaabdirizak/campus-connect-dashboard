@@ -92,11 +92,11 @@ function GradeRow({ item }: { item: MyGradeItem }) {
 }
 
 export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
-  const { data, isLoading, isError } = useMyGrades(courseId);
+  const { data, isLoading, isError } = useMyGrades(courseId, true, { live: true });
 
   if (isLoading) {
     return (
-      <div className='overflow-hidden rounded-xl border bg-card shadow-sm'>
+      <div className='overflow-hidden rounded-xl border bg-card'>
         <Skeleton className='h-16 w-full rounded-none' />
         <div className='space-y-3 p-4'>
           <Skeleton className='h-12 w-full' />
@@ -112,7 +112,7 @@ export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
     data.overallPct == null ? 0 : Math.max(0, Math.min(100, data.overallPct));
 
   return (
-    <div className='overflow-hidden rounded-xl border bg-card shadow-sm'>
+    <div className='overflow-hidden rounded-xl border bg-card'>
       <div className='grid grid-cols-2 divide-x border-b bg-muted/30'>
         <div className='px-4 py-3'>
           <p className='text-[11px] font-medium uppercase tracking-wide text-muted-foreground'>

@@ -62,7 +62,7 @@ export function FacultyReportsFilters({
   return (
     <div
       className={cn(
-        'rounded-xl border bg-card/95 p-3 shadow-sm backdrop-blur supports-[backdrop-filter]:bg-card/80',
+        'rounded-xl border bg-card/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-card/80',
         sticky && 'sticky top-0 z-20',
         className
       )}

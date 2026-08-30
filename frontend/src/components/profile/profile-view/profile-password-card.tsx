@@ -40,7 +40,7 @@ export function ProfilePasswordCard() {
   }
 
   return (
-    <section className='rounded-xl border border-[#E5E7EB] bg-white p-4 shadow-sm sm:p-5'>
+    <section className='rounded-xl border border-border bg-card p-4 sm:p-5'>
       <ProfileSectionHeading icon={Lock} title='Change Password' />
       <form onSubmit={submit}>
         <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3'>
@@ -86,11 +86,11 @@ export function ProfilePasswordCard() {
             />
           </div>
         </div>
-        <div className='mt-4 flex justify-end border-t border-[#E5E7EB] pt-4'>
+        <div className='mt-4 flex justify-end border-t border-border pt-4'>
           <Button
             type='submit'
             disabled={busy}
-            className='gap-2 bg-[#3B82F6] text-white hover:bg-[#2563EB]'
+            className='gap-2 bg-primary text-white hover:bg-[#2563EB]'
           >
             <Save className='size-4' aria-hidden />
             {busy ? 'Saving…' : 'Save Changes'}

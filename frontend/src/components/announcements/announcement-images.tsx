@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Image from 'next/image';
 import { Announcement } from '@/lib/announcements/types';
 import { ImageLightbox } from './image-lightbox';
 
@@ -17,8 +16,6 @@ export function AnnouncementImages({
   const [open, setOpen] = useState(false);
   const [initialIndex, setInitialIndex] = useState(0);
 
-  // Attachments are the source of truth for alt text. Fall back to imageUrls when
-  // older payloads have no attachment rows (legacy listings before the migration).
   const items = useMemo(() => {
     const fromAttachments = announcement.attachments
       ?.filter((a) => String(a.fileType).toLowerCase() === 'image')
@@ -33,16 +30,23 @@ export function AnnouncementImages({
   if (!items.length) return null;
   const images = items.map((item) => item.url);
   const alts = items.map((item) => item.alt);
+  const single = items.length === 1;
 
   return (
     <>
-      <div className='mt-2 grid grid-cols-2 gap-2'>
+      <div
+        className={`mt-1.5 grid w-full min-w-0 gap-1 overflow-hidden rounded-lg ${
+          single ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'
+        }`}
+      >
         {items.slice(0, 4).map((item, idx) => (
           <button
             key={`${item.url}-${idx}`}
             type='button'
             aria-label={item.alt || `Open image ${idx + 1} of ${items.length}`}
-            className='relative aspect-video overflow-hidden rounded-xl bg-neutral-100 transition-opacity duration-200 ease-out hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:opacity-90 dark:bg-neutral-900'
+            className={`relative block min-w-0 overflow-hidden bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              single ? 'h-36 w-full max-w-xs rounded-lg' : 'aspect-square w-full'
+            }`}
             onClick={(e) => {
               e.stopPropagation();
               onLightboxDiagnostic?.();
@@ -50,12 +54,11 @@ export function AnnouncementImages({
               setOpen(true);
             }}
           >
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src={item.url}
               alt={item.alt || ''}
-              fill
-              className='object-cover'
-              unoptimized={item.url.includes('localhost') || item.url.includes('127.0.0.1')}
+              className={`absolute inset-0 h-full w-full ${single ? 'object-contain' : 'object-cover'}`}
             />
           </button>
         ))}

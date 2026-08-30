@@ -7,16 +7,23 @@ import {
   uploadChatAttachments
 } from '../services/chat-service';
 import type { ChatRoom } from '../types';
+import {
+  COURSE_CHAT_POLL_MS,
+  type LiveQueryOptions
+} from './live-query-options';
 
 export const chatKeys = {
   room: (courseOfferingId: string) => ['chat', courseOfferingId] as const
 };
 
-export function useChatRoom(courseOfferingId: string) {
+export function useChatRoom(courseOfferingId: string, options?: LiveQueryOptions) {
+  const live = options?.live ?? true;
   return useQuery({
     queryKey: chatKeys.room(courseOfferingId),
     queryFn: () => getChatRoom(courseOfferingId),
-    refetchInterval: 30000
+    staleTime: 0,
+    refetchOnWindowFocus: true,
+    refetchInterval: live ? COURSE_CHAT_POLL_MS : false
   });
 }
 
@@ -75,7 +82,29 @@ export function useUploadChatAttachments(courseOfferingId: string) {
   return useMutation({
     mutationFn: ({ messageId, files }: { messageId: number; files: File[] }) =>
       uploadChatAttachments(messageId, files),
-    onSuccess: () => {
+    onSuccess: (data, { messageId }) => {
+      queryClient.setQueryData<ChatRoom | undefined>(
+        chatKeys.room(courseOfferingId),
+        (prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            messages: prev.messages.map((m) =>
+              m.id === messageId
+                ? {
+                    ...m,
+                    attachments: [
+                      ...m.attachments,
+                      ...data.attachments.filter(
+                        (a) => !m.attachments.some((x) => x.id === a.id)
+                      )
+                    ]
+                  }
+                : m
+            )
+          };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: chatKeys.room(courseOfferingId) });
     }
   });

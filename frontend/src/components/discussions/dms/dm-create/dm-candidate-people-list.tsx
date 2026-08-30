@@ -66,7 +66,7 @@ export function DmCandidatePeopleList({
                   </Avatar>
                   <div className='min-w-0 flex-1'>
                     <div className='flex items-center gap-1.5'>
-                      <span className='truncate text-xs font-semibold text-[#101828]'>
+                      <span className='truncate text-xs font-semibold text-foreground'>
                         {name}
                       </span>
                       {role ? (

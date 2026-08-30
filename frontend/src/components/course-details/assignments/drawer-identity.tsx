@@ -17,7 +17,7 @@ export function DrawerIdentity({
   if (assignment.workMode === 'GROUP' && submission.groupId != null) {
     const groupRow = allGroupRows.find((r) => r.groupId === submission.groupId);
     return (
-      <div className='rounded-3xl border bg-muted/20 p-4 shadow-sm'>
+      <div className='rounded-3xl border bg-muted/20 p-4'>
         <div className='flex items-center gap-2'>
           <Users className='w-4 h-4 text-muted-foreground' />
           <p className='font-medium'>{groupRow?.groupName ?? 'Group'}</p>
@@ -26,7 +26,7 @@ export function DrawerIdentity({
           {groupRow?.members.map((m) => (
             <span
               key={m.id}
-              className='rounded-full bg-background px-2 py-1 text-xs shadow-sm'
+              className='rounded-full bg-background px-2 py-1 text-xs'
             >
               {m.full_name}
             </span>
@@ -41,7 +41,7 @@ export function DrawerIdentity({
     );
   }
   return (
-    <div className='rounded-3xl border bg-muted/20 p-4 shadow-sm'>
+    <div className='rounded-3xl border bg-muted/20 p-4'>
       <p className='font-medium'>{submission.student?.full_name ?? '—'}</p>
       <p className='text-sm text-muted-foreground'>{submission.student?.number ?? '—'}</p>
     </div>

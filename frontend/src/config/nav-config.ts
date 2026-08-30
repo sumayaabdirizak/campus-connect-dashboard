@@ -2,9 +2,9 @@ import {
   accountNavGroup,
   adminNavGroups,
   communicationNavGroup,
-  deanReportsNavGroup,
   deanSetupNavGroup,
   overviewNavGroup,
+  reportsNavGroup,
   studentPortalNavGroup,
   teacherPortalNavGroup,
   universityStructureNavGroup,
@@ -20,6 +20,6 @@ export const navGroups: NavGroup[] = [
   teacherPortalNavGroup,
   studentPortalNavGroup,
   communicationNavGroup,
-  deanReportsNavGroup,
+  reportsNavGroup,
   accountNavGroup,
 ];

@@ -31,12 +31,12 @@ export function KickConfirmDialog({
       open={target != null}
       onOpenChange={(next) => !next && onClose()}
     >
-      <AlertDialogContent className='rounded-xl border-[#E5E7EB] sm:max-w-md'>
+      <AlertDialogContent className='rounded-xl border-border sm:max-w-md'>
         <AlertDialogHeader>
-          <AlertDialogTitle className='text-[#101828]'>
+          <AlertDialogTitle className='text-foreground'>
             Remove from channel?
           </AlertDialogTitle>
-          <AlertDialogDescription className='text-[#667085]'>
+          <AlertDialogDescription className='text-muted-foreground'>
             {name} will lose access to this server’s channels. Their messages
             stay.
           </AlertDialogDescription>
@@ -44,7 +44,7 @@ export function KickConfirmDialog({
         <AlertDialogFooter>
           <AlertDialogCancel
             disabled={isPending}
-            className='rounded-lg border-[#E5E7EB]'
+            className='rounded-lg border-border'
           >
             Cancel
           </AlertDialogCancel>

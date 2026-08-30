@@ -37,6 +37,11 @@ export interface Assignment {
     grade: number | null;
     is_reviewed: boolean;
   }>;
+  /// Student list only — effective extension deadline when one has been granted.
+  _extension?: {
+    newDueAt: string;
+    reason: string | null;
+  } | null;
   /// Teacher list only — count of submissions with `is_reviewed === false`.
   /// Drives the "X to grade" badge on the assignment card so the teacher
   /// spots pending work without opening each row. Server-computed.

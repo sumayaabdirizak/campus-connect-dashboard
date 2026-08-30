@@ -2,9 +2,11 @@
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { X as XIcon } from 'lucide-react';
+import { GradingDrawerSection } from './grading-drawer-section';
+import { gradingBlue } from './grading-drawer-blue';
+import { cn } from '@/lib/utils';
 
 export function FeedbackTemplatesPanel({
   feedback,
@@ -28,80 +30,96 @@ export function FeedbackTemplatesPanel({
   insertTemplate: (text: string) => void;
 }) {
   return (
-    <div className='space-y-3 rounded-3xl border bg-card p-4 shadow-sm'>
-      <div className='flex items-center justify-between gap-2'>
-        <Label>Feedback</Label>
-        <button
-          type='button'
-          onClick={() => setTemplatesMenuOpen((v) => !v)}
-          className='text-[11px] text-muted-foreground hover:text-foreground transition-colors'
-        >
-          {templatesMenuOpen ? 'Done' : 'Manage templates'}
-        </button>
-      </div>
-      <Textarea
-        value={feedback}
-        onChange={(e) => onFeedbackChange(e.target.value)}
-        rows={4}
-        placeholder='Comments to the student (used for all outcomes)…'
-      />
-      {templates.length > 0 ? (
-        <div className='flex flex-wrap gap-1.5'>
-          {templates.map((t, i) => (
-            <div
-              key={`${t}-${i}`}
-              className='group inline-flex items-center gap-1 rounded-full border bg-muted/40 pl-2.5 py-0.5 text-xs transition-colors hover:bg-muted/70'
+    <GradingDrawerSection
+      title='Note for student'
+      hint='Optional — they will see this with their grade.'
+    >
+      <div className='space-y-3'>
+        {templates.length > 0 ? (
+          <div className='flex justify-end'>
+            <button
+              type='button'
+              onClick={() => setTemplatesMenuOpen((v) => !v)}
+              className={cn('text-xs font-medium', gradingBlue.textLink)}
             >
-              <button
-                type='button'
-                onClick={() => insertTemplate(t)}
-                className='max-w-[28ch] truncate'
-                title={`Insert: "${t}"`}
+              {templatesMenuOpen ? 'Done editing phrases' : 'Manage quick phrases'}
+            </button>
+          </div>
+        ) : null}
+
+        <Textarea
+          value={feedback}
+          onChange={(e) => onFeedbackChange(e.target.value)}
+          rows={3}
+          placeholder='e.g. Good work — check question 3 for more detail.'
+          className={cn(
+            'min-h-[88px] resize-none rounded-lg border-border bg-background text-sm',
+            gradingBlue.focusRing
+          )}
+        />
+
+        {templates.length > 0 ? (
+          <div className='flex flex-wrap gap-1.5'>
+            {templates.map((t, i) => (
+              <span
+                key={`${t}-${i}`}
+                className={cn(
+                  'inline-flex items-center overflow-hidden rounded-full border text-xs',
+                  gradingBlue.phrasePill
+                )}
               >
-                {t}
-              </button>
-              {templatesMenuOpen ? (
                 <button
                   type='button'
-                  onClick={() => persistTemplates(templates.filter((_, j) => j !== i))}
-                  aria-label={`Remove template "${t}"`}
-                  className='text-muted-foreground hover:text-destructive pr-1.5'
+                  onClick={() => insertTemplate(t)}
+                  className={cn('px-2.5 py-1', gradingBlue.phrasePillHover)}
                 >
-                  <XIcon className='w-3 h-3' />
+                  {t.length > 36 ? `${t.slice(0, 36)}…` : t}
                 </button>
-              ) : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {templatesMenuOpen ? (
-        <div className='flex items-center gap-2 pt-1'>
-          <Input
-            value={newTemplate}
-            onChange={(e) => setNewTemplate(e.target.value)}
-            placeholder='Save a new template…'
-            className='h-8 text-xs'
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && newTemplate.trim()) {
-                e.preventDefault();
+                {templatesMenuOpen ? (
+                  <button
+                    type='button'
+                    onClick={() => persistTemplates(templates.filter((_, j) => j !== i))}
+                    className='border-l border-blue-100 px-1.5 py-1 text-blue-500/80 hover:bg-destructive/10 hover:text-destructive'
+                    aria-label='Remove phrase'
+                  >
+                    <XIcon className='size-3' />
+                  </button>
+                ) : null}
+              </span>
+            ))}
+          </div>
+        ) : null}
+
+        {templatesMenuOpen ? (
+          <div className='flex gap-2'>
+            <Input
+              value={newTemplate}
+              onChange={(e) => setNewTemplate(e.target.value)}
+              placeholder='Add a new quick phrase…'
+              className='h-9 rounded-lg text-sm'
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && newTemplate.trim()) {
+                  e.preventDefault();
+                  persistTemplates([...templates, newTemplate.trim()]);
+                  setNewTemplate('');
+                }
+              }}
+            />
+            <Button
+              size='sm'
+              variant='outline'
+              className={cn('h-9 shrink-0', gradingBlue.outlineBtn)}
+              onClick={() => {
+                if (!newTemplate.trim()) return;
                 persistTemplates([...templates, newTemplate.trim()]);
                 setNewTemplate('');
-              }
-            }}
-          />
-          <Button
-            size='sm'
-            variant='outline'
-            onClick={() => {
-              if (!newTemplate.trim()) return;
-              persistTemplates([...templates, newTemplate.trim()]);
-              setNewTemplate('');
-            }}
-          >
-            Save
-          </Button>
-        </div>
-      ) : null}
-    </div>
+              }}
+            >
+              Add
+            </Button>
+          </div>
+        ) : null}
+      </div>
+    </GradingDrawerSection>
   );
 }

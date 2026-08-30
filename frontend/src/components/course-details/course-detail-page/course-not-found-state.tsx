@@ -9,7 +9,7 @@ export function CourseNotFoundState() {
 
   return (
     <div className='flex w-full items-center justify-center py-20'>
-      <div className='max-w-md rounded-xl border bg-card p-8 text-center shadow-sm'>
+      <div className='max-w-md rounded-xl border bg-card p-8 text-center'>
         <div className='mx-auto mb-4 flex size-12 items-center justify-center rounded-xl bg-destructive/10 text-destructive'>
           <ArrowLeft className='size-5' />
         </div>

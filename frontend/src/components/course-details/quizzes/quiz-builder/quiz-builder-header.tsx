@@ -5,10 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import {
   AlertTriangle,
   ClipboardList,
-  FileSpreadsheet,
   Plus,
-  Printer,
-  Sparkles
+  Printer
 } from 'lucide-react';
 import type { Quiz, QuizQuestion } from '@/lib/course-details/services/quizzes-types';
 import { printOfflineQuiz } from './print-offline-quiz';
@@ -21,8 +19,6 @@ interface QuizBuilderHeaderProps {
   canAddQuestions: boolean;
   addLockedTitle: string;
   draftOpen: boolean;
-  onCsv: () => void;
-  onAi: () => void;
   onAdd: () => void;
 }
 
@@ -34,13 +30,11 @@ export function QuizBuilderHeader({
   canAddQuestions,
   addLockedTitle,
   draftOpen,
-  onCsv,
-  onAi,
   onAdd
 }: QuizBuilderHeaderProps) {
   return (
     <>
-      <div className='border rounded-xl p-4 flex items-start justify-between gap-3 bg-card shadow-sm'>
+      <div className='border rounded-xl p-4 flex items-start justify-between gap-3 bg-card'>
         <div className='min-w-0 flex items-start gap-3'>
           <span className='shrink-0 grid place-items-center w-10 h-10 rounded-xl bg-accent text-accent-foreground'>
             <ClipboardList className='w-5 h-5' />
@@ -60,7 +54,7 @@ export function QuizBuilderHeader({
             </div>
             <p className='text-sm text-muted-foreground mt-1 tabular-nums'>
               {questionCount} question{questionCount === 1 ? '' : 's'} · {totalPoints} pt
-              total · {quiz.duration_minutes} min · pass ≥ {quiz.passing_score}%
+              total · {quiz.duration_minutes} min
             </p>
           </div>
         </div>
@@ -77,29 +71,6 @@ export function QuizBuilderHeader({
             </Button>
           )}
           <Button
-            variant='outline'
-            size='icon'
-            onClick={onCsv}
-            disabled={draftOpen}
-            aria-label='Import / export CSV'
-            title={
-              canAddQuestions
-                ? 'Import / export CSV'
-                : 'Download CSV (upload disabled while published)'
-            }
-          >
-            <FileSpreadsheet className='w-4 h-4' />
-          </Button>
-          <Button
-            variant='outline'
-            onClick={onAi}
-            className='gap-1'
-            disabled={draftOpen || !canAddQuestions}
-            title={canAddQuestions ? undefined : addLockedTitle}
-          >
-            <Sparkles className='w-4 h-4' /> Generate with AI
-          </Button>
-          <Button
             onClick={onAdd}
             className='gap-1'
             disabled={draftOpen || !canAddQuestions}
@@ -115,7 +86,7 @@ export function QuizBuilderHeader({
           <AlertTriangle className='mt-0.5 h-4 w-4 shrink-0 text-warning-foreground' />
           <p className='text-warning-foreground'>
             This quiz is <strong>published</strong> and visible to students. You can review
-            questions here, but you cannot add, upload, or import new ones until you switch
+            questions here, but you cannot add new ones until you switch
             it back to <strong>draft</strong>.
           </p>
         </div>

@@ -266,12 +266,12 @@ export const gradeAttemptBodySchema = Joi.object({
 
 export const createOfflineAttemptBodySchema = Joi.object({
   studentId: Joi.number().integer().positive().required(),
-  // Either a paper score, or `absent: true` to record the student never
-  // sat/handed in the offline quiz — never both.
+  // Exactly one outcome: paper marks, absent (never sat), or cheat (zero).
   marksEarned: Joi.number().min(0).max(100000),
-  absent: Joi.boolean(),
+  absent: Joi.boolean().valid(true),
+  cheat: Joi.boolean().valid(true),
 })
-  .xor('marksEarned', 'absent');
+  .xor('marksEarned', 'absent', 'cheat');
 
 /// Body for the bulk question-reorder endpoint. `items` is the new order;
 /// `order_index` is what the row should be updated to. Same shape as the

@@ -1,59 +1,62 @@
 'use client';
 
-import { BookOpen } from 'lucide-react';
-import type { CourseModule } from '@/lib/course-details/services/resources-types';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { StudentQuizCard } from './student-quiz-card';
+import {
+  resolveStudentQuizCardState,
+  shouldAutoExpandQuiz,
+  sortQuizzesForStudentGrid
+} from './student-quiz-card-state';
 
-type Group = { module: CourseModule | null; quizzes: Quiz[] };
+function pickAutoExpandId(quizzes: Quiz[]): number | null {
+  for (const q of quizzes) {
+    const state = resolveStudentQuizCardState(q);
+    if (shouldAutoExpandQuiz(state)) return q.id;
+  }
+  return null;
+}
 
 export function StudentQuizList({
   quizzes,
-  groups,
-  showGrouped,
   reviewLoadingId,
   startPending,
   onOpenResults,
-  onStart,
+  onStart
 }: {
   quizzes: Quiz[];
-  groups: Group[];
-  showGrouped: boolean;
   reviewLoadingId: number | null;
   startPending: boolean;
   onOpenResults: (attemptId: number) => void;
   onStart: (quizId: number) => void;
 }) {
-  const card = (q: Quiz) => (
-    <StudentQuizCard
-      key={q.id}
-      quiz={q}
-      reviewLoadingId={reviewLoadingId}
-      startPending={startPending}
-      onOpenResults={onOpenResults}
-      onStart={() => onStart(q.id)}
-    />
-  );
+  const sorted = useMemo(() => sortQuizzesForStudentGrid(quizzes), [quizzes]);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+  const didAutoExpand = useRef(false);
+  const quizIdsKey = quizzes.map((q) => q.id).join(',');
 
-  if (!showGrouped) {
-    return <div className='space-y-3'>{quizzes.map(card)}</div>;
-  }
+  useEffect(() => {
+    if (didAutoExpand.current || sorted.length === 0) return;
+    const id = pickAutoExpandId(sorted);
+    if (id != null) {
+      setExpandedId(id);
+      didAutoExpand.current = true;
+    }
+  }, [quizIdsKey, sorted]);
 
   return (
-    <div className='space-y-5'>
-      {groups.map(({ module: mod, quizzes: qs }) => (
-        <section key={mod?.id ?? 'ungrouped'} className='space-y-2'>
-          <header className='flex items-center gap-2 pl-1'>
-            <BookOpen className='w-3.5 h-3.5 text-muted-foreground' />
-            <h4 className='text-xs font-semibold uppercase tracking-wide text-muted-foreground select-none'>
-              {mod ? mod.title : 'Other'}
-            </h4>
-            <span className='text-[11px] text-muted-foreground tabular-nums ml-1'>
-              {qs.length}
-            </span>
-          </header>
-          <div className='space-y-2'>{qs.map(card)}</div>
-        </section>
+    <div className='grid grid-cols-1 items-start gap-4 md:grid-cols-2'>
+      {sorted.map((q) => (
+        <StudentQuizCard
+          key={q.id}
+          quiz={q}
+          expanded={expandedId === q.id}
+          onExpandedChange={(open) => setExpandedId(open ? q.id : null)}
+          reviewLoadingId={reviewLoadingId}
+          startPending={startPending}
+          onOpenResults={onOpenResults}
+          onStart={() => onStart(q.id)}
+        />
       ))}
     </div>
   );

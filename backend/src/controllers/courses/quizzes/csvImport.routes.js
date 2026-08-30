@@ -3,7 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireQuizManage } from '../../../middleware/courseOfferingRbac.js';
 import { importQuizCsvBodySchema } from '../../../validation/quizSchemas.js';
-import { assertQuizIsDraft } from './helpers.js';
+import { assertQuizIsDraft, assertQuestionTypeAllowedForQuiz } from './helpers.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -17,6 +17,10 @@ export function register(router) {
 
       if (questions.length === 0) {
         return res.json({ success: true, imported: 0 });
+      }
+
+      for (const q of questions) {
+        assertQuestionTypeAllowedForQuiz(req.quiz, q.question_type);
       }
 
       const last = await prisma.quizQuestion.findFirst({

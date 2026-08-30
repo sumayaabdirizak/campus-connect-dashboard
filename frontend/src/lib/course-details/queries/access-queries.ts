@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useMutation, useQuery } from '@/lib/async-query';
 import { getCourseAccess, pingCourseAccess } from '../services/access-service';
+import { withCourseLiveRefresh } from './live-query-options';
 
 export const accessKeys = {
   all: ['course-access'] as const,
@@ -10,7 +11,8 @@ export const accessKeys = {
 export function useCourseAccessList(courseOfferingId: string) {
   return useQuery({
     queryKey: accessKeys.list(courseOfferingId),
-    queryFn: () => getCourseAccess(courseOfferingId)
+    queryFn: () => getCourseAccess(courseOfferingId),
+    ...withCourseLiveRefresh(false)
   });
 }
 

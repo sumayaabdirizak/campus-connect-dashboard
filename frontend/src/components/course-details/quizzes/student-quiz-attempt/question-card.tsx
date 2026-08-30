@@ -3,6 +3,7 @@
 import { Textarea } from '@/components/ui/textarea';
 import type { QuizAttemptAnswer, QuizStartResponse } from '@/lib/course-details/services/quizzes-types';
 import { ConfidencePicker } from './confidence-picker';
+import { cn } from '@/lib/utils';
 
 type Question = QuizStartResponse['questions'][number];
 
@@ -23,23 +24,20 @@ export function QuestionCard({
 }) {
   return (
     <div
-      className='relative overflow-hidden rounded-xl bg-muted/40 p-6 space-y-5'
+      className='relative overflow-hidden rounded-xl border border-border/80 bg-card p-6 sm:p-8'
       style={{ viewTransitionName: 'quiz-question-card' }}
     >
       {!previewMode ? (
-        <div
-          className='absolute inset-0 pointer-events-none select-none overflow-hidden rounded-xl'
-          aria-hidden
-        >
-          {[0, 1, 2, 3].map((row) =>
-            [0, 1, 2].map((col) => (
+        <div className='pointer-events-none absolute inset-0 select-none overflow-hidden' aria-hidden>
+          {[0, 1].map((row) =>
+            [0, 1].map((col) => (
               <span
                 key={`${row}-${col}`}
-                className='absolute text-[9px] font-medium text-foreground/[0.07] whitespace-nowrap'
+                className='absolute whitespace-nowrap text-[10px] font-medium text-foreground/[0.05]'
                 style={{
-                  transform: 'rotate(-22deg)',
-                  top: `${row * 30 + 10}%`,
-                  left: `${col * 38 - 8}%`
+                  transform: 'rotate(-18deg)',
+                  top: `${row * 48 + 18}%`,
+                  left: `${col * 50 - 4}%`
                 }}
               >
                 {watermarkLabel}
@@ -49,35 +47,35 @@ export function QuestionCard({
         </div>
       ) : null}
 
-      <div className='flex items-start gap-3'>
-        <span className='shrink-0 mt-0.5 text-xs font-semibold bg-muted text-muted-foreground rounded-md px-2 py-1 tabular-nums'>
-          {q.points} pts
-        </span>
-        <p className='font-bold text-base leading-snug select-none'>{q.question_text}</p>
-      </div>
+      <p className='text-xl font-semibold leading-snug text-foreground sm:text-2xl'>
+        {q.question_text}
+      </p>
+      <p className='mt-2 text-sm text-muted-foreground'>{q.points} {q.points === 1 ? 'point' : 'points'}</p>
 
       {q.question_type === 'SHORT_ANSWER' ? (
         <Textarea
-          rows={4}
-          placeholder='Type your answer…'
+          rows={5}
+          placeholder='Type your answer here…'
           value={a?.text_answer ?? ''}
           onChange={(e) =>
             onUpdate(q.id, { text_answer: e.target.value, selected_option_id: null })
           }
-          className='bg-background'
+          className='mt-6 min-h-[8rem] rounded-xl bg-background text-base'
         />
       ) : (
-        <div className='space-y-2'>
-          {q.options.map((o) => {
+        <div className='mt-6 space-y-3'>
+          {q.options.map((o, i) => {
             const isSelected = a?.selected_option_id === o.id;
+            const letter = String.fromCharCode(65 + i);
             return (
               <label
                 key={o.id}
-                className={`flex items-center p-4 rounded-lg border bg-background cursor-pointer transition-colors select-none ${
+                className={cn(
+                  'flex min-h-12 cursor-pointer items-center gap-3 rounded-xl border px-4 py-3.5 text-base transition-colors',
                   isSelected
-                    ? 'border-primary bg-primary/5 font-medium'
-                    : 'border-border hover:bg-muted/60'
-                }`}
+                    ? 'border-blue-600 bg-blue-50 font-medium text-foreground'
+                    : 'border-border bg-background hover:bg-muted/50'
+                )}
               >
                 <input
                   type='radio'
@@ -88,7 +86,17 @@ export function QuestionCard({
                   }
                   className='sr-only'
                 />
-                <span className='text-sm'>{o.option_text}</span>
+                <span
+                  className={cn(
+                    'flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                    isSelected
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-muted text-muted-foreground'
+                  )}
+                >
+                  {letter}
+                </span>
+                <span>{o.option_text}</span>
               </label>
             );
           })}
@@ -96,10 +104,12 @@ export function QuestionCard({
       )}
 
       {confidenceScoring && q.question_type !== 'SHORT_ANSWER' ? (
-        <ConfidencePicker
-          value={(a?.confidence as 'LOW' | 'MED' | 'HIGH' | undefined) ?? 'MED'}
-          onChange={(v) => onUpdate(q.id, { confidence: v })}
-        />
+        <div className='mt-6'>
+          <ConfidencePicker
+            value={(a?.confidence as 'LOW' | 'MED' | 'HIGH' | undefined) ?? 'MED'}
+            onChange={(v) => onUpdate(q.id, { confidence: v })}
+          />
+        </div>
       ) : null}
     </div>
   );

@@ -9,14 +9,12 @@ export function roleAllows(item: NavItem, role: Role | undefined): boolean {
   return true;
 }
 
-/**
- * Server RBAC path allowlist. `null` means "no server list yet — role-only".
- * Dashboard root always allowed so users aren't locked out of home.
- */
+/** Match nav paths; query strings are ignored for RBAC allowlists. */
 export function pathAllowed(url: string, allowed: Set<string> | null): boolean {
   if (!allowed) return true;
-  if (url === '/dashboard') return true;
-  return allowed.has(url);
+  const path = url.split('?')[0];
+  if (path === '/dashboard') return true;
+  return allowed.has(url) || allowed.has(path);
 }
 
 /** Filter a flat nav item list by role + optional path allowlist. */
@@ -37,5 +35,6 @@ export function filterNavItems(
         };
       }
       return item;
-    });
+    })
+    .filter((item) => !item.items || item.items.length > 0);
 }

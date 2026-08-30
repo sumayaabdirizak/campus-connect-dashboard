@@ -14,9 +14,22 @@ export function filterAndSortStudentRows(args: {
   return rows
     .filter((row) => {
       if (filter === 'all') return true;
-      if (filter === 'ungraded') return !(row.submission?.is_reviewed ?? false);
+      if (filter === 'ungraded') {
+        return row.submission != null && !(row.submission.is_reviewed ?? false);
+      }
       if (filter === 'graded') return row.submission?.is_reviewed ?? false;
-      return statusOf(assignment, row.submission ?? undefined, extensions) === filter;
+      // Treat "extended" (due still open via extension) with Missing for filter UI.
+      if (filter === 'missing') {
+        const st = statusOf(assignment, row.submission ?? undefined, extensions, {
+          studentId: row.studentId
+        });
+        return st === 'missing' || st === 'extended';
+      }
+      return (
+        statusOf(assignment, row.submission ?? undefined, extensions, {
+          studentId: row.studentId
+        }) === filter
+      );
     })
     .filter((row) => {
       if (!search.trim()) return true;
@@ -50,8 +63,12 @@ export function filterAndSortStudentRows(args: {
           return (av - bv) * dir;
         }
         case 'status': {
-          const sa = statusOf(assignment, a.submission ?? undefined, extensions);
-          const sb = statusOf(assignment, b.submission ?? undefined, extensions);
+          const sa = statusOf(assignment, a.submission ?? undefined, extensions, {
+            studentId: a.studentId
+          });
+          const sb = statusOf(assignment, b.submission ?? undefined, extensions, {
+            studentId: b.studentId
+          });
           return sa.localeCompare(sb) * dir;
         }
       }
@@ -68,9 +85,13 @@ export function filterAndSortGroupRows(args: {
   return rows
     .filter((row) => {
       if (filter === 'all') return true;
-      if (filter === 'ungraded') return !(row.submission?.is_reviewed ?? false);
+      if (filter === 'ungraded') {
+        return row.submission != null && !(row.submission.is_reviewed ?? false);
+      }
       if (filter === 'graded') return row.submission?.is_reviewed ?? false;
-      if (filter === 'submitted') return row.submission !== null;
+      if (filter === 'submitted') {
+        return row.submission != null && !row.submission.is_late;
+      }
       if (filter === 'missing') return row.submission === null;
       if (filter === 'late') return row.submission?.is_late ?? false;
       return true;
@@ -109,4 +130,46 @@ export function filterAndSortGroupRows(args: {
           return 0;
       }
     });
+}
+
+export function submissionStatusCounts(args: {
+  isGroupMode: boolean;
+  studentRows: SubmissionRow[];
+  groupRows: GroupRow[];
+  assignment: Assignment;
+  extensions: SubmissionExtension[];
+}) {
+  const { isGroupMode, studentRows, groupRows, assignment, extensions } = args;
+
+  if (isGroupMode) {
+    return {
+      all: groupRows.length,
+      submitted: groupRows.filter((r) => r.submission != null && !r.submission.is_late).length,
+      late: groupRows.filter((r) => r.submission?.is_late).length,
+      missing: groupRows.filter((r) => r.submission == null).length,
+      ungraded: groupRows.filter(
+        (r) => r.submission != null && !(r.submission.is_reviewed ?? false)
+      ).length,
+      graded: groupRows.filter((r) => r.submission?.is_reviewed).length
+    };
+  }
+
+  const status = (row: SubmissionRow) =>
+    statusOf(assignment, row.submission ?? undefined, extensions, {
+      studentId: row.studentId
+    });
+
+  return {
+    all: studentRows.length,
+    submitted: studentRows.filter((r) => status(r) === 'submitted').length,
+    late: studentRows.filter((r) => status(r) === 'late').length,
+    missing: studentRows.filter((r) => {
+      const st = status(r);
+      return st === 'missing' || st === 'extended';
+    }).length,
+    ungraded: studentRows.filter(
+      (r) => r.submission != null && !(r.submission.is_reviewed ?? false)
+    ).length,
+    graded: studentRows.filter((r) => r.submission?.is_reviewed).length
+  };
 }

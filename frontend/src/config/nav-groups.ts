@@ -1,4 +1,4 @@
-import type { NavGroup } from '@/types';
+import type { NavGroup, PermissionCheck, NavItem } from '@/types';
 
 export const overviewNavGroup: NavGroup = {
   label: 'Overview',
@@ -63,13 +63,6 @@ export const adminNavGroups: NavGroup[] = [
         isActive: false,
         access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
       },
-      {
-        title: 'Reports',
-        url: '/dashboard/admin/report',
-        icon: 'barChart',
-        isActive: false,
-        access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
-      },
       { title: 'Audit Logs', url: '/dashboard/audit-logs', icon: 'activity', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     ],
   },
@@ -94,9 +87,41 @@ export const communicationNavGroup: NavGroup = {
   ],
 };
 
-export const deanReportsNavGroup: NavGroup = {
-  label: 'Reports',
-  items: [{ title: 'Reports & Analytics', url: '/dashboard/faculty-dean/reports', icon: 'barChart', isActive: false, access: { roles: ['DEAN'] } }],
+/// Entity-scoped reports — separated like DreamsPOS Sales submenu.
+const reportRoles: PermissionCheck = {
+  roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN'],
+};
+
+const entityReport = (scope: string, title: string, icon: NavItem['icon']) => ({
+  title,
+  url: `/dashboard/reports?scope=${scope}&period=all`,
+  icon,
+  access: reportRoles
+});
+
+export const reportsNavGroup: NavGroup = {
+  label: '',
+  items: [
+    {
+      title: 'Reports',
+      url: '/dashboard/reports?scope=course&period=all',
+      icon: 'barChart',
+      access: reportRoles,
+      items: [
+        entityReport('course', 'Course activity', 'billing'),
+        entityReport('section', 'Section activity', 'forms'),
+        entityReport('batch', 'Batch activity', 'kanban'),
+        entityReport('student', 'Student activity', 'profile'),
+        entityReport('teacher', 'Teacher activity', 'userCog'),
+        {
+          title: 'Platform analytics',
+          url: '/dashboard/admin/report',
+          icon: 'activity',
+          access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] }
+        }
+      ]
+    }
+  ]
 };
 
 export const accountNavGroup: NavGroup = {

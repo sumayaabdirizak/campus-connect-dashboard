@@ -36,7 +36,7 @@ export function OverviewTab({
         isArchived={o.isArchived}
       />
 
-      <div className='overflow-hidden rounded-lg border border-[#E5E7EB]'>
+      <div className='overflow-hidden rounded-lg border border-border'>
         <LockChannelToggle
           locked={o.isChannelLocked}
           onToggle={o.handleLockChannel}
@@ -47,18 +47,18 @@ export function OverviewTab({
         />
       </div>
 
-      <div className='flex items-center justify-end gap-2 border-t border-[#E5E7EB] pt-4'>
+      <div className='flex items-center justify-end gap-2 border-t border-border pt-4'>
         <Button
           type='button'
           variant='outline'
-          className='h-10 rounded-lg border-[#E5E7EB]'
+          className='h-10 rounded-lg border-border'
           onClick={onCancel}
         >
           Cancel
         </Button>
         <Button
           type='button'
-          className='h-10 rounded-lg bg-[#3B82F6] text-white hover:bg-[#2563EB] disabled:bg-[#93C5FD]'
+          className='h-10 rounded-lg bg-primary text-white hover:bg-[#2563EB] disabled:bg-[#93C5FD]'
           onClick={o.handleSave}
           disabled={!o.canSave}
         >

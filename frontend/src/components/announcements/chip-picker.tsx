@@ -83,7 +83,7 @@ export function ChipPicker({
         <label
           id={labelId}
           htmlFor={triggerId}
-          className='text-xs font-medium text-foreground'
+          className='text-sm font-semibold text-foreground'
         >
           {label}
         </label>
@@ -104,14 +104,14 @@ export function ChipPicker({
             aria-expanded={open}
             disabled={disabled || options.length === 0}
             className={cn(
-              'group flex min-h-[44px] w-full flex-wrap items-center gap-1.5 rounded-xl border border-input bg-background px-2.5 py-1.5 text-sm shadow-xs transition-colors',
-              'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1',
-              'hover:border-foreground/30',
+              'group flex min-h-[44px] w-full flex-wrap items-center gap-1.5 rounded-lg border-2 border-foreground/15 bg-background px-3 py-2 text-sm font-medium text-foreground shadow-sm transition-colors',
+              'focus-visible:outline-none focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/30',
+              'hover:border-primary/40',
               disabled || options.length === 0 ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
             )}
           >
             {selected.length === 0 ? (
-              <span className='text-muted-foreground'>
+              <span className='text-foreground/55'>
                 {options.length === 0 ? emptyMessage : placeholder}
               </span>
             ) : (

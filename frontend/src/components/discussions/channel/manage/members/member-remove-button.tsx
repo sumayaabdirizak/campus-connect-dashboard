@@ -15,7 +15,7 @@ export function MemberRemoveButton({
       type='button'
       variant='ghost'
       size='icon'
-      className='size-8 shrink-0 rounded-lg text-[#667085] opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover/member:opacity-100'
+      className='size-8 shrink-0 rounded-lg text-muted-foreground opacity-0 transition-opacity hover:bg-red-50 hover:text-red-600 focus:opacity-100 group-hover/member:opacity-100'
       aria-label={`Remove ${name} from channel`}
       onClick={onRemove}
     >

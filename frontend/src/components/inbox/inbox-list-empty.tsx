@@ -24,21 +24,21 @@ export function InboxListEmpty({
   if (showDiscover && filter === 'club' && !hasSearch) {
     return (
       <div className='flex h-full min-h-full flex-col items-center justify-center gap-3 px-6 py-14 text-center'>
-        <div className='flex size-12 items-center justify-center rounded-full bg-[#EFF6FF]'>
-          <Compass className='size-6 text-[#3B82F6]' />
+        <div className='flex size-12 items-center justify-center rounded-full bg-primary/10'>
+          <Compass className='size-6 text-primary' />
         </div>
         <div className='space-y-1'>
-          <p className='text-sm font-medium text-[#101828]'>
+          <p className='text-sm font-medium text-foreground'>
             Discover clubs for your interests
           </p>
-          <p className='text-xs text-[#667085]'>
+          <p className='text-xs text-muted-foreground'>
             Browse campus clubs and join ones that match what you care about.
           </p>
         </div>
         <Button
           type='button'
           size='sm'
-          className='mt-1 rounded-full bg-[#3B82F6] px-4 text-white hover:bg-[#2563EB]'
+          className='mt-1 rounded-full bg-primary px-4 text-white hover:bg-[#2563EB]'
           onClick={() => {
             if (onDiscover) onDiscover()
             else router.push(messagesDiscoverHref())
@@ -53,7 +53,7 @@ export function InboxListEmpty({
   return (
     <div className='flex h-full min-h-full flex-col items-center justify-center gap-2 px-6 py-16 text-center'>
       <MessageSquareDashed className='size-8 text-[#D0D5DD]' />
-      <p className='text-sm text-[#667085]'>
+      <p className='text-sm text-muted-foreground'>
         {hasSearch || filter !== 'all'
           ? 'No conversations match.'
           : 'No conversations yet.'}

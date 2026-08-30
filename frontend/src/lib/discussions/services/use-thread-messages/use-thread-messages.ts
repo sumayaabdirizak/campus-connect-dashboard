@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { listChannelMessages } from '@/lib/discussions/queries/service'
 import { useReconnectGeneration } from '../use-reconnect-generation'
 import type { DiscussionMessage } from '@/lib/discussions/queries/types'
+import { asDiscussionId } from '../use-channel-messages/message-list-helpers'
 import {
   compareByCreatedAt,
   DEFAULT_LIMIT,
@@ -14,17 +15,13 @@ import {
 import { useThreadSocketSync } from './use-thread-socket-sync'
 
 export function useThreadMessages(
-  channelId: number | null | undefined,
-  threadRootId: number | null | undefined,
+  channelId: string | number | null | undefined,
+  threadRootId: string | number | null | undefined,
   options: { limit?: number } = {}
 ) {
   const limit = options.limit ?? DEFAULT_LIMIT
-  const validChannelId =
-    Number.isFinite(Number(channelId)) && Number(channelId) > 0 ? Number(channelId) : null
-  const validRootId =
-    Number.isFinite(Number(threadRootId)) && Number(threadRootId) > 0
-      ? Number(threadRootId)
-      : null
+  const validChannelId = asDiscussionId(channelId)
+  const validRootId = asDiscussionId(threadRootId)
 
   const [state, setState] = useState<ThreadMessagesState>(INITIAL_STATE)
   const requestSeqRef = useRef(0)
@@ -42,16 +39,15 @@ export function useThreadMessages(
     let cancelled = false
     void (async () => {
       try {
-        const page = await listChannelMessages(String(validChannelId), {
+        const page = await listChannelMessages(validChannelId, {
           limit,
-          threadRoot: validRootId != null ? String(validRootId) : null,
+          threadRoot: validRootId,
         })
         if (cancelled || requestSeqRef.current !== seq) return
         const all = page.results ?? []
-        const rootIdStr = validRootId != null ? String(validRootId) : null
-        const root = all.find((m) => m.id === rootIdStr) ?? null
+        const root = all.find((m) => m.id === validRootId) ?? null
         const replies = all
-          .filter((m) => m.id !== rootIdStr && m.parentMessageId === rootIdStr)
+          .filter((m) => m.id !== validRootId && m.parentMessageId === validRootId)
           .toSorted(compareByCreatedAt)
         setState({
           root,
@@ -90,15 +86,14 @@ export function useThreadMessages(
     const seq = requestSeqRef.current
     try {
       const cursor = stateRef.current.nextCursor
-      const page = await listChannelMessages(String(validChannelId), {
+      const page = await listChannelMessages(validChannelId, {
         limit,
-        threadRoot: validRootId != null ? String(validRootId) : null,
+        threadRoot: validRootId,
         cursor,
       })
       if (requestSeqRef.current !== seq) return
-      const rootIdStr = validRootId != null ? String(validRootId) : null
       const older = (page.results ?? []).filter(
-        (m) => m.id !== rootIdStr && m.parentMessageId === rootIdStr
+        (m) => m.id !== validRootId && m.parentMessageId === validRootId
       )
       setState((s) => ({
         ...s,
@@ -123,13 +118,11 @@ export function useThreadMessages(
   }, [])
 
   const replaceOptimisticReply = useCallback((tempId: string, real: DiscussionMessage) => {
-      setState((s) => {
-        const filtered = s.replies.filter((m) => m.id !== tempId)
-        return { ...s, replies: mergeReplies(filtered, [real]) }
-      })
-    },
-    []
-  )
+    setState((s) => {
+      const filtered = s.replies.filter((m) => m.id !== tempId)
+      return { ...s, replies: mergeReplies(filtered, [real]) }
+    })
+  }, [])
 
   const removeOptimisticReply = useCallback((tempId: string) => {
     setState((s) => ({ ...s, replies: s.replies.filter((m) => m.id !== tempId) }))

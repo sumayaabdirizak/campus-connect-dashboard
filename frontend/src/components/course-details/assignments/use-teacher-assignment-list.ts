@@ -7,14 +7,10 @@ import type { AssignmentFormValues } from './create-assignment-form';
 import { useTeacherAssignmentCreate } from './use-teacher-assignment-create';
 import { useTeacherAssignmentMutations } from './use-teacher-assignment-mutations';
 
-export type AssignmentListFilter = 'all' | 'live' | 'draft' | 'grading' | 'overdue';
-
 export function useTeacherAssignmentList(courseId: string) {
-  const { data: assignments = [], isLoading } = useAssignments(courseId);
+  const { data: assignments = [], isLoading } = useAssignments(courseId, { live: true });
   const [view, setView] = useState<'list' | 'submissions'>('list');
   const [search, setSearch] = useState('');
-  const [assignmentListFilter, setAssignmentListFilter] =
-    useState<AssignmentListFilter>('all');
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [pendingFiles, setPendingFiles] = useState<File[]>([]);
@@ -36,29 +32,14 @@ export function useTeacherAssignmentList(courseId: string) {
 
   const filteredAssignments = useMemo(() => {
     const needle = search.trim().toLowerCase();
-    const now = new Date();
     return assignments.filter((a) => {
-      const matchesSearch =
-        !needle ||
+      if (!needle) return true;
+      return (
         a.title.toLowerCase().includes(needle) ||
-        (a.description ?? '').toLowerCase().includes(needle);
-      if (!matchesSearch) return false;
-      if (assignmentListFilter === 'live') return !a.is_draft;
-      if (assignmentListFilter === 'draft') return a.is_draft;
-      if (assignmentListFilter === 'grading') return (a.pendingGradingCount ?? 0) > 0;
-      if (assignmentListFilter === 'overdue') return !a.is_draft && new Date(a.due_date) < now;
-      return true;
+        (a.description ?? '').toLowerCase().includes(needle)
+      );
     });
-  }, [assignments, assignmentListFilter, search]);
-
-  const listStats = {
-    total: assignments.length,
-    published: assignments.filter((a) => !a.is_draft).length,
-    drafts: assignments.filter((a) => a.is_draft).length,
-    overdue: assignments.filter((a) => !a.is_draft && new Date(a.due_date) < new Date())
-      .length,
-    pendingGrading: assignments.reduce((n, a) => n + (a.pendingGradingCount ?? 0), 0)
-  };
+  }, [assignments, search]);
 
   const editInitialValues = useMemo<Partial<AssignmentFormValues> | undefined>(() => {
     if (!editTarget) return undefined;
@@ -101,8 +82,6 @@ export function useTeacherAssignmentList(courseId: string) {
     setView,
     search,
     setSearch,
-    assignmentListFilter,
-    setAssignmentListFilter,
     selectedAssignment,
     createOpen,
     setCreateOpen,
@@ -116,7 +95,6 @@ export function useTeacherAssignmentList(courseId: string) {
     toggleAssignmentSelect,
     clearAssignmentSelection,
     filteredAssignments,
-    listStats,
     ...create,
     ...mutations
   };

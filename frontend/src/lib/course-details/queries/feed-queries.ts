@@ -12,16 +12,22 @@ import {
   uploadCoursePostAttachments
 } from '../services/feed-service';
 import type { CoursePost, CreateCoursePostInput, UpdateCoursePostInput } from '../types';
+import {
+  type LiveQueryOptions,
+  withCourseLiveRefresh
+} from './live-query-options';
 
 export const feedKeys = {
   all: ['course-feed'] as const,
   list: (courseOfferingId: string) => [...feedKeys.all, courseOfferingId] as const
 };
 
-export function useCourseFeed(courseOfferingId: string) {
+export function useCourseFeed(courseOfferingId: string, options?: LiveQueryOptions) {
+  const live = options?.live ?? false;
   return useQuery({
     queryKey: feedKeys.list(courseOfferingId),
-    queryFn: () => getCourseFeed(courseOfferingId)
+    queryFn: () => getCourseFeed(courseOfferingId),
+    ...withCourseLiveRefresh(live)
   });
 }
 

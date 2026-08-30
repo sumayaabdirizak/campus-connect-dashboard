@@ -12,6 +12,8 @@ export interface SimpleDataTableProps<TData> {
   mobilePrimaryColumn?: string | false;
   /** Hide built-in search/export toolbar (e.g. when parent shell provides it). */
   hideToolbar?: boolean;
+  /** Keep export in table toolbar but move search to the page header. */
+  hideToolbarSearch?: boolean;
   globalFilter?: string;
   onGlobalFilterChange?: (value: string) => void;
   /** Sticky column headers while the table body scrolls. Default true. */

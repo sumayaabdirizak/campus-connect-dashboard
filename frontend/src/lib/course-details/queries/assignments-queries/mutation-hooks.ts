@@ -93,6 +93,8 @@ export function useGrantExtension() {
     }) => grantExtension(assignmentId, input),
     onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.extensions(assignmentId) });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.mySubmission(assignmentId) });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
     }
   });
 }
@@ -109,6 +111,8 @@ export function useGrantExtensionBatch() {
     }) => grantExtensionBatch(assignmentId, input),
     onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.extensions(assignmentId) });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.mySubmission(assignmentId) });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
     }
   });
 }

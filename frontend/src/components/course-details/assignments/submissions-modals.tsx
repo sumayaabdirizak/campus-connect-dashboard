@@ -24,7 +24,8 @@ export function SubmissionsModals({
   s,
   d,
   gradeActions,
-  bulkActions
+  bulkActions,
+  bulkSelection
 }: {
   courseId: string;
   assignment: Assignment;
@@ -32,6 +33,7 @@ export function SubmissionsModals({
   d: D;
   gradeActions: G;
   bulkActions: B;
+  bulkSelection: { gradeCount: number; extendCount: number };
 }) {
   return (
     <>
@@ -77,7 +79,7 @@ export function SubmissionsModals({
       <BulkGradeDialog
         open={s.bulkGradeOpen}
         onOpenChange={s.setBulkGradeOpen}
-        selectedCount={s.selectedRows.size}
+        selectedCount={bulkSelection.gradeCount}
         maxMarks={assignment.maxMarks ?? 100}
         gradeValue={s.bulkGradeValue}
         setGradeValue={s.setBulkGradeValue}
@@ -89,7 +91,7 @@ export function SubmissionsModals({
       <BulkExtendDialog
         open={s.bulkOpen}
         onOpenChange={s.setBulkOpen}
-        selectedCount={s.selectedRows.size}
+        selectedCount={bulkSelection.extendCount}
         date={s.bulkDate}
         setDate={s.setBulkDate}
         reason={s.bulkReason}

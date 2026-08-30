@@ -42,7 +42,7 @@ export function UserFormUniversityIdField({
   return (
     <div className='space-y-1.5'>
       <Label>University ID</Label>
-      <p className='rounded-md border border-dashed border-[#D0D5DD] bg-[#F8FAFC] px-3 py-2 text-sm text-[#475467]'>
+      <p className='rounded-md border border-dashed border-border bg-muted px-3 py-2 text-sm text-muted-foreground'>
         {autoIdHint(role, batchNamePreview, departmentCode || undefined)}
       </p>
     </div>

@@ -18,7 +18,7 @@ export function BatchTableRow({
     <PosTableRow>
       {col('id') ? (
         <PosTableCell>
-          <span className='font-medium text-[#3B82F6]'>#{batch.id}</span>
+          <span className='font-medium text-primary'>#{batch.id}</span>
         </PosTableCell>
       ) : null}
       {col('name') ? (

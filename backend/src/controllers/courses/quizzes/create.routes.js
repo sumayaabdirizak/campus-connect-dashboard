@@ -3,7 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireCourseOfferingManage } from '../../../middleware/courseOfferingRbac.js';
 import { createQuizBodySchema } from '../../../validation/quizSchemas.js';
-import { resolveModuleIdForOffering } from './helpers.js';
+import { resolveModuleIdForOffering, assertQuestionsAllowedForMode, assertMarksPlanAllowedForMode } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
 
 /** @param {import('express').Router} router */
@@ -33,6 +33,10 @@ export function register(router) {
     } catch (e) {
       return res.status(e.status || 400).json({ message: e.message });
     }
+
+    const quizMode = mode || 'online';
+    assertMarksPlanAllowedForMode(quizMode, marksPlan);
+    assertQuestionsAllowedForMode(quizMode, questions);
 
     const nestedQuestions =
       Array.isArray(questions) && questions.length > 0

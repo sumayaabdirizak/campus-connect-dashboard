@@ -6,20 +6,19 @@ import { AttemptReview } from '../attempt-review';
 import { StudentAttempt } from '../student-quiz-attempt';
 import { EmptyState } from '../../_shared/empty-state';
 import { ListSkeleton } from '../../_shared/list-skeleton';
-import { groupQuizzesByModule } from '../course-quizzes-utils';
 import { useQueryClient } from '@/lib/async-query';
 import { getAttemptReview } from '@/lib/course-details/services/quizzes-service';
 import { quizKeys, useAvailableQuizzes, useStartQuiz } from '@/lib/course-details/queries/quizzes-queries';
-import { useModules } from '@/lib/course-details/queries/resources-queries';
 import { toast } from 'sonner';
 import type { QuizAttempt, QuizStartResponse } from '@/lib/course-details/services/quizzes-types';
 import { StudentQuizList } from './student-quiz-list';
 import { SubmitSuccessOverlay } from './submit-success-overlay';
 import { TimeoutAlert } from './timeout-alert';
+import { CourseTabHeader } from '../../_shared/course-tab-header';
+import { CourseTabPage } from '../../_shared/course-tab-page';
 
 export function StudentView({ courseId }: { courseId: string }) {
-  const { data: quizzes = [], isLoading } = useAvailableQuizzes(courseId);
-  const { data: modules = [] } = useModules(courseId);
+  const { data: quizzes = [], isLoading } = useAvailableQuizzes(courseId, { live: true });
   const queryClient = useQueryClient();
   const startMutation = useStartQuiz();
   const [attempt, setAttempt] = useState<QuizStartResponse | null>(null);
@@ -33,7 +32,13 @@ export function StudentView({ courseId }: { courseId: string }) {
     try {
       setReview(await getAttemptReview(attemptId));
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not load your results');
+      const msg =
+        e instanceof TypeError && e.message === 'Failed to fetch'
+          ? 'Cannot reach the server. Start the backend and try again.'
+          : e instanceof Error
+            ? e.message
+            : 'Could not load your results';
+      toast.error(msg);
     } finally {
       setReviewLoadingId(null);
     }
@@ -84,34 +89,51 @@ export function StudentView({ courseId }: { courseId: string }) {
     );
   }
 
-  if (isLoading) return <ListSkeleton variant='row' count={2} />;
+  if (isLoading) {
+    return (
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Quizzes'
+          description='Take available quizzes and review your results.'
+        />
+        <ListSkeleton variant='row' count={2} />
+      </CourseTabPage>
+    );
+  }
   if (quizzes.length === 0) {
     return (
-      <EmptyState
-        icon={ClipboardList}
-        title='No quizzes available'
-        description='Quizzes assigned to this course will appear here when they open.'
-      />
+      <CourseTabPage>
+        <CourseTabHeader
+          title='Quizzes'
+          description='Take available quizzes and review your results.'
+        />
+        <EmptyState
+          icon={ClipboardList}
+          title='No quizzes available'
+          description='When your teacher opens a quiz, it will show up here.'
+        />
+      </CourseTabPage>
     );
   }
 
-  const groups = groupQuizzesByModule(quizzes, modules);
-  const showGrouped = groups.length > 1 || (groups[0]?.module ?? null) !== null;
-
   return (
-    <StudentQuizList
-      quizzes={quizzes}
-      groups={groups}
-      showGrouped={showGrouped}
-      reviewLoadingId={reviewLoadingId}
-      startPending={startMutation.isPending}
-      onOpenResults={openResults}
-      onStart={(quizId) =>
-        startMutation.mutate(quizId, {
-          onSuccess: (data) => setAttempt(data),
-          onError: (e: Error) => toast.error(e.message),
-        })
-      }
-    />
+    <CourseTabPage>
+      <CourseTabHeader
+        title='Quizzes'
+        description='Take available quizzes and review your results.'
+      />
+      <StudentQuizList
+        quizzes={quizzes}
+        reviewLoadingId={reviewLoadingId}
+        startPending={startMutation.isPending}
+        onOpenResults={openResults}
+        onStart={(quizId) =>
+          startMutation.mutate(quizId, {
+            onSuccess: (data) => setAttempt(data),
+            onError: (e: Error) => toast.error(e.message),
+          })
+        }
+      />
+    </CourseTabPage>
   );
 }

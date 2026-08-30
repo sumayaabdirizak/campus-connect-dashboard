@@ -288,6 +288,9 @@ export interface QuizAttempt {
   /// attempts list surface a "Needs grading" badge.
   is_graded?: boolean;
   closure_reason?: string | null;
+  /// Student review: false while the cohort window is still live (answer key
+  /// and per-question marks are stripped). Teachers always get true.
+  answers_revealed?: boolean;
   student?: { id: number; full_name: string; number?: string };
   answers?: Array<{
     id: number;

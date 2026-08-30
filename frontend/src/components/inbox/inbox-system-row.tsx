@@ -25,7 +25,7 @@ export function InboxSystemRow({
       onClick={onOpen}
       className='flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors duration-150 hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring'
     >
-      <span className={cn('flex size-12 shrink-0 items-center justify-center rounded-2xl', tint)}>
+      <span className={cn('flex size-12 shrink-0 items-center justify-center rounded-xl', tint)}>
         <Icon className='size-5' aria-hidden />
       </span>
       <div className='min-w-0 flex-1'>

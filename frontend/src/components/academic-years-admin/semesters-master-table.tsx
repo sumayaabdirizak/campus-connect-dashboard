@@ -124,7 +124,7 @@ export function SemestersMasterTable() {
               <PosTableRow key={semester.id}>
                 {col('sequence') ? (
                   <PosTableCell>
-                    <span className='font-medium text-[#3B82F6]'>#{semester.sequence}</span>
+                    <span className='font-medium text-primary'>#{semester.sequence}</span>
                   </PosTableCell>
                 ) : null}
                 {col('name') ? (

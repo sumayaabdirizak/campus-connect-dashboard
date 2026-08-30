@@ -27,7 +27,7 @@ export function OfficeInbox({ slug, onBack, onOpenThread }: OfficeInboxProps) {
 
   return (
     <div className='space-y-4'>
-      <div className={cn('flex flex-wrap items-center gap-2 rounded-2xl px-4 py-3', hue.tile)}>
+      <div className={cn('flex flex-wrap items-center gap-2 rounded-xl px-4 py-3', hue.tile)}>
         <Button variant='ghost' size='icon' className='size-8' onClick={onBack} aria-label='Back'>
           <ArrowLeft className={cn('size-4', hue.text)} />
         </Button>
@@ -52,15 +52,15 @@ export function OfficeInbox({ slug, onBack, onOpenThread }: OfficeInboxProps) {
       />
 
       {isLoading ? (
-        <Skeleton className='h-40 rounded-2xl' />
+        <Skeleton className='h-40 rounded-xl' />
       ) : threads.length === 0 ? (
-        <p className='rounded-2xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground'>
+        <p className='rounded-xl border bg-card px-4 py-10 text-center text-sm text-muted-foreground'>
           {filter === 'unassigned'
             ? 'Queue is clear — no unclaimed conversations. 🎉'
             : 'Nothing here right now.'}
         </p>
       ) : (
-        <div className='divide-y overflow-hidden rounded-2xl border bg-card'>
+        <div className='divide-y overflow-hidden rounded-xl border bg-card'>
           {threads.map((t) => (
             <button
               key={t.id}

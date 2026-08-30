@@ -1,9 +1,24 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import type { PlatformAnalytics } from '@/lib/admin/services';
 import { Skeleton } from '@/features/ui/components/skeleton';
-import { ReportsGrowthCharts } from './reports-growth-charts';
-import { ReportsPerformanceCharts } from './reports-performance-charts';
+
+/**
+ * recharts arrives in its own chunk, as on the main dashboard. This page
+ * already shows skeletons while analytics load, so the chunk fetch hides
+ * behind a wait that was happening anyway.
+ */
+const chartLoading = () => <Skeleton className='h-64 rounded-xl' />;
+
+const ReportsGrowthCharts = dynamic(
+  () => import('./reports-growth-charts').then((m) => m.ReportsGrowthCharts),
+  { ssr: false, loading: chartLoading }
+);
+const ReportsPerformanceCharts = dynamic(
+  () => import('./reports-performance-charts').then((m) => m.ReportsPerformanceCharts),
+  { ssr: false, loading: chartLoading }
+);
 
 type Props = {
   data?: PlatformAnalytics;

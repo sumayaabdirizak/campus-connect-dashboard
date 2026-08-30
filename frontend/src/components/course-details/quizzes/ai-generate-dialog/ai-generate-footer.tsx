@@ -3,6 +3,10 @@
 import { Loader2, Wand2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DialogFooter } from '@/components/ui/dialog';
+import {
+  quizFormOutlineBtnClass,
+  quizFormPrimaryBtnClass
+} from '../new-quiz-page/field-styles';
 
 interface AiGenerateFooterProps {
   phase: 'config' | 'preview';
@@ -18,6 +22,8 @@ interface AiGenerateFooterProps {
   onCancel: () => void;
   onGenerate: () => void;
   onSave: () => void;
+  minimal?: boolean;
+  generateDisabled?: boolean;
 }
 
 export function AiGenerateFooter({
@@ -33,11 +39,13 @@ export function AiGenerateFooter({
   count,
   onCancel,
   onGenerate,
-  onSave
+  onSave,
+  minimal,
+  generateDisabled
 }: AiGenerateFooterProps) {
-  return (
-    <DialogFooter>
-      <Button variant='outline' onClick={onCancel}>
+  const actions = (
+    <>
+      <Button variant='outline' onClick={onCancel} className={quizFormOutlineBtnClass}>
         Cancel
       </Button>
       {phase === 'config' ? (
@@ -48,24 +56,29 @@ export function AiGenerateFooter({
             isExtractingSource ||
             !promptReady ||
             !sourceReady ||
+            generateDisabled ||
             (isNewQuiz && !titleReady)
           }
-          className='gap-1'
+          className={`${quizFormPrimaryBtnClass} gap-1.5`}
         >
           {isGenerating ? (
             <>
-              <Loader2 className='w-4 h-4 animate-spin' />
+              <Loader2 className='size-4 animate-spin' />
               Drafting {count}…
             </>
           ) : (
             <>
-              <Wand2 className='w-4 h-4' />
-              Generate
+              <Wand2 className='size-4' />
+              Generate questions
             </>
           )}
         </Button>
       ) : (
-        <Button onClick={onSave} disabled={isSaving || keepCount === 0} className='gap-1'>
+        <Button
+          onClick={onSave}
+          disabled={isSaving || keepCount === 0}
+          className={`${quizFormPrimaryBtnClass} gap-1.5`}
+        >
           {isSaving
             ? isNewQuiz
               ? 'Creating quiz…'
@@ -75,6 +88,12 @@ export function AiGenerateFooter({
               : `Add ${keepCount} to quiz`}
         </Button>
       )}
-    </DialogFooter>
+    </>
   );
+
+  if (minimal) {
+    return <div className='flex flex-wrap items-center justify-end gap-2 border-t border-border pt-4'>{actions}</div>;
+  }
+
+  return <DialogFooter>{actions}</DialogFooter>;
 }

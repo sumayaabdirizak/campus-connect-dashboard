@@ -3,18 +3,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import type { QuizStartResponse } from '@/lib/course-details/services/quizzes-types';
+import { serverNow, syncServerTime } from '@/lib/server-clock';
 
 export function useAttemptTimer(
   data: QuizStartResponse,
   previewMode: boolean,
   onTimeUp: () => void
 ) {
+  useEffect(() => {
+    if (data.serverTime) syncServerTime(data.serverTime);
+  }, [data.serverTime]);
+
   const expiresAtMs = data.attempt.expires_at
     ? new Date(data.attempt.expires_at).getTime()
-    : Date.now() + data.quiz.duration_minutes * 60_000;
+    : serverNow() + data.quiz.duration_minutes * 60_000;
 
   const computeRemaining = () =>
-    Math.max(0, Math.floor((expiresAtMs - Date.now()) / 1000));
+    Math.max(0, Math.floor((expiresAtMs - serverNow()) / 1000));
   const [remaining, setRemaining] = useState(computeRemaining);
   const lastWarnedRef = useRef({ five: false, one: false });
   const firedTimeUpRef = useRef(false);

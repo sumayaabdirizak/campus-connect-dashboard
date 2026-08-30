@@ -15,7 +15,8 @@ import {
   startQuiz,
   submitQuiz,
   updateQuestion,
-  updateQuiz
+  updateQuiz,
+  type OfflineAttemptOutcome
 } from '@/lib/course-details/services/quizzes-service';
 import type {
   CreateQuestionInput,
@@ -132,7 +133,7 @@ export function useCreateOfflineAttempt(quizId: number) {
       outcome
     }: {
       studentId: number;
-      outcome: { marksEarned: number } | { absent: true };
+      outcome: OfflineAttemptOutcome;
     }) => createOfflineAttempt(quizId, studentId, outcome),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: quizKeys.attempts(quizId) });

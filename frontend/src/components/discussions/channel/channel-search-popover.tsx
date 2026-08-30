@@ -48,7 +48,7 @@ export function ChannelSearchPopover({
           type='button'
           variant='ghost'
           size='icon'
-          className='size-10 rounded-full text-[#101828] hover:bg-[#F2F4F7]'
+          className='size-10 rounded-full text-foreground hover:bg-muted'
           aria-label='Search this channel'
         >
           <Icons.search className='h-5 w-5' />

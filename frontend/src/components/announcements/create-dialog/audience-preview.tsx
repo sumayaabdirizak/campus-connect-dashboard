@@ -1,7 +1,6 @@
 'use client';
 
 import { Icons } from '@/components/icons';
-import type { AnnouncementTargetType } from '@/lib/announcements/types';
 
 type Preview = {
   count: number;
@@ -23,44 +22,47 @@ export function AudiencePreviewCard({
   return (
     <section
       aria-labelledby='audience-preview-heading'
-      className='rounded-2xl border border-border bg-gradient-to-br from-primary/5 via-background to-background p-4'
+      className='rounded-xl border-2 border-primary/40 bg-card p-4 shadow-md'
     >
       <div className='flex items-start gap-3'>
-        <div className='flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-primary'>
-          <Icons.user className='size-4' aria-hidden />
+        <div className='flex size-10 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground'>
+          <Icons.user className='size-5' aria-hidden />
         </div>
         <div className='min-w-0 flex-1'>
           <h3 id='audience-preview-heading' className='text-sm font-semibold text-foreground'>
-            Who will see this?
+            Estimated reach
           </h3>
-          <div aria-live='polite' className='mt-1 text-xs text-muted-foreground'>
-            {!previewReady && <p>Choose a reach above to preview the audience.</p>}
-            {previewReady && previewLoading && <p>Calculating reach…</p>}
+          <div aria-live='polite' className='mt-1.5 text-sm'>
+            {!previewReady && (
+              <p className='text-muted-foreground'>Choose a reach option above to see the count.</p>
+            )}
+            {previewReady && previewLoading && (
+              <p className='text-muted-foreground'>Calculating…</p>
+            )}
             {previewReady && !previewLoading && audiencePreview ? (
               <>
                 <p className='text-foreground'>
-                  <strong className='text-2xl font-semibold tabular-nums tracking-tight'>
+                  <strong className='text-3xl font-bold tabular-nums tracking-tight'>
                     {audiencePreview.count}
-                  </strong>{' '}
-                  <span className='text-muted-foreground'>
-                    recipient{audiencePreview.count === 1 ? '' : 's'}
+                  </strong>
+                  <span className='ms-1.5 text-muted-foreground'>
+                    people
                     {audiencePreview.shardCount && audiencePreview.shardCount > 1
                       ? ` · ${audiencePreview.shardCount} targets`
                       : ''}
                   </span>
                 </p>
                 {audiencePreview.sample.length > 0 ? (
-                  <p className='mt-1'>
-                    Including {audiencePreview.sample.map((u) => u.name).join(', ')}
+                  <p className='mt-1 text-xs text-muted-foreground'>
+                    e.g. {audiencePreview.sample.map((u) => u.name).join(', ')}
                     {audiencePreview.count > audiencePreview.sample.length
                       ? ` and ${audiencePreview.count - audiencePreview.sample.length} more`
                       : ''}
-                    .
                   </p>
                 ) : null}
                 {audiencePreview.count === 0 ? (
-                  <p className='mt-1 text-amber-600 dark:text-amber-400'>
-                    No active users match this targeting. Double-check the scope before publishing.
+                  <p className='mt-2 text-xs font-medium text-amber-700 dark:text-amber-400'>
+                    No active users match. Adjust your reach before publishing.
                   </p>
                 ) : null}
               </>
@@ -72,4 +74,4 @@ export function AudiencePreviewCard({
   );
 }
 
-export type ReachOption = { value: AnnouncementTargetType; label: string; hint: string };
+export type ReachOption = { value: string; label: string; hint: string };

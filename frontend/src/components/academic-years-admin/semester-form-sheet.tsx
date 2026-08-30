@@ -74,8 +74,8 @@ export function SemesterFormSheet({ open, onOpenChange, yearId, yearName, semest
       submitting={mutation.isPending}
     >
       <form id='semester-form' onSubmit={submit} className='space-y-3'>
-        <p className='text-xs text-[#6A7282]'>
-          Academic year: <span className='font-medium text-[#101828]'>{yearName}</span>
+        <p className='text-xs text-muted-foreground'>
+          Academic year: <span className='font-medium text-foreground'>{yearName}</span>
           {!isEdit
             ? ' · Sequence is assigned automatically.'
             : ` · Global #${semester?.sequence}`}
@@ -83,7 +83,7 @@ export function SemesterFormSheet({ open, onOpenChange, yearId, yearName, semest
         {isEdit ? (
           <div className='space-y-1.5'>
             <Label>Global sequence</Label>
-            <Input value={String(semester?.sequence ?? '')} readOnly className='bg-[#F8FAFC]' />
+            <Input value={String(semester?.sequence ?? '')} readOnly className='bg-muted' />
           </div>
         ) : null}
         <div className='space-y-1.5'>

@@ -16,7 +16,7 @@ export function MyConversationsList({
   loading: boolean;
   onOpenThread: (id: number) => void;
 }) {
-  if (loading) return <Skeleton className='h-24 rounded-2xl' />;
+  if (loading) return <Skeleton className='h-24 rounded-xl' />;
 
   if (threads.length === 0) {
     return (
@@ -27,7 +27,7 @@ export function MyConversationsList({
   }
 
   return (
-    <div className='divide-y overflow-hidden rounded-2xl border bg-card'>
+    <div className='divide-y overflow-hidden rounded-xl border bg-card'>
       {threads.map((t) => (
         <button
           key={t.id}

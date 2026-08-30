@@ -20,10 +20,8 @@ import {
   importQuizCsvBodySchema,
 } from '../../../validation/quizSchemas.js';
 import {
-  resolveModuleIdForOffering,
   assertQuizIsDraft,
-  csvEscape,
-  buildQuizCsv,
+  assertQuestionTypeAllowedForQuiz,
 } from './helpers.js';
 
 /** @param {import('express').Router} router */
@@ -32,7 +30,8 @@ export function register(router) {
     assertQuizIsDraft(req.quiz);
     const qid = parseInt(req.params.quizId, 10);
     const { question_text, question_type, points, correct_answer, explanation, options } = req.body;
-  
+
+    assertQuestionTypeAllowedForQuiz(req.quiz, question_type);
     // `?? -1` not `|| 0`: the existing `|| 0` collapses a legitimate
     // `order_index === 0` to 0, so the second question would also get 1 and
     // collide. Treating "no previous question" as -1 gives a clean 0, 1, 2…
@@ -73,7 +72,10 @@ export function register(router) {
     assertQuizIsDraft(req.quiz);
     const qid = parseInt(req.params.questionId, 10);
     const { question_text, question_type, points, correct_answer, explanation, options } = req.body;
-  
+
+    if (question_type) {
+      assertQuestionTypeAllowedForQuiz(req.quiz, question_type);
+    }
     // Wrap the question update + option swap in a transaction so a concurrent
     // reader never sees "options deleted, new ones not yet created".
     const updated = await prisma.$transaction(async (tx) => {

@@ -9,7 +9,7 @@ import { EmptyState } from '../_shared/empty-state';
 import { ListSkeleton } from '../_shared/list-skeleton';
 
 export function QuizAnalyticsView({ quizId }: { quizId: number }) {
-  const { data, isLoading } = useQuizAnalytics(quizId);
+  const { data, isLoading } = useQuizAnalytics(quizId, { live: true });
   const [sortBy, setSortBy] = useState<'order' | 'hardest'>('order');
 
   if (isLoading || !data) return <ListSkeleton variant='row' count={3} />;
@@ -45,7 +45,7 @@ export function QuizAnalyticsView({ quizId }: { quizId: number }) {
           </div>
           <div>
             <p className='text-[11px] text-muted-foreground uppercase tracking-wide'>
-              Avg score
+              Avg marks
             </p>
             <p className='text-lg font-semibold tabular-nums'>
               {data.avgScore != null ? `${data.avgScore}%` : '—'}

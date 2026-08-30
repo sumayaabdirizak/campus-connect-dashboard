@@ -12,6 +12,7 @@ import {
 } from '@/lib/discussions/queries/queries';
 import { confirmDelete } from '@/lib/notifications';
 import type { DiscussionMessage } from '@/lib/discussions/queries/types';
+import { serverNowIso } from '@/lib/format-time';
 
 export function useDmMessageActions({
   message,
@@ -88,7 +89,7 @@ export function useDmMessageActions({
       const previousValue = editValue;
       const revert = onOptimisticPatch(message.id, {
         content: trimmed,
-        editedAt: new Date().toISOString()
+        editedAt: serverNowIso()
       });
       editMutation.mutate(
         { messageId: message.id, body: { content: trimmed || null } },
@@ -112,7 +113,7 @@ export function useDmMessageActions({
     if (!(await confirmDelete('this message'))) return;
     if (onOptimisticPatch) {
       const revert = onOptimisticPatch(message.id, {
-        deletedAt: new Date().toISOString()
+        deletedAt: serverNowIso()
       });
       deleteMutation.mutate(message.id, {
         onError: () => revert()

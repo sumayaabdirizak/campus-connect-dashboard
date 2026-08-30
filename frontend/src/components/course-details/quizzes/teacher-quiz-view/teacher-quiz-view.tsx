@@ -1,49 +1,39 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { QuizBuilder } from '../quiz-builder';
-import { groupQuizzesByModule } from '../course-quizzes-utils';
+import { EditQuizPage } from '../new-quiz-page/edit-quiz-page';
 import { NewQuizPage } from '../new-quiz-page/new-quiz-page';
 import { TeacherAttemptsPanel } from '../teacher-attempts-panel';
 import { useQuizzes } from '@/lib/course-details/queries/quizzes-queries';
 import { useModules } from '@/lib/course-details/queries/resources-queries';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { TeacherQuizBulkBar } from './teacher-quiz-bulk-bar';
-import { TeacherQuizDialogs } from './teacher-quiz-dialogs';
-import { TeacherQuizList } from './teacher-quiz-list';
+import { QuizListTable } from './quiz-list-table';
 import { TeacherQuizPreview } from './teacher-quiz-preview';
 import { TeacherQuizToolbar } from './teacher-quiz-toolbar';
 import { useTeacherQuizActions } from './use-teacher-quiz-actions';
+import { CourseTabPage } from '../../_shared/course-tab-page';
 
 export function TeacherView({ courseId }: { courseId: string }) {
-  const { data: quizzes = [], isLoading } = useQuizzes(courseId);
-  const { data: modules = [] } = useModules(courseId);
+  const { data: quizzes = [], isLoading } = useQuizzes(courseId, { live: true });
+  const { data: modules = [] } = useModules(courseId, { live: true });
   const actions = useTeacherQuizActions(courseId);
 
-  const [settingsTarget, setSettingsTarget] = useState<Quiz | null>(null);
   const [creatingQuiz, setCreatingQuiz] = useState(false);
-  const [editingQuestions, setEditingQuestions] = useState<Quiz | null>(null);
+  const [editingQuiz, setEditingQuiz] = useState<Quiz | null>(null);
   const [viewingAttempts, setViewingAttempts] = useState<Quiz | null>(null);
   const [previewing, setPreviewing] = useState<Quiz | null>(null);
-  const [aiQuizOpen, setAiQuizOpen] = useState(false);
 
+  // The table sorts and paginates internally; this is just a stable base
+  // order for the bulk bar's select-all and the header count.
   const sorted = useMemo(
     () => [...quizzes].sort((a, b) => (a.created_at < b.created_at ? 1 : -1)),
     [quizzes]
   );
-  const groups = useMemo(
-    () => groupQuizzesByModule(sorted, modules),
-    [sorted, modules]
-  );
-  const showGrouped =
-    groups.length > 1 || (groups[0]?.module ?? null) !== null;
 
-  const liveEditingQuestions = editingQuestions
-    ? quizzes.find((q) => q.id === editingQuestions.id) ?? editingQuestions
+  const liveEditingQuiz = editingQuiz
+    ? quizzes.find((q) => q.id === editingQuiz.id) ?? editingQuiz
     : null;
-  const liveSettingsTarget = settingsTarget
-    ? quizzes.find((q) => q.id === settingsTarget.id) ?? settingsTarget
-    : settingsTarget;
 
   if (creatingQuiz) {
     return (
@@ -51,20 +41,21 @@ export function TeacherView({ courseId }: { courseId: string }) {
         courseId={courseId}
         modules={modules}
         onBack={() => setCreatingQuiz(false)}
-        onCreated={(quiz) => {
+        onCreated={() => {
           setCreatingQuiz(false);
-          setEditingQuestions(quiz);
         }}
       />
     );
   }
 
-  if (liveEditingQuestions) {
+  if (liveEditingQuiz) {
     return (
-      <QuizBuilder
+      <EditQuizPage
         courseId={courseId}
-        quiz={liveEditingQuestions}
-        onBack={() => setEditingQuestions(null)}
+        quiz={liveEditingQuiz}
+        modules={modules}
+        onBack={() => setEditingQuiz(null)}
+        onSaved={() => setEditingQuiz(null)}
       />
     );
   }
@@ -86,10 +77,9 @@ export function TeacherView({ courseId }: { courseId: string }) {
   }
 
   return (
-    <div className='space-y-4'>
+    <CourseTabPage>
       <TeacherQuizToolbar
         quizCount={sorted.length}
-        onOpenAi={() => setAiQuizOpen(true)}
         onCreate={() => setCreatingQuiz(true)}
       />
 
@@ -103,16 +93,12 @@ export function TeacherView({ courseId }: { courseId: string }) {
         onCancel={actions.clearSelection}
       />
 
-      <TeacherQuizList
+      <QuizListTable
         isLoading={isLoading}
-        sorted={sorted}
-        groups={groups}
-        showGrouped={showGrouped}
+        quizzes={sorted}
         selectedIds={actions.selectedIds}
-        onCreate={() => setCreatingQuiz(true)}
         handlers={{
-          onSettings: setSettingsTarget,
-          onEditQuestions: setEditingQuestions,
+          onEditQuiz: setEditingQuiz,
           onViewAttempts: setViewingAttempts,
           onDelete: actions.undoDeleteQuiz,
           onTogglePublish: actions.togglePublish,
@@ -121,22 +107,6 @@ export function TeacherView({ courseId }: { courseId: string }) {
           onToggleSelect: actions.toggleSelect,
         }}
       />
-
-      <TeacherQuizDialogs
-        courseId={courseId}
-        settingsTarget={settingsTarget}
-        liveEditing={liveSettingsTarget}
-        modules={modules}
-        pending={
-          actions.createMutation.isPending || actions.updateMutation.isPending
-        }
-        mutateCreate={actions.createMutation.mutate}
-        mutateUpdate={actions.updateMutation.mutate}
-        aiQuizOpen={aiQuizOpen}
-        onCloseSettings={() => setSettingsTarget(null)}
-        onAiOpenChange={setAiQuizOpen}
-        onQuizCreated={setEditingQuestions}
-      />
-    </div>
+    </CourseTabPage>
   );
 }

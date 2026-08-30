@@ -100,11 +100,11 @@ export function DmMessageBubble({
         >
           <div
             className={cn(
-              'comm-bubble-in relative w-max max-w-full px-3 py-2 text-sm text-[#101828] shadow-[0px_4px_8px_0px_rgba(0,0,0,0.03)]',
+              'comm-bubble-in relative w-max max-w-full px-3 py-2 text-sm text-foreground',
               isAuthor
                 ? 'rounded-[15px_0_15px_15px] bg-[rgba(255,159,67,0.12)]'
                 : 'rounded-[0_15px_15px_15px] bg-[#F6F7F8]',
-              isDeleted && 'italic text-[#667085]',
+              isDeleted && 'italic text-muted-foreground',
               !isDeleted && !isPending && onReply && 'cursor-pointer'
             )}
           >

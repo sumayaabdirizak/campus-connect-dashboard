@@ -1,5 +1,6 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import {
   Sheet,
@@ -13,7 +14,21 @@ import { Icons } from '@/components/icons';
 import type { Announcement } from '@/lib/announcements/types';
 import { useAnnouncementAnalytics } from '@/lib/announcements/queries/use-announcement-analytics';
 import { AcknowledgementDrawer } from './acknowledgement-drawer';
-import { AnnouncementAnalyticsCharts } from './announcement-analytics-charts';
+
+/**
+ * These charts live inside a sheet that opens on demand, so recharts has no
+ * business loading with the announcements list. By the time the chunk is
+ * fetched the user has already opened the sheet.
+ */
+const AnnouncementAnalyticsCharts = dynamic(
+  () => import('./announcement-analytics-charts').then((m) => m.AnnouncementAnalyticsCharts),
+  {
+    ssr: false,
+    loading: () => (
+      <div className='h-56 animate-pulse rounded-xl border bg-card' aria-hidden />
+    )
+  }
+);
 
 export function AnnouncementAnalyticsSheet({
   announcement,

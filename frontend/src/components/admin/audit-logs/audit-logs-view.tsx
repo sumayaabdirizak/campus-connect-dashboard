@@ -33,7 +33,7 @@ export function AuditLogsView() {
         onToggleAdvanced={() => v.setShowAdvanced((s) => !s)}
       />
 
-      <div className='flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card shadow-sm'>
+      <div className='flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card'>
         {v.showAdvanced || v.hasActiveFilters ? (
           <AuditLogsFiltersBar
             draft={v.draft}

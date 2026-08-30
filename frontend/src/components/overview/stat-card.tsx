@@ -80,7 +80,7 @@ export function StatCard({
     <>
       <div className='min-w-0'>
         <span
-          className='relative flex size-9 items-center justify-center rounded-xl text-white shadow-sm overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:m-auto before:size-[80%] before:rounded-full before:border before:border-white/25'
+          className='relative flex size-9 items-center justify-center rounded-xl text-white overflow-hidden before:pointer-events-none before:absolute before:inset-0 before:m-auto before:size-[80%] before:rounded-full before:border before:border-white/25'
           style={{ backgroundColor: color }}
         >
           <Icon className='relative z-10 size-5' />
@@ -98,7 +98,7 @@ export function StatCard({
       <Link
         href={href}
         className={cn(
-          'hover-lift group relative flex items-start justify-between gap-3 rounded-2xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'hover-lift group relative flex items-start justify-between gap-3 rounded-xl p-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           t.tint
         )}
       >
@@ -112,7 +112,7 @@ export function StatCard({
   }
 
   return (
-    <div className={cn('flex items-start justify-between gap-3 rounded-2xl p-4', t.tint)}>
+    <div className={cn('flex items-start justify-between gap-3 rounded-xl p-4', t.tint)}>
       {body}
     </div>
   );
@@ -154,7 +154,7 @@ export function HeroTile({
   );
 
   const shell = cn(
-    'relative overflow-hidden rounded-2xl bg-[oklch(0.24_0.09_292)] p-5',
+    'relative overflow-hidden rounded-xl bg-[oklch(0.24_0.09_292)] p-5',
     // Soft pastel glow, echoing the sign-in brand panel.
     'before:pointer-events-none before:absolute before:-top-10 before:-right-10 before:size-40 before:rounded-full before:bg-[oklch(0.75_0.13_292)]/25 before:blur-2xl',
     className

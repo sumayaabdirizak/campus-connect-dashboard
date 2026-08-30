@@ -2,8 +2,8 @@
 export function PosTableLoading({ tone = 'theme' }: { tone?: 'theme' | 'legacy' }) {
   if (tone === 'legacy') {
     return (
-      <div className='flex h-48 items-center justify-center rounded-xl border border-[#E5E7EB] bg-white'>
-        <div className='size-8 animate-spin rounded-full border-4 border-[#3B82F6] border-t-transparent' />
+      <div className='flex h-48 items-center justify-center rounded-xl border border-border bg-card'>
+        <div className='size-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
       </div>
     );
   }

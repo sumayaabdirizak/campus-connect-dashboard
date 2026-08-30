@@ -28,11 +28,11 @@ export function CreateDialogBody({
   const { step } = fields;
 
   return (
-    <div className='flex-1 space-y-6 overflow-y-auto px-6 py-5'>
+    <div className='flex-1 space-y-5 overflow-y-auto bg-muted/60 px-5 py-5'>
       {formError ? (
         <div
           role='alert'
-          className='rounded-xl border border-destructive/40 bg-destructive/5 px-3 py-2 text-sm text-destructive'
+          className='rounded-xl border-2 border-destructive/50 bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive'
         >
           {formError}
         </div>
@@ -80,7 +80,7 @@ export function CreateDialogBody({
       ) : null}
 
       {step === 3 ? (
-        <div className='space-y-6'>
+        <div className='space-y-4'>
           <StepReviewOptions
             priority={fields.priority}
             setPriority={fields.setPriority}
@@ -90,9 +90,6 @@ export function CreateDialogBody({
             setExpiresAtCustom={fields.setExpiresAtCustom}
             deadlineAtLocal={fields.deadlineAtLocal}
             setDeadlineAtLocal={fields.setDeadlineAtLocal}
-            isEditMode={isEditMode}
-            notifySms={fields.notifySms}
-            setNotifySms={fields.setNotifySms}
           />
           <StepReviewSummary
             title={fields.title}
@@ -108,8 +105,6 @@ export function CreateDialogBody({
             activeDaysPreset={fields.activeDaysPreset}
             expiresAtCustom={fields.expiresAtCustom}
             deadlineAtLocal={fields.deadlineAtLocal}
-            isEditMode={isEditMode}
-            notifySms={fields.notifySms}
             previewLoading={audience.previewLoading}
             audiencePreview={audience.audiencePreview}
           />

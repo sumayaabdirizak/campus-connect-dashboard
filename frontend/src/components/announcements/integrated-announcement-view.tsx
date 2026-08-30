@@ -66,7 +66,7 @@ function AnnouncementCard({
   return (
     <article
       className={cn(
-        'group relative overflow-hidden rounded-2xl border border-border/70 bg-card p-4 shadow-sm transition-all duration-200',
+        'group relative overflow-hidden rounded-xl border border-border/70 bg-card p-4 transition-all duration-200',
         'hover:border-primary/25 hover:shadow-md',
         isUnread && 'border-l-[3px] border-l-primary bg-primary/[0.03]'
       )}
@@ -139,7 +139,7 @@ function AnnouncementCard({
 function EmptyAnnouncements() {
   return (
     <div className='flex flex-col items-center gap-4 px-8 py-16 text-center'>
-      <div className='flex h-16 w-16 items-center justify-center rounded-2xl bg-muted'>
+      <div className='flex h-16 w-16 items-center justify-center rounded-xl bg-muted'>
         <Megaphone className='h-8 w-8 text-muted-foreground/40' />
       </div>
       <div>
@@ -178,7 +178,7 @@ export function IntegratedAnnouncementView({
       {/* Header */}
       <header className='flex h-14 shrink-0 items-center justify-between border-b border-border/70 bg-card/90 px-5 backdrop-blur'>
         <div className='flex items-center gap-2.5'>
-          <div className='flex h-9 w-9 items-center justify-center rounded-2xl bg-primary/10 ring-1 ring-primary/10'>
+          <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-primary/10'>
             <Megaphone className='h-4 w-4 text-primary' />
           </div>
           <div>
@@ -204,7 +204,7 @@ export function IntegratedAnnouncementView({
         {isLoading ? (
           <div className='space-y-3'>
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className='h-32 animate-pulse rounded-2xl bg-muted' />
+              <div key={i} className='h-32 animate-pulse rounded-xl bg-muted' />
             ))}
           </div>
         ) : announcements.length === 0 ? (

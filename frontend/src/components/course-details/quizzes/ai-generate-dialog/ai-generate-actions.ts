@@ -21,6 +21,7 @@ import {
 } from '../../_shared/extract-source-text';
 import type { DraftQuestion } from '../quiz-builder/types';
 import { chosenToDraftQuestions, chosenToQuestionInputs, chosenToQuizInput } from './map-chosen';
+import { AI_SECTION_TYPE_LABEL, splitMarksAcrossQuestions } from './section-plan';
 import type { Destination } from './types';
 
 type MutateFn<TData, TVars> = {
@@ -109,6 +110,130 @@ export function runGenerateQuestions(opts: {
       onError: (e: Error) => toast.error(e.message)
     }
   );
+}
+
+const DEFAULT_SECTION_PROMPT =
+  'Generate quiz questions grounded only in the uploaded source material.';
+
+/**
+ * One API call for the whole marks plan: ask for an exact per-section mix,
+ * then split points to fit each section's remaining marks.
+ */
+export async function runGenerateBySections(opts: {
+  isNewQuiz: boolean;
+  quizTitle: string;
+  prompt: string;
+  sourceMaterial: string;
+  sections: Array<{ type: QuizQuestionType; count: number; remainingMarks: number }>;
+  generateMutation: MutateAsyncFn<
+    { questions: GeneratedQuestion[] },
+    GenerateQuestionsInput
+  >;
+  onPreview: (questions: GeneratedQuestion[]) => void;
+  setGenerating: (v: boolean) => void;
+}) {
+  if (opts.isNewQuiz && !opts.quizTitle.trim()) {
+    toast.error('Give the quiz a title first');
+    return;
+  }
+  if (opts.sourceMaterial.trim().length < AI_SOURCE_MIN_CHARS) {
+    toast.error(
+      `Upload a source file first — at least ${AI_SOURCE_MIN_CHARS} characters of text.`
+    );
+    return;
+  }
+  const active = opts.sections
+    .map((s) => ({
+      ...s,
+      count: Math.min(s.count, Math.max(0, s.remainingMarks))
+    }))
+    .filter((s) => s.count > 0);
+  if (active.length === 0) {
+    toast.error('Set how many questions each section needs');
+    return;
+  }
+
+  const totalCount = active.reduce((sum, s) => sum + s.count, 0);
+  if (totalCount > 25) {
+    toast.error('Ask for at most 25 questions total across all sections');
+    return;
+  }
+
+  const focus = opts.prompt.trim() || DEFAULT_SECTION_PROMPT;
+  const mixLines = active
+    .map((s) => `- Exactly ${s.count} ${AI_SECTION_TYPE_LABEL[s.type]} (${s.type})`)
+    .join('\n');
+  const prompt = `${focus}
+
+Generate ALL of these in a single response — exactly ${totalCount} questions total:
+${mixLines}
+
+Rules:
+- Return exactly ${totalCount} items in the questions array (not fewer).
+- Use only the types listed above, with those exact counts.
+- Keep each explanation to one short sentence.
+- Group by type in the order listed.`;
+
+  opts.setGenerating(true);
+  try {
+    const res = await opts.generateMutation.mutateAsync({
+      prompt,
+      sourceMaterial: opts.sourceMaterial.trim(),
+      count: totalCount,
+      questionTypes: active.map((s) => s.type)
+    });
+
+    const pool = (res.questions ?? []).map((q) => ({
+      ...q,
+      question_type: String(q.question_type || '')
+        .trim()
+        .toUpperCase()
+        .replace(/-/g, '_') as GeneratedQuestion['question_type']
+    }));
+    // Normalize aliases the model sometimes returns
+    for (const q of pool) {
+      if (q.question_type === 'TRUEFALSE' || q.question_type === 'T_F') {
+        q.question_type = 'TRUE_FALSE';
+      }
+      if (q.question_type === 'MULTIPLE_CHOICE' || q.question_type === 'MULTIPLECHOICE') {
+        q.question_type = 'MCQ';
+      }
+      if (q.question_type === 'SHORTANSWER' || q.question_type === 'SHORT') {
+        q.question_type = 'SHORT_ANSWER';
+      }
+    }
+
+    const used = new Set<number>();
+    const out: GeneratedQuestion[] = [];
+
+    for (const s of active) {
+      const picked: GeneratedQuestion[] = [];
+      for (let i = 0; i < pool.length && picked.length < s.count; i += 1) {
+        if (used.has(i)) continue;
+        if (pool[i].question_type !== s.type) continue;
+        used.add(i);
+        picked.push(pool[i]);
+      }
+      const points = splitMarksAcrossQuestions(s.remainingMarks, picked.length);
+      for (let i = 0; i < picked.length; i += 1) {
+        out.push({
+          ...picked[i],
+          question_type: s.type,
+          points: points[i] ?? 1
+        });
+      }
+    }
+
+    if (out.length === 0) {
+      toast.error('No questions returned — try a clearer source file');
+      return;
+    }
+    opts.onPreview(out);
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : 'Could not generate questions');
+  } finally {
+    opts.setGenerating(false);
+  }
 }
 
 export async function saveGeneratedQuestions(opts: {
