@@ -6,13 +6,14 @@ import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import { useMyGrades } from '@/lib/course-details/queries/gradebook-queries';
 import type { MyGradeItem } from '@/lib/course-details/services/gradebook-types';
+import {
+  bandText,
+  fmtPoints,
+  MAX_COURSE_MARK
+} from './course-gradebook/gradebook-math';
 
 interface StudentGradesCardProps {
   courseId: string;
-}
-
-function fmtPct(pct: number | null | undefined): string {
-  return pct == null ? '—' : `${Math.round(pct)}%`;
 }
 
 /** Pastel band color for a score bar: mint ≥80, peach ≥60, pink below. */
@@ -20,13 +21,6 @@ function bandBar(pct: number): string {
   if (pct >= 80) return 'bg-emerald-400 dark:bg-emerald-500';
   if (pct >= 60) return 'bg-amber-400 dark:bg-amber-500';
   return 'bg-pink-400 dark:bg-pink-500';
-}
-
-function bandText(pct: number | null): string {
-  if (pct == null) return '';
-  if (pct >= 80) return 'text-emerald-700 dark:text-emerald-300';
-  if (pct >= 60) return 'text-amber-700 dark:text-amber-300';
-  return 'text-pink-700 dark:text-pink-300';
 }
 
 function GradeRow({ item }: { item: MyGradeItem }) {
@@ -37,26 +31,36 @@ function GradeRow({ item }: { item: MyGradeItem }) {
   let pending = false;
 
   if (isAssignment) {
-    if (item.grade != null) value = `${item.grade}/${item.maxMarks}`;
-    else if (item.submitted) {
+    if (item.grade != null) {
+      const maxMarks = Math.min(item.maxMarks ?? MAX_COURSE_MARK, MAX_COURSE_MARK);
+      const grade = Math.min(item.grade, maxMarks);
+      value = fmtPoints(grade, maxMarks);
+    } else if (item.submitted) {
       value = 'Submitted';
       pending = true;
     } else value = 'Not submitted';
-  } else if (item.pct != null) {
-    value = fmtPct(item.pct);
+  } else if (item.pct != null && item.maxMarks) {
+    const earned = (item.pct / 100) * item.maxMarks;
+    value = fmtPoints(earned, item.maxMarks);
   } else {
     value = 'Not taken';
   }
 
-  const pct = item.pct ?? (item.grade != null && item.maxMarks ? (item.grade / item.maxMarks) * 100 : null);
-  const barWidth = pct == null ? 0 : Math.max(0, Math.min(100, pct));
+  const pct =
+    item.pct ??
+    (item.grade != null && item.maxMarks
+      ? (item.grade / Math.min(item.maxMarks, MAX_COURSE_MARK)) * 100
+      : null);
+  const barWidth = pct == null ? 0 : Math.max(0, Math.min(MAX_COURSE_MARK, pct));
 
   return (
     <div className='flex items-center gap-3 py-3'>
       <div
         className={cn(
           'flex size-8 shrink-0 items-center justify-center rounded-lg',
-          isAssignment ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400' : 'bg-blue-500/10 text-blue-700 dark:text-blue-400'
+          isAssignment
+            ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400'
+            : 'bg-blue-500/10 text-blue-700 dark:text-blue-400'
         )}
       >
         <Icon className='size-4' aria-hidden />
@@ -108,8 +112,11 @@ export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
 
   if (isError || !data || data.totalItems === 0) return null;
 
+  const courseMax = data.courseMaxMarks ?? MAX_COURSE_MARK;
   const overallWidth =
-    data.overallPct == null ? 0 : Math.max(0, Math.min(100, data.overallPct));
+    data.overallPct == null
+      ? 0
+      : Math.max(0, Math.min(MAX_COURSE_MARK, data.overallPct));
 
   return (
     <div className='overflow-hidden rounded-xl border bg-card'>
@@ -124,7 +131,7 @@ export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
               bandText(data.overallPct)
             )}
           >
-            {fmtPct(data.overallPct)}
+            {fmtPoints(data.overallEarned ?? 0, courseMax)}
           </p>
           <div className='mt-2 h-1.5 overflow-hidden rounded-full bg-muted'>
             <div

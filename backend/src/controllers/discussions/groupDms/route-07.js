@@ -20,7 +20,6 @@ import {
 } from "../../../validation/groupDiscussionSchemas.js";
 import { loadDmUserRole } from "../../../services/discussions/groupDmEligibility.js";
 import { assertAllUsersDmEligible } from "../../../services/discussions/assertAllUsersDmEligible.js";
-import { assertUsersAreDeans } from "../../../services/discussions/assertAoDeanGroupMembers.js";
 import { assertUsersAreDeanGroupMembers } from "../../../services/discussions/assertDeanFacultyGroupMembers.js";
 
 import { getActiveMember, MAX_TOTAL_MEMBERS, toGroupDmDto } from './helpers.js';
@@ -52,11 +51,9 @@ export function register(router) {
 
       const caller = await loadDmUserRole(userId);
       const roleGate =
-        caller?.roleName === "ACADEMIC_OFFICE"
-          ? await assertUsersAreDeans(newIds)
-          : caller?.roleName === "DEAN"
-            ? await assertUsersAreDeanGroupMembers(newIds, prisma, userId)
-            : await assertAllUsersDmEligible(newIds);
+        caller?.roleName === "DEAN"
+          ? await assertUsersAreDeanGroupMembers(newIds, prisma)
+          : await assertAllUsersDmEligible(newIds);
       if (!roleGate.ok) {
         return res.status(roleGate.status).json(apiErrorBody(roleGate.message, { code: roleGate.code }));
       }

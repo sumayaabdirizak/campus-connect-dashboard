@@ -11,12 +11,6 @@ const STUDENT_OPTIONS: { key: RoleFilterKey; label: string }[] = [
 const DEAN_OPTIONS: { key: RoleFilterKey; label: string }[] = [
   { key: 'STUDENT', label: 'Students' },
   { key: 'TEACHER', label: 'Teachers' },
-  { key: 'OFFICE_STAFF', label: 'Office Staff' },
-]
-
-const AO_OPTIONS: { key: RoleFilterKey; label: string }[] = [
-  { key: 'DEAN', label: 'Deans' },
-  { key: 'OFFICE_STAFF', label: 'Office Staff' },
 ]
 
 export function DmRoleFilter({
@@ -26,10 +20,9 @@ export function DmRoleFilter({
 }: {
   selected: RoleFilterKey[]
   onChange: (next: RoleFilterKey[]) => void
-  variant?: 'student' | 'ao' | 'dean'
+  variant?: 'student' | 'dean'
 }) {
-  const options =
-    variant === 'ao' ? AO_OPTIONS : variant === 'dean' ? DEAN_OPTIONS : STUDENT_OPTIONS
+  const options = variant === 'dean' ? DEAN_OPTIONS : STUDENT_OPTIONS
 
   const toggle = (key: RoleFilterKey) => {
     if (selected.includes(key)) {

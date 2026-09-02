@@ -12,8 +12,7 @@ import {
   startOfMonth,
   startOfWeek
 } from 'date-fns';
-import { useQuery } from '@/lib/async-query';
-import { apiClient } from '@/lib/api-client';
+import { useCalendarDeadlines } from '@/lib/calendar/queries';
 import { courseColor } from '@/lib/student-courses/services/course-color';
 import type { CalendarItem, CalendarKind, CalendarView } from '@/lib/calendar/types';
 import { deadlineToItem, personalToItem, type DeadlineRow } from './lib';
@@ -50,13 +49,10 @@ export function useCalendarItems(
   kinds: Record<CalendarKind, boolean>,
   hiddenCourses: Set<string>
 ) {
-  const { data: deadlineData, isLoading: deadlinesLoading } = useQuery({
-    queryKey: ['calendar', 'deadlines', fromIso, toIso],
-    queryFn: () =>
-      apiClient<{ results: DeadlineRow[] }>(
-        `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
-      )
-  });
+  const { data: deadlineData, isLoading: deadlinesLoading } = useCalendarDeadlines(
+    fromIso,
+    toIso
+  );
   const { data: eventsData, isLoading: eventsLoading } = usePersonalEvents(fromIso, toIso);
   const personalEvents = eventsData?.results ?? [];
 

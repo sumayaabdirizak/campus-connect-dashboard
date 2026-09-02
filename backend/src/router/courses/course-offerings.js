@@ -19,6 +19,7 @@ import extensionsCreateRoutes from './assignments/extensionsCreate.routes.js';
 import extensionsBatchRoutes from './assignments/extensionsBatch.routes.js';
 import extensionsDeleteRoutes from './assignments/extensionsDelete.routes.js';
 import studentWorkRoutes from './assignments/studentWork.routes.js';
+import markBudgetRoutes from './assignments/markBudget.routes.js';
 
 const router = Router();
 
@@ -42,5 +43,6 @@ router.use(extensionsCreateRoutes);
 router.use(extensionsBatchRoutes);
 router.use(extensionsDeleteRoutes);
 router.use(studentWorkRoutes);
+router.use(markBudgetRoutes);
 
 export default router;

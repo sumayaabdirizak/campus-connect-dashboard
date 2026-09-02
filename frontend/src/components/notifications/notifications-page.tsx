@@ -37,7 +37,9 @@ function WavyDivider() {
 }
 
 export default function NotificationsPage() {
-  const { items, unreadCount, markRead, markAllRead, loading } = useNotificationFeed();
+  const { items, unreadCount, markRead, markAllRead, loading } = useNotificationFeed({
+    announcementLimit: 40,
+  });
   const [filter, setFilter] = useState<Filter>('all');
   const [q, setQ] = useState('');
 

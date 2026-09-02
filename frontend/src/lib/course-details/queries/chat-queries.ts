@@ -8,7 +8,7 @@ import {
 } from '../services/chat-service';
 import type { ChatRoom } from '../types';
 import {
-  COURSE_CHAT_POLL_MS,
+  COURSE_LIVE_STALE_MS,
   type LiveQueryOptions
 } from './live-query-options';
 
@@ -21,9 +21,9 @@ export function useChatRoom(courseOfferingId: string, options?: LiveQueryOptions
   return useQuery({
     queryKey: chatKeys.room(courseOfferingId),
     queryFn: () => getChatRoom(courseOfferingId),
-    staleTime: 0,
+    staleTime: live ? COURSE_LIVE_STALE_MS : COURSE_LIVE_STALE_MS,
     refetchOnWindowFocus: true,
-    refetchInterval: live ? COURSE_CHAT_POLL_MS : false
+    refetchInterval: false,
   });
 }
 

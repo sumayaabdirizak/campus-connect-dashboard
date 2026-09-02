@@ -21,30 +21,20 @@ export function roleLabel(role?: string | null): string | null {
   if (r === 'STUDENT') return 'Student'
   if (r === 'TEACHER' || r === 'LECTURER') return 'Teacher'
   if (r === 'DEAN') return 'Dean'
-  if (r === 'OFFICE_STAFF') return 'Office Staff'
   return r || null
 }
 
-export type RoleFilterKey = 'STUDENT' | 'TEACHER' | 'DEAN' | 'OFFICE_STAFF'
+export type RoleFilterKey = 'STUDENT' | 'TEACHER'
 
 export const DEFAULT_ROLE_FILTERS: RoleFilterKey[] = ['STUDENT', 'TEACHER']
 
-/** Dean faculty group picker — teachers, students, desk office staff. */
-export const DEAN_GROUP_ROLE_FILTERS: RoleFilterKey[] = [
-  'STUDENT',
-  'TEACHER',
-  'OFFICE_STAFF',
-]
-
-/** Academic Office group picker defaults — both roles on. */
-export const AO_GROUP_ROLE_FILTERS: RoleFilterKey[] = ['DEAN', 'OFFICE_STAFF']
+/** Dean faculty group picker — teachers and students. */
+export const DEAN_GROUP_ROLE_FILTERS: RoleFilterKey[] = ['STUDENT', 'TEACHER']
 
 export function normalizeCandidateRole(role?: string | null): RoleFilterKey | null {
   const r = String(role || '').toUpperCase()
   if (r === 'STUDENT') return 'STUDENT'
   if (r === 'TEACHER' || r === 'LECTURER') return 'TEACHER'
-  if (r === 'DEAN') return 'DEAN'
-  if (r === 'OFFICE_STAFF') return 'OFFICE_STAFF'
   return null
 }
 

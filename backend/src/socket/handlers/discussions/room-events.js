@@ -5,7 +5,6 @@ import {
   hasPermission,
   PERMISSION_BITS,
 } from "../../../services/discussions/permissions.js";
-import { assertOfficeThreadSocketAccess } from "../../../services/offices/assertOfficeThreadSocketAccess.js";
 import { getActiveMember, resolveGroupDmRow } from "../../../controllers/discussions/groupDms/helpers.js";
 import { resolveServerRow, resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
 
@@ -29,7 +28,6 @@ export function registerRoomEventHandlers(socket, ctx) {
     forgetGroupDmRoom,
     getDiscussionMembership,
     touchDiscussionSession,
-    discussionOfficeThreadRoom,
   } = ctx;
 
   socket.on("join:group", async (payload = {}, ack) => {
@@ -192,44 +190,5 @@ export function registerRoomEventHandlers(socket, ctx) {
     }
     forgetGroupDmRoom(socketUser.id, groupDmId);
     return ackSuccess(ack, { groupDmId: row.publicId });
-  });
-
-  socket.on("officeThread:join", async (payload = {}, ack) => {
-    try {
-      const officeThreadId = Number(payload?.officeThreadId);
-      if (!Number.isFinite(officeThreadId) || officeThreadId <= 0) {
-        return ackOrEmitError(socket, ack, "INVALID_THREAD", "officeThreadId is required");
-      }
-      const thread = await assertOfficeThreadSocketAccess(
-        socketUser.id,
-        socketUser.role,
-        officeThreadId
-      );
-      if (!thread) {
-        return ackOrEmitError(socket, ack, "FORBIDDEN", "Cannot access this office chat");
-      }
-      const room = discussionOfficeThreadRoom(officeThreadId);
-      socket.join(room);
-      socket.data.discussionOfficeThreadRooms.add(officeThreadId);
-      socket.data.activeOfficeThreadId = officeThreadId;
-      await touchDiscussionSession(socket);
-      return ackSuccess(ack, { officeThreadId });
-    } catch (error) {
-      console.error("officeThread:join failed:", error);
-      return ackOrEmitError(socket, ack, "INTERNAL", "Failed to join office chat");
-    }
-  });
-
-  socket.on("officeThread:leave", (payload = {}, ack) => {
-    const officeThreadId = Number(payload?.officeThreadId);
-    if (!Number.isFinite(officeThreadId) || officeThreadId <= 0) {
-      return ackOrEmitError(socket, ack, "INVALID_THREAD", "officeThreadId is required");
-    }
-    socket.leave(discussionOfficeThreadRoom(officeThreadId));
-    socket.data.discussionOfficeThreadRooms?.delete(officeThreadId);
-    if (Number(socket.data.activeOfficeThreadId) === officeThreadId) {
-      socket.data.activeOfficeThreadId = null;
-    }
-    return ackSuccess(ack, { officeThreadId });
   });
 }

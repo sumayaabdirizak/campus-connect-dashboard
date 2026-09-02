@@ -2,16 +2,9 @@ import { prisma } from '../../db/prisma.js';
 import {
   assertUserCanUseDms,
   directDmTargetRolesFor,
-  isOfficeStaffDmRoleName,
   listActiveFacultyServerIds,
   loadDmUserRole,
-  OFFICE_STAFF_DIRECT_DM_ROLE,
 } from './groupDmEligibility.js';
-import { assertTargetOnDeanFacultyOffice } from './deanOfficeStaffDm.js';
-import {
-  assertTargetInFacultyIds,
-  resolveOfficeStaffDmScope,
-} from './officeStaffDmScope.js';
 import { assertStudentTeacherCourseLink } from './studentTeacherDm.js';
 
 function directDmTargetForbiddenMessage(actorRole) {
@@ -22,13 +15,7 @@ function directDmTargetForbiddenMessage(actorRole) {
     return 'Students can only message their course teachers';
   }
   if (actorRole === 'DEAN') {
-    return 'Deans can only message teachers, students, or their office staff';
-  }
-  if (actorRole === OFFICE_STAFF_DIRECT_DM_ROLE) {
-    return 'Office staff can only message deans, teachers, and students';
-  }
-  if (actorRole === 'ACADEMIC_OFFICE') {
-    return 'Academic Office can only message deans';
+    return 'Deans can only message teachers or students in their faculty';
   }
   return 'You cannot message that user';
 }
@@ -38,11 +25,7 @@ function isStudentTeacherPair(aRole, bRole) {
   return set.has('STUDENT') && set.has('TEACHER');
 }
 
-/**
- * Dean↔teacher/student: shared faculty server.
- * Dean→office staff: same faculty Dean's Office desk.
- * Office Staff: university desk → university-wide; faculty desk → faculty only.
- */
+/** Dean↔teacher/student: shared faculty server. */
 export async function assertCanDirectMessage(actorUserId, targetUserId, prismaClient = prisma) {
   const actor = await assertUserCanUseDms(actorUserId, prismaClient);
   if (!actor.ok) return actor;
@@ -71,48 +54,6 @@ export async function assertCanDirectMessage(actorUserId, targetUserId, prismaCl
     };
   }
 
-  if (isOfficeStaffDmRoleName(actor.user.roleName)) {
-    const scope = await resolveOfficeStaffDmScope(actorUserId, prismaClient);
-    if (scope.kind === 'none') {
-      return {
-        ok: false,
-        status: 403,
-        message: 'You must be assigned to an office desk to send messages',
-        code: 'DM_NO_OFFICE_DESK',
-      };
-    }
-    if (scope.kind === 'university') {
-      return { ok: true, actor: actor.user, target };
-    }
-    const facultyGate = await assertTargetInFacultyIds(
-      scope.facultyIds,
-      targetUserId,
-      prismaClient
-    );
-    if (!facultyGate.ok) return facultyGate;
-    return { ok: true, actor: actor.user, target };
-  }
-
-  // Dean → Office Staff on faculty desk (no faculty-server membership required).
-  if (actor.user.roleName === 'DEAN' && target.roleName === 'OFFICE_STAFF') {
-    const desk = await assertTargetOnDeanFacultyOffice(
-      actorUserId,
-      targetUserId,
-      prismaClient
-    );
-    if (!desk.ok) return desk;
-    return { ok: true, actor: actor.user, target };
-  }
-
-  // Academic Office ↔ Dean: university-wide, no faculty-server membership required.
-  if (
-    (actor.user.roleName === 'ACADEMIC_OFFICE' && target.roleName === 'DEAN') ||
-    (actor.user.roleName === 'DEAN' && target.roleName === 'ACADEMIC_OFFICE')
-  ) {
-    return { ok: true, actor: actor.user, target };
-  }
-
-  // Student ↔ teacher: must share a course offering on the student's section.
   if (isStudentTeacherPair(actor.user.roleName, target.roleName)) {
     const link = await assertStudentTeacherCourseLink(
       actorUserId,

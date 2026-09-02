@@ -17,8 +17,6 @@ export function defaultTargetRolesForCreator(creatorRole, facultyScoped = false)
     "ADMIN",
     "DEAN",
     "SUPER_ADMIN",
-    "ACADEMIC_OFFICE",
-    "OFFICE_STAFF",
   ];
 }
 

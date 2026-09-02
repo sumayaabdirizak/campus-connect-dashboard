@@ -10,6 +10,7 @@ import { register as r7 } from '../../../controllers/courses/quizzes/questions.r
 import { register as r8 } from '../../../controllers/courses/quizzes/attempts.routes.js';
 import { register as r9 } from '../../../controllers/courses/quizzes/analytics.routes.js';
 import { register as r10 } from '../../../controllers/courses/quizzes/submit.routes.js';
+import { register as r11 } from '../../../controllers/courses/quizzes/paper-file.routes.js';
 
 const router = Router();
 r0(router);
@@ -23,5 +24,6 @@ r7(router);
 r8(router);
 r9(router);
 r10(router);
+r11(router);
 
 export default router;

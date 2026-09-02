@@ -1,8 +1,13 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  effectiveMarkBudgetRemaining
+} from '@/lib/course-details/services/mark-budget-utils';
 import type { QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
 import {
   quizFormCheckboxClass,
@@ -31,6 +36,57 @@ interface MarksTabProps {
   /// Skips the intro line — the create-quiz page carries the same
   /// explanation on its section header, so showing both repeats it.
   hideIntro?: boolean;
+  markBudget?: CourseMarkBudget;
+  excludePublishedMarks?: number;
+  /** Uploaded paper quiz — only total marks, no question-type sections. */
+  uploadedOnly?: boolean;
+}
+
+type MarksPlanSlice = Pick<
+  FormState,
+  'marksPlanTotal' | 'marksPlanTypes' | 'marksPlanAllocations'
+>;
+
+function sumAllocations(
+  types: QuizQuestionType[],
+  allocations: Partial<Record<QuizQuestionType, number>>
+): number {
+  return types.reduce((sum, t) => sum + (allocations[t] ?? 0), 0);
+}
+
+/// Keep quiz marks within the course budget — section inputs used to grow
+/// marksPlanTotal past the cap by auto-expanding the total.
+function clampMarksPlanToBudget(plan: MarksPlanSlice, maxPlanTotal: number): MarksPlanSlice {
+  const marksPlanTotal = Math.min(Math.max(1, plan.marksPlanTotal), maxPlanTotal);
+  const marksPlanAllocations = { ...plan.marksPlanAllocations };
+
+  for (const type of plan.marksPlanTypes) {
+    const other = sumAllocations(
+      plan.marksPlanTypes.filter((t) => t !== type),
+      marksPlanAllocations
+    );
+    const cap = Math.max(marksPlanTotal - other, 0);
+    const current = marksPlanAllocations[type] ?? 0;
+    if (current > cap) marksPlanAllocations[type] = cap;
+  }
+
+  let allocated = sumAllocations(plan.marksPlanTypes, marksPlanAllocations);
+  if (allocated > marksPlanTotal) {
+    let overflow = allocated - marksPlanTotal;
+    for (let i = plan.marksPlanTypes.length - 1; i >= 0 && overflow > 0; i -= 1) {
+      const type = plan.marksPlanTypes[i];
+      const current = marksPlanAllocations[type] ?? 0;
+      const take = Math.min(current, overflow);
+      marksPlanAllocations[type] = current - take;
+      overflow -= take;
+    }
+  }
+
+  return {
+    marksPlanTotal,
+    marksPlanTypes: plan.marksPlanTypes,
+    marksPlanAllocations
+  };
 }
 
 /// Optional marks-distribution plan: total marks, which question-type
@@ -39,33 +95,66 @@ interface MarksTabProps {
 /// back and render one section per selected type, each with its own
 /// type-locked "Add Question" button. Doesn't affect scoring or validation
 /// against actual question points.
-export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
+export function MarksTab({
+  form,
+  setForm,
+  hideIntro,
+  markBudget,
+  excludePublishedMarks = 0,
+  uploadedOnly = false
+}: MarksTabProps) {
   const typeOrder = questionTypesForMode(form.mode);
+  const courseMax = markBudget?.courseMax ?? 100;
+  const courseAvailable =
+    markBudget != null
+      ? effectiveMarkBudgetRemaining(markBudget, excludePublishedMarks)
+      : null;
+  const maxPlanTotal = courseAvailable ?? courseMax;
+
+  // Sanitize if budget loads after the form already holds inflated values.
+  useEffect(() => {
+    if (courseAvailable == null) return;
+    setForm((prev) => {
+      if (
+        prev.marksPlanTotal <= maxPlanTotal &&
+        sumAllocations(prev.marksPlanTypes, prev.marksPlanAllocations) <= maxPlanTotal
+      ) {
+        return prev;
+      }
+      const clamped = clampMarksPlanToBudget(prev, maxPlanTotal);
+      return { ...prev, ...clamped };
+    });
+  }, [courseAvailable, maxPlanTotal, setForm]);
+
+  const allocated = sumAllocations(form.marksPlanTypes, form.marksPlanAllocations);
+  const remaining = form.marksPlanTotal - allocated;
+  const overCourseBudget = form.marksPlanTotal > maxPlanTotal || allocated > maxPlanTotal;
 
   const toggleType = (type: QuizQuestionType) => {
     setForm((prev) => {
       const has = prev.marksPlanTypes.includes(type);
-      return {
+      const nextTypes = has
+        ? prev.marksPlanTypes.filter((t) => t !== type)
+        : [...prev.marksPlanTypes, type];
+      const next = {
         ...prev,
-        marksPlanTypes: has
-          ? prev.marksPlanTypes.filter((t) => t !== type)
-          : [...prev.marksPlanTypes, type]
+        marksPlanTypes: nextTypes,
+        marksPlanAllocations: has
+          ? { ...prev.marksPlanAllocations, [type]: undefined }
+          : prev.marksPlanAllocations
       };
+      return courseAvailable != null
+        ? { ...next, ...clampMarksPlanToBudget(next, maxPlanTotal) }
+        : next;
     });
   };
 
-  const allocated = form.marksPlanTypes.reduce(
-    (sum, t) => sum + (form.marksPlanAllocations[t] ?? 0),
-    0
-  );
-  const remaining = form.marksPlanTotal - allocated;
-
-  // Caps each section's input at what's left of the total once every
-  // other section's allocation is accounted for, so typing/scrolling past
-  // the budget clamps instead of producing an "over by N" number.
+  // Caps each section at the lesser of internal plan room and course budget.
   const maxFor = (type: QuizQuestionType) => {
     const otherAllocated = allocated - (form.marksPlanAllocations[type] ?? 0);
-    return Math.max(form.marksPlanTotal - otherAllocated, 0);
+    const byPlan = Math.max(form.marksPlanTotal - otherAllocated, 0);
+    const byCourse = Math.max(maxPlanTotal - otherAllocated, 0);
+    return Math.min(byPlan, byCourse);
   };
 
   const setAllocation = (type: QuizQuestionType, value: number, input?: HTMLInputElement) => {
@@ -75,14 +164,22 @@ export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
         (sum, t) => (t === type ? sum : sum + (prev.marksPlanAllocations[t] ?? 0)),
         0
       );
-      const nextTotal = Math.max(prev.marksPlanTotal, otherAllocated + parsed);
-      const clamped = Math.min(parsed, Math.max(nextTotal - otherAllocated, 0));
+      const roomInPlan = Math.max(prev.marksPlanTotal - otherAllocated, 0);
+      const roomInCourse = Math.max(maxPlanTotal - otherAllocated, 0);
+      const clamped = Math.min(parsed, roomInPlan, roomInCourse);
+      const nextTotal = Math.min(
+        maxPlanTotal,
+        Math.max(prev.marksPlanTotal, otherAllocated + clamped)
+      );
       if (input) syncInput(input, clamped);
-      return {
+      const next = {
         ...prev,
         marksPlanTotal: nextTotal,
         marksPlanAllocations: { ...prev.marksPlanAllocations, [type]: clamped }
       };
+      return courseAvailable != null
+        ? { ...next, ...clampMarksPlanToBudget(next, maxPlanTotal) }
+        : next;
     });
   };
 
@@ -95,9 +192,22 @@ export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
     if (el.value !== String(canonical)) el.value = String(canonical);
   };
 
+  const planBalanced = remaining === 0;
+  const summaryTone =
+    overCourseBudget
+      ? 'border-destructive/40 bg-destructive/10 dark:bg-destructive/20'
+      : planBalanced
+        ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/30'
+        : 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30';
+
   return (
     <div className='space-y-4 mt-4'>
-      {hideIntro ? null : (
+      {hideIntro ? null : uploadedOnly ? (
+        <p className={quizFormHintClass}>
+          Set how many course marks this paper quiz is worth. You&apos;ll enter each
+          student&apos;s score in Attempts after creating the quiz.
+        </p>
+      ) : (
         <p className={quizFormHintClass}>
           Optional — decide how many marks each kind of question is worth. Pick any below and
           you&apos;ll get a separate section for it when you add questions.
@@ -109,16 +219,35 @@ export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
         <Input
           type='number'
           min={1}
+          max={maxPlanTotal}
           value={form.marksPlanTotal}
           onChange={(e) => {
-            const next = Math.max(1, parseInt(e.target.value, 10) || 1);
+            const parsed = Math.max(1, parseInt(e.target.value, 10) || 1);
+            const next = Math.min(parsed, maxPlanTotal);
             syncInput(e.target, next);
-            setForm((prev) => ({ ...prev, marksPlanTotal: next }));
+            setForm((prev) => {
+              const merged = { ...prev, marksPlanTotal: next };
+              return courseAvailable != null
+                ? { ...merged, ...clampMarksPlanToBudget(merged, maxPlanTotal) }
+                : merged;
+            });
           }}
           className={`mt-1.5 ${quizFormFieldClass} max-w-[10rem]`}
         />
+        {courseAvailable != null ? (
+          <p className={`mt-1.5 ${quizFormHintClass}`}>
+            <span className='font-medium tabular-nums text-foreground'>{courseAvailable}</span> of{' '}
+            {courseMax} course marks available for published work.
+          </p>
+        ) : null}
+        {overCourseBudget ? (
+          <p className='mt-1 text-xs text-destructive'>
+            Exceeds available course marks — lower this value or unpublish other assignments/quizzes.
+          </p>
+        ) : null}
       </div>
 
+      {uploadedOnly ? null : (
       <div>
         <Label className={`${quizFormLabelClass} mb-2 block`}>
           Which kinds of question will this quiz have?
@@ -139,8 +268,9 @@ export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
           ))}
         </div>
       </div>
+      )}
 
-      {form.marksPlanTypes.length > 0 && (
+      {uploadedOnly ? null : form.marksPlanTypes.length > 0 && (
         <div className='space-y-3'>
           {form.marksPlanTypes.map((type) => (
             <div key={type} className={`flex items-center gap-4 ${quizFormRowClass}`}>
@@ -164,22 +294,23 @@ export function MarksTab({ form, setForm, hideIntro }: MarksTabProps) {
             </div>
           ))}
 
-          <div
-            className={`rounded-xl border p-3 text-sm ${
-              remaining === 0
-                ? 'border-emerald-300 bg-emerald-50 dark:border-emerald-700 dark:bg-emerald-950/30'
-                : 'border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30'
-            }`}
-          >
+          <div className={`rounded-xl border p-3 text-sm ${summaryTone}`}>
             <div className='flex flex-wrap gap-x-4 gap-y-1'>
               <span>
                 Total: <strong>{form.marksPlanTotal}</strong>
+                {courseAvailable != null ? (
+                  <span className='text-muted-foreground'> / {maxPlanTotal} course max</span>
+                ) : null}
               </span>
               <span>
                 Assigned: <strong>{allocated}</strong>
               </span>
               <span>
-                {remaining === 0 ? (
+                {overCourseBudget ? (
+                  <span className='font-medium text-destructive'>
+                    Over course mark budget — lower marks above
+                  </span>
+                ) : remaining === 0 ? (
                   <span className='text-emerald-700 dark:text-emerald-400 font-medium'>
                     ✓ All {form.marksPlanTotal} marks assigned
                   </span>

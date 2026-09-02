@@ -27,14 +27,19 @@ import type {
   ClubMineResponse,
 } from '@/lib/clubs/types';
 import { clubKeys } from './club-keys';
+import { CLUB_REFETCH_INTERVAL, CLUB_STALE_MS } from './club-query-config';
+
+const clubLive = {
+  staleTime: CLUB_STALE_MS,
+  refetchOnWindowFocus: true,
+  refetchInterval: CLUB_REFETCH_INTERVAL,
+} as const;
 
 export function useClubs(params?: ClubListParams) {
   return useQuery<ClubListResponse>({
     queryKey: clubKeys.list(params),
     queryFn: () => listClubs(params),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    ...clubLive,
   });
 }
 
@@ -42,9 +47,7 @@ export function useMyClubs() {
   return useQuery<ClubMineResponse>({
     queryKey: clubKeys.mine(),
     queryFn: listMyClubs,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    ...clubLive,
   });
 }
 
@@ -52,9 +55,7 @@ export function useRecommendedClubs(limit?: number) {
   return useQuery({
     queryKey: clubKeys.recommended(limit),
     queryFn: () => listRecommendedClubs(limit),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    ...clubLive,
   });
 }
 
@@ -63,9 +64,7 @@ export function useClubDetail(slug: string | null) {
     queryKey: clubKeys.detail(slug ?? ''),
     queryFn: () => getClubBySlug(slug!),
     enabled: !!slug,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    ...clubLive,
   });
 }
 
@@ -73,9 +72,7 @@ export function usePendingClubs() {
   return useQuery({
     queryKey: clubKeys.pending(),
     queryFn: listPendingClubs,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    ...clubLive,
   });
 }
 
@@ -92,9 +89,7 @@ export function useClubMembers(clubId: number | null) {
     queryKey: clubKeys.members(clubId!),
     queryFn: () => listClubMembers(clubId!),
     enabled: !!clubId,
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 15_000,
+    ...clubLive,
   });
 }
 
@@ -103,9 +98,9 @@ export function useClubJoinRequests(clubId: number | null) {
     queryKey: clubKeys.requests(clubId!),
     queryFn: () => listClubJoinRequests(clubId!),
     enabled: !!clubId,
-    staleTime: 0,
+    staleTime: 30_000,
     refetchOnWindowFocus: true,
-    refetchInterval: 8_000,
+    refetchInterval: CLUB_REFETCH_INTERVAL,
   });
 }
 

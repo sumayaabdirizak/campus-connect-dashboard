@@ -4,12 +4,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { PosFormModal } from '@/features/pos/components/pos-form-modal';
 import { handleApiError, showToast } from '@/lib/notifications';
 import { useRegisterUser, useUpdateUser } from '@/lib/users/queries/mutations';
-import { EMPTY_USER_FORM, roleRequiresOffice, type UserFormState } from '@/lib/users/services/user-form-state';
+import { EMPTY_USER_FORM, type UserFormState } from '@/lib/users/services/user-form-state';
 import { buildRegisterPayload } from '@/lib/users/services/build-register-payload';
 import { isUserFormSubmitDisabled, validateUserForm } from '@/lib/users/services/user-form-validation';
 import { useUserFormReferenceData } from '@/lib/users/services/use-user-form-reference-data';
 import { UserFormIdentityFields } from './user-form-identity-fields';
-import { UserFormOfficeFields } from './user-form-office-fields';
 import { UserFormStudentSection } from './user-form-student-section';
 
 const FORM_ID = 'user-form-modal';
@@ -20,8 +19,6 @@ type EditUser = {
   email?: string;
   number?: string;
   role?: string;
-  officeId?: number | null;
-  officeStaffRole?: 'AGENT' | 'MANAGER';
 };
 
 type Props = {
@@ -63,9 +60,7 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
       full_name: user?.full_name || '',
       email: user?.email || '',
       number: user?.number || '',
-      role: user?.role || 'STUDENT',
-      officeId: user?.officeId != null ? String(user.officeId) : '',
-      officeStaffRole: user?.officeStaffRole || 'AGENT'
+      role: user?.role || 'STUDENT'
     });
   }, [open, user]);
 
@@ -83,20 +78,13 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
     }
 
     if (isEdit && user) {
-      const canAssignOffice = form.role !== 'STUDENT';
       updateMutation.mutate(
         {
           id: user.id,
           data: {
             full_name: form.full_name,
             email: form.email,
-            number: form.number,
-            ...(canAssignOffice
-              ? {
-                  officeId: form.officeId ? Number(form.officeId) : null,
-                  officeStaffRole: form.officeStaffRole
-                }
-              : {})
+            number: form.number
           }
         },
         {
@@ -112,21 +100,11 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
 
     createMutation.mutate(buildRegisterPayload(form), {
       onSuccess: (res: unknown) => {
-        const created = res as {
-          user?: {
-            number?: string;
-            officeStaff?: { office?: { name?: string }; role?: string } | null;
-          };
-        };
+        const created = res as { user?: { number?: string } };
         const id = created?.user?.number;
-        const officeName = created?.user?.officeStaff?.office?.name;
-        const parts = [
-          id ? `University ID: ${id}` : null,
-          officeName ? `Office: ${officeName}` : null
-        ].filter(Boolean);
         showToast(
           'success',
-          parts.length ? `User created — ${parts.join(' · ')}` : 'User created'
+          id ? `User created — University ID: ${id}` : 'User created'
         );
         onOpenChange(false);
         setForm(EMPTY_USER_FORM);
@@ -172,10 +150,6 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
             sections={sections}
             academicYears={academicYears as never}
           />
-        ) : null}
-
-        {roleRequiresOffice(form.role) ? (
-          <UserFormOfficeFields form={form} onChange={patch} />
         ) : null}
       </form>
     </PosFormModal>

@@ -11,6 +11,7 @@ import {
 import { FolderPlus, Plus } from 'lucide-react';
 import { humanizeType } from '../resource-renderers';
 import { CourseTabHeader } from '../_shared/course-tab-header';
+import { CourseTabSearch } from '../_shared/course-tab-search';
 import { RESOURCE_TYPES, type ResourceTypeFilter } from './constants';
 
 export function ResourcesToolbar({
@@ -39,34 +40,14 @@ export function ResourcesToolbar({
             ? 'Course materials shared by your lecturer.'
             : 'Organize modules and share course materials.'
         }
-        search={{
-          value: search,
-          onChange: onSearchChange,
-          placeholder: 'Search materials…',
-          'aria-label': 'Search materials'
-        }}
-        actions={
-          !isStudent ? (
-            <>
-              <Button variant='outline' size='sm' onClick={onAddModule} className='gap-1.5 rounded-full'>
-                <FolderPlus className='size-4' />
-                Add module
-              </Button>
-              <Button size='sm' onClick={onAddMaterial} className='gap-1.5 rounded-full'>
-                <Plus className='size-4' />
-                Add material
-              </Button>
-            </>
-          ) : undefined
-        }
       />
 
-      <div className='flex flex-wrap justify-end gap-2'>
+      <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
         <Select
           value={typeFilter}
           onValueChange={(v) => onTypeFilterChange(v as ResourceTypeFilter)}
         >
-          <SelectTrigger className='h-9 w-36 border-[#D0D5DD] bg-white sm:w-44 dark:border-border dark:bg-background'>
+          <SelectTrigger className='h-9 w-full border-[#D0D5DD] bg-white sm:w-44 dark:border-border dark:bg-background'>
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -78,6 +59,33 @@ export function ResourcesToolbar({
             ))}
           </SelectContent>
         </Select>
+
+        <div className='flex flex-wrap items-center gap-2 sm:justify-end'>
+          <CourseTabSearch
+            value={search}
+            onChange={onSearchChange}
+            placeholder='Search materials…'
+            aria-label='Search materials'
+            className='w-full min-w-0 sm:w-auto sm:max-w-xs'
+          />
+          {!isStudent ? (
+            <>
+              <Button
+                variant='outline'
+                size='sm'
+                onClick={onAddModule}
+                className='gap-1.5 rounded-full'
+              >
+                <FolderPlus className='size-4' />
+                Add module
+              </Button>
+              <Button size='sm' onClick={onAddMaterial} className='gap-1.5 rounded-full'>
+                <Plus className='size-4' />
+                Add material
+              </Button>
+            </>
+          ) : null}
+        </div>
       </div>
     </div>
   );

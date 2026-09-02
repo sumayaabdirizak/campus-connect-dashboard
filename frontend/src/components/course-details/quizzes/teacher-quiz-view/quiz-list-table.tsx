@@ -19,6 +19,7 @@ import {
   type QuizRowHandlers,
   exportQuizzesCsv,
   filterQuizzes,
+  normalizeQuizVisibleCols,
   sortQuizzes
 } from './quizzes-table-utils';
 
@@ -26,19 +27,28 @@ export function QuizListTable({
   quizzes,
   isLoading,
   selectedIds,
-  handlers
+  handlers,
+  courseMaxMarks
 }: {
   quizzes: Quiz[];
   isLoading: boolean;
   selectedIds: Set<number>;
   handlers: QuizRowHandlers;
+  courseMaxMarks?: number;
 }) {
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('newest');
-  const [visibleCols, setVisibleCols] = useState<string[]>([...QUIZ_ALL_COLS]);
+  const [visibleCols, setVisibleCols] = useState<string[]>(() =>
+    normalizeQuizVisibleCols([...QUIZ_ALL_COLS])
+  );
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const col = (id: string) => visibleCols.includes(id);
+  const col = (id: string) =>
+    visibleCols.includes(id) || (id === 'marks' && visibleCols.includes('chapter'));
+
+  useEffect(() => {
+    setVisibleCols((prev) => normalizeQuizVisibleCols(prev));
+  }, []);
 
   const rows = useMemo(
     () => sortQuizzes(filterQuizzes(quizzes, search), sortId),
@@ -69,7 +79,7 @@ export function QuizListTable({
       searchPlaceholder='Search quiz name or description…'
       columns={[...QUIZ_COLUMN_OPTS]}
       visibleColumnIds={visibleCols}
-      onVisibleColumnsChange={setVisibleCols}
+      onVisibleColumnsChange={(ids) => setVisibleCols(normalizeQuizVisibleCols(ids))}
       sortOptions={QUIZ_SORT_OPTS}
       sortId={sortId}
       onSortChange={setSortId}
@@ -109,8 +119,8 @@ export function QuizListTable({
               {col('title') ? (
                 <PosTableHeaderCell className='!text-foreground'>Title</PosTableHeaderCell>
               ) : null}
-              {col('chapter') ? (
-                <PosTableHeaderCell className='!text-foreground'>Chapter</PosTableHeaderCell>
+              {col('marks') ? (
+                <PosTableHeaderCell className='!text-foreground'>Marks</PosTableHeaderCell>
               ) : null}
               {col('questions') ? (
                 <PosTableHeaderCell className='!text-foreground'>Questions</PosTableHeaderCell>
@@ -133,6 +143,7 @@ export function QuizListTable({
               <QuizListRow
                 key={q.id}
                 quiz={q}
+                courseMaxMarks={courseMaxMarks}
                 col={col}
                 isSelected={selectedIds.has(q.id)}
                 onToggleSelect={() => handlers.onToggleSelect(q.id)}

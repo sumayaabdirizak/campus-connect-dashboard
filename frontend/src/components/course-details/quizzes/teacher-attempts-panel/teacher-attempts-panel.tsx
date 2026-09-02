@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AttemptGrader } from '../attempt-grader';
 import { QuizLiveMonitor } from '../quiz-live-monitor';
-import { useQuizAttempts } from '@/lib/course-details/queries/quizzes-queries';
+import { useQuizAttempts, useQuizzes } from '@/lib/course-details/queries/quizzes-queries';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
 import type { Quiz, QuizAttempt } from '@/lib/course-details/services/quizzes-types';
+import { resolveQuizTotalPoints } from '@/lib/course-details/services/quiz-total-points';
 import { AttemptsTable } from './attempts-table';
 import { buildAttemptRows, needsGrading } from './helpers';
 
@@ -22,6 +23,7 @@ export function TeacherAttemptsPanel({
   onBack: () => void;
 }) {
   const { data: attempts = [], isLoading } = useQuizAttempts(quiz.id, { live: true });
+  const { data: quizzes = [] } = useQuizzes(courseId, { live: true });
   const { data: roster = [] } = useRoster(courseId, { live: true });
   const [grading, setGrading] = useState<QuizAttempt | null>(null);
 
@@ -42,7 +44,8 @@ export function TeacherAttemptsPanel({
 
   const allRows = buildAttemptRows(roster, attempts);
   const pendingCount = attempts.filter(needsGrading).length;
-  const totalPoints = (quiz.questions ?? []).reduce((sum, q) => sum + q.points, 0);
+  const liveQuiz = quizzes.find((q) => q.id === quiz.id) ?? quiz;
+  const totalPoints = resolveQuizTotalPoints(liveQuiz);
 
   return (
     <div className='space-y-4'>

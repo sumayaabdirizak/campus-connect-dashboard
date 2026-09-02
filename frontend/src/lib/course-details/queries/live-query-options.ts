@@ -4,14 +4,14 @@ export type LiveQueryOptions = {
   live?: boolean;
 };
 
-export const COURSE_LIVE_POLL_MS = 10_000;
-export const COURSE_CHAT_POLL_MS = 5_000;
-
+export const COURSE_LIVE_STALE_MS = 60_000;
+/** Socket / mutations invalidate; window-focus refetch catches stale tabs. */
+export const COURSE_LIVE_REFETCH_INTERVAL = false as const;
 
 export function withCourseLiveRefresh(live = false) {
   return {
-    staleTime: live ? 0 : undefined,
+    staleTime: live ? COURSE_LIVE_STALE_MS : COURSE_LIVE_STALE_MS,
     refetchOnWindowFocus: true as const,
-    refetchInterval: live ? COURSE_LIVE_POLL_MS : (false as const)
+    refetchInterval: COURSE_LIVE_REFETCH_INTERVAL,
   };
 }

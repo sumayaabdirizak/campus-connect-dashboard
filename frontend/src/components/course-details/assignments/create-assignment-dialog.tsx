@@ -1,6 +1,7 @@
 'use client';
 
 import type { RefObject } from 'react';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import { AssignmentAttachmentsField } from './assignment-attachments-field';
 import { AssignmentModalShell } from './assignment-modal-shell';
 import {
@@ -18,6 +19,7 @@ interface CreateAssignmentDialogProps {
   onRemoveFile: (index: number) => void;
   onSubmit: (values: AssignmentFormValues) => void;
   pending: boolean;
+  markBudget?: CourseMarkBudget;
 }
 
 export function CreateAssignmentDialog({
@@ -29,7 +31,8 @@ export function CreateAssignmentDialog({
   onAddFiles,
   onRemoveFile,
   onSubmit,
-  pending
+  pending,
+  markBudget
 }: CreateAssignmentDialogProps) {
   return (
     <AssignmentModalShell
@@ -42,6 +45,8 @@ export function CreateAssignmentDialog({
         onSubmit={onSubmit}
         pending={pending}
         onCancel={() => onOpenChange(false)}
+        markBudget={markBudget}
+        enforceMarkBudget={true}
         extraFields={
           <AssignmentAttachmentsField
             files={pendingFiles}

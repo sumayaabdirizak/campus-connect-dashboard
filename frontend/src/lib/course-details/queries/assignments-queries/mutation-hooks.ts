@@ -22,6 +22,7 @@ import type {
   UpdateAssignmentInput
 } from '@/lib/course-details/services/assignments-types';
 import { assignmentKeys } from './keys';
+import { markBudgetKeys } from '../mark-budget-queries';
 
 export function useCreateAssignment(courseOfferingId: string) {
   const queryClient = useQueryClient();
@@ -29,6 +30,7 @@ export function useCreateAssignment(courseOfferingId: string) {
     mutationFn: (input: CreateAssignmentInput) => createAssignment(courseOfferingId, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
+      queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseOfferingId) });
     }
   });
 }
@@ -40,6 +42,7 @@ export function useUpdateAssignment(courseOfferingId: string) {
       updateAssignment(id, input),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
+      queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseOfferingId) });
     }
   });
 }

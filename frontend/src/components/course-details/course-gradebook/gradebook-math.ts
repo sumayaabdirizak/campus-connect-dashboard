@@ -8,8 +8,23 @@ import type { RosterStudent } from '@/lib/course-details/services/roster-types';
 
 export type GradeFilter = 'all' | 'needs_grading';
 
+/** Course mark budget (assignments + quizzes share Course.maxMarks, default 100). */
+export const MAX_COURSE_MARK = 100;
+
 export function fmtPct(pct: number | null): string {
   return pct == null ? '—' : `${Math.round(pct)}%`;
+}
+
+/** Render a percentage as earned/max points (e.g. 90% of 20 → "18/20"). */
+export function fmtScoreFromPct(pct: number | null, max: number = MAX_COURSE_MARK): string {
+  if (pct == null) return '—';
+  const scaleMax = Math.min(max, MAX_COURSE_MARK);
+  const earned = Math.min(scaleMax, Math.max(0, (pct / 100) * scaleMax));
+  return fmtPoints(earned, scaleMax);
+}
+
+export function fmtAssignmentGrade(grade: number, maxMarks: number): string {
+  return fmtPoints(grade, maxMarks);
 }
 
 export function bandText(pct: number | null): string {
@@ -33,46 +48,41 @@ export function quizCell(
   return row.quizzes[id] ?? row.quizzes[String(id)];
 }
 
-export function computeOverallPoints(
-  row: GradebookRow,
-  columns: GradebookColumns
-): { earned: number; max: number } | null {
+export function computeCourseEarned(row: GradebookRow, columns: GradebookColumns): number {
   let earned = 0;
-  let max = 0;
   for (const a of columns.assignments) {
     const cell = assignmentCell(row, a.id);
-    if (cell?.grade != null) {
-      earned += cell.grade;
-      max += cell.maxMarks;
-    }
+    if (cell?.grade != null) earned += cell.grade;
   }
   for (const q of columns.quizzes) {
     const cell = quizCell(row, q.id);
-    if (cell?.pct != null) {
-      earned += cell.pct;
-      max += 100;
+    if (cell?.earned != null) earned += cell.earned;
+    else if (cell?.pct != null && q.maxMarks > 0) {
+      earned += (cell.pct / 100) * q.maxMarks;
     }
   }
-  return max > 0 ? { earned, max } : null;
+  return earned;
 }
 
 export function fmtPoints(earned: number, max: number): string {
+  let displayMax = max;
+  let displayEarned = earned;
+  if (max > MAX_COURSE_MARK) {
+    displayMax = MAX_COURSE_MARK;
+    displayEarned = max > 0 ? (earned / max) * MAX_COURSE_MARK : 0;
+  }
+  displayEarned = Math.min(displayMax, Math.max(0, displayEarned));
   const format = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
-  return `${format(earned)}/${format(max)}`;
+  return `${format(displayEarned)}/${format(displayMax)}`;
 }
 
-export function computeClassAveragePoints(
+export function computeClassAverageEarned(
   rows: GradebookRow[],
   columns: GradebookColumns
-): { earned: number; max: number } | null {
-  const perStudent = rows
-    .map((row) => computeOverallPoints(row, columns))
-    .filter((p): p is { earned: number; max: number } => p != null);
-  if (perStudent.length === 0) return null;
-  const earned =
-    perStudent.reduce((sum, p) => sum + p.earned, 0) / perStudent.length;
-  const max = perStudent.reduce((sum, p) => sum + p.max, 0) / perStudent.length;
-  return { earned, max };
+): number | null {
+  if (rows.length === 0) return null;
+  const total = rows.reduce((sum, row) => sum + computeCourseEarned(row, columns), 0);
+  return total / rows.length;
 }
 
 export function rowNeedsGrading(row: GradebookRow, columns: GradebookColumns): boolean {

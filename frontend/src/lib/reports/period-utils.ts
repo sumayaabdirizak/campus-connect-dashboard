@@ -87,14 +87,53 @@ export function presetToDateRange(presetId: string): ReportDateRange {
   if (!Number.isFinite(months) || months <= 0) {
     return { from: null, to: null };
   }
-  const to = new Date();
-  const from = new Date();
+  const to = serverNowDate();
+  const from = new Date(serverNowDate());
   from.setMonth(from.getMonth() - months);
   return { from: toIsoDate(from), to: toIsoDate(to) };
 }
 
+/** Sensible default when switching to a custom period (last 30 days). */
+export function defaultCustomDateRange(): ReportDateRange {
+  const to = todayIsoDate();
+  const from = new Date(serverNowDate());
+  from.setMonth(from.getMonth() - 1);
+  return { from: toIsoDate(from), to };
+}
+
+/** Clamp custom range to server "today" and from/to ordering. */
+export function clampReportDateRange(range: ReportDateRange): ReportDateRange {
+  const today = todayIsoDate();
+  const maxTo = range.to && range.to <= today ? range.to : today;
+  const from = clampIsoDate(range.from, null, maxTo);
+  const to = clampIsoDate(range.to, from, today);
+  return { from, to };
+}
+
+export function resolveAppliedReportFilters(filters: {
+  periodPreset: string;
+  dateRange: ReportDateRange;
+  status?: string;
+}): {
+  period: string;
+  dateRange: ReportDateRange;
+  status: string;
+} {
+  const period = filters.periodPreset === 'custom' ? 'custom' : filters.periodPreset;
+  const dateRange =
+    filters.periodPreset === 'custom'
+      ? filters.dateRange
+      : presetToDateRange(filters.periodPreset);
+  return {
+    period,
+    dateRange,
+    status: filters.status && filters.status !== 'all' ? filters.status : 'all'
+  };
+}
+
 export function inferPresetFromRange(range: ReportDateRange, periodParam: string): string {
   if (range.from || range.to) return 'custom';
+  if (periodParam === 'custom') return 'custom';
   if (REPORT_PERIOD_OPTIONS.some((p) => p.id === periodParam)) return periodParam;
   return 'all';
 }

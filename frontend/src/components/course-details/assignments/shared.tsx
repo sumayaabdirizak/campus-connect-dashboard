@@ -1,8 +1,8 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
+import { Download, ClipboardCheck } from 'lucide-react';
 
-import { Plus, Download, ClipboardCheck } from 'lucide-react';
+import { EmptyState } from '../_shared/empty-state';
 
 import type { Assignment, Submission, SubmissionExtension } from '@/lib/course-details/services/assignments-types';
 import { serverNowDate } from '@/lib/server-clock';
@@ -158,39 +158,19 @@ export function AssignmentsEmptyState({
   onCreate?: () => void;
 }) {
   return (
-    <div className='overflow-hidden rounded-3xl border bg-card'>
-      <div className='bg-gradient-to-r from-slate-950 via-slate-900 to-slate-800 px-4 py-5 text-white sm:px-6'>
-        <div className='flex items-center gap-2'>
-          <ClipboardCheck className='size-4' />
-          <p className='text-sm font-semibold'>Assignments</p>
-        </div>
-        <p className='mt-2 max-w-2xl text-sm text-white/75'>
-          {isStudent
-            ? 'When your instructor publishes work, the assignment workspace will show it here.'
-            : 'Use the assignment workspace to publish, filter, and grade coursework for this section.'}
-        </p>
-      </div>
-      <div className='flex flex-col items-center justify-center px-6 py-12 text-center'>
-        <div className='mb-4 flex size-14 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground'>
-          <ClipboardCheck className='size-6' />
-        </div>
-        <h3 className='text-lg font-semibold tracking-tight'>
-          {hasItems ? 'No matching assignments' : 'No assignments yet'}
-        </h3>
-        <p className='mt-2 max-w-md text-sm text-muted-foreground'>
-          {hasItems
-            ? 'Try a different filter or search term to surface more work.'
-            : isStudent
-              ? "Your teacher hasn't posted any work for this course yet."
-              : 'Create the first assignment to start tracking submissions and grades.'}
-        </p>
-        {!isStudent && !hasItems && onCreate && (
-          <Button className='mt-5 gap-1.5' onClick={onCreate}>
-            <Plus className='size-4' /> Create assignment
-          </Button>
-        )}
-      </div>
-    </div>
+    <EmptyState
+      icon={ClipboardCheck}
+      title={hasItems ? 'No matching assignments' : 'No assignments yet'}
+      description={
+        hasItems
+          ? 'Try a different filter or search term to surface more work.'
+          : isStudent
+            ? "Your teacher hasn't posted any work for this course yet."
+            : 'Create the first assignment to start tracking submissions and grades.'
+      }
+      actionLabel={!isStudent && !hasItems && onCreate ? 'Create assignment' : undefined}
+      onAction={onCreate}
+    />
   );
 }
 

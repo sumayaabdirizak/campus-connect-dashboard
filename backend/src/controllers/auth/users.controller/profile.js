@@ -52,21 +52,6 @@ export const getMe = async (req, res) => {
       deanProfile: {
         include: { faculty: { select: { id: true, name: true, code: true } } },
       },
-      officeStaffMemberships: {
-        where: { office: { isActive: true } },
-        select: {
-          role: true,
-          office: {
-            select: {
-              id: true,
-              name: true,
-              slug: true,
-              codePrefix: true,
-              faculty: { select: { id: true, name: true, code: true } },
-            },
-          },
-        },
-      },
     },
   });
 
@@ -86,17 +71,6 @@ export const getMe = async (req, res) => {
         id: f.faculty.id,
         name: f.faculty.name,
         code: f.faculty.code,
-      })) ?? [],
-    officeMemberships:
-      user.officeStaffMemberships?.map((m) => ({
-        role: m.role,
-        office: {
-          id: m.office.id,
-          name: m.office.name,
-          slug: m.office.slug,
-          codePrefix: m.office.codePrefix,
-          faculty: m.office.faculty,
-        },
       })) ?? [],
     scope: {
       facultyId: req.user.facultyId ?? null,

@@ -10,6 +10,7 @@ interface EmptyStateProps {
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  className?: string;
 }
 
 /**
@@ -21,13 +22,15 @@ export function EmptyState({
   title,
   description,
   actionLabel,
-  onAction
+  onAction,
+  className
 }: EmptyStateProps) {
   return (
     <UiEmptyState
       icon={icon}
       title={title}
       description={description}
+      className={className}
       action={
         actionLabel && onAction ? (
           <Button onClick={onAction} size='sm'>

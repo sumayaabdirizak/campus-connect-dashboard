@@ -1,15 +1,11 @@
 'use client';
 
-import { useState } from 'react';
 import { format } from 'date-fns';
 import { Check, Eye, Loader2, ShieldAlert, Square, UserX } from 'lucide-react';
-import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import { cn } from '@/lib/utils';
-import { useCreateOfflineAttempt } from '@/lib/course-details/queries/quizzes-queries';
 import type { QuizAttempt } from '@/lib/course-details/services/quizzes-types';
 import {
   earnedMarksFromPercent,
@@ -17,6 +13,7 @@ import {
   formatMarksWithPercent
 } from '../quiz-marks-display';
 import { needsGrading, offlineOutcome, rowStatus, type AttemptRow } from './helpers';
+import { OfflineResultPicker } from './offline-result-picker';
 
 export function AttemptTableRow({
   row,
@@ -42,61 +39,7 @@ export function AttemptTableRow({
   const isAbsent = outcome === 'absent';
   const isCheat = outcome === 'cheat';
   const violations = attempt?.violations_count ?? 0;
-  const [marks, setMarks] = useState('');
-  const recordMutation = useCreateOfflineAttempt(quizId);
-
-  const recordMarks = () => {
-    const value = Math.min(Math.max(Number(marks) || 0, 0), totalPoints);
-    recordMutation.mutate(
-      { studentId, outcome: { marksEarned: value } },
-      {
-        onSuccess: () => {
-          toast.success(`Recorded ${value}/${totalPoints} for ${student.full_name}`);
-          setMarks('');
-        },
-        onError: (e: Error) => toast.error(e.message)
-      }
-    );
-  };
-
-  const recordAbsent = () => {
-    if (
-      !window.confirm(
-        `Mark ${student.full_name} as Absent?\n\nThey did not take this quiz. No score will be saved.`
-      )
-    ) {
-      return;
-    }
-    recordMutation.mutate(
-      { studentId, outcome: { absent: true } },
-      {
-        onSuccess: () => toast.success(`${student.full_name} marked Absent`),
-        onError: (e: Error) => toast.error(e.message)
-      }
-    );
-  };
-
-  const recordCheat = () => {
-    if (
-      !window.confirm(
-        `Mark ${student.full_name} for Cheating?\n\nTheir score will be saved as 0 / ${totalPoints}.`
-      )
-    ) {
-      return;
-    }
-    recordMutation.mutate(
-      { studentId, outcome: { cheat: true } },
-      {
-        onSuccess: () =>
-          toast.success(`${student.full_name} marked Cheating (0 marks)`),
-        onError: (e: Error) => toast.error(e.message)
-      }
-    );
-  };
-
-  const canSaveMarks = marks !== '' && !Number.isNaN(Number(marks));
   const canOpen = !isOffline && !!attempt;
-  const busy = recordMutation.isPending;
 
   const statusLabel = isAbsent
     ? 'Absent'
@@ -247,70 +190,13 @@ export function AttemptTableRow({
               <span className='text-sm text-muted-foreground'>—</span>
             )
           ) : isOffline ? (
-            <div
-              className='inline-flex min-w-[16rem] flex-col gap-2 rounded-lg border border-border bg-muted p-2.5 text-left'
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className='flex items-center gap-2'>
-                <Input
-                  type='number'
-                  min={0}
-                  max={totalPoints}
-                  placeholder='0'
-                  value={marks}
-                  onChange={(e) =>
-                    setMarks(
-                      String(Math.min(Math.max(Number(e.target.value) || 0, 0), totalPoints))
-                    )
-                  }
-                  className='h-9 w-16 bg-card text-center text-sm tabular-nums'
-                  disabled={busy}
-                  aria-label={`Score for ${student.full_name}`}
-                />
-                <span className='shrink-0 text-sm text-muted-foreground'>
-                  out of {totalPoints}
-                </span>
-                <Button
-                  size='sm'
-                  className='h-9 shrink-0'
-                  disabled={busy || !canSaveMarks}
-                  onClick={recordMarks}
-                  aria-label={`Save score for ${student.full_name}`}
-                >
-                  {busy ? <Loader2 className='size-3.5 animate-spin' /> : null}
-                  Save score
-                </Button>
-              </div>
-              <div className='flex items-center gap-2'>
-                <span className='text-[11px] font-medium uppercase tracking-wide text-muted-foreground'>
-                  Or
-                </span>
-                <div className='h-px flex-1 bg-border' />
-              </div>
-              <div className='grid grid-cols-2 gap-2'>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  className='h-9 gap-1.5 bg-card'
-                  disabled={busy}
-                  onClick={recordAbsent}
-                  aria-label={`Mark ${student.full_name} absent`}
-                >
-                  <UserX className='size-3.5' />
-                  Absent
-                </Button>
-                <Button
-                  size='sm'
-                  variant='outline'
-                  className='h-9 gap-1.5 bg-card text-destructive border-destructive/30 hover:bg-destructive/5'
-                  disabled={busy}
-                  onClick={recordCheat}
-                  aria-label={`Mark ${student.full_name} for cheating`}
-                >
-                  <ShieldAlert className='size-3.5' />
-                  Cheating
-                </Button>
-              </div>
+            <div onClick={(e) => e.stopPropagation()}>
+              <OfflineResultPicker
+                quizId={quizId}
+                studentId={studentId}
+                studentName={student.full_name}
+                totalPoints={totalPoints}
+              />
             </div>
           ) : (
             <span className='text-sm text-muted-foreground'>—</span>

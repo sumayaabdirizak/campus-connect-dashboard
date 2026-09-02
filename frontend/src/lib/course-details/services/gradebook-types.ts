@@ -9,6 +9,8 @@ export interface GradebookAssignmentCell {
 
 export interface GradebookQuizCell {
   pct: number | null;
+  maxMarks: number;
+  earned: number | null;
   attempts: number;
   taken: boolean;
 }
@@ -18,27 +20,35 @@ export interface GradebookRow {
   name: string;
   email: string;
   number: string | null;
-  /** Keyed by assignment id; null means no submission. */
   assignments: Record<string, GradebookAssignmentCell | null>;
-  /** Keyed by quiz id; null means no attempt. */
   quizzes: Record<string, GradebookQuizCell | null>;
-  /** Average of graded percentages across all items, or null if none graded. */
+  /** Weighted score as % of course max marks. */
   overallPct: number | null;
+  overallEarned: number;
   gradedCount: number;
 }
 
 export interface GradebookColumns {
   assignments: { id: number; title: string; maxMarks: number }[];
-  quizzes: { id: number; title: string }[];
+  quizzes: { id: number; title: string; maxMarks: number }[];
 }
 
 export interface GradebookClassAverages {
   assignments: Record<string, number | null>;
   quizzes: Record<string, number | null>;
   overall: number | null;
+  overallEarned: number | null;
+}
+
+export interface GradebookMarkBudget {
+  courseMax: number;
+  allocated: number;
+  remaining: number;
 }
 
 export interface Gradebook {
+  courseMaxMarks: number;
+  markBudget: GradebookMarkBudget;
   columns: GradebookColumns;
   students: GradebookRow[];
   classAverages: GradebookClassAverages;
@@ -50,21 +60,21 @@ export interface MyGradeItem {
   id: number;
   title: string;
   pct: number | null;
-  /** Assignment-only fields. */
   maxMarks?: number;
   grade?: number | null;
   submitted?: boolean;
   late?: boolean;
   reviewed?: boolean;
   dueAt?: string | null;
-  /** Quiz-only fields. */
   attempts?: number;
   taken?: boolean;
 }
 
 export interface MyGrades {
   items: MyGradeItem[];
+  courseMaxMarks: number;
   overallPct: number | null;
+  overallEarned: number;
   gradedCount: number;
   totalItems: number;
 }

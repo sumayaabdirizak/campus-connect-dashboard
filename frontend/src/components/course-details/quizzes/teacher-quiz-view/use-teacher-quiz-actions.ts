@@ -14,6 +14,13 @@ import {
   useDuplicateQuiz,
   useUpdateQuiz,
 } from '@/lib/course-details/queries/quizzes-queries';
+import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  markBudgetExceededMessage,
+  resolveQuizRequestedCourseMarks,
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 
 export function useTeacherQuizActions(courseId: string) {
@@ -50,6 +57,20 @@ export function useTeacherQuizActions(courseId: string) {
       toast.error('Add at least one question before publishing');
       return;
     }
+    if (!nextDraft) {
+      const budget = queryClient.getQueryData<CourseMarkBudget>(
+        markBudgetKeys.offering(courseId)
+      );
+      const requested = resolveQuizRequestedCourseMarks(quiz);
+      if (requested <= 0) {
+        toast.error('Set course marks for this quiz before publishing');
+        return;
+      }
+      if (budget && wouldExceedMarkBudget(budget, requested, 0)) {
+        toast.error(markBudgetExceededMessage(budget, requested, 0));
+        return;
+      }
+    }
     const snapshot = queryClient.getQueryData<Quiz[]>(key);
     queryClient.setQueryData<Quiz[]>(key, (prev) =>
       (prev ?? []).map((q) => (q.id === quiz.id ? { ...q, is_draft: nextDraft } : q))
@@ -59,6 +80,7 @@ export function useTeacherQuizActions(courseId: string) {
       {
         onSuccess: () => {
           toast.success(nextDraft ? 'Quiz unpublished' : 'Quiz published');
+          queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseId) });
         },
         onError: (e: Error) => {
           if (snapshot) queryClient.setQueryData<Quiz[]>(key, snapshot);
@@ -83,6 +105,7 @@ export function useTeacherQuizActions(courseId: string) {
     const failCount = results.length - okCount;
     queryClient.invalidateQueries({ queryKey: quizKeys.list(courseId) });
     queryClient.invalidateQueries({ queryKey: quizKeys.available(courseId) });
+    queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseId) });
     if (failCount === 0) {
       toast.success(`${label} ${okCount} quiz${okCount === 1 ? '' : 'zes'}`);
     } else if (okCount === 0) {
@@ -93,10 +116,30 @@ export function useTeacherQuizActions(courseId: string) {
     clearSelection();
   };
 
-  const handleBulkPublish = (draft: boolean) =>
+  const handleBulkPublish = (draft: boolean) => {
+    if (!draft) {
+      const budget = queryClient.getQueryData<CourseMarkBudget>(
+        markBudgetKeys.offering(courseId)
+      );
+      const quizzes = queryClient.getQueryData<Quiz[]>(quizKeys.list(courseId)) ?? [];
+      if (budget) {
+        for (const id of selectedIds) {
+          const quiz = quizzes.find((q) => q.id === id);
+          if (!quiz || !quiz.is_draft) continue;
+          const requested = resolveQuizRequestedCourseMarks(quiz);
+          if (requested > 0 && wouldExceedMarkBudget(budget, requested, 0)) {
+            toast.error(
+              `"${quiz.title}": ${markBudgetExceededMessage(budget, requested, 0)}`
+            );
+            return;
+          }
+        }
+      }
+    }
     runBulk(draft ? 'Unpublished' : 'Published', (id) =>
       updateQuiz(id, { is_draft: draft })
     );
+  };
 
   const handleBulkDelete = () => runBulk('Deleted', (id) => deleteQuizCall(id));
 

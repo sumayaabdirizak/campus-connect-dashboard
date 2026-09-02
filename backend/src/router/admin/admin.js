@@ -14,27 +14,27 @@ const router = Router();
 
 router.get(
   '/analytics',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE'),
+  requireRole('SUPER_ADMIN'),
   asyncHandler(getAdminAnalytics)
 );
 router.get(
   '/faculties',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE'),
+  requireRole('SUPER_ADMIN'),
   asyncHandler(listAdminFaculties)
 );
 router.get(
   '/reports/user-logins',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE'),
+  requireRole('SUPER_ADMIN'),
   asyncHandler(getAdminUserLogins)
 );
 router.get(
   '/reports/teacher-activity',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE'),
+  requireRole('SUPER_ADMIN'),
   asyncHandler(getAdminTeacherActivity)
 );
 router.get(
   '/reports/upcoming-deadlines',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE'),
+  requireRole('SUPER_ADMIN'),
   asyncHandler(getAdminUpcomingDeadlines)
 );
 router.get('/audit-logs', requireRole('SUPER_ADMIN'), asyncHandler(getAdminAuditLogs));

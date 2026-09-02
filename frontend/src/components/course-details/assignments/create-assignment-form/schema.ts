@@ -26,7 +26,7 @@ export const assignmentSchema = z
     gradingScope: z.enum(['INDIVIDUAL', 'GROUP']),
     allowLate: z.boolean(),
     lateWindow: z.string().regex(/^\d+$/, 'Must be a number').or(z.literal('')),
-    maxMarks: z.number().int().min(1, 'Must be at least 1').max(100, 'Cannot exceed 100')
+    maxMarks: z.number().int().min(1, 'Must be at least 1').max(100, 'Cannot exceed 100 course marks')
   })
   .superRefine((v, ctx) => {
     if (v.workMode === 'INDIVIDUAL' && v.gradingScope === 'GROUP') {
@@ -56,5 +56,5 @@ export const defaultAssignmentValues: AssignmentFormValues = {
   gradingScope: 'INDIVIDUAL' as AssignmentGradingScope,
   allowLate: false,
   lateWindow: '0',
-  maxMarks: 100
+  maxMarks: 10
 };

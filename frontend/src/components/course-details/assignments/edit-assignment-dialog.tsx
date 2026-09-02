@@ -6,6 +6,7 @@ import {
   type AssignmentFormValues
 } from './create-assignment-form';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 
 interface EditAssignmentDialogProps {
   target: Assignment | null;
@@ -13,6 +14,7 @@ interface EditAssignmentDialogProps {
   onClose: () => void;
   onSubmit: (values: AssignmentFormValues) => void;
   pending: boolean;
+  markBudget?: CourseMarkBudget;
 }
 
 export function EditAssignmentDialog({
@@ -20,7 +22,8 @@ export function EditAssignmentDialog({
   initialValues,
   onClose,
   onSubmit,
-  pending
+  pending,
+  markBudget
 }: EditAssignmentDialogProps) {
   return (
     <AssignmentModalShell
@@ -40,6 +43,9 @@ export function EditAssignmentDialog({
           submitLabel='Save'
           pendingLabel='Saving…'
           showSubmitIcon={false}
+          markBudget={markBudget}
+          excludePublishedMarks={target.is_draft ? 0 : target.maxMarks ?? 10}
+          enforceMarkBudget={!target.is_draft}
         />
       ) : null}
     </AssignmentModalShell>

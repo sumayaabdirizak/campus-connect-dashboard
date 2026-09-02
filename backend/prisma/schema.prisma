@@ -333,6 +333,7 @@ model User {
   submissionExtensionsReceived SubmissionExtension[] @relation("SubmissionExtensionStudent")
   submissionExtensionsGranted  SubmissionExtension[] @relation("SubmissionExtensionGranter")
   assignmentAttachmentsUploaded AssignmentAttachment[]
+  quizPaperFilesUploaded       QuizPaperFile[]
   assignmentLifecycleEvents     AssignmentLifecycleEvent[] @relation("AssignmentLifecycleEventActor")
   submissionGradesGiven         SubmissionGrade[]          @relation("SubmissionGradeGrader")
   discussionMemberships DiscussionGroupMembership[]
@@ -351,11 +352,6 @@ model User {
   discussionGroupsOwned DiscussionGroup[] @relation("DiscussionGroupOwner")
   groupDmsCreated       GroupDm[]         @relation("GroupDmCreator")
   groupDmMemberships    GroupDmMember[]
-
-  officeStaffMemberships SupportOfficeStaff[]
-  officeThreadsAsStudent OfficeThread[]       @relation("OfficeThreadStudent")
-  officeThreadsAssigned  OfficeThread[]       @relation("OfficeThreadAssignee")
-  officeThreadReads      OfficeThreadRead[]
 
   clubsOwned            Club[]                 @relation("ClubOwner")
   clubJoinRequests      ClubJoinRequest[]      @relation("ClubJoinRequester")
@@ -548,8 +544,6 @@ model Faculty {
   deanProfile             DeanProfile?
   announcements         Announcement[]
   clubs                 Club[]
-  /// Faculty-scoped Dean's Office desk (Messages), if ensured.
-  deanSupportOffice     SupportOffice?
 }
 
 model Program {
@@ -852,7 +846,7 @@ model Assignment {
   lateWindowMinutes  Int                    @default(0)
   /// Total marks for this assignment. Grades are validated 0..maxMarks.
   /// Default 100 preserves the existing percentage-based grading behaviour.
-  maxMarks           Int                    @default(100)
+  maxMarks           Int                    @default(10)
 
   courseOffering CourseOffering         @relation(fields: [courseOfferingId], references: [id])
   submissions    Submission[]
@@ -1007,12 +1001,18 @@ model Quiz {
   /// Purely informational + gates the print/export UI; doesn't change scoring.
   mode String @default("online") // "online" | "offline"
 
+  /// When mode is offline: "built" = questions in the app; "uploaded" = teacher
+  /// provides a paper file and records marks only. Null for online quizzes.
+  offline_delivery String?
+
   /// Teacher's marks-distribution plan, sketched out in Quiz Settings and
   /// read back by the question builder to render one section per selected
   /// question type (e.g. { totalMarks: 10, allocations: { MCQ: 3,
   /// TRUE_FALSE: 3, SHORT_ANSWER: 4 } }). Purely a planning aid — never
   /// validated against actual question points server-side. `null` = no plan.
   marksPlan Json?
+  /// Share of the course mark budget (see Course.maxMarks). Set when published.
+  maxMarks        Int      @default(0)
 
   /// Confidence-based scoring (Cologne / Bristol style). When enabled the
   /// student tags every objective answer with a confidence level (LOW / MED
@@ -1030,10 +1030,28 @@ model Quiz {
   module         CourseModule?  @relation(fields: [moduleId], references: [id], onDelete: SetNull, onUpdate: Cascade)
   questions      QuizQuestion[]
   attempts       QuizAttempt[]
+  paperFile      QuizPaperFile?
 
   @@index([courseOfferingId])
   @@index([moduleId])
   @@index([is_draft, auto_publish_at_open, open_at])
+}
+
+/// Uploaded exam paper for offline quizzes (`offline_delivery = uploaded`).
+model QuizPaperFile {
+  id           Int      @id @default(autoincrement())
+  quizId       Int      @unique
+  name         String
+  url          String
+  size         Int?
+  mimeType     String?
+  uploadedById Int
+  created_at   DateTime @default(now())
+
+  quiz       Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  uploadedBy User @relation(fields: [uploadedById], references: [id])
+
+  @@index([quizId])
 }
 
 model QuizOption {
@@ -1670,92 +1688,6 @@ model DiscussionAuditLog {
 }
 
 /// User-created group chat (min 3 members). Messages use `DiscussionMessage.groupDmId` with `groupId` null.
-/// An administrative unit students can message (Academic Office, Exam
-/// Office, Finance, Registrar, IT…). Staff behind it answer from a shared
-/// inbox, so conversations survive staff rotation.
-model SupportOffice {
-  id          Int      @id @default(autoincrement())
-  name        String
-  slug        String   @unique
-  description String?
-  /// Short uppercase prefix for thread reference codes, e.g. "EXM" → EXM-2026-0142.
-  codePrefix  String   @default("OFC")
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  /// When set, this desk is that faculty's Dean's Office (one per faculty).
-  facultyId   Int?     @unique
-
-  faculty Faculty? @relation(fields: [facultyId], references: [id], onDelete: Cascade)
-  staff   SupportOfficeStaff[]
-  threads OfficeThread[]
-}
-
-enum SupportOfficeStaffRole {
-  AGENT
-  MANAGER
-}
-
-model SupportOfficeStaff {
-  id       Int                    @id @default(autoincrement())
-  officeId Int
-  userId   Int
-  role     SupportOfficeStaffRole @default(AGENT)
-  addedAt  DateTime               @default(now())
-
-  office SupportOffice @relation(fields: [officeId], references: [id], onDelete: Cascade)
-  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([officeId, userId])
-  @@index([userId])
-}
-
-enum OfficeThreadStatus {
-  OPEN
-  AWAITING_STUDENT
-  RESOLVED
-}
-
-/// One private conversation between a student and an office. Messages reuse
-/// DiscussionMessage via the nullable officeThreadId FK — same multiplexing
-/// pattern as channels and group DMs.
-model OfficeThread {
-  id           Int                @id @default(autoincrement())
-  officeId     Int
-  studentId    Int
-  topic        String
-  /// Human-quotable code (e.g. EXM-2026-0142) for phone/offline follow-up.
-  reference    String             @unique
-  status       OfficeThreadStatus @default(OPEN)
-  assignedToId Int?
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
-  resolvedAt   DateTime?
-
-  office     SupportOffice @relation(fields: [officeId], references: [id], onDelete: Cascade)
-  student    User          @relation("OfficeThreadStudent", fields: [studentId], references: [id], onDelete: Cascade)
-  assignedTo User?         @relation("OfficeThreadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  messages   DiscussionMessage[]
-  reads      OfficeThreadRead[]
-
-  @@index([officeId, status, updatedAt])
-  @@index([studentId, updatedAt])
-  @@index([assignedToId, status])
-}
-
-/// Per-user read cursor for office chats (student tickets + AO↔desk DMs).
-model OfficeThreadRead {
-  id         Int      @id @default(autoincrement())
-  threadId   Int
-  userId     Int
-  lastReadAt DateTime @default(now())
-
-  thread OfficeThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  user   User         @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([threadId, userId])
-  @@index([userId])
-}
-
 model GroupDm {
   id          Int       @id @default(autoincrement())
   /// External identifier for URLs, API paths, and socket rooms (never expose numeric id to clients).
@@ -1823,9 +1755,6 @@ model DiscussionMessage {
   groupId       Int?
   channelId     Int?
   groupDmId     Int?
-  officeThreadId Int?
-  /// Staff-only note inside an office thread — never shown to the student.
-  isInternalNote Boolean @default(false)
   senderId      Int?
   content       String?               @db.Text
   messageType   DiscussionMessageType @default(TEXT)
@@ -1845,7 +1774,6 @@ model DiscussionMessage {
   group        DiscussionGroup?        @relation(fields: [groupId], references: [id], onDelete: Cascade)
   channel      DiscussionChannel?      @relation(fields: [channelId], references: [id], onDelete: Cascade)
   groupDm      GroupDm?                @relation(fields: [groupDmId], references: [id], onDelete: Cascade)
-  officeThread OfficeThread?           @relation(fields: [officeThreadId], references: [id], onDelete: Cascade)
   sender       User?                     @relation("DiscussionMessageSender", fields: [senderId], references: [id], onDelete: SetNull)
   parentMessage DiscussionMessage?       @relation("DiscussionMessageThread", fields: [parentMessageId], references: [id], onDelete: SetNull)
   replies      DiscussionMessage[]       @relation("DiscussionMessageThread")
@@ -1863,7 +1791,6 @@ model DiscussionMessage {
   @@index([groupId, parentMessageId, createdAt])
   @@index([channelId, createdAt])
   @@index([groupDmId, createdAt])
-  @@index([officeThreadId, createdAt])
   // Hot path: GET /channels/:id/messages filters by `parentMessageId IS NULL`
   // (main thread) or `parentMessageId = ROOT_ID` (thread expansion). The
   // existing [channelId, createdAt] index forced row-level filtering on

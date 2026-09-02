@@ -1,20 +1,18 @@
 ﻿'use client'
 
 import { useMemo, useState } from 'react'
-import { useQuery } from '@/lib/async-query'
-import { apiClient } from '@/lib/api-client'
 import { useTeacherCourses } from '@/lib/teacher-courses/queries'
 import type { Course } from '@/lib/teacher-courses/types'
-import { useAnnouncements } from '@/lib/announcements/queries'
+import { useRecentAnnouncements } from '@/lib/announcements/queries'
+import { useCalendarDeadlines } from '@/lib/calendar/queries'
 import { filterUpcomingDeadlines } from '@/components/calendar/deadline-calendar'
-import type { DeadlineRow } from '@/components/calendar/lib'
 import { MonthCalendar } from './month-calendar'
 import {
   TeacherDashboardHero,
   TeacherDashboardRailStats,
 } from './teacher-dashboard-hero'
 import { TeacherCoursesPanel } from './teacher-courses-panel'
-import { TeacherDashboardSidebar } from './teacher-dashboard-sidebar'
+import { AnnouncementsSidebarCard } from './announcements-sidebar-card'
 import { StudentDashboardDeadlines } from './student-dashboard-deadlines'
 
 type CourseFilter = 'all' | 'active' | 'completed'
@@ -26,7 +24,7 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
   const [view, setView] = useState<'card' | 'list'>('card')
 
   const { data: coursesData, isLoading: coursesLoading } = useTeacherCourses()
-  const { data: announcementsData } = useAnnouncements()
+  const { data: announcementsData, isLoading: announcementsLoading } = useRecentAnnouncements(5)
   const courses = (coursesData ?? []) as Course[]
   const announcements = announcementsData ?? []
 
@@ -38,13 +36,10 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
     }
   }, [])
 
-  const { data: deadlineData, isLoading: deadlinesLoading } = useQuery({
-    queryKey: ['calendar', 'deadlines', 'teacher-dashboard', fromIso],
-    queryFn: () =>
-      apiClient<{ results: DeadlineRow[] }>(
-        `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
-      ),
-  })
+  const { data: deadlineData, isLoading: deadlinesLoading } = useCalendarDeadlines(
+    fromIso,
+    toIso
+  )
 
   const timelineItems = useMemo(
     () => filterUpcomingDeadlines(deadlineData?.results),
@@ -102,7 +97,10 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
             pendingGrading={pendingGrading}
           />
           <StudentDashboardDeadlines items={timelineItems} loading={deadlinesLoading} />
-          <TeacherDashboardSidebar announcements={announcements} />
+          <AnnouncementsSidebarCard
+            announcements={announcements}
+            loading={announcementsLoading}
+          />
         </aside>
       </section>
 

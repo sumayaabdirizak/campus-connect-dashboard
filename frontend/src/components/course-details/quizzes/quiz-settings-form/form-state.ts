@@ -5,6 +5,7 @@ import type {
 } from '@/lib/course-details/services/quizzes-types';
 import { questionTypesForMode } from '../quiz-question-types';
 import { serverNow } from '@/lib/server-clock';
+import { isUploadedOfflineQuiz } from '@/lib/course-details/services/quiz-total-points';
 
 export const NO_MODULE = '__none__';
 
@@ -22,6 +23,8 @@ export interface FormState {
   confidence_scoring: boolean;
   moduleSelect: string;
   mode: 'online' | 'offline';
+  /// Offline only: build in app vs upload paper file.
+  offline_delivery: 'built' | 'uploaded';
   // Marks-distribution plan — `marksPlanTypes` is the set of sections the
   // teacher has switched on; `marksPlanAllocations` only has meaningful
   // values for types present in that set.
@@ -44,6 +47,7 @@ export const BLANK: FormState = {
   confidence_scoring: false,
   moduleSelect: NO_MODULE,
   mode: 'online',
+  offline_delivery: 'built',
   marksPlanTotal: 10,
   marksPlanTypes: [],
   marksPlanAllocations: {}
@@ -112,11 +116,18 @@ export function fromQuiz(q: Quiz): FormState {
     confidence_scoring: !!q.confidence_scoring,
     moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId),
     mode: q.mode ?? 'online',
+    offline_delivery:
+      q.mode === 'offline' && q.offline_delivery === 'uploaded' ? 'uploaded' : 'built',
     ...marksPlanFieldsFromQuiz(q)
   };
 }
 
+export function isUploadedOfflineForm(s: FormState): boolean {
+  return s.mode === 'offline' && s.offline_delivery === 'uploaded';
+}
+
 export function toPayload(s: FormState): CreateQuizInput {
+  const uploaded = isUploadedOfflineForm(s);
   return {
     title: s.title.trim(),
     description: s.description.trim() || undefined,
@@ -132,8 +143,11 @@ export function toPayload(s: FormState): CreateQuizInput {
     confidence_scoring: s.confidence_scoring,
     moduleId: s.moduleSelect === NO_MODULE ? null : Number(s.moduleSelect),
     mode: s.mode,
-    marksPlan:
-      s.marksPlanTypes.length === 0
+    offline_delivery: s.mode === 'offline' ? s.offline_delivery : null,
+    maxMarks: uploaded ? s.marksPlanTotal : undefined,
+    marksPlan: uploaded
+      ? null
+      : s.marksPlanTypes.length === 0
         ? null
         : {
             totalMarks: s.marksPlanTotal,
@@ -172,6 +186,12 @@ export function validateForm(s: FormState, editing: Quiz | null): string | null 
   if (s.timing_mode === 'fixed' && !s.open_at_local) {
     return 'Set "Available from" — everyone needs a shared start time';
   }
+  if (!s.is_draft && editing && isUploadedOfflineQuiz(editing)) {
+    if (!editing.paperFile || (editing.maxMarks ?? 0) <= 0) {
+      return 'Upload the quiz file and set marks before publishing';
+    }
+    return null;
+  }
   if (!s.is_draft && editing && (editing.questions?.length ?? 0) === 0) {
     return 'Add at least one question before publishing';
   }
@@ -187,6 +207,10 @@ export function quizConfigReadyMessage(s: FormState): string | null {
   if (s.duration_minutes < 1) return 'Set a duration of at least 1 minute';
   if (s.mode === 'online' && s.timing_mode === 'fixed' && !s.open_at_local) {
     return 'Set “Available from” on the Timing tab';
+  }
+  if (isUploadedOfflineForm(s)) {
+    if (s.marksPlanTotal < 1) return 'Set total marks on the Marking tab';
+    return null;
   }
   if (s.marksPlanTypes.length === 0) {
     return 'Pick at least one question type on the Marking tab';
@@ -257,6 +281,14 @@ function marksPlanFieldsFromQuiz(q: Quiz): Pick<
   'marksPlanTotal' | 'marksPlanTypes' | 'marksPlanAllocations'
 > {
   const mode = q.mode ?? 'online';
+  if (q.mode === 'offline' && q.offline_delivery === 'uploaded') {
+    const total = q.maxMarks > 0 ? q.maxMarks : (q.marksPlan?.totalMarks ?? 10);
+    return {
+      marksPlanTotal: total,
+      marksPlanTypes: [],
+      marksPlanAllocations: {}
+    };
+  }
   const typeOrder = questionTypesForMode(mode);
 
   if (q.marksPlan) {

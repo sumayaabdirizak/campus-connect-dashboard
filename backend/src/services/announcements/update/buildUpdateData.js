@@ -18,10 +18,7 @@ import { resolveNextStatus } from "./scheduleFields.js";
 import { assembleUpdateAnnouncementRow } from "./assembleRow.js";
 
 function isFacultyScopedPublisher(role, loaded) {
-  const r = String(role || "").toUpperCase();
-  if (r === "DEAN") return true;
-  if (r === "OFFICE_STAFF" && (loaded.facultyIds?.length ?? 0) > 0) return true;
-  return false;
+  return String(role || "").toUpperCase() === "DEAN";
 }
 
 /**

@@ -93,7 +93,7 @@ describe.skipIf(!dbReady)("Authenticated route smoke (database)", () => {
       ["/api/lecturer-portal/my-assignments", "assignment overview"],
       [`/api/course-offerings/${offering.id}`, "assignments list"],
       [`/api/quizzes/${offering.id}`, "quizzes list"],
-      [`/api/roster/${offering.id}`, "roster"],
+      [`/api/roster/${offering.id}`, "Student Logs"],
       [`/api/groups/${offering.id}`, "groups"],
       [`/api/resources/${offering.id}`, "resources"],
       [`/api/chat/${offering.id}`, "chat room"],

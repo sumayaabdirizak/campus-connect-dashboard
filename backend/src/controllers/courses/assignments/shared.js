@@ -1,3 +1,8 @@
+import { assertCourseMarkBudget } from '../../../services/courses/courseMarkBudget.service.js';
+
+/** Default course mark weight when the client omits maxMarks (share of 100). */
+export const DEFAULT_ASSIGNMENT_MARK_WEIGHT = 10;
+
 export const attachmentInclude = {
   attachments: {
     orderBy: { created_at: 'asc' },
@@ -18,9 +23,25 @@ export function normaliseModes({ workMode, gradingScope }) {
 export function normaliseMaxMarks(maxMarks) {
   if (maxMarks === undefined || maxMarks === null) return { data: {} };
   if (!Number.isInteger(maxMarks) || maxMarks < 1 || maxMarks > 100) {
-    return { error: 'maxMarks must be an integer between 1 and 100' };
+    return { error: 'maxMarks must be an integer between 1 and 100 (course mark weight)' };
   }
   return { data: { maxMarks } };
+}
+
+export async function validateAssignmentMarkBudget(
+  courseOfferingId,
+  requestedMarks,
+  excludeAssignmentId,
+  tx
+) {
+  const budget = await assertCourseMarkBudget(
+    courseOfferingId,
+    requestedMarks,
+    { excludeAssignmentId },
+    tx
+  );
+  if (budget.error) return { error: budget.error };
+  return { data: budget.data };
 }
 
 /** Coerce late window to int minutes; omit when undefined/null. */

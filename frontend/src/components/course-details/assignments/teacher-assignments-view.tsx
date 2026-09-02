@@ -2,8 +2,10 @@
 
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
 import { CourseTabHeader } from '../_shared/course-tab-header';
 import { CourseTabPage } from '../_shared/course-tab-page';
+import { CourseMarkBudgetBanner } from '../_shared/course-mark-budget-banner';
 import { AssignmentsEmptyState } from './shared';
 import { AssignmentBulkBar } from './assignment-bulk-bar';
 import { AssignmentListTable } from './assignment-list-table';
@@ -13,9 +15,11 @@ import { useTeacherAssignmentList } from './use-teacher-assignment-list';
 
 interface TeacherAssignmentsViewProps {
   list: ReturnType<typeof useTeacherAssignmentList>;
+  courseId: string;
 }
 
-export function TeacherAssignmentsView({ list }: TeacherAssignmentsViewProps) {
+export function TeacherAssignmentsView({ list, courseId }: TeacherAssignmentsViewProps) {
+  const { data: markBudget } = useCourseMarkBudget(courseId);
   const {
     assignments,
     isLoading,
@@ -62,6 +66,8 @@ export function TeacherAssignmentsView({ list }: TeacherAssignmentsViewProps) {
         }
       />
 
+      <CourseMarkBudgetBanner budget={markBudget} />
+
       {showEmpty ? (
         <AssignmentsEmptyState hasItems={false} onCreate={() => setCreateOpen(true)} />
       ) : (
@@ -85,6 +91,7 @@ export function TeacherAssignmentsView({ list }: TeacherAssignmentsViewProps) {
             onTogglePublish={togglePublish}
             onEdit={setEditTarget}
             onDelete={handleDelete}
+            courseMaxMarks={markBudget?.courseMax}
           />
         </>
       )}
@@ -99,6 +106,7 @@ export function TeacherAssignmentsView({ list }: TeacherAssignmentsViewProps) {
         onRemoveFile={removePendingFile}
         onSubmit={handleCreate}
         pending={createPending}
+        markBudget={markBudget}
       />
       <EditAssignmentDialog
         target={editTarget}
@@ -106,6 +114,7 @@ export function TeacherAssignmentsView({ list }: TeacherAssignmentsViewProps) {
         onClose={() => setEditTarget(null)}
         onSubmit={handleEditAssignment}
         pending={updatePending}
+        markBudget={markBudget}
       />
     </CourseTabPage>
   );

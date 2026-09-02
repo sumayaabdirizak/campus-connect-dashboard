@@ -3,6 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireQuizManage } from '../../../middleware/courseOfferingRbac.js';
 import { createOfflineAttemptBodySchema } from '../../../validation/quizSchemas.js';
+import { resolveQuizAttemptMaxPoints } from './helpers.js';
 
 const ATTEMPT_INCLUDE = {
   student: { select: { id: true, full_name: true, email: true, number: true } },
@@ -64,16 +65,22 @@ export function register(router) {
         where: { quizId: quiz.id },
         select: { id: true, question_type: true, points: true },
       });
-      if (questions.length === 0) {
-        return res.status(400).json({ message: 'Add at least one question before recording scores.' });
+      const totalPoints = resolveQuizAttemptMaxPoints(quiz, questions);
+      if (totalPoints <= 0) {
+        return res.status(400).json({
+          message: 'Set course marks for this quiz before recording scores.',
+        });
       }
 
-      const emptyAnswers = {
-        create: questions.map((q) => ({
-          questionId: q.id,
-          question_type: q.question_type,
-        })),
-      };
+      const emptyAnswers =
+        questions.length > 0
+          ? {
+              create: questions.map((q) => ({
+                questionId: q.id,
+                question_type: q.question_type,
+              })),
+            }
+          : undefined;
 
       // Absent: no score — row is recorded but gradebook ignores null scores.
       if (absent) {
@@ -109,7 +116,6 @@ export function register(router) {
         return res.status(201).json(attempt);
       }
 
-      const totalPoints = questions.reduce((sum, q) => sum + q.points, 0);
       if (marksEarned > totalPoints) {
         return res.status(400).json({
           message: `Marks can't exceed the quiz total (${totalPoints}).`,

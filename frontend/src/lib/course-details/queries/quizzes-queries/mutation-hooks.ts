@@ -27,6 +27,7 @@ import type {
   UpdateQuestionInput,
   UpdateQuizInput
 } from '@/lib/course-details/services/quizzes-types';
+import { markBudgetKeys } from '../mark-budget-queries';
 import { quizKeys } from './keys';
 
 function invalidateOfferingQuizzes(
@@ -35,6 +36,7 @@ function invalidateOfferingQuizzes(
 ) {
   queryClient.invalidateQueries({ queryKey: quizKeys.list(courseOfferingId) });
   queryClient.invalidateQueries({ queryKey: quizKeys.available(courseOfferingId) });
+  queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseOfferingId) });
 }
 
 export function useCreateQuiz(courseOfferingId: string) {

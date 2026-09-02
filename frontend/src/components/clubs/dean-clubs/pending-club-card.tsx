@@ -16,95 +16,75 @@ export function PendingClubCard({
   onReject: () => void
   isApproving: boolean
 }) {
-  const themeColor = club.themeColor || '#6366f1'
-
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <div
-        className='h-16'
-        style={{
-          background: club.bannerUrl
-            ? `url(${club.bannerUrl}) center/cover`
-            : `linear-gradient(135deg, ${themeColor}40, ${themeColor}15)`,
-        }}
-      />
-      <div className='space-y-3 p-4'>
-        <div className='flex items-start justify-between'>
-          <div>
-            <h3 className='font-semibold'>{club.name}</h3>
-            {club.tagline && <p className='text-xs text-muted-foreground'>{club.tagline}</p>}
-          </div>
-        </div>
-
-        {club.description ? (
-          <p className='text-sm text-muted-foreground'>{club.description}</p>
-        ) : null}
-
-        {club.rules ? (
-          <div className='rounded border bg-muted/30 p-2.5'>
-            <p className='mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground'>
-              Rules
-            </p>
-            <p className='line-clamp-3 whitespace-pre-wrap text-xs text-muted-foreground'>
-              {club.rules}
-            </p>
-          </div>
-        ) : null}
-
-        {club.owner ? (
-          <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-            <Icons.user className='h-3 w-3' />
-            Applied by <strong>{club.owner.full_name}</strong>
-            {club.owner.email ? <span>({club.owner.email})</span> : null}
-          </div>
-        ) : null}
-
-        {club.faculty ? (
-          <div className='flex items-center gap-2 text-xs text-muted-foreground'>
-            <Icons.teams className='h-3 w-3' />
-            Faculty: <strong>{club.faculty.name}</strong>
-          </div>
-        ) : null}
-
-        {club.interests && club.interests.length > 0 ? (
-          <div className='flex flex-wrap gap-1'>
-            {club.interests.map((tag) => (
-              <Badge key={tag.slug} variant='secondary' className='text-[10px]'>
-                {tag.label}
-              </Badge>
-            ))}
-          </div>
-        ) : null}
-
-        <div className='flex items-center justify-end gap-2 pt-1'>
-          <Button
-            variant='outline'
-            size='sm'
-            className='text-destructive hover:text-destructive'
-            onClick={onReject}
-          >
-            Reject
-          </Button>
-          <Button
-            size='sm'
-            onClick={onApprove}
-            disabled={isApproving}
-            style={{ backgroundColor: themeColor }}
-          >
-            {isApproving ? (
-              <>
-                <Icons.spinner className='mr-1.5 h-3 w-3 animate-spin' />
-                Approving...
-              </>
-            ) : (
-              <>
-                <Icons.check className='mr-1.5 h-3 w-3' />
-                Approve
-              </>
-            )}
-          </Button>
+    <article className='rounded-lg border border-border bg-muted/50 p-2.5 shadow-sm'>
+      <div className='mb-2 flex items-start gap-2'>
+        <span className='mt-1 size-2 shrink-0 rounded-full bg-primary' aria-hidden />
+        <div className='min-w-0 flex-1'>
+          <h3 className='text-xs font-semibold text-foreground'>{club.name}</h3>
+          {club.tagline ? (
+            <p className='text-[11px] text-muted-foreground'>{club.tagline}</p>
+          ) : null}
         </div>
       </div>
-    </div>
+
+      {club.description ? (
+        <p className='mb-2 line-clamp-2 text-[11px] text-foreground/80'>{club.description}</p>
+      ) : null}
+
+      {club.owner ? (
+        <p className='text-[10px] text-foreground/75'>
+          Applied by <span className='font-medium'>{club.owner.full_name}</span>
+          {club.owner.email ? (
+            <span className='text-muted-foreground'> ({club.owner.email})</span>
+          ) : null}
+        </p>
+      ) : null}
+
+      {club.faculty ? (
+        <p className='text-[10px] text-muted-foreground'>
+          Faculty: <span className='font-medium text-foreground/75'>{club.faculty.name}</span>
+        </p>
+      ) : null}
+
+      {club.interests && club.interests.length > 0 ? (
+        <div className='mt-1.5 flex flex-wrap gap-1'>
+          {club.interests.map((tag) => (
+            <Badge key={tag.slug} variant='secondary' className='text-[9px] px-1.5 py-0'>
+              {tag.label}
+            </Badge>
+          ))}
+        </div>
+      ) : null}
+
+      <div className='mt-2 flex items-center justify-end gap-1.5 border-t border-border/60 pt-2'>
+        <Button
+          variant='outline'
+          size='sm'
+          className='h-7 px-2.5 text-[11px] text-destructive hover:text-destructive'
+          onClick={onReject}
+        >
+          Reject
+        </Button>
+        <Button
+          size='sm'
+          className='h-7 px-2.5 text-[11px]'
+          onClick={onApprove}
+          disabled={isApproving}
+        >
+          {isApproving ? (
+            <>
+              <Icons.spinner className='me-1 h-3 w-3 animate-spin' />
+              Approving…
+            </>
+          ) : (
+            <>
+              <Icons.check className='me-1 h-3 w-3' />
+              Approve
+            </>
+          )}
+        </Button>
+      </div>
+    </article>
   )
 }

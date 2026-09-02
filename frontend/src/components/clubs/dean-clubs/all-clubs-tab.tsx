@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Icons } from '@/components/icons'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -17,10 +16,7 @@ import { useAllFacultyClubs, useSuspendClub } from '@/lib/clubs/queries'
 import type { Club } from '@/lib/clubs/types'
 import { FacultyClubRow } from './faculty-club-row'
 
-const STATUSES = ['APPROVED', 'SUSPENDED', 'REJECTED'] as const
-
-export function AllClubsTab() {
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
+export function AllClubsTab({ statusFilter }: { statusFilter?: string }) {
   const { data, isLoading } = useAllFacultyClubs(statusFilter)
   const suspendMutation = useSuspendClub()
 
@@ -47,42 +43,16 @@ export function AllClubsTab() {
 
   return (
     <>
-      <div className='flex flex-wrap gap-2 px-6 pt-4'>
-        <button
-          onClick={() => setStatusFilter(undefined)}
-          className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-            !statusFilter
-              ? 'bg-primary text-primary-foreground'
-              : 'bg-muted text-muted-foreground hover:bg-muted/80'
-          }`}
-        >
-          All
-        </button>
-        {STATUSES.map((s) => (
-          <button
-            key={s}
-            onClick={() => setStatusFilter(statusFilter === s ? undefined : s)}
-            className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-              statusFilter === s
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted text-muted-foreground hover:bg-muted/80'
-            }`}
-          >
-            {s.charAt(0) + s.slice(1).toLowerCase()}
-          </button>
-        ))}
-      </div>
-
-      <ScrollArea className='flex-1'>
-        <div className='mx-auto max-w-3xl space-y-3 p-6'>
+      <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2 py-2 [-webkit-overflow-scrolling:touch]'>
+        <div className='mx-auto max-w-xl space-y-1'>
           {isLoading ? (
             <>
-              <Skeleton className='h-24 rounded-xl' />
-              <Skeleton className='h-24 rounded-xl' />
+              <Skeleton className='h-20 rounded-lg' />
+              <Skeleton className='h-20 rounded-lg' />
             </>
           ) : clubs.length === 0 ? (
-            <div className='flex flex-col items-center justify-center gap-2 py-16'>
-              <Icons.teams className='h-10 w-10 text-muted-foreground/50' />
+            <div className='flex flex-col items-center justify-center gap-2 py-12'>
+              <Icons.teams className='h-8 w-8 text-muted-foreground/50' />
               <p className='text-sm text-muted-foreground'>No clubs found</p>
             </div>
           ) : (
@@ -96,7 +66,7 @@ export function AllClubsTab() {
             ))
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       <Dialog open={!!suspendTarget} onOpenChange={() => setSuspendTarget(null)}>
         <DialogContent className='max-w-sm'>

@@ -44,10 +44,6 @@ export interface QuizQuestion {
   options: QuizOption[];
 }
 
-/// Lightweight module summary embedded in a Quiz payload — the list query
-/// and the create/update responses use `select: { id, title, position,
-/// publishedAt }` on the relation. Enough to render the chapter accordion
-/// header without a separate modules fetch.
 export interface QuizModuleSummary {
   id: number;
   title: string;
@@ -56,6 +52,16 @@ export interface QuizModuleSummary {
   /// modules (the publish gate on a quiz is `is_draft`, not the module), but
   /// the UI may want to mark the bucket as draft.
   publishedAt: string | null;
+}
+
+export interface QuizPaperFile {
+  id: number;
+  quizId: number;
+  name: string;
+  url: string;
+  size?: number | null;
+  mimeType?: string | null;
+  created_at: string;
 }
 
 export interface Quiz {
@@ -79,6 +85,10 @@ export interface Quiz {
   /// "online" (default) — students take it in-app. "offline" — printed/handed
   /// out on paper; informational only, doesn't change scoring or access.
   mode: 'online' | 'offline';
+  /// When mode is offline: build questions in-app vs upload a paper file.
+  offline_delivery?: 'built' | 'uploaded' | null;
+  /// Uploaded exam paper (offline_delivery = uploaded).
+  paperFile?: QuizPaperFile | null;
   /// Teacher's marks-distribution plan (Quiz Settings → Marks tab). Purely a
   /// planning aid the question builder reads back to render one section per
   /// selected question type. `null`/absent = no plan; builder falls back to
@@ -100,6 +110,8 @@ export interface Quiz {
   /// Inlined summary returned by the backend. Use this for grouping +
   /// rendering the chapter label without an extra fetch.
   module?: QuizModuleSummary | null;
+  /// Weight toward the course's 100-mark budget (set on publish).
+  maxMarks?: number;
   created_at: string;
   updated_at: string;
   questions?: QuizQuestion[];
@@ -157,6 +169,8 @@ export interface CreateQuizInput {
   /// "online" (default) — students take it in-app. "offline" — printed/handed
   /// out on paper; informational only, doesn't change scoring or access.
   mode?: 'online' | 'offline';
+  offline_delivery?: 'built' | 'uploaded' | null;
+  maxMarks?: number;
   /// Marks-distribution plan sketched in Quiz Settings. `null` clears it.
   marksPlan?: {
     totalMarks: number;

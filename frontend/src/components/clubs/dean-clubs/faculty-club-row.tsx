@@ -14,45 +14,36 @@ export function FacultyClubRow({
   isSuspending: boolean
 }) {
   return (
-    <div className='overflow-hidden rounded-xl border'>
-      <div
-        className='h-10'
-        style={{
-          background: club.bannerUrl
-            ? `url(${club.bannerUrl}) center/cover`
-            : `linear-gradient(135deg, ${club.themeColor ?? '#6366f1'}40, ${club.themeColor ?? '#6366f1'}15)`,
-        }}
-      />
-      <div className='flex items-start justify-between p-4'>
+    <article className='rounded-lg border border-border bg-muted/50 p-2.5 shadow-sm'>
+      <div className='flex items-start justify-between gap-2'>
         <div className='min-w-0 flex-1'>
           <div className='flex items-center gap-2'>
-            <h3 className='font-semibold'>{club.name}</h3>
+            <span className='size-2 shrink-0 rounded-full bg-primary' aria-hidden />
+            <h3 className='truncate text-xs font-semibold text-foreground'>{club.name}</h3>
             <ClubStatusBadge status={club.status ?? 'APPROVED'} />
           </div>
           {club.tagline ? (
-            <p className='text-xs text-muted-foreground'>{club.tagline}</p>
+            <p className='mt-0.5 truncate text-[11px] text-muted-foreground'>{club.tagline}</p>
           ) : null}
           {club.owner ? (
-            <p className='mt-1 text-xs text-muted-foreground'>
-              Owner: <strong>{club.owner.full_name}</strong>
+            <p className='mt-0.5 text-[10px] text-foreground/75'>
+              Owner: <span className='font-medium'>{club.owner.full_name}</span>
             </p>
           ) : null}
-          <p className='text-xs text-muted-foreground'>
-            {club.memberCountCache} members
-          </p>
+          <p className='text-[10px] text-muted-foreground'>{club.memberCountCache} members</p>
         </div>
         {club.status === 'APPROVED' ? (
           <Button
             variant='outline'
             size='sm'
-            className='ml-3 shrink-0 text-orange-600 hover:text-orange-700'
+            className='h-7 shrink-0 px-2.5 text-[11px] text-primary hover:bg-primary/10 hover:text-primary'
             onClick={onSuspend}
             disabled={isSuspending}
           >
-            {isSuspending ? 'Suspending...' : 'Suspend'}
+            {isSuspending ? '…' : 'Suspend'}
           </Button>
         ) : null}
       </div>
-    </div>
+    </article>
   )
 }

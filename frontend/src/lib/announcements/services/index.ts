@@ -13,6 +13,8 @@ export const getAnnouncements = async (opts?: {
   drafts?: boolean;
   /** Matches feed URL `?role=`; server filters `targetRoles` (not sent when `ALL`). */
   audienceRole?: string;
+  pageSize?: number;
+  page?: number;
 }) => {
   if (diagnosticForceApiFailure) {
     throw new Error('Simulated announcements API failure (diagnostics)');
@@ -23,13 +25,27 @@ export const getAnnouncements = async (opts?: {
   else if (opts?.drafts) params.set('status', 'DRAFT');
   const ar = opts?.audienceRole?.trim().toUpperCase();
   if (ar && ar !== 'ALL') params.set('role', ar);
+  if (opts?.pageSize != null) params.set('pageSize', String(opts.pageSize));
+  if (opts?.page != null) params.set('page', String(opts.page));
   const qs = params.toString();
   const response = await apiClient<
-    Announcement[] | { data?: Announcement[]; results?: Announcement[] }
+    Announcement[] | { data?: Announcement[]; results?: Announcement[]; total?: number }
   >(`/announcements${qs ? `?${qs}` : ''}`);
   if (Array.isArray(response)) return response;
   if (Array.isArray(response?.results)) return response.results;
   return Array.isArray(response?.data) ? response.data : [];
+};
+
+/** Lightweight list for dashboard sidebars (default 5 rows). */
+export const getRecentAnnouncements = async (limit = 5) =>
+  getAnnouncements({ pageSize: limit, page: 1 });
+
+/** Total published announcements visible to the user (`pageSize=1` meta). */
+export const getAnnouncementPublishedTotal = async () => {
+  const response = await apiClient<{ total?: number }>(
+    '/announcements?pageSize=1&page=1'
+  );
+  return { total: typeof response?.total === 'number' ? response.total : 0 };
 };
 
 /** Lightweight draft count for manager badge (`total` from paginated list, `pageSize=1`). */

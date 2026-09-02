@@ -28,10 +28,5 @@ export function buildRegisterPayload(form: UserFormState) {
   const courseIds = form.courseIds.map(Number).filter((id) => Number.isInteger(id) && id > 0);
   if (courseIds.length > 0) payload.courseIds = courseIds;
 
-  if (form.officeId) {
-    payload.officeId = Number(form.officeId);
-    payload.officeStaffRole = form.officeStaffRole || 'AGENT';
-  }
-
   return payload;
 }

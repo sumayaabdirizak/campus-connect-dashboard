@@ -2,11 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import type { Gradebook } from '@/lib/course-details/services/gradebook-types';
-import {
-  computeClassAveragePoints,
-  fmtPct,
-  fmtPoints
-} from './gradebook-math';
+import { fmtPoints, fmtScoreFromPct } from './gradebook-math';
 
 export function GradebookFooter({
   data,
@@ -15,8 +11,9 @@ export function GradebookFooter({
   data: Gradebook;
   stickyCell: string;
 }) {
-  const { columns, classAverages } = data;
-  const avgPoints = computeClassAveragePoints(data.students, columns);
+  const { columns, classAverages, courseMaxMarks } = data;
+  const overallMax = Math.min(courseMaxMarks, 100);
+  const classEarned = classAverages.overallEarned;
 
   return (
     <tfoot>
@@ -32,7 +29,7 @@ export function GradebookFooter({
               key={`af-${a.id}`}
               className='border-l border-border/40 px-2 py-2.5 text-center tabular-nums'
             >
-              {fmtPct(avg)}
+              {fmtScoreFromPct(avg, a.maxMarks)}
             </td>
           );
         })}
@@ -46,19 +43,12 @@ export function GradebookFooter({
               key={`qf-${q.id}`}
               className='border-l border-border/40 px-2 py-2.5 text-center tabular-nums'
             >
-              {fmtPct(avg)}
+              {q.maxMarks > 0 ? fmtScoreFromPct(avg, q.maxMarks) : '—'}
             </td>
           );
         })}
         <td className='border-l border-border/40 px-2 py-2.5 text-center font-medium tabular-nums text-foreground'>
-          <div className='flex flex-col items-center gap-0.5 leading-tight'>
-            <span>{fmtPct(classAverages.overall)}</span>
-            {avgPoints ? (
-              <span className='text-xs font-normal text-muted-foreground tabular-nums'>
-                {fmtPoints(avgPoints.earned, avgPoints.max)}
-              </span>
-            ) : null}
-          </div>
+          {classEarned != null ? fmtPoints(classEarned, overallMax) : '—'}
         </td>
       </tr>
     </tfoot>

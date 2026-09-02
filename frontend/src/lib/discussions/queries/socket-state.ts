@@ -4,8 +4,7 @@ export type RoomKey =
   | `channel:${string}`
   | `groupdm:${string}`
   | `user:${number}`
-  | `discussion:${string}`
-  | `officeThread:${number}`;
+  | `discussion:${string}`;
 
 export let socket: Socket | null = null;
 let listenersBound = false;

@@ -14,12 +14,17 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
+import {
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import { DraftQuestionEditor } from '../quiz-builder/draft-question-editor';
 import { questionTypesForMode } from '../quiz-question-types';
 import { BasicsTab } from '../quiz-settings-form/basics-tab';
 import { BehaviorTab } from '../quiz-settings-form/behavior-tab';
 import type { QuizSettingsTab } from '../quiz-settings-form/form-state';
 import { MarksTab } from '../quiz-settings-form/marks-tab';
+import { QuizPaperFileField } from '../quiz-settings-form/quiz-paper-file-field';
 import { ScheduleTab } from '../quiz-settings-form/schedule-tab';
 import {
   quizFormCardClass,
@@ -45,6 +50,13 @@ export function EditQuizPage({
   onSaved?: () => void;
 }) {
   const p = useEditQuizPage(courseId, quiz, onSaved);
+  const { data: markBudget } = useCourseMarkBudget(courseId);
+  const excludePublishedMarks = quiz.is_draft ? 0 : quiz.maxMarks ?? p.form.marksPlanTotal;
+  const saveBlockedByBudget =
+    !p.form.is_draft &&
+    markBudget != null &&
+    p.form.marksPlanTotal > 0 &&
+    wouldExceedMarkBudget(markBudget, p.form.marksPlanTotal, excludePublishedMarks);
   const [configTab, setConfigTab] = useState<QuizSettingsTab>('basics');
 
   useEffect(() => {
@@ -56,6 +68,7 @@ export function EditQuizPage({
   }, []);
 
   const isOffline = p.form.mode === 'offline';
+  const isUploadedPaper = p.isUploadedPaper;
   const typeOrder = questionTypesForMode(p.form.mode);
 
   useEffect(() => {
@@ -137,7 +150,12 @@ export function EditQuizPage({
             <Button
               className={quizFormPrimaryBtnClass}
               onClick={p.handleSave}
-              disabled={p.isSaving || p.draft != null}
+              disabled={p.isSaving || p.draft != null || saveBlockedByBudget}
+              title={
+                saveBlockedByBudget
+                  ? 'Total marks exceed available course marks'
+                  : undefined
+              }
             >
               {p.isSaving ? 'Saving…' : 'Save quiz'}
             </Button>
@@ -197,12 +215,36 @@ export function EditQuizPage({
                   </TabsContent>
                 ) : null}
 
-                <TabsContent value='marks' className='mt-5'>
-                  <MarksTab form={p.form} setForm={p.setMarksForm} />
+                <TabsContent value='marks' className='mt-5 space-y-5'>
+                  <MarksTab
+                    form={p.form}
+                    setForm={p.setMarksForm}
+                    markBudget={markBudget}
+                    excludePublishedMarks={excludePublishedMarks}
+                    uploadedOnly={isUploadedPaper}
+                  />
+                  {isUploadedPaper ? (
+                    <QuizPaperFileField
+                      pendingFile={p.pendingPaperFile}
+                      onPendingFile={p.setPendingPaperFile}
+                      existingFile={quiz.paperFile}
+                      onRemoveExisting={p.removePaperFile}
+                      removing={p.removingPaperFile}
+                    />
+                  ) : null}
                 </TabsContent>
               </Tabs>
             </div>
 
+            {isUploadedPaper ? (
+              <div className={`space-y-3 ${quizFormCardClass} p-4`}>
+                <h2 className='text-base font-semibold text-foreground'>Student marks</h2>
+                <p className='text-sm text-muted-foreground'>
+                  After publishing, open <strong className='text-foreground'>Attempts</strong> from
+                  the quiz list to enter each student&apos;s paper score.
+                </p>
+              </div>
+            ) : (
             <div className={`space-y-4 ${quizFormCardClass}`}>
               <div>
                 <h2 className='text-base font-semibold text-foreground'>Questions</h2>
@@ -289,9 +331,10 @@ export function EditQuizPage({
                 />
               ) : null}
             </div>
+            )}
           </div>
 
-          {isOffline ? (
+          {isOffline && !isUploadedPaper ? (
             <QuizPreviewPanel
               title={p.form.title}
               description={p.form.description}

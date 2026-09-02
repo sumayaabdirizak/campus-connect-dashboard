@@ -1,13 +1,7 @@
 import { prisma } from '../../db/prisma.js';
-import { assertAllOnDeanFacultyOffice } from './deanOfficeStaffDm.js';
 
 /** Roles a Dean may add to a faculty group DM (besides self). */
-export const DEAN_GROUP_MEMBER_ROLES = Object.freeze([
-  'TEACHER',
-  'STUDENT',
-  'LECTURER',
-  'OFFICE_STAFF',
-]);
+export const DEAN_GROUP_MEMBER_ROLES = Object.freeze(['TEACHER', 'STUDENT', 'LECTURER']);
 
 function isDeanGroupMemberRole(roleName) {
   const r = String(roleName || '').toUpperCase();
@@ -15,7 +9,7 @@ function isDeanGroupMemberRole(roleName) {
 }
 
 /**
- * Dean group: creator is DEAN; others = teachers, students, or faculty-desk office staff.
+ * Dean group: creator is DEAN; others = teachers or students in faculty.
  * @param {number} creatorUserId
  * @param {Iterable<number>} userIds — includes creator
  */
@@ -56,7 +50,6 @@ export async function assertDeanFacultyGroupMembers(
     };
   }
 
-  const officeStaffIds = [];
   for (const id of ids) {
     if (id === creatorId) continue;
     const role = byId.get(id);
@@ -64,16 +57,10 @@ export async function assertDeanFacultyGroupMembers(
       return {
         ok: false,
         status: 403,
-        message: 'Dean groups may only include teachers, students, and office staff',
+        message: 'Dean groups may only include teachers and students',
         code: 'DM_ROLE_FORBIDDEN',
       };
     }
-    if (role === 'OFFICE_STAFF') officeStaffIds.push(id);
-  }
-
-  if (officeStaffIds.length > 0) {
-    const desk = await assertAllOnDeanFacultyOffice(creatorId, officeStaffIds, prismaClient);
-    if (!desk.ok) return desk;
   }
 
   return { ok: true, users };
@@ -82,8 +69,7 @@ export async function assertDeanFacultyGroupMembers(
 /** New members for a dean-owned group. */
 export async function assertUsersAreDeanGroupMembers(
   userIds,
-  prismaClient = prisma,
-  deanUserId = null
+  prismaClient = prisma
 ) {
   const ids = [...new Set([...userIds].map(Number).filter((n) => Number.isFinite(n) && n > 0))];
   if (ids.length === 0) {
@@ -106,16 +92,9 @@ export async function assertUsersAreDeanGroupMembers(
     return {
       ok: false,
       status: 403,
-      message: 'Dean groups may only include teachers, students, and office staff',
+      message: 'Dean groups may only include teachers and students',
       code: 'DM_ROLE_FORBIDDEN',
     };
-  }
-  const officeStaffIds = users
-    .filter((u) => String(u.role?.name || '').toUpperCase() === 'OFFICE_STAFF')
-    .map((u) => u.id);
-  if (officeStaffIds.length > 0 && deanUserId != null) {
-    const desk = await assertAllOnDeanFacultyOffice(deanUserId, officeStaffIds, prismaClient);
-    if (!desk.ok) return desk;
   }
   return { ok: true, users };
 }

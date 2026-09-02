@@ -2,43 +2,25 @@
 
 import { cn } from '@/lib/utils';
 
-export type NewMessageRoleChip =
-  | 'ALL'
-  | 'TEACHER'
-  | 'STUDENT'
-  | 'DEAN'
-  | 'OFFICE_STAFF'
-  | 'ACADEMIC_OFFICE';
+export type NewMessageRoleChip = 'ALL' | 'TEACHER' | 'STUDENT' | 'OFFICE_STAFF';
 
 const DEAN_CHIPS: { key: NewMessageRoleChip; label: string }[] = [
   { key: 'ALL', label: 'All' },
   { key: 'TEACHER', label: 'Teachers' },
   { key: 'STUDENT', label: 'Students' },
-  { key: 'OFFICE_STAFF', label: 'Office Staff' },
-  { key: 'ACADEMIC_OFFICE', label: 'Academic Office' }
-];
-
-const OFFICE_CHIPS: { key: NewMessageRoleChip; label: string }[] = [
-  { key: 'ALL', label: 'All' },
-  { key: 'DEAN', label: 'Deans' },
-  { key: 'TEACHER', label: 'Teachers' },
-  { key: 'STUDENT', label: 'Students' }
+  { key: 'OFFICE_STAFF', label: 'Staff' }
 ];
 
 export function NewMessageRoleChips({
   value,
-  onChange,
-  variant
+  onChange
 }: {
   value: NewMessageRoleChip;
   onChange: (next: NewMessageRoleChip) => void;
-  variant: 'dean' | 'office';
 }) {
-  const chips = variant === 'office' ? OFFICE_CHIPS : DEAN_CHIPS;
-
   return (
     <div className='flex flex-wrap gap-1.5' role='tablist' aria-label='Filter by role'>
-      {chips.map((chip) => {
+      {DEAN_CHIPS.map((chip) => {
         const on = value === chip.key;
         return (
           <button
@@ -69,5 +51,8 @@ export function matchesNewMessageRoleChip(
   if (chip === 'ALL') return true;
   const r = String(role || '').toUpperCase();
   if (chip === 'TEACHER') return r === 'TEACHER' || r === 'LECTURER';
+  if (chip === 'OFFICE_STAFF') {
+    return r !== 'STUDENT' && r !== 'TEACHER' && r !== 'LECTURER';
+  }
   return r === chip;
 }

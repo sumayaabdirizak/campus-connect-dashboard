@@ -4,7 +4,7 @@ export async function getStudentGrades(req, res) {
   const offering = req.courseOffering;
   const studentId = Number(req.user.sub);
 
-  const [assignments, quizzes] = await Promise.all([
+  const [assignments, quizzes, courseMaxMarks] = await Promise.all([
     prisma.assignment.findMany({
       where: { courseOfferingId: offering.id, lifecycle: { publishStatus: 'PUBLISHED' } },
       select: { id: true, title: true, maxMarks: true, due_date: true },
@@ -12,9 +12,13 @@ export async function getStudentGrades(req, res) {
     }),
     prisma.quiz.findMany({
       where: { courseOfferingId: offering.id, is_draft: false },
-      select: { id: true, title: true, created_at: true },
+      select: { id: true, title: true, maxMarks: true, marksPlan: true, created_at: true },
       orderBy: { created_at: 'asc' },
     }),
+    prisma.courseOffering.findUnique({
+      where: { id: offering.id },
+      select: { course: { select: { maxMarks: true } } },
+    }).then((row) => row?.course?.maxMarks ?? 100),
   ]);
 
   const assignmentIds = assignments.map((a) => a.id);
@@ -49,7 +53,8 @@ export async function getStudentGrades(req, res) {
     bestByQuiz.set(a.quizId, prev);
   }
 
-  const pcts = [];
+  let earned = 0;
+  let gradedCount = 0;
   const items = [];
 
   for (const a of assignments) {
@@ -57,7 +62,10 @@ export async function getStudentGrades(req, res) {
     const maxMarks = a.maxMarks || 100;
     const rawGrade = sub?.gradeRow?.score ?? null;
     const pct = rawGrade != null ? (rawGrade / maxMarks) * 100 : null;
-    if (pct != null) pcts.push(pct);
+    if (rawGrade != null) {
+      earned += rawGrade;
+      gradedCount += 1;
+    }
     items.push({
       kind: 'assignment',
       id: a.id,
@@ -74,12 +82,23 @@ export async function getStudentGrades(req, res) {
 
   for (const q of quizzes) {
     const entry = bestByQuiz.get(q.id);
+    const planTotal = q.marksPlan?.totalMarks;
+    const maxMarks =
+      q.maxMarks > 0
+        ? q.maxMarks
+        : Number.isInteger(planTotal) && planTotal > 0
+          ? planTotal
+          : 0;
     const pct = entry?.best ?? null;
-    if (pct != null) pcts.push(pct);
+    if (pct != null && maxMarks > 0) {
+      earned += (pct / 100) * maxMarks;
+      gradedCount += 1;
+    }
     items.push({
       kind: 'quiz',
       id: q.id,
       title: q.title,
+      maxMarks,
       pct,
       attempts: entry?.attempts ?? 0,
       taken: Boolean(entry?.attempts),
@@ -87,12 +106,14 @@ export async function getStudentGrades(req, res) {
   }
 
   const overallPct =
-    pcts.length > 0 ? pcts.reduce((s, p) => s + p, 0) / pcts.length : null;
+    courseMaxMarks > 0 ? (earned / courseMaxMarks) * 100 : null;
 
   res.json({
     items,
+    courseMaxMarks,
     overallPct,
-    gradedCount: pcts.length,
+    overallEarned: earned,
+    gradedCount,
     totalItems: assignments.length + quizzes.length,
   });
 }

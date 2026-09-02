@@ -2,7 +2,14 @@ import { Router } from 'express';
 import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
-import { attachmentInclude, normaliseModes, normaliseMaxMarks, normaliseLateWindow } from '../../../controllers/courses/assignments/shared.js';
+import {
+  attachmentInclude,
+  normaliseModes,
+  normaliseMaxMarks,
+  normaliseLateWindow,
+  validateAssignmentMarkBudget,
+  DEFAULT_ASSIGNMENT_MARK_WEIGHT,
+} from '../../../controllers/courses/assignments/shared.js';
 import {
   notifyAssignmentPublished,
   notifyAssignmentUpdated,
@@ -34,6 +41,8 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
       due_date: true,
       title: true,
       lateWindowMinutes: true,
+      maxMarks: true,
+      courseOfferingId: true,
       courseOffering: { select: { publicId: true } },
       lifecycle: { select: { publishStatus: true } },
     },
@@ -56,6 +65,18 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
 
   const actorUserId = Number(req.user?.id ?? req.user?.sub) || null;
   const wasDraft = before.lifecycle?.publishStatus === 'DRAFT';
+  const willPublish = is_draft === false && wasDraft;
+  const isPublished = before.lifecycle?.publishStatus === 'PUBLISHED';
+  const nextMaxMarks = marks.data.maxMarks ?? before.maxMarks ?? DEFAULT_ASSIGNMENT_MARK_WEIGHT;
+
+  if (willPublish || (isPublished && marks.data.maxMarks !== undefined)) {
+    const budgetCheck = await validateAssignmentMarkBudget(
+      before.courseOfferingId,
+      nextMaxMarks,
+      id
+    );
+    if (budgetCheck.error) return res.status(400).json({ message: budgetCheck.error });
+  }
 
   const assignment = await prisma.$transaction(async (tx) => {
     const updated = await tx.assignment.update({

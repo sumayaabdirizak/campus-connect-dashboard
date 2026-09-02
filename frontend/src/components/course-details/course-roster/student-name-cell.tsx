@@ -1,6 +1,6 @@
 import { studentInitials } from './helpers';
 
-export function StudentNameCell({ name, number }: { name: string; number: string }) {
+export function StudentNameCell({ name }: { name: string }) {
   return (
     <div className='flex min-w-0 items-center gap-2.5'>
       <div
@@ -9,10 +9,7 @@ export function StudentNameCell({ name, number }: { name: string; number: string
       >
         {studentInitials(name) || '?'}
       </div>
-      <div className='min-w-0'>
-        <p className='truncate text-sm font-medium'>{name}</p>
-        <p className='select-text truncate text-[11px] text-muted-foreground'>{number}</p>
-      </div>
+      <p className='truncate text-sm font-medium'>{name}</p>
     </div>
   );
 }

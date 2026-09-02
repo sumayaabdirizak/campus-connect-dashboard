@@ -5,7 +5,6 @@ import { MonthCalendar } from './month-calendar'
 import { AnnouncementsSidebarCard } from './announcements-sidebar-card'
 import { CourseOverviewSection } from './course-overview-section'
 import { StudentDashboardHero } from './student-dashboard-hero'
-import { StudentDashboardQuickLinks } from './student-dashboard-quick-links'
 import { StudentDashboardDeadlines } from './student-dashboard-deadlines'
 import { StudentDashboardGroups } from './student-dashboard-groups'
 import { useStudentDashboardData, type CourseFilter } from './use-student-dashboard-data'
@@ -19,6 +18,7 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
   const {
     courses,
     announcements,
+    announcementsLoading,
     coursesLoading,
     deadlinesLoading,
     timelineItems,
@@ -47,8 +47,6 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
         dueThisWeek={dueThisWeek}
       />
 
-      <StudentDashboardQuickLinks />
-
       <section
         aria-label='Calendar and courses'
         className='grid grid-cols-1 items-start gap-4 xl:grid-cols-12'
@@ -69,7 +67,10 @@ export function StudentDashboard({ user }: { user: { full_name?: string } }) {
         <aside className='space-y-4 xl:col-span-4'>
           <StudentDashboardDeadlines items={timelineItems} loading={deadlinesLoading} />
           <StudentDashboardGroups />
-          <AnnouncementsSidebarCard announcements={announcements} />
+          <AnnouncementsSidebarCard
+            announcements={announcements}
+            loading={announcementsLoading}
+          />
         </aside>
       </section>
     </div>

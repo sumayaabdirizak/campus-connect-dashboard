@@ -26,5 +26,5 @@ export function CourseAssignments({ courseId, isStudent }: CourseAssignmentsProp
     );
   }
 
-  return <TeacherAssignmentsView list={list} />;
+  return <TeacherAssignmentsView list={list} courseId={courseId} />;
 }

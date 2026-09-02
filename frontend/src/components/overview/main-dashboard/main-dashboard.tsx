@@ -15,8 +15,11 @@ import {
 import { useAuthStore } from '@/lib/auth-store'
 import { useAdminAnalytics } from '@/lib/admin/queries'
 import { useDeanClubStats } from '@/lib/dean/queries'
+import { useRecentAnnouncements } from '@/lib/announcements/queries'
 import { useQueryClient } from '@/lib/async-query'
 import { QueryErrorState } from '@/components/query-error-state'
+import { MonthCalendar } from '@/components/overview/month-calendar'
+import { AnnouncementsSidebarCard } from '@/components/overview/announcements-sidebar-card'
 import { SystemUsageChart } from '@/components/overview/main-dashboard/system-usage-chart'
 import { showToast } from '@/lib/notifications'
 import { buildMainDashboardKpiCards } from './main-dashboard-kpis'
@@ -43,6 +46,12 @@ export function MainDashboard() {
     error,
   } = useAdminAnalytics({ period })
   const { data: clubStats } = useDeanClubStats()
+  const {
+    data: recentAnnouncements,
+    isLoading: announcementsLoading,
+    refetch: refetchAnnouncements,
+  } = useRecentAnnouncements(5)
+  const announcements = recentAnnouncements ?? []
   const queryClient = useQueryClient()
 
   const pendingTasks =
@@ -57,6 +66,7 @@ export function MainDashboard() {
 
   const handleRefresh = () => {
     void refetch()
+    void refetchAnnouncements()
     queryClient.invalidateQueries({ queryKey: ['announcements'] })
     showToast('success', 'Dashboard refreshed')
   }
@@ -153,6 +163,19 @@ export function MainDashboard() {
           tone='violet'
           loading={analyticsLoading}
         />
+      </div>
+
+      {/* Calendar & announcements — aligned with student/dean home dashboards */}
+      <div className='grid grid-cols-1 gap-3 xl:grid-cols-12'>
+        <div className='space-y-3 xl:col-span-7'>
+          <MonthCalendar variant='featured' />
+        </div>
+        <div className='xl:col-span-5'>
+          <AnnouncementsSidebarCard
+            announcements={announcements}
+            loading={announcementsLoading}
+          />
+        </div>
       </div>
 
       {/* Best Seller → Most Active Courses, Recent Transactions → Recent Login Activity */}

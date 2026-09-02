@@ -67,9 +67,7 @@ export function UserRowActions({ user }: { user: User }) {
           full_name: user.full_name,
           email: user.email,
           number: user.number ?? '',
-          role: user.role,
-          officeId: user.officeStaff?.officeId ?? null,
-          officeStaffRole: user.officeStaff?.role ?? 'AGENT'
+          role: user.role
         }}
       />
 

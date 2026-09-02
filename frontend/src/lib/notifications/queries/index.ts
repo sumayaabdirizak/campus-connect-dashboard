@@ -43,15 +43,22 @@ export const useUnreadCount = () =>
   useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () => getUnreadCount(),
-    refetchInterval: 60_000,
-    staleTime: 30_000
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: false,
   });
 
-export const useNotifications = (filter: 'all' | 'unread' = 'all', limit = 80) =>
+export const useNotifications = (
+  filter: 'all' | 'unread' = 'all',
+  limit = 80,
+  options?: { enabled?: boolean }
+) =>
   useQuery({
     queryKey: notificationKeys.list(filter),
     queryFn: () => listNotifications({ limit, unreadOnly: filter === 'unread' }),
-    staleTime: 30_000
+    enabled: options?.enabled ?? true,
+    staleTime: 30_000,
+    refetchOnWindowFocus: false,
   });
 
 // Mutation hooks

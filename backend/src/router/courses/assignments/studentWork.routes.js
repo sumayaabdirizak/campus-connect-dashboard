@@ -69,7 +69,7 @@ router.get(
           score: true,
           grade: true,
           submitted_at: true,
-          quiz: { select: { id: true, title: true, passing_score: true } },
+          quiz: { select: { id: true, title: true, passing_score: true, maxMarks: true } },
         },
         orderBy: { submitted_at: 'desc' },
       }),

@@ -18,7 +18,7 @@ const router = Router();
  */
 router.get(
   '/:scope/list',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN'),
+  requireRole('SUPER_ADMIN', 'DEAN'),
   async (req, res) => {
     const { scope } = req.params;
     if (!REPORT_SCOPES.includes(scope)) {
@@ -83,7 +83,7 @@ router.get(
  */
 router.get(
   '/:scope/subjects',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN'),
+  requireRole('SUPER_ADMIN', 'DEAN'),
   async (req, res) => {
     const { scope } = req.params;
     if (!REPORT_SCOPES.includes(scope)) {
@@ -112,7 +112,7 @@ router.get(
  */
 router.get(
   '/:scope',
-  requireRole('SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN'),
+  requireRole('SUPER_ADMIN', 'DEAN'),
   async (req, res) => {
     const { scope } = req.params;
     const id = req.query.id;

@@ -13,17 +13,13 @@ export {
   isTeacherRole,
   isStudentRole,
   isCrossFacultyAdmin,
-  canManageOffices,
-  canEnsureOfficeDefaults,
 } from './roleBasics.js';
 
 export {
-  isOfficeInboxOversight,
-  isOfficeMessagesOnlyRole,
   canDirectMessage,
-  isOfficeStaffRole,
   canCreateGroupDm,
   canStudentGroupDm,
+  isOfficeMessagesOnlyRole,
   ANNOUNCEMENT_MANAGER_ROLES,
   CREATE_ANNOUNCEMENT_ROLES,
   ANNOUNCEMENT_AUDIENCE_ROLES,

@@ -13,6 +13,10 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
+import {
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import type { AiSectionPlanItem } from '../ai-generate-dialog/section-plan';
 import {
   quizFormCardClass,
@@ -25,10 +29,12 @@ import { BasicsTab } from '../quiz-settings-form/basics-tab';
 import { BehaviorTab } from '../quiz-settings-form/behavior-tab';
 import {
   isQuizConfigReady,
+  isUploadedOfflineForm,
   quizConfigReadyMessage,
   type QuizSettingsTab
 } from '../quiz-settings-form/form-state';
 import { MarksTab } from '../quiz-settings-form/marks-tab';
+import { QuizPaperFileField } from '../quiz-settings-form/quiz-paper-file-field';
 import { ScheduleTab } from '../quiz-settings-form/schedule-tab';
 import { InlineAiGenerate } from './inline-ai-generate';
 import { LocalQuestionList } from './local-question-list';
@@ -48,7 +54,12 @@ export function NewQuizPage({
   onCreated: (quiz: Quiz) => void;
 }) {
   const p = useNewQuizPage(courseId, onCreated);
+  const { data: markBudget } = useCourseMarkBudget(courseId);
   const [configTab, setConfigTab] = useState<QuizSettingsTab>('basics');
+  const createBlockedByBudget =
+    markBudget != null &&
+    p.form.marksPlanTotal > 0 &&
+    wouldExceedMarkBudget(markBudget, p.form.marksPlanTotal, 0);
 
   // Escapes the dashboard's sidebar/topbar chrome — this flow is big enough
   // (config + live question sections + preview panel) that it deserves the
@@ -62,6 +73,7 @@ export function NewQuizPage({
   }, []);
 
   const isOffline = p.form.mode === 'offline';
+  const isUploadedPaper = isUploadedOfflineForm(p.form);
   const typeOrder = questionTypesForMode(p.form.mode);
 
   // Timing (schedule + shuffle) only applies to online quizzes — drop back
@@ -137,13 +149,23 @@ export function NewQuizPage({
           <Button
             className={quizFormPrimaryBtnClass}
             onClick={p.handleCreate}
-            disabled={p.isCreating || p.draft != null || p.questions.length === 0}
+            disabled={
+              p.isCreating ||
+              p.draft != null ||
+              (!isUploadedPaper && p.questions.length === 0) ||
+              (isUploadedPaper && !p.pendingPaperFile) ||
+              createBlockedByBudget
+            }
             title={
-              p.questions.length === 0
-                ? 'Add at least one question with Create with AI first'
-                : p.draft != null
-                  ? 'Save or cancel the open question editor first'
-                  : undefined
+              isUploadedPaper && !p.pendingPaperFile
+                ? 'Upload the quiz document on the Marking tab'
+                : createBlockedByBudget
+                ? 'Total marks exceed available course marks'
+                : p.questions.length === 0
+                  ? 'Add at least one question first'
+                  : p.draft != null
+                    ? 'Save or cancel the open question editor first'
+                    : undefined
             }
           >
             {p.isCreating ? 'Creating…' : 'Create quiz'}
@@ -195,13 +217,25 @@ export function NewQuizPage({
             </TabsContent>
           ) : null}
 
-          <TabsContent value='marks' className='mt-5'>
-            <MarksTab form={p.form} setForm={p.setForm} />
+          <TabsContent value='marks' className='mt-5 space-y-5'>
+            <MarksTab
+              form={p.form}
+              setForm={p.setForm}
+              markBudget={markBudget}
+              uploadedOnly={isUploadedPaper}
+            />
+            {isUploadedPaper ? (
+              <QuizPaperFileField
+                pendingFile={p.pendingPaperFile}
+                onPendingFile={p.setPendingPaperFile}
+              />
+            ) : null}
           </TabsContent>
         </Tabs>
       </div>
 
-      {/* Questions */}
+      {/* Questions — not used for uploaded paper quizzes */}
+      {isUploadedPaper ? null : (
       <div className={`space-y-4 ${quizFormCardClass}`}>
         <div className='flex flex-wrap items-center justify-between gap-3'>
           <div>
@@ -209,8 +243,8 @@ export function NewQuizPage({
             <p className='text-sm text-muted-foreground'>
               {p.questions.length === 0
                 ? configReady
-                  ? 'Use Create with AI to generate questions for this quiz.'
-                  : 'Finish Basics and Marking above, then create questions with AI.'
+                  ? 'Add questions manually in each section below, or use Create with AI.'
+                  : 'Finish Basics and Marking above, then add questions.'
                 : `${p.questions.length} question${p.questions.length === 1 ? '' : 's'} · ${p.totalPoints} points`}
             </p>
           </div>
@@ -265,7 +299,6 @@ export function NewQuizPage({
                   onEdit={p.startEdit}
                   onDelete={p.deleteQuestion}
                   quizMode={p.form.mode}
-                  showAddButton={false}
                   inlineDraft={
                     p.draft && p.lockedAddType === type
                       ? {
@@ -340,10 +373,11 @@ export function NewQuizPage({
           />
         ) : null}
       </div>
+      )}
 
       </div>
 
-        {isOffline ? (
+        {isOffline && !isUploadedPaper ? (
           <QuizPreviewPanel
             title={p.form.title}
             description={p.form.description}

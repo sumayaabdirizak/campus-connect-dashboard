@@ -49,30 +49,27 @@ export function AnnouncementFeed({
   }, [unreadCount, i18n]);
 
   return (
-    <div className='flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden'>
-      <div className='shrink-0 overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
-        <FeedHeader
-          i18n={i18n}
-          canCreate={canCreate}
-          canManage={canManage}
-          draftCount={draftCount}
-          onOpenCreate={onOpenCreate}
-          currentFilter={filters.currentFilter}
-          setCurrentFilter={filters.setCurrentFilter}
-          searchQuery={filters.searchQuery}
-          setSearchQuery={filters.setSearchQuery}
-          readFilter={filters.readFilter}
-          setReadFilter={filters.setReadFilter}
-          dateFilter={filters.dateFilter}
-          setDateFilter={filters.setDateFilter}
-          sortMode={filters.sortMode}
-          setSortMode={filters.setSortMode}
-          activeFilterCount={filters.activeFilterCount}
-          onClearAll={filters.handleClearAllFilters}
-        />
-      </div>
-      <div className='mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border border-foreground/10 bg-card shadow-sm'>
-        <FeedBody
+    <div className='flex h-full min-h-0 w-full min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm'>
+      <FeedHeader
+        i18n={i18n}
+        canCreate={canCreate}
+        canManage={canManage}
+        draftCount={draftCount}
+        onOpenCreate={onOpenCreate}
+        currentFilter={filters.currentFilter}
+        setCurrentFilter={filters.setCurrentFilter}
+        searchQuery={filters.searchQuery}
+        setSearchQuery={filters.setSearchQuery}
+        readFilter={filters.readFilter}
+        setReadFilter={filters.setReadFilter}
+        dateFilter={filters.dateFilter}
+        setDateFilter={filters.setDateFilter}
+        sortMode={filters.sortMode}
+        setSortMode={filters.setSortMode}
+        activeFilterCount={filters.activeFilterCount}
+        onClearAll={filters.handleClearAllFilters}
+      />
+      <FeedBody
           i18n={i18n}
           error={error}
           onRetry={onRetry}
@@ -100,7 +97,6 @@ export function AnnouncementFeed({
           onLightboxDiagnostic={onLightboxDiagnostic}
           unreadAnnouncement={unreadAnnouncement}
         />
-      </div>
     </div>
   );
 }

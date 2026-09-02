@@ -38,7 +38,6 @@ export function normalizeAnnouncementScope(user) {
     sectionIds: toSet(user.sectionIds ?? user.sectionId),
     isSuperAdmin:
       user.role === "SUPER_ADMIN" ||
-      user.role === "ACADEMIC_OFFICE" ||
       user.isSuperAdmin === true,
   };
 }

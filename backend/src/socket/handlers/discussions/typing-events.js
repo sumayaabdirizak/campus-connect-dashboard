@@ -4,7 +4,6 @@ import {
   hasPermission,
   PERMISSION_BITS,
 } from "../../../services/discussions/permissions.js";
-import { assertOfficeThreadSocketAccess } from "../../../services/offices/assertOfficeThreadSocketAccess.js";
 import { resolveGroupDmRow } from "../../../controllers/discussions/groupDms/helpers.js";
 import { resolveServerRow, resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
 
@@ -15,7 +14,6 @@ export function registerTypingHandlers(socket, ctx) {
     ackSuccess,
     discussionChannelRoom,
     discussionRoom,
-    discussionOfficeThreadRoom,
     touchDiscussionSession,
     ensureTypingDisplayName,
     getDiscussionMembership,
@@ -66,36 +64,13 @@ export function registerTypingHandlers(socket, ctx) {
       return ackSuccess(ack, { groupDmId: row.publicId });
     }
 
-    const officeThreadId = Number(payload?.officeThreadId);
-    if (Number.isFinite(officeThreadId) && officeThreadId > 0) {
-      const thread = await assertOfficeThreadSocketAccess(
-        socketUser.id,
-        socketUser.role,
-        officeThreadId
-      );
-      if (!thread) return ackOrEmitError(socket, ack, "FORBIDDEN", "Not allowed");
-      await touchDiscussionSession(socket);
-      const userName = await ensureTypingDisplayName(socket, socketUser.id);
-      const roomFn =
-        typeof discussionOfficeThreadRoom === "function"
-          ? discussionOfficeThreadRoom
-          : (id) => `officeThread:${id}`;
-      socket.to(roomFn(officeThreadId)).emit("typing:update", {
-        officeThreadId,
-        userId: socketUser.id,
-        userName,
-        typing: true,
-      });
-      return ackSuccess(ack, { officeThreadId });
-    }
-
     const groupRow = await resolveServerRow(payload?.groupId);
     if (!groupRow) {
       return ackOrEmitError(
         socket,
         ack,
         "INVALID_GROUP",
-        "groupId, channelId, groupDmId or officeThreadId is required"
+        "groupId, channelId, or groupDmId is required"
       );
     }
     const groupId = groupRow.id;
@@ -145,30 +120,13 @@ export function registerTypingHandlers(socket, ctx) {
       return ackSuccess(ack, { groupDmId: row.publicId });
     }
 
-    const officeThreadId = Number(payload?.officeThreadId);
-    if (Number.isFinite(officeThreadId) && officeThreadId > 0) {
-      await touchDiscussionSession(socket);
-      const userName = await ensureTypingDisplayName(socket, socketUser.id);
-      const roomFn =
-        typeof discussionOfficeThreadRoom === "function"
-          ? discussionOfficeThreadRoom
-          : (id) => `officeThread:${id}`;
-      socket.to(roomFn(officeThreadId)).emit("typing:update", {
-        officeThreadId,
-        userId: socketUser.id,
-        userName,
-        typing: false,
-      });
-      return ackSuccess(ack, { officeThreadId });
-    }
-
     const groupRow = await resolveServerRow(payload?.groupId);
     if (!groupRow) {
       return ackOrEmitError(
         socket,
         ack,
         "INVALID_GROUP",
-        "groupId, channelId, groupDmId or officeThreadId is required"
+        "groupId, channelId, or groupDmId is required"
       );
     }
     const groupId = groupRow.id;

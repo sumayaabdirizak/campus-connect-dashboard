@@ -6,21 +6,10 @@ import { buildUnreadSocketPayload } from "../../services/discussions/buildUnread
 import { loadClubServersForUser, loadClubMetaByServerIds } from "../../controllers/inbox/loadClubServers.js";
 import { buildGroupInboxRows } from "../../controllers/inbox/buildGroupInboxRows.js";
 import { buildDmInboxRows } from "../../controllers/inbox/buildDmInboxRows.js";
-import { buildOfficeInboxRows } from "../../controllers/inbox/buildOfficeInboxRows.js";
-import { buildOfficeDeskInboxRows } from "../../controllers/inbox/buildOfficeDeskInboxRows.js";
-import { loadOfficeThreadsForUser } from "../../controllers/inbox/loadOfficeThreadsForUser.js";
-import { loadOfficeDesksForOversight } from "../../controllers/inbox/loadOfficeDesksForOversight.js";
-import {
-  isOfficeInboxOversight,
-  isOfficeMessagesOnlyRole,
-} from "../../../../shared/roles.js";
-import { countOfficeThreadUnreads } from "../../services/offices/officeThreadRead.js";
 
 /**
- * Unified inbox — groups + clubs + DMs + offices, recency-sorted.
- * Oversight (ACADEMIC_OFFICE / SUPER_ADMIN): office desks only (no thread rows).
- * ACADEMIC_OFFICE: no group/club rows (offices + DMs only).
- * type: group | club | dm | office
+ * Unified inbox — groups + clubs + DMs, recency-sorted.
+ * type: group | club | dm
  */
 const router = Router();
 router.use(auth);
@@ -36,31 +25,27 @@ router.get(
     const unread = await buildUnreadSocketPayload(userId);
     const unreadByGroup = new Map(unread.byGroup.map((r) => [r.groupId, r.unreadCount]));
     const unreadByGroupDm = new Map(unread.byGroupDm.map((r) => [r.groupDmId, r.unreadCount]));
-    const oversight = isOfficeInboxOversight(req.user?.role);
-    const officeMessagesOnly = isOfficeMessagesOnlyRole(req.user?.role);
 
-    const [memberships, clubServers] = officeMessagesOnly
-      ? [[], []]
-      : await Promise.all([
-          prisma.discussionGroupMembership.findMany({
-            where: { userId, leftAt: null, isActive: true, group: { status: "ACTIVE" } },
-            take: 300,
+    const [memberships, clubServers] = await Promise.all([
+      prisma.discussionGroupMembership.findMany({
+        where: { userId, leftAt: null, isActive: true, group: { status: "ACTIVE" } },
+        take: 300,
+        select: {
+          group: {
             select: {
-              group: {
-                select: {
-                  id: true,
-                  name: true,
-                  iconUrl: true,
-                  kind: true,
-                  scopeType: true,
-                  defaultChannelId: true,
-                  parentServerId: true,
-                },
-              },
+              id: true,
+              name: true,
+              iconUrl: true,
+              kind: true,
+              scopeType: true,
+              defaultChannelId: true,
+              parentServerId: true,
             },
-          }),
-          loadClubServersForUser(userId),
-        ]);
+          },
+        },
+      }),
+      loadClubServersForUser(userId),
+    ]);
 
     const groupsById = new Map();
     for (const m of memberships) {
@@ -73,7 +58,7 @@ router.get(
     const groups = [...groupsById.values()];
     const groupIds = groups.map((g) => g.id);
 
-    const [dmRows, officeThreads, officeDesks, legacyChannelRows] = await Promise.all([
+    const [dmRows, legacyChannelRows] = await Promise.all([
       prisma.groupDmMember.findMany({
         where: { userId, leftAt: null, groupDm: { archivedAt: null } },
         select: {
@@ -94,9 +79,6 @@ router.get(
           },
         },
       }),
-      // Oversight sees desks only in the list; threads open inside each desk hub.
-      oversight ? Promise.resolve([]) : loadOfficeThreadsForUser(userId, req.user?.role),
-      loadOfficeDesksForOversight(req.user?.role, userId),
       groupIds.length
         ? prisma.discussionChannel.findMany({
             where: { legacyGroupId: { in: groupIds } },
@@ -107,12 +89,11 @@ router.get(
 
     const dms = dmRows.map((r) => r.groupDm).filter(Boolean);
     const dmIds = dms.map((d) => d.id);
-    const officeThreadIds = officeThreads.map((t) => t.id);
     const legacyChannelByGroup = new Map(
       legacyChannelRows.map((c) => [c.legacyGroupId, c])
     );
 
-    const [lastGroup, lastDm, lastOffice] = await Promise.all([
+    const [lastGroup, lastDm] = await Promise.all([
       groupIds.length
         ? prisma.discussionMessage.findMany({
             where: { groupId: { in: groupIds }, deletedAt: null },
@@ -139,24 +120,9 @@ router.get(
             },
           })
         : Promise.resolve([]),
-      officeThreadIds.length
-        ? prisma.discussionMessage.findMany({
-            where: {
-              officeThreadId: { in: officeThreadIds },
-              deletedAt: null,
-              isInternalNote: false,
-            },
-            orderBy: { createdAt: "desc" },
-            distinct: ["officeThreadId"],
-            select: { officeThreadId: true, content: true, createdAt: true },
-          })
-        : Promise.resolve([]),
     ]);
 
     const clubMetaByServerId = await loadClubMetaByServerIds(groupIds);
-    const unreadByOffice = oversight
-      ? new Map()
-      : await countOfficeThreadUnreads(userId, officeThreadIds);
 
     const rows = [
       ...buildGroupInboxRows({
@@ -172,22 +138,12 @@ router.get(
         lastByDm: new Map(lastDm.map((m) => [m.groupDmId, m])),
         unreadByGroupDm,
       }),
-      ...buildOfficeDeskInboxRows(officeDesks),
-      ...(oversight
-        ? []
-        : buildOfficeInboxRows({
-            officeThreads,
-            lastByOffice: new Map(lastOffice.map((m) => [m.officeThreadId, m])),
-            unreadByOffice,
-          })),
     ];
 
     rows.sort((a, b) => {
       const at = a.timestamp ? new Date(a.timestamp).getTime() : 0;
       const bt = b.timestamp ? new Date(b.timestamp).getTime() : 0;
       if (bt !== at) return bt - at;
-      if (a.officeKind === "desk" && b.officeKind !== "desk") return -1;
-      if (b.officeKind === "desk" && a.officeKind !== "desk") return 1;
       return String(a.title).localeCompare(String(b.title));
     });
 

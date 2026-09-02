@@ -1,8 +1,16 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@/lib/async-query';
 import { useCreateQuiz } from '@/lib/course-details/queries/quizzes-queries';
+import { uploadQuizPaperFile } from '@/lib/course-details/services/quizzes-service';
+import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  markBudgetExceededMessage,
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import {
   applyQuestionType,
@@ -13,7 +21,7 @@ import {
 } from '../quiz-builder/draft-options';
 import { draftToPayload, emptyDraft, validateDraft } from '../quiz-builder/draft-empty';
 import type { DraftQuestion, OptionInput, QuizQuestionType } from '../quiz-builder/types';
-import { BLANK, toPayload, validateForm } from '../quiz-settings-form/form-state';
+import { BLANK, toPayload, validateForm, isUploadedOfflineForm } from '../quiz-settings-form/form-state';
 
 /// Drives the single-page "Add new quiz" flow: configure the quiz AND
 /// stage its questions locally, then create everything in one request when
@@ -31,8 +39,11 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
   // same pattern as the real builder's quiz-builder.tsx.
   const [lockedAddType, setLockedAddType] = useState<QuizQuestionType | null>(null);
   const [aiOpen, setAiOpen] = useState(false);
+  const [pendingPaperFile, setPendingPaperFile] = useState<File | null>(null);
 
   const createMutation = useCreateQuiz(courseId);
+  const queryClient = useQueryClient();
+  const createInFlightRef = useRef(false);
 
   const selectedTypes = form.marksPlanTypes;
   const allocations = form.marksPlanAllocations;
@@ -156,29 +167,72 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
 
   const totalPoints = questions.reduce((sum, q) => sum + (Number(q.points) || 0), 0);
 
-  const handleCreate = () => {
+  const handleCreate = async () => {
+    if (createInFlightRef.current || createMutation.isPending) return;
+    createInFlightRef.current = true;
+
+    const uploaded = isUploadedOfflineForm(form);
     const err = validateForm(form, null);
     if (err) {
       toast.error(err);
+      createInFlightRef.current = false;
       return;
     }
-    if (questions.length === 0) {
+    if (uploaded && !pendingPaperFile) {
+      toast.error('Upload the quiz document on the Marking tab first');
+      createInFlightRef.current = false;
+      return;
+    }
+    if (!uploaded && questions.length === 0) {
       toast.error('Add at least one question before creating the quiz');
+      createInFlightRef.current = false;
       return;
     }
-    const payload = {
-      ...toPayload(form),
-      questions: questions.map(draftToPayload)
-    };
-    createMutation.mutate(payload, {
-      onSuccess: (quiz) => {
-        toast.success(
-          `Created "${quiz.title}" with ${questions.length} question${questions.length === 1 ? '' : 's'}`
-        );
-        onCreated(quiz);
-      },
-      onError: (e: Error) => toast.error(e.message)
-    });
+    const requested = form.marksPlanTotal;
+    const budget = queryClient.getQueryData<CourseMarkBudget>(
+      markBudgetKeys.offering(courseId)
+    );
+    if (
+      requested > 0 &&
+      budget &&
+      wouldExceedMarkBudget(budget, requested, 0)
+    ) {
+      toast.error(markBudgetExceededMessage(budget, requested, 0));
+      createInFlightRef.current = false;
+      return;
+    }
+    const basePayload = toPayload(form);
+    const payload = uploaded
+      ? basePayload
+      : {
+          ...basePayload,
+          questions: questions.map(draftToPayload)
+        };
+    try {
+      const quiz = await createMutation.mutateAsync(payload);
+      if (uploaded && pendingPaperFile) {
+        try {
+          await uploadQuizPaperFile(quiz.id, pendingPaperFile);
+        } catch (uploadErr) {
+          toast.error(
+            `Quiz "${quiz.title}" was saved, but the file upload failed. Edit the quiz to upload the document again.`,
+            { duration: 8000 }
+          );
+          onCreated(quiz);
+          return;
+        }
+      }
+      toast.success(
+        uploaded
+          ? `Created "${quiz.title}" — open Attempts to enter student marks`
+          : `Created "${quiz.title}" with ${questions.length} question${questions.length === 1 ? '' : 's'}`
+      );
+      onCreated(quiz);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Create failed');
+    } finally {
+      createInFlightRef.current = false;
+    }
   };
 
   return {
@@ -207,6 +261,8 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     deleteQuestion,
     addQuestions,
     handleCreate,
-    isCreating: createMutation.isPending
+    isCreating: createMutation.isPending,
+    pendingPaperFile,
+    setPendingPaperFile
   };
 }

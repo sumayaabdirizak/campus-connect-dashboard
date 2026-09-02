@@ -20,7 +20,7 @@ import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 
 export function TeacherQuizCardActions({
   quiz: q,
-  isEmpty,
+  previewDisabled,
   onSettings,
   onEditQuestions,
   onViewAttempts,
@@ -30,7 +30,7 @@ export function TeacherQuizCardActions({
   onPreview
 }: {
   quiz: Quiz;
-  isEmpty: boolean;
+  previewDisabled: boolean;
   onSettings: () => void;
   onEditQuestions: () => void;
   onViewAttempts: () => void;
@@ -104,7 +104,7 @@ export function TeacherQuizCardActions({
           <DropdownMenuLabel className='text-xs text-muted-foreground'>
             Manage quiz
           </DropdownMenuLabel>
-          <DropdownMenuItem onClick={onPreview} disabled={isEmpty} className='gap-2'>
+          <DropdownMenuItem onClick={onPreview} disabled={previewDisabled} className='gap-2'>
             <Eye className='w-4 h-4' /> Preview as student
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onSettings} className='gap-2'>

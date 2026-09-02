@@ -6,7 +6,6 @@ import { ArrowLeft, MessageSquareDashed } from 'lucide-react';
 import { PosPageHeader } from '@/features/pos/components/pos-page-header';
 import { InboxList } from '@/components/inbox/inbox-list';
 import { MessagesDiscoverPane } from '@/components/inbox/messages-discover-pane';
-import { isOfficeMessagesOnlyRole } from '@/components/inbox/inbox-helpers';
 import { useMessagesActiveChat } from '@/lib/inbox/services/use-messages-active-chat';
 import { useInbox, inboxKeys } from '@/lib/inbox/queries';
 import { useQueryClient } from '@/lib/async-query';
@@ -17,36 +16,22 @@ import { DmPane } from '@/components/discussions/dms';
 import { ChannelPane } from '@/components/discussions/channel';
 import { ClubDetailPane } from '@/components/clubs/club-detail/club-detail-pane';
 import { ClubManagePane } from '@/components/clubs/manage/club-manage-pane';
-import { MessagesOfficePane } from '@/components/inbox/messages-office-pane';
-import { MessagesOfficeDeskPane } from '@/components/inbox/messages-office-desk-pane';
 import { messagesClubHref } from '@/lib/inbox/services/messages-href';
-import { useOfficeMessageSocket } from '@/lib/offices/queries';
-import { useAuthStore } from '@/lib/auth-store';
 import { cn } from '@/lib/utils';
 
 function MessagesPageInner() {
-  const role = useAuthStore((s) => s.user?.role);
-  const officeOnly = isOfficeMessagesOnlyRole(role);
   const { active, openHref, openDiscover, closeChat } = useMessagesActiveChat();
   const { refetch, isFetching } = useInbox();
   const queryClient = useQueryClient();
   const [refreshing, setRefreshing] = useState(false);
-  useOfficeMessageSocket(true);
   const searchParams = useSearchParams();
-  const showDiscover = !officeOnly && active?.kind === 'discover';
-  const aoBlockedPane =
-    officeOnly &&
-    (active?.kind === 'discover' ||
-      active?.kind === 'club' ||
-      active?.kind === 'club-manage' ||
-      active?.kind === 'channel');
-  const showChat = Boolean(active) && !aoBlockedPane;
+  const showDiscover = active?.kind === 'discover';
+  const showChat = Boolean(active);
   const threadOpen = Boolean(searchParams?.get('thread'));
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
     try {
-      // Force-refresh inbox + clubs + open channel/DM panes (reconnect bump).
       queryClient.invalidateQueries({ queryKey: inboxKeys.all });
       queryClient.invalidateQueries({ queryKey: clubKeys.all });
       queryClient.invalidateQueries({ queryKey: discussionKeys.all });
@@ -91,7 +76,7 @@ function MessagesPageInner() {
             }
             onSelect={openHref}
             onConversationOpened={openHref}
-            onDiscover={officeOnly ? undefined : openDiscover}
+            onDiscover={openDiscover}
             discoverActive={showDiscover}
           />
         </aside>
@@ -114,30 +99,15 @@ function MessagesPageInner() {
               </button>
               <div className='flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden'>
                 {showDiscover ? <MessagesDiscoverPane /> : null}
-                {!officeOnly && active?.kind === 'club' ? (
-                  <ClubDetailPane
-                    slug={active.slug}
-                    showMobileStrip={false}
-                  />
+                {active?.kind === 'club' ? (
+                  <ClubDetailPane slug={active.slug} showMobileStrip={false} />
                 ) : null}
-                {!officeOnly && active?.kind === 'club-manage' ? (
+                {active?.kind === 'club-manage' ? (
                   <ClubManagePane slug={active.slug} />
                 ) : null}
                 {active?.kind === 'dm' ? <DmPane groupDmId={active.id} /> : null}
-                {!officeOnly && active?.kind === 'channel' ? (
+                {active?.kind === 'channel' ? (
                   <ChannelPane channelId={active.id} />
-                ) : null}
-                {active?.kind === 'office' ? (
-                  <MessagesOfficePane
-                    threadId={active.id}
-                    onClose={closeChat}
-                  />
-                ) : null}
-                {active?.kind === 'office-desk' ? (
-                  <MessagesOfficeDeskPane
-                    slug={active.slug}
-                    onClose={closeChat}
-                  />
                 ) : null}
               </div>
             </>
@@ -146,13 +116,9 @@ function MessagesPageInner() {
               <div className='flex size-16 items-center justify-center rounded-full bg-primary/10 text-primary'>
                 <MessageSquareDashed className='size-8' />
               </div>
-              <h2 className='text-lg font-semibold text-foreground'>
-                Select a chat
-              </h2>
+              <h2 className='text-lg font-semibold text-foreground'>Select a chat</h2>
               <p className='text-sm text-muted-foreground'>
-                {officeOnly
-                  ? 'Choose an office desk from the list to open a conversation.'
-                  : 'Choose a conversation from the list, or tap Discover for clubs.'}
+                Choose a conversation from the list, or tap Discover for clubs.
               </p>
             </div>
           )}
@@ -169,4 +135,3 @@ export default function MessagesPage() {
     </Suspense>
   );
 }
-

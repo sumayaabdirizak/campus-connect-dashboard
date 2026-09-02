@@ -19,13 +19,11 @@ export const MAX_PINNED_PER_CREATOR = 2;
 
 export const ANNOUNCEMENT_TARGET_ROLE_OPTIONS = new Set([
   "SUPER_ADMIN",
-  "ACADEMIC_OFFICE",
   "ADMIN",
   "DEAN",
   "LECTURER",
   "TEACHER",
   "STUDENT",
-  "OFFICE_STAFF",
 ]);
 
 export const DEAN_ALLOWED_TARGET_ROLES = new Set(["STUDENT", "TEACHER", "LECTURER"]);

@@ -1,8 +1,9 @@
+'use client';
+
 import {
   Users,
   UsersRound,
   User,
-  Landmark,
 } from 'lucide-react';
 import {
   canAuthorInboxBroadcast,
@@ -13,7 +14,7 @@ import {
 } from '@shared/roles';
 import type { InboxRow, InboxRowType } from '@/lib/inbox/types';
 
-export type InboxFilter = 'all' | 'unread' | 'group' | 'club' | 'dm' | 'office';
+export type InboxFilter = 'all' | 'unread' | 'group' | 'club' | 'dm';
 
 export {
   canAuthorInboxBroadcast,
@@ -51,7 +52,6 @@ export const TYPE_META: Record<InboxRowType, { icon: typeof Users }> = {
   group: { icon: Users },
   club: { icon: UsersRound },
   dm: { icon: User },
-  office: { icon: Landmark }
 };
 
 /** Faculty/batch groups that open the Messages channel pane (not clubs). */

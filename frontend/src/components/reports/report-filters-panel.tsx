@@ -13,6 +13,7 @@ import {
 import { cn } from '@/lib/utils';
 import {
   clampIsoDate,
+  defaultCustomDateRange,
   REPORT_PERIOD_OPTIONS,
   todayIsoDate,
   validateReportDateRange,
@@ -50,7 +51,6 @@ export function ReportFiltersPanel({
   const dateErrors = isCustom
     ? validateReportDateRange(dateRange, { requireAny: true })
     : null;
-  const generateDisabled = isCustom && dateErrors != null;
 
   const periodOptions = [
     ...REPORT_PERIOD_OPTIONS,
@@ -76,9 +76,21 @@ export function ReportFiltersPanel({
     });
   };
 
+  const handlePeriodChange = (id: string) => {
+    if (id === 'custom') {
+      const hasAny = Boolean(dateRange.from || dateRange.to);
+      onChange({
+        periodPreset: 'custom',
+        dateRange: hasAny ? dateRange : defaultCustomDateRange()
+      });
+      return;
+    }
+    onChange({ periodPreset: id });
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!generateDisabled) onGenerate();
+    onGenerate();
   };
 
   return (
@@ -87,10 +99,7 @@ export function ReportFiltersPanel({
         <div className='flex flex-col gap-3 lg:flex-row lg:items-end'>
           <div className='min-w-0 flex-1 space-y-1.5'>
             <span className={fieldLabel}>Period</span>
-            <Select
-              value={periodPreset}
-              onValueChange={(id) => onChange({ periodPreset: id })}
-            >
+            <Select value={periodPreset} onValueChange={handlePeriodChange}>
               <SelectTrigger className='h-10 w-full border-[#D0D5DD] bg-white dark:border-border dark:bg-background'>
                 <SelectValue />
               </SelectTrigger>
@@ -145,8 +154,7 @@ export function ReportFiltersPanel({
 
           <Button
             type='submit'
-            className='h-10 shrink-0 gap-2 bg-[#3B82F6] px-5 hover:bg-[#2563EB] disabled:opacity-50'
-            disabled={generateDisabled}
+            className='h-10 shrink-0 gap-2 bg-primary px-5 hover:bg-primary/90'
           >
             <RefreshCw className={cn('size-4', isGenerating && 'animate-spin')} aria-hidden />
             Generate Report

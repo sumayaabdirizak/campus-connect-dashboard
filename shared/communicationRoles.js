@@ -3,49 +3,32 @@
  * Prefer importing from `shared/roles.js` (barrel).
  */
 import {
-  isCrossFacultyAdmin,
   isDeanRole,
   isStudentRole,
   isTeacherRole,
   roleKey,
 } from './roleBasics.js';
 
-/** See and act on all office Message threads without a staff row. */
-export function isOfficeInboxOversight(role) {
-  return isCrossFacultyAdmin(role);
-}
-
 /**
- * Messages inbox: offices (+ own DMs) only — no clubs, faculty groups, or Discover.
- * Clubs stay via `/dashboard/dean/clubs` (or equivalent admin nav).
+ * Support offices were removed. Kept so leftover inbox imports keep compiling.
+ * Always false.
  */
-export function isOfficeMessagesOnlyRole(role) {
-  const r = roleKey(role);
-  return r === 'ACADEMIC_OFFICE' || r === 'SUPER_ADMIN';
+export function isOfficeMessagesOnlyRole(_role) {
+  return false;
 }
 
-/** Teacher ↔ Dean, student ↔ course teachers, Office Staff desk scope, or Academic Office ↔ Dean. */
+/** Teacher ↔ Dean, student ↔ course teachers. */
 export function canDirectMessage(role) {
   return (
     isTeacherRole(role) ||
     isDeanRole(role) ||
-    isStudentRole(role) ||
-    roleKey(role) === 'OFFICE_STAFF' ||
-    roleKey(role) === 'ACADEMIC_OFFICE'
+    isStudentRole(role)
   );
 }
 
-export function isOfficeStaffRole(role) {
-  return roleKey(role) === 'OFFICE_STAFF';
-}
-
-/** Student peer groups, Academic Office staff groups, or Dean faculty groups. */
+/** Student peer groups or Dean faculty groups. */
 export function canCreateGroupDm(role) {
-  return (
-    isStudentRole(role) ||
-    isDeanRole(role) ||
-    roleKey(role) === 'ACADEMIC_OFFICE'
-  );
+  return isStudentRole(role) || isDeanRole(role);
 }
 
 /** @deprecated Prefer canCreateGroupDm — same allow-list. */
@@ -55,13 +38,11 @@ export function canStudentGroupDm(role) {
 
 /**
  * Roles that may create / pin / delete / draft announcements.
- * @type {readonly ['SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN', 'OFFICE_STAFF']}
+ * @type {readonly ['SUPER_ADMIN', 'DEAN']}
  */
 export const ANNOUNCEMENT_MANAGER_ROLES = Object.freeze([
   'SUPER_ADMIN',
-  'ACADEMIC_OFFICE',
   'DEAN',
-  'OFFICE_STAFF',
 ]);
 
 /** @type {ReadonlySet<string>} */
@@ -73,8 +54,6 @@ export const ANNOUNCEMENT_AUDIENCE_ROLES = Object.freeze([
   'TEACHER',
   'DEAN',
   'SUPER_ADMIN',
-  'ACADEMIC_OFFICE',
-  'OFFICE_STAFF',
 ]);
 
 /** Create / pin / delete announcements (DEAN is faculty-scoped elsewhere). */

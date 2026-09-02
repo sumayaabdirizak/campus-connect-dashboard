@@ -2,27 +2,25 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import Link from 'next/link'
 import {
   BookOpen,
   UsersRound,
   Megaphone,
-  Bell,
   RefreshCw,
   ChevronDown,
   ChevronUp,
   Percent,
   CheckCircle2,
 } from 'lucide-react'
-import { Badge } from '@/features/ui/components/badge'
 import { useDeanReports } from '@/lib/dean/queries'
-import { useAnnouncements } from '@/lib/announcements/queries'
+import { useRecentAnnouncements, useAnnouncementPublishedTotal } from '@/lib/announcements/queries'
 import { useQueryClient } from '@/lib/async-query'
 import { showToast } from '@/lib/notifications'
 import { HeroMetricCard } from '@/components/overview/main-dashboard/hero-metric-card'
 import { PlatformCountTile } from '@/components/overview/main-dashboard/platform-count-tile'
 import { RetailStatCard } from '@/components/overview/main-dashboard/retail-stat-card'
 import { MonthCalendar } from './month-calendar'
+import { AnnouncementsSidebarCard } from './announcements-sidebar-card'
 
 export function AdminDashboard({ user }: { user: { full_name?: string; role?: string } }) {
   const isDean = user?.role === 'DEAN'
@@ -32,8 +30,9 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   const { data: reportsData, isLoading: reportsLoading, refetch, isFetching } = useDeanReports({
     period: '6m'
   })
-  const { data: announcementsData, refetch: refetchAnnouncements } = useAnnouncements()
-  const announcements = announcementsData ?? []
+  const { data: recentAnnouncements, isLoading: announcementsLoading, refetch: refetchAnnouncements } = useRecentAnnouncements(5)
+  const { data: publishedTotal } = useAnnouncementPublishedTotal()
+  const announcements = recentAnnouncements ?? []
   const queryClient = useQueryClient()
 
   const handleRefresh = () => {
@@ -130,7 +129,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
         <RetailStatCard
           icon={Megaphone}
           label='Active Announcements'
-          value={announcements.length.toString()}
+          value={(publishedTotal?.total ?? announcements.length).toString()}
           tone='violet'
           loading={reportsLoading}
         />
@@ -143,38 +142,10 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
         </div>
 
         <div className='xl:col-span-5'>
-          <div className='h-full rounded-xl border border-border bg-card'>
-            <div className='flex items-center gap-2 border-b border-border px-4 py-3.5'>
-              <Bell className='size-4 text-muted-foreground' />
-              <h2 className='text-sm font-bold text-foreground'>Latest Announcements</h2>
-            </div>
-            <div className='px-4 py-2'>
-              {announcements.length > 0 ? (
-                <ul className='divide-y divide-[#F2F4F7]'>
-                  {announcements.slice(0, 5).map((a: { id: string | number; title: string }) => (
-                    <li key={a.id}>
-                      <Link
-                        href='/dashboard/announcements'
-                        className='flex items-start gap-2 py-3 transition-colors hover:bg-muted'
-                      >
-                        <Badge
-                          variant='secondary'
-                          className='mt-0.5 shrink-0 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-[#1D4ED8] uppercase ring-1 ring-[#BFDBFE]'
-                        >
-                          New
-                        </Badge>
-                        <span className='line-clamp-2 text-sm font-medium text-foreground hover:underline'>
-                          {a.title}
-                        </span>
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p className='py-6 text-center text-sm text-muted-foreground'>No announcements.</p>
-              )}
-            </div>
-          </div>
+          <AnnouncementsSidebarCard
+            announcements={announcements}
+            loading={announcementsLoading}
+          />
         </div>
       </div>
     </div>

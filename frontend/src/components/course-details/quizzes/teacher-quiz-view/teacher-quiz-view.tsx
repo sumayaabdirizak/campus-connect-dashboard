@@ -5,6 +5,7 @@ import { EditQuizPage } from '../new-quiz-page/edit-quiz-page';
 import { NewQuizPage } from '../new-quiz-page/new-quiz-page';
 import { TeacherAttemptsPanel } from '../teacher-attempts-panel';
 import { useQuizzes } from '@/lib/course-details/queries/quizzes-queries';
+import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
 import { useModules } from '@/lib/course-details/queries/resources-queries';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { TeacherQuizBulkBar } from './teacher-quiz-bulk-bar';
@@ -13,9 +14,11 @@ import { TeacherQuizPreview } from './teacher-quiz-preview';
 import { TeacherQuizToolbar } from './teacher-quiz-toolbar';
 import { useTeacherQuizActions } from './use-teacher-quiz-actions';
 import { CourseTabPage } from '../../_shared/course-tab-page';
+import { CourseMarkBudgetBanner } from '../../_shared/course-mark-budget-banner';
 
 export function TeacherView({ courseId }: { courseId: string }) {
   const { data: quizzes = [], isLoading } = useQuizzes(courseId, { live: true });
+  const { data: markBudget } = useCourseMarkBudget(courseId);
   const { data: modules = [] } = useModules(courseId, { live: true });
   const actions = useTeacherQuizActions(courseId);
 
@@ -83,6 +86,8 @@ export function TeacherView({ courseId }: { courseId: string }) {
         onCreate={() => setCreatingQuiz(true)}
       />
 
+      <CourseMarkBudgetBanner budget={markBudget} />
+
       <TeacherQuizBulkBar
         selectedCount={actions.selectedIds.size}
         totalCount={sorted.length}
@@ -97,6 +102,7 @@ export function TeacherView({ courseId }: { courseId: string }) {
         isLoading={isLoading}
         quizzes={sorted}
         selectedIds={actions.selectedIds}
+        courseMaxMarks={markBudget?.courseMax}
         handlers={{
           onEditQuiz: setEditingQuiz,
           onViewAttempts: setViewingAttempts,

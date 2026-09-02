@@ -1,4 +1,6 @@
 import { apiClient } from '@/lib/api-client';
+import { buildApiUrl } from '@/lib/api-config';
+import { uploadJson } from '@/lib/upload-client';
 import type {
   CreateQuestionInput,
   CreateQuizInput,
@@ -10,6 +12,7 @@ import type {
   QuizAnalytics,
   QuizAttempt,
   QuizAttemptAnswer,
+  QuizPaperFile,
   QuizQuestion,
   QuizStartResponse,
   ReportViolationResponse,
@@ -45,6 +48,23 @@ export async function updateQuiz(quizId: number, input: UpdateQuizInput): Promis
 
 export async function deleteQuiz(quizId: number): Promise<{ success: boolean }> {
   return apiClient<{ success: boolean }>(`/quizzes/${quizId}`, { method: 'DELETE' });
+}
+
+export async function uploadQuizPaperFile(quizId: number, file: File): Promise<QuizPaperFile> {
+  const formData = new FormData();
+  formData.append('file', file);
+  return uploadJson<QuizPaperFile>(`/quizzes/${quizId}/paper-file`, formData);
+}
+
+export async function deleteQuizPaperFile(quizId: number): Promise<{ success: boolean }> {
+  return apiClient<{ success: boolean }>(`/quizzes/${quizId}/paper-file`, {
+    method: 'DELETE'
+  });
+}
+
+export function quizPaperFileUrl(url: string): string {
+  if (url.startsWith('http')) return url;
+  return buildApiUrl(url.startsWith('/') ? url : `/${url}`);
 }
 
 /// Deep-clone a quiz (including all questions + options). Backend returns

@@ -2,12 +2,12 @@
 
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@/lib/async-query';
-import { apiClient } from '@/lib/api-client';
-import { useAnnouncements } from '@/lib/announcements/queries';
+import { useRecentAnnouncements } from '@/lib/announcements/queries';
 import {
   useNotifications,
   useMarkNotificationsRead,
 } from '@/lib/discussions/queries';
+import { useCalendarDeadlines } from '@/lib/calendar/queries';
 import {
   fetchCourseActivityNotifications,
   markCourseActivityRead,
@@ -21,16 +21,27 @@ import {
   rel,
 } from './notification-feed-mappers';
 import { mapCourseActivityItems } from './map-course-activity';
-import type { DeadlineRow, NotifItem } from '../../types';
+import type { NotifItem } from '../../types';
 import { NOTIFICATION_DAY_MS } from '../../types';
 
 export type { NotifItem, NotifSource } from '../../types';
 export { groupNotifications } from './notification-feed-mappers';
 
-export function useNotificationFeed() {
+export function useNotificationFeed(options?: {
+  enabled?: boolean;
+  /** Cap announcement rows merged into the feed (default 30 on full page). */
+  announcementLimit?: number;
+}) {
+  const enabled = options?.enabled ?? true;
+  const announcementLimit = options?.announcementLimit ?? 30;
   const queryClient = useQueryClient();
-  const { data: annData, isLoading: annLoading } = useAnnouncements();
-  const { data: discData, isLoading: discLoading } = useNotifications('all', 60);
+  const { data: annData, isLoading: annLoading } = useRecentAnnouncements(
+    announcementLimit,
+    { enabled }
+  );
+  const { data: discData, isLoading: discLoading } = useNotifications('all', 40, {
+    enabled,
+  });
   const markDisc = useMarkNotificationsRead();
   const readKeys = useReadKeys();
 
@@ -42,17 +53,16 @@ export function useNotificationFeed() {
     };
   }, []);
 
-  const { data: dlData, isLoading: dlLoading } = useQuery({
-    queryKey: ['notifications', 'deadlines', fromIso],
-    queryFn: () =>
-      apiClient<{ results: DeadlineRow[] }>(
-        `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
-      ),
+  const { data: dlData, isLoading: dlLoading } = useCalendarDeadlines(fromIso, toIso, {
+    enabled,
   });
 
   const { data: courseData, isLoading: courseLoading } = useQuery({
     queryKey: ['notifications', 'course-activity'],
-    queryFn: () => fetchCourseActivityNotifications(40),
+    queryFn: () => fetchCourseActivityNotifications(30),
+    enabled,
+    staleTime: 60_000,
+    refetchOnWindowFocus: false,
   });
 
   const markCourse = useMutation({
@@ -65,6 +75,8 @@ export function useNotificationFeed() {
   });
 
   const items = useMemo<NotifItem[]>(() => {
+    if (!enabled) return [];
+
     const isRead = (key: string, serverRead = false) =>
       serverRead || readKeys.has(key);
 
@@ -139,7 +151,7 @@ export function useNotificationFeed() {
 
     const course = mapCourseActivityItems(courseData?.results, isRead);
     return [...announcements, ...deadlines, ...discussion, ...course];
-  }, [annData, dlData, discData, courseData, readKeys]);
+  }, [annData, dlData, discData, courseData, readKeys, enabled]);
 
   const unreadCount = useMemo(
     () => items.filter((i) => !i.read).length,
@@ -184,7 +196,6 @@ export function useNotificationFeed() {
     unreadCount,
     markRead,
     markAllRead,
-    loading: annLoading || dlLoading || discLoading || courseLoading,
+    loading: enabled && (annLoading || dlLoading || discLoading || courseLoading),
   };
 }
-

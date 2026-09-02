@@ -9,7 +9,7 @@ export const getAllUsers = async (req, res) => {
   });
   const { search, role } = req.query;
 
-  const staffRoles = ['SUPER_ADMIN', 'ACADEMIC_OFFICE'];
+  const staffRoles = ['SUPER_ADMIN'];
   const where = {
     ...(search
       ? {
@@ -56,41 +56,21 @@ export const getAllUsers = async (req, res) => {
           },
         },
         deanProfile: { include: { faculty: true } },
-        officeStaffMemberships: {
-          take: 1,
-          orderBy: { addedAt: 'desc' },
-          select: {
-            officeId: true,
-            role: true,
-            office: { select: { id: true, name: true, slug: true } },
-          },
-        },
       },
       orderBy: { created_at: 'desc' },
     }),
     prisma.user.count({ where }),
   ]);
 
-  const mappedUsers = users.map((u) => {
-    const membership = u.officeStaffMemberships?.[0] ?? null;
-    const { officeStaffMemberships, ...rest } = u;
-    return {
-      ...rest,
-      role: u.role.name,
-      officeStaff: membership
-        ? {
-            officeId: membership.officeId,
-            role: membership.role,
-            office: membership.office,
-          }
-        : null,
-      faculties: u.lecturerProfile?.faculties?.map((f) => ({
-        id: f.faculty.id,
-        name: f.faculty.name,
-        code: f.faculty.code,
-      })) ?? [],
-    };
-  });
+  const mappedUsers = users.map((u) => ({
+    ...u,
+    role: u.role.name,
+    faculties: u.lecturerProfile?.faculties?.map((f) => ({
+      id: f.faculty.id,
+      name: f.faculty.name,
+      code: f.faculty.code,
+    })) ?? [],
+  }));
 
   res.json(paginatedPayload({ total, page, pageSize, results: mappedUsers }));
 };

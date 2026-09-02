@@ -2,7 +2,15 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@/lib/async-query';
 import { useUpdateQuiz } from '@/lib/course-details/queries/quizzes-queries';
+import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
+import { quizKeys } from '@/lib/course-details/queries/quizzes-queries/keys';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  markBudgetExceededMessage,
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import type { Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
 import { emptyDraft } from '../quiz-builder/draft-empty';
 import { useQuizBuilder } from '../quiz-builder/use-quiz-builder';
@@ -10,8 +18,14 @@ import {
   fromQuiz,
   toPayload,
   validateForm,
+  isUploadedOfflineForm,
   type FormState
 } from '../quiz-settings-form/form-state';
+import { isUploadedOfflineQuiz } from '@/lib/course-details/services/quiz-total-points';
+import {
+  deleteQuizPaperFile,
+  uploadQuizPaperFile
+} from '@/lib/course-details/services/quizzes-service';
 
 /// Full-page edit flow: quiz configuration (Basics / Timing / Marking) lives in
 /// local form state while questions are persisted immediately via the same
@@ -23,14 +37,18 @@ export function useEditQuizPage(
 ) {
   const [form, setForm] = useState(() => fromQuiz(quiz));
   const [lockedAddType, setLockedAddType] = useState<QuizQuestionType | null>(null);
+  const [pendingPaperFile, setPendingPaperFile] = useState<File | null>(null);
+  const [removingPaperFile, setRemovingPaperFile] = useState(false);
   const marksPlanTouchedRef = useRef(false);
 
   const b = useQuizBuilder(courseId, quiz);
   const updateMutation = useUpdateQuiz(courseId);
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     setForm(fromQuiz(quiz));
     setLockedAddType(null);
+    setPendingPaperFile(null);
     marksPlanTouchedRef.current = false;
     b.cancel();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -121,16 +139,59 @@ export function useEditQuizPage(
       toast.error(err);
       return;
     }
+    if (!form.is_draft) {
+      const budget = queryClient.getQueryData<CourseMarkBudget>(
+        markBudgetKeys.offering(courseId)
+      );
+      const requested = form.marksPlanTotal;
+      const excludePublished = quiz.is_draft ? 0 : quiz.maxMarks ?? requested;
+      if (
+        requested > 0 &&
+        budget &&
+        wouldExceedMarkBudget(budget, requested, excludePublished)
+      ) {
+        toast.error(markBudgetExceededMessage(budget, requested, excludePublished));
+        return;
+      }
+    }
     updateMutation.mutate(
       { quizId: quiz.id, input: toPayload(form) },
       {
-        onSuccess: () => {
+        onSuccess: async () => {
+          try {
+            if (pendingPaperFile && isUploadedOfflineForm(form)) {
+              await uploadQuizPaperFile(quiz.id, pendingPaperFile);
+              setPendingPaperFile(null);
+            }
+          } catch (e) {
+            toast.error(
+              e instanceof Error ? e.message : 'Quiz saved but file upload failed'
+            );
+            return;
+          }
           toast.success(`Saved "${form.title.trim() || quiz.title}"`);
+          queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseId) });
+      queryClient.invalidateQueries({ queryKey: quizKeys.list(courseId) });
           onSaved?.();
         },
         onError: (e: Error) => toast.error(e.message)
       }
     );
+  };
+
+  const removePaperFile = async () => {
+    if (!quiz.paperFile) return;
+    setRemovingPaperFile(true);
+    try {
+      await deleteQuizPaperFile(quiz.id);
+      toast.success('Quiz file removed');
+      queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseId) });
+      queryClient.invalidateQueries({ queryKey: quizKeys.list(courseId) });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not remove file');
+    } finally {
+      setRemovingPaperFile(false);
+    }
   };
 
   const isSaving =
@@ -167,6 +228,11 @@ export function useEditQuizPage(
     deleteQuestion,
     handleSave,
     isSaving,
+    pendingPaperFile,
+    setPendingPaperFile,
+    removePaperFile,
+    removingPaperFile,
+    isUploadedPaper: isUploadedOfflineQuiz(quiz),
     questionSavePending: b.createMutation.isPending || b.updateMutation.isPending,
     deletePending: b.deleteMutation.isPending
   };

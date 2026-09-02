@@ -130,7 +130,7 @@ export async function registerUserByAdmin(req, res) {
   const {
     full_name, email, password, role: rawRole, departmentCode, facultyId: bodyFacultyId, number,
     programId: bodyProgramId, specialty, batchSectionId, academicYearId, semesterId, courseIds,
-    officeId: bodyOfficeId, officeStaffRole: bodyOfficeStaffRole, secondaryFacultyId,
+    secondaryFacultyId,
   } = req.body;
 
   const role = normalizeRoleName(rawRole);
@@ -254,38 +254,6 @@ export async function registerUserByAdmin(req, res) {
       where: { id: facultyId },
       data: { deanId: user.id },
     });
-    try {
-      const { syncDeanToFacultyOffice } = await import(
-        '../../services/offices/syncDeanToFacultyOffice.js'
-      );
-      await syncDeanToFacultyOffice(user.id, facultyId);
-    } catch (error) {
-      console.error('Failed to sync dean to faculty office', {
-        userId: user.id,
-        facultyId,
-        error: error?.message,
-      });
-    }
-  }
-
-  let officeStaff = null;
-  const officeId = Number(bodyOfficeId);
-  if (Number.isFinite(officeId) && officeId > 0) {
-    const office = await prisma.supportOffice.findUnique({
-      where: { id: officeId },
-      select: { id: true, name: true, slug: true },
-    });
-    if (!office) throw new HttpError(400, 'Selected office was not found.', null);
-    const staffRole = bodyOfficeStaffRole === 'MANAGER' ? 'MANAGER' : 'AGENT';
-    officeStaff = await prisma.supportOfficeStaff.upsert({
-      where: { officeId_userId: { officeId, userId: user.id } },
-      create: { officeId, userId: user.id, role: staffRole },
-      update: { role: staffRole },
-      select: {
-        role: true,
-        office: { select: { id: true, name: true, slug: true } },
-      },
-    });
   }
 
   try {
@@ -305,9 +273,6 @@ export async function registerUserByAdmin(req, res) {
       email: user.email,
       number: user.number,
       role: user.role.name,
-      officeStaff: officeStaff
-        ? { role: officeStaff.role, office: officeStaff.office }
-        : null,
       profiles: {
         student: user.studentProfile,
         lecturer: user.lecturerProfile,

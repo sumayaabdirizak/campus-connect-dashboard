@@ -22,6 +22,7 @@ import {
 } from '../new-quiz-page/field-styles';
 import { NO_MODULE, type FormState } from './form-state';
 import { formWithoutOnlineDisallowedTypes } from '../quiz-question-types';
+import { OfflineDeliveryField } from './offline-delivery-field';
 
 interface BasicsTabProps {
   form: FormState;
@@ -94,6 +95,8 @@ export function BasicsTab({ form, setForm, modules }: BasicsTabProps) {
             />
           </label>
         </div>
+
+        <OfflineDeliveryField form={form} setForm={setForm} />
 
         {modules.length > 0 ? (
           <div className='space-y-1.5 sm:max-w-[50%]'>

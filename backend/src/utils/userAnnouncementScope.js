@@ -6,7 +6,6 @@
  * @param {number} userId
  * @returns {Promise<{ userId: number, full_name: string, role: string, status: string, facultyIds: number[], departmentIds: number[], batchIds: number[], sectionIds: number[] } | null>}
  */
-import { resolveOfficeStaffDmScope } from '../services/discussions/officeStaffDmScope.js';
 import { expandFacultyAnnouncementTree } from './expandFacultyAnnouncementTree.js';
 
 export async function loadUserAnnouncementScope(prisma, userId) {
@@ -50,21 +49,6 @@ export async function loadUserAnnouncementScope(prisma, userId) {
       status: user.status,
       ...tree,
     };
-  }
-
-  // Faculty Dean's Office staff — same tree as dean (not university desks).
-  if (roleName === 'OFFICE_STAFF') {
-    const desk = await resolveOfficeStaffDmScope(userId, prisma);
-    if (desk.kind === 'faculty') {
-      const tree = await expandFacultyAnnouncementTree(prisma, desk.facultyIds);
-      return {
-        userId: user.id,
-        full_name: user.full_name,
-        role: user.role.name,
-        status: user.status,
-        ...tree,
-      };
-    }
   }
 
   const facultyIds = new Set();

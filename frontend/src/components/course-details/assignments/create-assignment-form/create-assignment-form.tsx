@@ -13,6 +13,12 @@ import { DatetimeField } from './datetime-fields';
 import { assignmentFormFieldClass } from './field-styles';
 import { MaxMarksField } from './max-marks-field';
 import { handleExtensionDateChange, toDatetimeLocalMin } from '../extension-date-utils';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  markBudgetExceededMessage,
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
+import { toast } from 'sonner';
 
 function fieldError(errors: unknown[]): string | undefined {
   const first = errors[0];
@@ -34,6 +40,11 @@ interface CreateAssignmentFormProps {
   pendingLabel?: string;
   extraFields?: React.ReactNode;
   showSubmitIcon?: boolean;
+  markBudget?: CourseMarkBudget;
+  /** When editing a published assignment, its current maxMarks (excluded from allocated). */
+  excludePublishedMarks?: number;
+  /** Block save when marks exceed budget (create + published edit). */
+  enforceMarkBudget?: boolean;
 }
 
 export function CreateAssignmentForm({
@@ -44,12 +55,25 @@ export function CreateAssignmentForm({
   submitLabel = 'Create',
   pendingLabel = 'Creating…',
   extraFields,
-  showSubmitIcon = true
+  showSubmitIcon = true,
+  markBudget,
+  excludePublishedMarks = 0,
+  enforceMarkBudget = true
 }: CreateAssignmentFormProps) {
   const form = useAppForm({
     defaultValues: { ...defaultAssignmentValues, ...initialValues } as AssignmentFormValues,
     validators: { onChange: assignmentSchema },
     onSubmit: async ({ value }) => {
+      if (
+        enforceMarkBudget &&
+        markBudget &&
+        wouldExceedMarkBudget(markBudget, value.maxMarks, excludePublishedMarks)
+      ) {
+        toast.error(
+          markBudgetExceededMessage(markBudget, value.maxMarks, excludePublishedMarks)
+        );
+        return;
+      }
       await onSubmit(value);
     }
   });
@@ -141,6 +165,9 @@ export function CreateAssignmentForm({
                   onBlur={field.handleBlur}
                   onChange={field.handleChange}
                   error={fieldError(field.state.meta.errors)}
+                  markBudget={markBudget}
+                  excludePublishedMarks={excludePublishedMarks}
+                  courseMaxMarks={markBudget?.courseMax}
                 />
               )}
             </form.AppField>
@@ -163,10 +190,20 @@ export function CreateAssignmentForm({
           <Button type='button' variant='outline' onClick={onCancel}>
             Cancel
           </Button>
-          <Button type='submit' disabled={pending} className='gap-1.5'>
-            {showSubmitIcon ? <Plus className='size-4' aria-hidden /> : null}
-            {pending ? pendingLabel : submitLabel}
-          </Button>
+          <form.Subscribe selector={(s) => s.values.maxMarks}>
+            {(maxMarks) => {
+              const blocked =
+                enforceMarkBudget &&
+                markBudget != null &&
+                wouldExceedMarkBudget(markBudget, maxMarks, excludePublishedMarks);
+              return (
+                <Button type='submit' disabled={pending || blocked} className='gap-1.5'>
+                  {showSubmitIcon ? <Plus className='size-4' aria-hidden /> : null}
+                  {pending ? pendingLabel : submitLabel}
+                </Button>
+              );
+            }}
+          </form.Subscribe>
         </DialogFooter>
       </form.Form>
     </form.AppForm>

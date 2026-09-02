@@ -8,8 +8,6 @@ import {
   messagesClubManageHref,
   messagesDiscoverHref,
   messagesDmHref,
-  messagesOfficeDeskHref,
-  messagesOfficeThreadHref,
 } from '@/lib/inbox/services/messages-href'
 import {
   clubPathForServerId,
@@ -36,15 +34,12 @@ export function useSyncMessagesActiveFromUrl({
   setActive: (next: ActiveChat | null) => void
   openChannel: (channelId: string, serverId?: string | null) => void
   replace: (href: string) => void
-  /** Academic Office: no club Discover pane. */
   blockDiscover?: boolean
 }) {
   useEffect(() => {
     const discover = searchParams?.get('discover')
     const clubSlug = searchParams?.get('club')?.trim()
     const dm = searchParams?.get('dm')?.trim() || null
-    const officeThread = Number(searchParams?.get('officeThread'))
-    const officeDesk = searchParams?.get('officeDesk')?.trim()
     const channel = searchParams?.get('channel')?.trim() || null
     const server = searchParams?.get('server')?.trim() || null
 
@@ -55,33 +50,6 @@ export function useSyncMessagesActiveFromUrl({
         return
       }
       setActive({ kind: 'discover', href: messagesDiscoverHref() })
-      return
-    }
-    if (blockDiscover && clubSlug) {
-      replace('/dashboard/messages')
-      setActive(null)
-      return
-    }
-    // AO: no faculty/club channel panes via deep link.
-    if (blockDiscover && (channel || server)) {
-      replace('/dashboard/messages')
-      setActive(null)
-      return
-    }
-    if (Number.isFinite(officeThread) && officeThread > 0) {
-      setActive({
-        kind: 'office',
-        id: officeThread,
-        href: messagesOfficeThreadHref(officeThread),
-      })
-      return
-    }
-    if (officeDesk) {
-      setActive({
-        kind: 'office-desk',
-        slug: officeDesk,
-        href: messagesOfficeDeskHref(officeDesk),
-      })
       return
     }
     if (clubSlug) {

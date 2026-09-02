@@ -5,13 +5,20 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import { cn } from '@/lib/utils';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import {
+  canPreviewQuizAsStudent,
+  isQuizMissingBuiltQuestions,
+  isUploadedOfflineQuiz,
+  isUploadedQuizMissingPaper
+} from '@/lib/course-details/services/quiz-total-points';
 import { getQuizWindowState } from '../teacher-quiz-card/quiz-window-state';
 import { QuizRowActions } from './quiz-row-actions';
-import { quizAttemptCount, quizQuestionCount } from './quizzes-table-utils';
+import { quizAttemptCount, quizMarksLabel, quizMarksSubLabel, quizQuestionCount } from './quizzes-table-utils';
 
 export function QuizListRow({
   quiz: q,
   col,
+  courseMaxMarks,
   isSelected,
   onToggleSelect,
   onEditQuiz,
@@ -23,6 +30,7 @@ export function QuizListRow({
 }: {
   quiz: Quiz;
   col: (id: string) => boolean;
+  courseMaxMarks?: number;
   isSelected: boolean;
   onToggleSelect: () => void;
   onEditQuiz: () => void;
@@ -35,7 +43,9 @@ export function QuizListRow({
   const questionCount = quizQuestionCount(q);
   const attemptCount = quizAttemptCount(q);
   const pending = q.pendingGradingCount ?? 0;
-  const isEmpty = questionCount === 0;
+  const missingQuestions = isQuizMissingBuiltQuestions(q);
+  const missingPaper = isUploadedQuizMissingPaper(q);
+  const previewDisabled = !canPreviewQuizAsStudent(q);
   const windowState = getQuizWindowState(q);
 
   return (
@@ -75,9 +85,19 @@ export function QuizListRow({
                   {windowState}
                 </Badge>
               ) : null}
-              {isEmpty ? (
+              {missingQuestions ? (
                 <Badge variant='warning' size='xs' className='rounded-full'>
                   No questions
+                </Badge>
+              ) : null}
+              {missingPaper ? (
+                <Badge variant='warning' size='xs' className='rounded-full'>
+                  No file
+                </Badge>
+              ) : null}
+              {isUploadedOfflineQuiz(q) && q.paperFile ? (
+                <Badge variant='secondary' size='xs' className='rounded-full'>
+                  Uploaded
                 </Badge>
               ) : null}
               {q.mode === 'offline' ? (
@@ -93,11 +113,16 @@ export function QuizListRow({
         </PosTableCell>
       ) : null}
 
-      {col('chapter') ? (
+      {col('marks') ? (
         <PosTableCell>
-          <span className='text-sm text-muted-foreground'>
-            {q.module?.title ?? 'Ungrouped'}
-          </span>
+          <div className='tabular-nums'>
+            <span className='text-sm font-medium text-foreground'>
+              {quizMarksLabel(q, courseMaxMarks)}
+            </span>
+            {quizMarksSubLabel(q) ? (
+              <p className='text-xs text-muted-foreground'>{quizMarksSubLabel(q)}</p>
+            ) : null}
+          </div>
         </PosTableCell>
       ) : null}
 
@@ -106,10 +131,10 @@ export function QuizListRow({
           <span
             className={cn(
               'text-sm tabular-nums',
-              isEmpty ? 'text-muted-foreground' : ''
+              missingQuestions || missingPaper ? 'text-muted-foreground' : ''
             )}
           >
-            {questionCount}
+            {isUploadedOfflineQuiz(q) ? '—' : questionCount}
           </span>
         </PosTableCell>
       ) : null}
@@ -138,7 +163,7 @@ export function QuizListRow({
       <PosTableCell align='right'>
         <QuizRowActions
           quiz={q}
-          isEmpty={isEmpty}
+          previewDisabled={previewDisabled}
           onEditQuiz={onEditQuiz}
           onViewAttempts={onViewAttempts}
           onDelete={onDelete}

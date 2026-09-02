@@ -2,13 +2,11 @@
 
 import type { RefObject } from 'react'
 import { useMemo, useState } from 'react'
-import { Button } from '@/features/ui/components/button'
 import { Input } from '@/features/ui/components/input'
 import { Icons } from '@/components/icons'
 import type { GroupDmCandidate } from '@/lib/discussions/queries/types'
 import { MAX_OTHER_MEMBERS } from './constants'
 import {
-  AO_GROUP_ROLE_FILTERS,
   DEAN_GROUP_ROLE_FILTERS,
   DEFAULT_ROLE_FILTERS,
   filterByRoles,
@@ -20,7 +18,6 @@ import { DmCandidateSelectedChips } from './dm-candidate-selected-chips'
 import { DmRoleFilter } from './dm-role-filter'
 
 export function DmCandidatePicker({
-  deanGroupMode = false,
   facultyDeanMode = false,
   showNameField = true,
   name,
@@ -29,7 +26,6 @@ export function DmCandidatePicker({
   setSearch,
   selected,
   toggle,
-  selectAllMatching,
   candidates,
   selectedIds,
   isLoading,
@@ -37,7 +33,6 @@ export function DmCandidatePicker({
   searchRef,
   atMax,
 }: {
-  deanGroupMode?: boolean
   facultyDeanMode?: boolean
   /** Hide the "Group name" field — e.g. when adding members to an existing conversation. */
   showNameField?: boolean
@@ -47,7 +42,6 @@ export function DmCandidatePicker({
   setSearch: (v: string) => void
   selected: GroupDmCandidate[]
   toggle: (c: GroupDmCandidate) => void
-  selectAllMatching?: (people: GroupDmCandidate[]) => void
   candidates: GroupDmCandidate[]
   selectedIds: Set<number>
   isLoading: boolean
@@ -56,29 +50,14 @@ export function DmCandidatePicker({
   atMax: boolean
 }) {
   const [roles, setRoles] = useState<RoleFilterKey[]>(
-    deanGroupMode
-      ? AO_GROUP_ROLE_FILTERS
-      : facultyDeanMode
-        ? DEAN_GROUP_ROLE_FILTERS
-        : DEFAULT_ROLE_FILTERS
+    facultyDeanMode ? DEAN_GROUP_ROLE_FILTERS : DEFAULT_ROLE_FILTERS
   )
-  const filterVariant = deanGroupMode ? 'ao' : facultyDeanMode ? 'dean' : 'student'
+  const filterVariant = facultyDeanMode ? 'dean' : 'student'
   const scoped = useMemo(
     () => filterByRoles(candidates, roles),
     [candidates, roles]
   )
   const isSearching = debouncedSearch.trim().length > 0
-  const unselectedScoped = scoped.filter((c) => !selectedIds.has(c.id))
-  const canSelectAll =
-    deanGroupMode && Boolean(selectAllMatching) && !atMax && unselectedScoped.length > 0
-
-  const selectAllLabel = useMemo(() => {
-    const onlyDean = roles.length === 1 && roles[0] === 'DEAN'
-    const onlyStaff = roles.length === 1 && roles[0] === 'OFFICE_STAFF'
-    if (onlyDean) return 'Select all deans'
-    if (onlyStaff) return 'Select all office staff'
-    return 'Select all shown'
-  }, [roles])
 
   return (
     <div className='space-y-3'>
@@ -88,11 +67,7 @@ export function DmCandidatePicker({
             Group name
           </label>
           <Input
-            placeholder={
-              deanGroupMode
-                ? 'Optional — e.g. Deans & office staff'
-                : 'Optional — e.g. Math study group'
-            }
+            placeholder='Optional — e.g. Math study group'
             value={name}
             onChange={(e) => setName(e.target.value)}
             maxLength={120}
@@ -109,17 +84,6 @@ export function DmCandidatePicker({
             variant={filterVariant}
           />
         </div>
-        {canSelectAll ? (
-          <Button
-            type='button'
-            variant='outline'
-            size='sm'
-            className='h-7 shrink-0 text-[11px]'
-            onClick={() => selectAllMatching?.(unselectedScoped)}
-          >
-            {selectAllLabel}
-          </Button>
-        ) : null}
       </div>
 
       <DmCandidateSelectedChips selected={selected} toggle={toggle} />
@@ -140,20 +104,12 @@ export function DmCandidatePicker({
         </div>
       </div>
 
-      {isSearching || deanGroupMode ? (
+      {isSearching ? (
         <DmCandidatePeopleList
           people={scoped}
           selectedIds={selectedIds}
           isLoading={isLoading}
-          emptyLabel={
-            deanGroupMode
-              ? roles.length === 1 && roles[0] === 'OFFICE_STAFF'
-                ? 'No office staff found.'
-                : roles.length === 1 && roles[0] === 'DEAN'
-                  ? 'No deans found.'
-                  : 'No deans or office staff found.'
-              : 'No people match that search / filter.'
-          }
+          emptyLabel='No people match that search / filter.'
           atMax={atMax}
           toggle={toggle}
         />

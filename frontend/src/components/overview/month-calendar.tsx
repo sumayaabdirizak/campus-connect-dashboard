@@ -13,8 +13,7 @@ import {
   format,
 } from 'date-fns'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useQuery } from '@/lib/async-query'
-import { apiClient } from '@/lib/api-client'
+import { useCalendarDeadlines } from '@/lib/calendar/queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card'
 import { Button } from '@/features/ui/components/button'
 import { cn } from '@/lib/utils'
@@ -43,15 +42,10 @@ export function MonthCalendar({ variant = 'compact', className }: Props) {
     [gridStart, gridEnd]
   )
 
-  const { data } = useQuery({
-    queryKey: ['calendar', 'month', gridStart.toISOString(), gridEnd.toISOString()],
-    queryFn: () =>
-      apiClient<{ results: DeadlineRow[] }>(
-        `/announcements/calendar-deadlines?from=${encodeURIComponent(
-          gridStart.toISOString()
-        )}&to=${encodeURIComponent(gridEnd.toISOString())}`
-      ),
-  })
+  const { data } = useCalendarDeadlines(
+    gridStart.toISOString(),
+    gridEnd.toISOString()
+  )
 
   const byDay = useMemo(() => {
     const m = new Map<string, DeadlineRow[]>()

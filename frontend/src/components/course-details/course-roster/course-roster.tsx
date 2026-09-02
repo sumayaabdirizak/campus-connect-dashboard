@@ -4,7 +4,6 @@ import { useMemo, useState } from 'react';
 import { Activity, UserCheck, Users } from 'lucide-react';
 import { EmptyState } from '../_shared/empty-state';
 import { ListSkeleton } from '../_shared/list-skeleton';
-import { SimpleDataTable } from '../_shared/simple-data-table';
 import { CourseTabHeader } from '../_shared/course-tab-header';
 import { CourseTabPage } from '../_shared/course-tab-page';
 import { StudentProfileDrawer } from '../student-profile-drawer';
@@ -12,8 +11,8 @@ import { useRoster } from '@/lib/course-details/queries/roster-queries';
 import { useCourseAccessList } from '@/lib/course-details/queries/access-queries';
 import type { RosterStudent } from '@/lib/course-details/services/roster-types';
 import { computeRosterStats, type RosterRow } from './helpers';
+import { RosterListTable } from './roster-list-table';
 import { StatCard } from './stat-card';
-import { useRosterColumns } from './use-roster-columns';
 
 interface CourseRosterProps {
   courseId: string;
@@ -24,7 +23,6 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
   const [search, setSearch] = useState('');
   const { data: roster = [], isLoading, isError } = useRoster(courseId, { live: true });
   const { data: accessRows = [] } = useCourseAccessList(courseId);
-  const columns = useRosterColumns();
 
   const rows: RosterRow[] = useMemo(() => {
     const lastSeen = new Map(accessRows.map((r) => [r.userId, r.lastSeenAt]));
@@ -34,13 +32,24 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
     }));
   }, [roster, accessRows]);
 
+  const filteredRows = useMemo(() => {
+    const needle = search.trim().toLowerCase();
+    if (!needle) return rows;
+    return rows.filter(
+      (r) =>
+        r.full_name.toLowerCase().includes(needle) ||
+        r.number.toLowerCase().includes(needle) ||
+        r.email.toLowerCase().includes(needle)
+    );
+  }, [rows, search]);
+
   const stats = useMemo(() => computeRosterStats(rows), [rows]);
 
   if (isLoading) {
     return (
       <CourseTabPage>
         <CourseTabHeader
-          title='Roster'
+          title='Student logs'
           description='Students enrolled in this section.'
         />
         <div className='grid grid-cols-2 gap-3 lg:grid-cols-3'>
@@ -56,7 +65,7 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
   if (isError) {
     return (
       <CourseTabPage>
-        <CourseTabHeader title='Roster' description='Students enrolled in this section.' />
+        <CourseTabHeader title='Student logs' description='Students enrolled in this section.' />
         <EmptyState
           icon={Users}
           title='Could not load roster'
@@ -69,7 +78,7 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
   if (rows.length === 0) {
     return (
       <CourseTabPage>
-        <CourseTabHeader title='Roster' description='Students enrolled in this section.' />
+        <CourseTabHeader title='Student logs' description='Students enrolled in this section.' />
         <EmptyState
           icon={Users}
           title='No students yet'
@@ -82,14 +91,8 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
   return (
     <CourseTabPage>
       <CourseTabHeader
-        title='Roster'
+        title='Student logs'
         description={`${stats.total} enrolled · last seen based on course page visits.`}
-        search={{
-          value: search,
-          onChange: setSearch,
-          placeholder: 'Search students…',
-          'aria-label': 'Search students'
-        }}
       />
 
       <div className='grid grid-cols-2 gap-3 lg:grid-cols-3'>
@@ -108,26 +111,15 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
         />
       </div>
 
-      <div className='overflow-hidden rounded-xl border border-border bg-card'>
-        <div className='px-4 pt-4 sm:px-5'>
-          <SimpleDataTable
-            embedded
-            data={rows}
-            columns={columns}
-            searchPlaceholder='Search students…'
-            csvFileName={`roster-${courseId}`}
-            initialSorting={[{ id: 'full_name', desc: false }]}
-            pageSize={50}
-            onRowClick={(r) => setSelected(r)}
-            mobilePrimaryColumn='full_name'
-            stickyHeader
-            scrollContainerClassName='max-h-[min(720px,calc(100dvh-18rem))] min-h-[200px] overflow-auto'
-            globalFilter={search}
-            onGlobalFilterChange={setSearch}
-            hideToolbarSearch
-          />
-        </div>
-        <p className='border-t border-border px-4 py-3 text-[11px] text-muted-foreground sm:px-5'>
+      <div className='space-y-2'>
+        <RosterListTable
+          courseId={courseId}
+          rows={filteredRows}
+          search={search}
+          onSearchChange={setSearch}
+          onRowClick={(r) => setSelected(r)}
+        />
+        <p className='text-[11px] text-muted-foreground'>
           Last seen is based on course page visits.
         </p>
       </div>

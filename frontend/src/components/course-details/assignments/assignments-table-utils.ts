@@ -3,6 +3,7 @@ import type { Assignment } from '@/lib/course-details/services/assignments-types
 
 export const ASSIGNMENT_COLUMN_OPTS = [
   { id: 'title', label: 'Title' },
+  { id: 'marks', label: 'Marks' },
   { id: 'work', label: 'Work' },
   { id: 'grading', label: 'Grading' },
   { id: 'opens', label: 'Opens' },
@@ -19,6 +20,18 @@ export const ASSIGNMENT_SORT_OPTS = [
 ];
 
 export const ASSIGNMENT_ALL_COLS = ASSIGNMENT_COLUMN_OPTS.map((c) => c.id);
+
+export const DEFAULT_COURSE_MAX_MARKS = 100;
+
+export function assignmentMarksLabel(
+  a: Assignment,
+  courseMax = DEFAULT_COURSE_MAX_MARKS
+): string {
+  const cap = courseMax > 0 ? courseMax : DEFAULT_COURSE_MAX_MARKS;
+  const marks = a.maxMarks ?? 10;
+  if (marks > 0) return `${marks}/${cap}`;
+  return '—';
+}
 
 export function sortAssignments(rows: Assignment[], sortId: string) {
   const copy = [...rows];
@@ -40,11 +53,21 @@ export function sortAssignments(rows: Assignment[], sortId: string) {
   return copy;
 }
 
-const EXPORT_HEADER = ['Title', 'Work', 'Grading', 'Opens', 'Due', 'Submissions', 'Draft'];
+const EXPORT_HEADER = [
+  'Title',
+  'Marks',
+  'Work',
+  'Grading',
+  'Opens',
+  'Due',
+  'Submissions',
+  'Draft'
+];
 
 function exportRows(rows: Assignment[]) {
   return rows.map((a) => [
     a.title,
+    a.maxMarks ?? 10,
     a.workMode === 'GROUP' ? 'Group' : 'Individual',
     a.gradingScope === 'GROUP' ? 'Group grade' : 'Per student',
     a.open_at ? new Date(a.open_at).toLocaleString() : '',

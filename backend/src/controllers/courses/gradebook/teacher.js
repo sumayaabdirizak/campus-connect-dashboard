@@ -2,19 +2,12 @@ import { prisma } from '../../../db/prisma.js';
 
 /**
  * Course gradebook — every enrolled student × every published assignment/quiz,
- * with normalised percentages and a computed course total. Teacher/dean only
- * (scoped by `requireCourseOfferingManage`).
- *
- * Normalisation: quiz attempts already store `grade` as a percentage
- * (`earned / totalPoints * 100`, see services/quizAttempt.service.js), whereas
- * assignment submissions store raw points out of `Assignment.maxMarks`. We
- * convert assignment grades to a percentage here so the overall average and
- * the per-column class averages are apples-to-apples.
+ * with scores on the shared course mark budget (Course.maxMarks, default 100).
  */
 export async function getTeacherGradebook(req, res) {
   const offering = req.courseOffering;
 
-  const [section, assignments, quizzes] = await Promise.all([
+  const [section, assignments, quizzes, courseMaxMarks] = await Promise.all([
     prisma.batchSection.findUnique({
       where: { id: offering.sectionId },
       include: {
@@ -35,14 +28,41 @@ export async function getTeacherGradebook(req, res) {
     }),
     prisma.quiz.findMany({
       where: { courseOfferingId: offering.id, is_draft: false },
-      select: { id: true, title: true, created_at: true },
+      select: {
+        id: true,
+        title: true,
+        maxMarks: true,
+        marksPlan: true,
+        created_at: true,
+      },
       orderBy: { created_at: 'asc' },
     }),
+    prisma.courseOffering.findUnique({
+      where: { id: offering.id },
+      select: { course: { select: { maxMarks: true } } },
+    }).then((row) => row?.course?.maxMarks ?? 100),
   ]);
 
   const students = section?.studentRegistrations?.map((r) => r.student) ?? [];
   const assignmentIds = assignments.map((a) => a.id);
   const quizIds = quizzes.map((q) => q.id);
+
+  const quizMaxById = new Map(
+    quizzes.map((q) => {
+      const planTotal = q.marksPlan?.totalMarks;
+      const weight =
+        q.maxMarks > 0
+          ? q.maxMarks
+          : Number.isInteger(planTotal) && planTotal > 0
+            ? planTotal
+            : 0;
+      return [q.id, weight];
+    })
+  );
+
+  const allocatedMarks =
+    assignments.reduce((s, a) => s + (a.maxMarks || 0), 0) +
+    quizzes.reduce((s, q) => s + (quizMaxById.get(q.id) || 0), 0);
 
   const [submissions, attempts] = await Promise.all([
     assignmentIds.length
@@ -70,13 +90,10 @@ export async function getTeacherGradebook(req, res) {
       : Promise.resolve([]),
   ]);
 
-  // Index submissions by `${assignmentId}:${studentId}` (one per pair).
   const subByKey = new Map();
   for (const s of submissions) subByKey.set(`${s.assignmentId}:${s.studentId}`, s);
 
-  // For quizzes a student may have several attempts; keep the best graded one
-  // plus a total attempt count so the UI can show "best of N".
-  const quizByKey = new Map(); // `${quizId}:${studentId}` -> { best, attempts }
+  const quizByKey = new Map();
   for (const a of attempts) {
     const key = `${a.quizId}:${a.studentId}`;
     const prev = quizByKey.get(key) ?? { best: null, attempts: 0 };
@@ -91,7 +108,7 @@ export async function getTeacherGradebook(req, res) {
   const rows = students.map((student) => {
     const assignmentCells = {};
     const quizCells = {};
-    const pcts = []; // graded percentages for this student's overall average
+    let earned = 0;
 
     for (const a of assignments) {
       const sub = subByKey.get(`${a.id}:${student.id}`);
@@ -110,25 +127,31 @@ export async function getTeacherGradebook(req, res) {
         late: sub.lateState === 'LATE',
         reviewed: sub.gradeRow != null,
       };
-      if (pct != null) pcts.push(pct);
+      if (rawGrade != null) earned += rawGrade;
     }
 
     for (const q of quizzes) {
       const entry = quizByKey.get(`${q.id}:${student.id}`);
+      const weight = quizMaxById.get(q.id) || 0;
       if (!entry || entry.attempts === 0) {
         quizCells[q.id] = null;
         continue;
       }
+      const pct = entry.best;
+      const quizEarned =
+        pct != null && weight > 0 ? (pct / 100) * weight : null;
       quizCells[q.id] = {
-        pct: entry.best,
+        pct,
+        maxMarks: weight,
+        earned: quizEarned,
         attempts: entry.attempts,
         taken: true,
       };
-      if (entry.best != null) pcts.push(entry.best);
+      if (quizEarned != null) earned += quizEarned;
     }
 
     const overallPct =
-      pcts.length > 0 ? pcts.reduce((s, p) => s + p, 0) / pcts.length : null;
+      courseMaxMarks > 0 ? (earned / courseMaxMarks) * 100 : null;
 
     return {
       studentId: student.id,
@@ -138,11 +161,13 @@ export async function getTeacherGradebook(req, res) {
       assignments: assignmentCells,
       quizzes: quizCells,
       overallPct,
-      gradedCount: pcts.length,
+      overallEarned: earned,
+      gradedCount:
+        Object.values(assignmentCells).filter((c) => c?.grade != null).length +
+        Object.values(quizCells).filter((c) => c?.pct != null).length,
     };
   });
 
-  // Per-column class averages (over students who have a percentage there).
   const columnAverage = (collect) => {
     const vals = [];
     for (const row of rows) {
@@ -152,6 +177,11 @@ export async function getTeacherGradebook(req, res) {
     return vals.length ? vals.reduce((s, v) => s + v, 0) / vals.length : null;
   };
 
+  const classEarnedAvg =
+    rows.length > 0
+      ? rows.reduce((s, r) => s + (r.overallEarned ?? 0), 0) / rows.length
+      : null;
+
   const classAverages = {
     assignments: Object.fromEntries(
       assignments.map((a) => [a.id, columnAverage((row) => row.assignments[a.id])])
@@ -160,22 +190,30 @@ export async function getTeacherGradebook(req, res) {
       quizzes.map((q) => [q.id, columnAverage((row) => row.quizzes[q.id])])
     ),
     overall:
-      rows.filter((r) => r.overallPct != null).length > 0
-        ? rows
-            .filter((r) => r.overallPct != null)
-            .reduce((s, r) => s + r.overallPct, 0) /
-          rows.filter((r) => r.overallPct != null).length
+      classEarnedAvg != null && courseMaxMarks > 0
+        ? (classEarnedAvg / courseMaxMarks) * 100
         : null,
+    overallEarned: classEarnedAvg,
   };
 
   res.json({
+    courseMaxMarks,
+    markBudget: {
+      courseMax: courseMaxMarks,
+      allocated: allocatedMarks,
+      remaining: Math.max(0, courseMaxMarks - allocatedMarks),
+    },
     columns: {
       assignments: assignments.map((a) => ({
         id: a.id,
         title: a.title,
         maxMarks: a.maxMarks || 100,
       })),
-      quizzes: quizzes.map((q) => ({ id: q.id, title: q.title })),
+      quizzes: quizzes.map((q) => ({
+        id: q.id,
+        title: q.title,
+        maxMarks: quizMaxById.get(q.id) || 0,
+      })),
     },
     students: rows,
     classAverages,

@@ -8,7 +8,7 @@ export function buildScopeOrClauses(scope, userRole, includeTargetRows) {
   const or = [];
   const role = String(userRole || "").toUpperCase();
   // Dean + faculty Dean's Office staff: university Everyone + own-faculty ALL.
-  const facultyPublisher = role === "DEAN" || (role === "OFFICE_STAFF" && scope.facultyIds.size > 0);
+  const facultyPublisher = role === "DEAN";
 
   if (facultyPublisher) {
     const primaryFacultyId = toArray(scope.facultyIds)[0];

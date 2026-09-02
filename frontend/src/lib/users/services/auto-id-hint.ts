@@ -11,6 +11,5 @@ export function autoIdHint(role: string, batchName?: string, deptCode?: string) 
   }
   if (role === 'DEAN') return 'Auto: DEAN-{faculty}-001';
   if (role === 'SUPER_ADMIN') return 'Auto: SA-001';
-  if (role === 'ACADEMIC_OFFICE') return 'Auto: AO-001';
   return 'University ID will be generated automatically';
 }

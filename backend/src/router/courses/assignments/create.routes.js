@@ -7,6 +7,7 @@ import {
   normaliseModes,
   normaliseMaxMarks,
   normaliseLateWindow,
+  validateAssignmentMarkBudget,
 } from '../../../controllers/courses/assignments/shared.js';
 import { notifyAssignmentPublished } from '../../../controllers/courses/assignments/notifyStudents.js';
 import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
@@ -41,6 +42,12 @@ router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(as
   const offeringPublicId = req.courseOffering.publicId;
   const actorUserId = Number(req.user?.id ?? req.user?.sub) || null;
   const draft = Boolean(is_draft);
+  const effectiveMaxMarks = marks.data.maxMarks ?? DEFAULT_ASSIGNMENT_MARK_WEIGHT;
+
+  if (!draft) {
+    const budgetCheck = await validateAssignmentMarkBudget(coId, effectiveMaxMarks);
+    if (budgetCheck.error) return res.status(400).json({ message: budgetCheck.error });
+  }
 
   const assignment = await prisma.$transaction(async (tx) => {
     const created = await tx.assignment.create({

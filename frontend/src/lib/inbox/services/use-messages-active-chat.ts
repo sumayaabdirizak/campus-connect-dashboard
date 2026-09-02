@@ -8,8 +8,6 @@ import {
   messagesClubHref,
   messagesDiscoverHref,
   messagesDmHref,
-  messagesOfficeDeskHref,
-  messagesOfficeThreadHref,
   messagesServerHref,
 } from '@/lib/inbox/services/messages-href'
 import {
@@ -22,12 +20,7 @@ import type { ActiveChat } from '@/lib/inbox/services/messages-active-chat-types
 import { useServers } from '@/lib/discussions/queries'
 import { useJoinedClubsList } from '@/components/clubs/club-detail/use-joined-clubs-list'
 import type { InboxRow } from '../types'
-import {
-  isClubInboxRow,
-  isOfficeMessagesOnlyRole,
-  isServerInboxRow,
-} from '@/components/inbox/inbox-helpers'
-import { useAuthStore } from '@/lib/auth-store'
+import { isClubInboxRow, isServerInboxRow } from '@/components/inbox/inbox-helpers'
 import { scheduleRouterReplace } from '@/lib/safe-router-navigation'
 
 export type { ActiveChat } from '@/lib/inbox/services/messages-active-chat-types'
@@ -35,13 +28,8 @@ export type { ActiveChat } from '@/lib/inbox/services/messages-active-chat-types
 export function useMessagesActiveChat() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const role = useAuthStore((s) => s.user?.role)
-  const officeOnly = isOfficeMessagesOnlyRole(role)
   const { data: serversData } = useServers()
   const rawClubs = useJoinedClubsList() || []
-  // Clubs' `serverId` FK isn't migrated to UUID yet â€” stringify defensively so
-  // this compiles against the now-string DiscussionGroup id; club/channel
-  // association lookups degrade gracefully (no match) until clubs catches up.
   const clubs = useMemo(
     () => rawClubs.map((c: any) => ({ ...c, serverId: c.serverId != null ? String(c.serverId) : null })),
     [rawClubs]
@@ -59,35 +47,15 @@ export function useMessagesActiveChat() {
   }, [replaceRoute])
 
   const openDiscover = useCallback(() => {
-    if (officeOnly) return
     const href = messagesDiscoverHref()
     setActive({ kind: 'discover', href })
     replaceRoute(href)
-  }, [replaceRoute, officeOnly])
+  }, [replaceRoute])
 
   const openClub = useCallback(
     (slug: string) => {
-      if (officeOnly) return
       const href = messagesClubHref(slug)
       setActive({ kind: 'club', slug, href })
-      replaceRoute(href)
-    },
-    [replaceRoute, officeOnly]
-  )
-
-  const openOffice = useCallback(
-    (threadId: number) => {
-      const href = messagesOfficeThreadHref(threadId)
-      setActive({ kind: 'office', id: threadId, href })
-      replaceRoute(href)
-    },
-    [replaceRoute]
-  )
-
-  const openOfficeDesk = useCallback(
-    (slug: string) => {
-      const href = messagesOfficeDeskHref(slug)
-      setActive({ kind: 'office-desk', slug, href })
       replaceRoute(href)
     },
     [replaceRoute]
@@ -110,19 +78,6 @@ export function useMessagesActiveChat() {
 
   const openHref = useCallback(
     (href: string, row?: InboxRow) => {
-      if (row?.type === 'office' && row.officeKind === 'desk' && row.officeSlug) {
-        openOfficeDesk(row.officeSlug)
-        return
-      }
-      if (row?.type === 'office' && Number(row.id) > 0) {
-        openOffice(Number(row.id))
-        return
-      }
-
-      if (officeOnly && row && (isClubInboxRow(row) || isServerInboxRow(row.type))) {
-        return
-      }
-
       if (row && isClubInboxRow(row)) {
         const clubPath = clubPathFromInbox(row, clubs)
         const slug = clubPath ? slugFromClubHref(clubPath) : null
@@ -138,30 +93,18 @@ export function useMessagesActiveChat() {
       }
 
       const parsed = parseInboxHref(href)
-      if (parsed.kind === 'office-desk') {
-        openOfficeDesk(parsed.slug)
-        return
-      }
-      if (parsed.kind === 'office') {
-        openOffice(parsed.threadId)
-        return
-      }
       if (parsed.kind === 'external') {
-        if (officeOnly) return
         router.push(parsed.href)
         return
       }
       if (parsed.kind === 'group') {
-        if (officeOnly) return
         const clubPath = clubPathForServerId(parsed.serverId, clubs)
         const slug = clubPath ? slugFromClubHref(clubPath) : null
         if (slug) {
           openClub(slug)
           return
         }
-        const server = serversData?.results?.find(
-          (s) => s.id === parsed.serverId
-        )
+        const server = serversData?.results?.find((s) => s.id === parsed.serverId)
         if (server?.defaultChannelId) {
           openChannel(server.defaultChannelId, server.id)
           return
@@ -178,20 +121,9 @@ export function useMessagesActiveChat() {
         replaceRoute(messagesDmHref(parsed.groupDmId))
         return
       }
-      if (officeOnly) return
       openChannel(parsed.channelId, parsed.serverId)
     },
-    [
-      router,
-      replaceRoute,
-      serversData?.results,
-      openChannel,
-      clubs,
-      openClub,
-      openOffice,
-      openOfficeDesk,
-      officeOnly,
-    ]
+    [router, replaceRoute, serversData?.results, openChannel, clubs, openClub]
   )
 
   useSyncMessagesActiveFromUrl({
@@ -201,9 +133,8 @@ export function useMessagesActiveChat() {
     setActive,
     openChannel,
     replace: replaceRoute,
-    blockDiscover: officeOnly,
+    blockDiscover: false,
   })
 
   return { active, openHref, openDiscover, closeChat }
 }
-

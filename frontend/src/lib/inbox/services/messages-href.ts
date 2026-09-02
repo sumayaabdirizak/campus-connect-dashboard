@@ -34,12 +34,3 @@ export function messagesClubManageHref(slug: string): string {
   return `/dashboard/messages?club=${encodeURIComponent(slug)}&manage=1`;
 }
 
-/** Office support thread inside Messages (same Chats list as DMs). */
-export function messagesOfficeThreadHref(threadId: number): string {
-  return `/dashboard/messages?officeThread=${threadId}`;
-}
-
-/** Office desk hub — message / view conversations without a prior thread. */
-export function messagesOfficeDeskHref(slug: string): string {
-  return `/dashboard/messages?officeDesk=${encodeURIComponent(slug)}`;
-}

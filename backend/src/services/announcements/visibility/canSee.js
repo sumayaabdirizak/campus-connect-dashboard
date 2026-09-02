@@ -31,8 +31,7 @@ export function canUserSeeAnnouncement(user, announcement) {
 
   const { facultyIds, departmentIds, batchIds, sectionIds } = scope;
   const role = String(user.role || "").toUpperCase();
-  const facultyPublisher =
-    role === "DEAN" || (role === "OFFICE_STAFF" && facultyIds.size > 0);
+  const facultyPublisher = role === "DEAN";
 
   const matchesTargets =
     Array.isArray(announcement.targets) &&

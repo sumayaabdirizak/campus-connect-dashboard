@@ -36,8 +36,9 @@ export const useServerPresence = (serverId: string | null | undefined) =>
     queryKey: discussionKeys.serverPresence(serverId ?? ''),
     queryFn: () => getServerPresence(serverId as string),
     enabled: !!serverId,
-    refetchInterval: 30_000, // poll every 30s; backend has no socket fanout to channel rooms yet
-    staleTime: 15_000
+    staleTime: 60_000,
+    refetchOnWindowFocus: true,
+    refetchInterval: false,
   });
 
 export const useServerChannels = (serverId: string | null | undefined) =>

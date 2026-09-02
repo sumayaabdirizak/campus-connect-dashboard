@@ -33,7 +33,6 @@ interface LocalSectionBlockProps {
   /** Open draft for this section (add or edit). */
   inlineDraft?: InlineDraftProps | null;
   quizMode?: QuizDeliveryMode;
-  /** Hide the per-section Add Question button (create flow uses AI only). */
   showAddButton?: boolean;
 }
 

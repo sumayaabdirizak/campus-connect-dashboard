@@ -1,6 +1,11 @@
 'use client';
 
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import {
+  canPreviewQuizAsStudent,
+  isQuizMissingBuiltQuestions,
+  isUploadedQuizMissingPaper
+} from '@/lib/course-details/services/quiz-total-points';
 import { TeacherQuizCardHeader } from './teacher-quiz-card-header';
 import { TeacherQuizCardActions } from './teacher-quiz-card-actions';
 
@@ -29,13 +34,14 @@ export function TeacherQuizCard({
   onToggleSelect: () => void;
   anySelected: boolean;
 }) {
-  const questionCount = q.questions?.length ?? 0;
-  const isEmpty = questionCount === 0;
+  const needsContent =
+    isQuizMissingBuiltQuestions(q) || isUploadedQuizMissingPaper(q);
+  const previewDisabled = !canPreviewQuizAsStudent(q);
 
   return (
     <div
       className={`group border rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card transition-all duration-200 hover:shadow-md hover:border-primary/30 focus-within:ring-2 focus-within:ring-primary/40 ${
-        isEmpty && !q.is_draft ? 'border-warning' : ''
+        needsContent && !q.is_draft ? 'border-warning' : ''
       } ${selected ? 'ring-2 ring-primary/50 bg-primary/[0.03] border-primary/40' : ''}`}
     >
       <TeacherQuizCardHeader
@@ -46,7 +52,7 @@ export function TeacherQuizCard({
       />
       <TeacherQuizCardActions
         quiz={q}
-        isEmpty={isEmpty}
+        previewDisabled={previewDisabled}
         onSettings={onSettings}
         onEditQuestions={onEditQuestions}
         onViewAttempts={onViewAttempts}

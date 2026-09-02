@@ -1,5 +1,6 @@
 import { downloadCsv } from '@/features/pos/components/download-csv';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import { quizTotalMarks } from '../quiz-marks-display';
 
 /// Row-level callbacks the table hands to each row. Defined here rather than
 /// imported from the old card list so that list can be deleted without
@@ -16,7 +17,7 @@ export type QuizRowHandlers = {
 
 export const QUIZ_COLUMN_OPTS = [
   { id: 'title', label: 'Title' },
-  { id: 'chapter', label: 'Chapter' },
+  { id: 'marks', label: 'Marks' },
   { id: 'questions', label: 'Questions' },
   { id: 'length', label: 'Length' },
   { id: 'attempts', label: 'Attempts' }
@@ -33,8 +34,45 @@ export const QUIZ_SORT_OPTS = [
 
 export const QUIZ_ALL_COLS = QUIZ_COLUMN_OPTS.map((c) => c.id);
 
+/** Migrate legacy `chapter` column id after HMR or saved column prefs. */
+export function normalizeQuizVisibleCols(ids: string[]): string[] {
+  const valid = new Set<string>(QUIZ_ALL_COLS);
+  const migrated = ids.map((id) => (id === 'chapter' ? 'marks' : id));
+  const unique = [...new Set(migrated.filter((id) => valid.has(id)))];
+  return unique.length > 0 ? unique : [...QUIZ_ALL_COLS];
+}
+
 export const quizQuestionCount = (q: Quiz) => q.questions?.length ?? 0;
 export const quizAttemptCount = (q: Quiz) => q._count?.attempts ?? 0;
+
+export const DEFAULT_COURSE_MAX_MARKS = 100;
+
+/** Course marks weight vs course total (from API `courseMax` when available). */
+export function quizMarksLabel(q: Quiz, courseMax = DEFAULT_COURSE_MAX_MARKS): string {
+  const cap = courseMax > 0 ? courseMax : DEFAULT_COURSE_MAX_MARKS;
+  const courseMarks = q.maxMarks ?? 0;
+  if (courseMarks > 0) return `${courseMarks}/${cap}`;
+
+  const planMarks = q.marksPlan?.totalMarks ?? 0;
+  if (planMarks > 0) return `${planMarks}/${cap}`;
+
+  const questionPts = quizTotalMarks(q.questions);
+  if (questionPts > 0) return `${questionPts} pt`;
+
+  return '—';
+}
+
+export function quizMarksSubLabel(q: Quiz): string | null {
+  const courseMarks = q.maxMarks ?? 0;
+  const questionPts = quizTotalMarks(q.questions);
+  if (courseMarks > 0 && questionPts > 0 && questionPts !== courseMarks) {
+    return `${questionPts} pt`;
+  }
+  if (courseMarks === 0 && (q.marksPlan?.totalMarks ?? 0) > 0 && questionPts > 0) {
+    return `${questionPts} pt`;
+  }
+  return null;
+}
 
 export function sortQuizzes(rows: Quiz[], sortId: string) {
   const copy = [...rows];
@@ -66,7 +104,8 @@ export function filterQuizzes(rows: Quiz[], search: string) {
 
 const EXPORT_HEADER = [
   'Title',
-  'Chapter',
+  'Course marks',
+  'Question points',
   'Mode',
   'Questions',
   'Length (min)',
@@ -77,7 +116,8 @@ const EXPORT_HEADER = [
 function exportRows(rows: Quiz[]) {
   return rows.map((q) => [
     q.title,
-    q.module?.title ?? 'Ungrouped',
+    q.maxMarks ?? 0,
+    quizTotalMarks(q.questions),
     q.mode === 'offline' ? 'Printed' : 'On device',
     quizQuestionCount(q),
     q.duration_minutes,

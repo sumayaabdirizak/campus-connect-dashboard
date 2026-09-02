@@ -9,7 +9,6 @@ export const overviewNavGroup: NavGroup = {
       icon: 'dashboard',
       isActive: false,
       shortcut: ['d', 'd'],
-      /** Any authenticated platform role (built-in or custom). */
       access: {},
     },
   ],
@@ -24,7 +23,6 @@ export const deanSetupNavGroup: NavGroup = {
     { title: 'Users', url: '/dashboard/dean/users', icon: 'userCog', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Courses', url: '/dashboard/dean/courses', icon: 'fileCheck', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Clubs', url: '/dashboard/dean/clubs', icon: 'teams', isActive: false, access: { roles: ['DEAN'] } },
-    { title: 'Offices', url: '/dashboard/admin/offices', icon: 'chat', isActive: false, access: { roles: ['DEAN'] } },
   ],
 };
 
@@ -54,14 +52,7 @@ export const adminNavGroups: NavGroup[] = [
         url: '/dashboard/dean/clubs',
         icon: 'teams',
         isActive: false,
-        access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
-      },
-      {
-        title: 'Offices',
-        url: '/dashboard/admin/offices',
-        icon: 'chat',
-        isActive: false,
-        access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] },
+        access: { roles: ['SUPER_ADMIN'] },
       },
       { title: 'Audit Logs', url: '/dashboard/audit-logs', icon: 'activity', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     ],
@@ -87,16 +78,15 @@ export const communicationNavGroup: NavGroup = {
   ],
 };
 
-/// Entity-scoped reports — separated like DreamsPOS Sales submenu.
 const reportRoles: PermissionCheck = {
-  roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN'],
+  roles: ['SUPER_ADMIN', 'DEAN'],
 };
 
 const entityReport = (scope: string, title: string, icon: NavItem['icon']) => ({
   title,
   url: `/dashboard/reports?scope=${scope}&period=all`,
   icon,
-  access: reportRoles
+  access: reportRoles,
 });
 
 export const reportsNavGroup: NavGroup = {
@@ -117,11 +107,11 @@ export const reportsNavGroup: NavGroup = {
           title: 'Platform analytics',
           url: '/dashboard/admin/report',
           icon: 'activity',
-          access: { roles: ['SUPER_ADMIN', 'ACADEMIC_OFFICE'] }
-        }
-      ]
-    }
-  ]
+          access: { roles: ['SUPER_ADMIN'] },
+        },
+      ],
+    },
+  ],
 };
 
 export const accountNavGroup: NavGroup = {

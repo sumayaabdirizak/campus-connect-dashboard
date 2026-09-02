@@ -32,7 +32,7 @@ export const TEACHER_COURSE_TABS: CourseTabDef[] = [
   { id: 'resources', label: 'Resources', visible: true },
   { id: 'grades', label: 'Gradebook', visible: true },
   { id: 'feed', label: 'Feed', visible: true },
-  { id: 'roster', label: 'Roster', visible: true },
+  { id: 'roster', label: 'Student logs', visible: true },
   { id: 'groups', label: 'Groups', visible: true },
   { id: 'chat', label: 'Chat', visible: false },
 ];

@@ -69,7 +69,7 @@ export async function handleAnnouncementMeVisibility(req, res) {
     // Dean + faculty Dean's Office staff — primary faculty for create-dialog reach.
     const roleUpper = String(loaded.role || "").toUpperCase();
     const facultyPublisher =
-      (roleUpper === "DEAN" || roleUpper === "OFFICE_STAFF") && loaded.facultyIds?.length;
+      roleUpper === "DEAN" && loaded.facultyIds?.length;
     const deanPrimaryFacultyId = facultyPublisher ? loaded.facultyIds[0] : null;
     res.json({ visibilityUser, deanPrimaryFacultyId });
   } catch (error) {

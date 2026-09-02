@@ -31,6 +31,7 @@ interface AssignmentListTableProps {
   onTogglePublish: (a: Assignment) => void;
   onEdit: (a: Assignment) => void;
   onDelete: (id: number) => void;
+  courseMaxMarks?: number;
 }
 
 export function AssignmentListTable({
@@ -43,7 +44,8 @@ export function AssignmentListTable({
   onOpenSubmissions,
   onTogglePublish,
   onEdit,
-  onDelete
+  onDelete,
+  courseMaxMarks
 }: AssignmentListTableProps) {
   const [sortId, setSortId] = useState('due-asc');
   const [visibleCols, setVisibleCols] = useState<string[]>([...ASSIGNMENT_ALL_COLS]);
@@ -118,6 +120,9 @@ export function AssignmentListTable({
               {col('title') ? (
                 <PosTableHeaderCell className='!text-foreground'>Title</PosTableHeaderCell>
               ) : null}
+              {col('marks') ? (
+                <PosTableHeaderCell className='!text-foreground'>Marks</PosTableHeaderCell>
+              ) : null}
               {col('work') ? (
                 <PosTableHeaderCell className='!text-foreground'>Work</PosTableHeaderCell>
               ) : null}
@@ -146,6 +151,7 @@ export function AssignmentListTable({
                 key={a.id}
                 assignment={a}
                 col={col}
+                courseMaxMarks={courseMaxMarks}
                 isSelected={selectedIds.has(a.id)}
                 onToggleSelect={onToggleSelect}
                 onOpenSubmissions={onOpenSubmissions}

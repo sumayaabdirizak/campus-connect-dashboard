@@ -10,6 +10,7 @@ import { useMutation, useQuery, useQueryClient } from '@/lib/async-query';
 import { toast } from 'sonner';
 import { apiClient } from '@/lib/api-client';
 import type { DiscussionMessage } from '@/lib/discussions/queries/types';
+import { CLUB_REFETCH_INTERVAL, CLUB_STALE_MS } from './club-query-config';
 
 export type ClubFeedResponse = {
   results: DiscussionMessage[];
@@ -40,9 +41,9 @@ export function useClubFeed(serverId?: number | null) {
     queryKey: clubFeedKey(serverId ?? 0),
     queryFn: () => listClubFeed(serverId as number),
     enabled: Number.isFinite(serverId) && Number(serverId) > 0,
-    staleTime: 0,
+    staleTime: CLUB_STALE_MS,
     refetchOnWindowFocus: true,
-    refetchInterval: 5_000,
+    refetchInterval: CLUB_REFETCH_INTERVAL,
   });
 }
 

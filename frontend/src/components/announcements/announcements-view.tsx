@@ -107,7 +107,7 @@ export function AnnouncementsView() {
   };
 
   return (
-    <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-muted p-3 sm:p-4'>
+    <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-muted p-2 sm:p-3'>
       <div className='mx-auto flex min-h-0 w-full max-w-6xl flex-1 flex-col overflow-hidden'>
         <AnnouncementFeed
           announcements={sourceAnnouncements}

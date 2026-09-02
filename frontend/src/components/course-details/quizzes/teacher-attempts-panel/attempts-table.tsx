@@ -183,9 +183,8 @@ export function AttemptsTable({
         <>
           {isOffline ? (
             <p className='border-b border-border bg-muted px-4 py-2.5 text-sm text-muted-foreground'>
-              For each student: type their score and press <span className='font-medium text-foreground'>Save score</span>,
-              or choose <span className='font-medium text-foreground'>Absent</span> /{' '}
-              <span className='font-medium text-foreground'>Cheating</span>.
+              Pick a result from the dropdown, or enter marks and click{' '}
+              <span className='font-medium text-foreground'>Save</span>.
             </p>
           ) : null}
           <PosTable>

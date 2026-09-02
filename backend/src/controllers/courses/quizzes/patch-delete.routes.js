@@ -3,8 +3,12 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireQuizManage } from '../../../middleware/courseOfferingRbac.js';
 import { patchQuizBodySchema } from '../../../validation/quizSchemas.js';
-import { resolveModuleIdForOffering, assertMarksPlanAllowedForMode } from './helpers.js';
+import { resolveModuleIdForOffering, assertMarksPlanAllowedForMode, normalizeOfflineDelivery } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
+import {
+  assertCourseMarkBudget,
+  resolveQuizCourseMarks,
+} from '../../../services/courses/courseMarkBudget.service.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -15,6 +19,8 @@ export function register(router) {
       shuffle_questions, shuffle_answers, max_attempts, passing_score,
       timing_mode, scheduled_duration, mode, marksPlan, moduleId, confidence_scoring,
       auto_publish_at_open,
+      maxMarks,
+      offline_delivery,
     } = req.body;
 
     const existing = await prisma.quiz.findUnique({
@@ -28,13 +34,24 @@ export function register(router) {
         is_draft: true,
         auto_publish_at_open: true,
         mode: true,
+        offline_delivery: true,
         marksPlan: true,
+        maxMarks: true,
+        questions: { select: { points: true } },
+        paperFile: { select: { id: true } },
         _count: { select: { questions: true } },
       },
     });
     if (!existing) return res.status(404).json({ message: 'Quiz not found' });
 
     const nextMode = mode ?? existing.mode ?? 'online';
+    const nextDelivery =
+      offline_delivery !== undefined
+        ? normalizeOfflineDelivery(nextMode, offline_delivery)
+        : nextMode === 'offline'
+          ? (existing.offline_delivery ?? 'built')
+          : null;
+
     if (marksPlan !== undefined) {
       assertMarksPlanAllowedForMode(nextMode, marksPlan);
     }
@@ -43,8 +60,17 @@ export function register(router) {
     }
 
     const nextDraft = is_draft !== undefined ? is_draft : undefined;
+    const isUploaded = nextDelivery === 'uploaded';
+
     if (nextDraft === false && existing._count.questions === 0) {
-      return res.status(400).json({ message: 'Cannot publish a quiz with no questions' });
+      if (!isUploaded) {
+        return res.status(400).json({ message: 'Cannot publish a quiz with no questions' });
+      }
+      if (!existing.paperFile) {
+        return res.status(400).json({
+          message: 'Upload the quiz document before publishing an uploaded paper quiz.',
+        });
+      }
     }
 
     const nextTimingMode = timing_mode ?? existing.timing_mode;
@@ -106,6 +132,39 @@ export function register(router) {
       }
     }
 
+    const willPublish = existing.is_draft && (nextDraft === false || draftWrite === false);
+    const nextMarksPlan = isUploaded
+      ? null
+      : marksPlan !== undefined
+        ? marksPlan
+        : existing.marksPlan;
+    const questionPointsSum = isUploaded
+      ? 0
+      : existing.questions.reduce((s, q) => s + q.points, 0);
+    let nextCourseMarks = existing.maxMarks;
+
+    if (willPublish || maxMarks !== undefined || !existing.is_draft) {
+      nextCourseMarks = resolveQuizCourseMarks({
+        maxMarks: maxMarks ?? existing.maxMarks,
+        marksPlan: nextMarksPlan,
+        questionPointsSum,
+      });
+      if (willPublish && nextCourseMarks <= 0) {
+        return res.status(400).json({
+          message:
+            'Set course marks for this quiz (marks plan total or maxMarks) before publishing.',
+        });
+      }
+      if (nextCourseMarks > 0) {
+        const budget = await assertCourseMarkBudget(
+          existing.courseOfferingId,
+          nextCourseMarks,
+          { excludeQuizId: qid }
+        );
+        if (budget.error) return res.status(400).json({ message: budget.error });
+      }
+    }
+
     const scheduleResets = {};
     if (open_at !== undefined) {
       const nextOpen = open_at ? new Date(open_at) : null;
@@ -140,7 +199,15 @@ export function register(router) {
         ...(passing_score !== undefined && { passing_score }),
         ...(timing_mode && { timing_mode }),
         ...(mode && { mode }),
-        ...(marksPlan !== undefined && { marksPlan }),
+        ...(offline_delivery !== undefined || mode !== undefined
+          ? { offline_delivery: nextDelivery }
+          : {}),
+        ...(marksPlan !== undefined || isUploaded && offline_delivery !== undefined
+          ? { marksPlan: isUploaded ? null : marksPlan }
+          : {}),
+        ...(willPublish || maxMarks !== undefined || !existing.is_draft
+          ? { maxMarks: nextCourseMarks }
+          : {}),
         ...(scheduled_duration !== undefined && { scheduled_duration }),
         ...(confidence_scoring !== undefined && { confidence_scoring: !!confidence_scoring }),
         ...(resolvedModuleId !== undefined && { moduleId: resolvedModuleId }),
@@ -148,6 +215,7 @@ export function register(router) {
       },
       include: {
         questions: { include: { options: true } },
+        paperFile: true,
         module: { select: { id: true, title: true, position: true, publishedAt: true } },
         _count: {
           select: {

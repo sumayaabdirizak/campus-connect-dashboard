@@ -1,6 +1,11 @@
 import { ClipboardList, CheckSquare, Square, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
+import {
+  isQuizMissingBuiltQuestions,
+  isUploadedOfflineQuiz,
+  isUploadedQuizMissingPaper
+} from '@/lib/course-details/services/quiz-total-points';
 import { getQuizWindowState } from './quiz-window-state';
 
 export function TeacherQuizCardHeader({
@@ -17,7 +22,9 @@ export function TeacherQuizCardHeader({
   const windowState = getQuizWindowState(q);
   const questionCount = q.questions?.length ?? 0;
   const attemptsCount = q._count?.attempts ?? 0;
-  const isEmpty = questionCount === 0;
+  const missingQuestions = isQuizMissingBuiltQuestions(q);
+  const missingPaper = isUploadedQuizMissingPaper(q);
+  const uploadedPaper = isUploadedOfflineQuiz(q);
 
   return (
     <>
@@ -68,9 +75,19 @@ export function TeacherQuizCardHeader({
               </Badge>
             )
           )}
-          {isEmpty && (
+          {missingQuestions && (
             <Badge variant='warning' size='xs' className='rounded-full'>
               No questions
+            </Badge>
+          )}
+          {missingPaper && (
+            <Badge variant='warning' size='xs' className='rounded-full'>
+              No file
+            </Badge>
+          )}
+          {uploadedPaper && q.paperFile && (
+            <Badge variant='secondary' size='xs' className='rounded-full'>
+              Uploaded
             </Badge>
           )}
           {q.mode === 'offline' && (
@@ -88,8 +105,9 @@ export function TeacherQuizCardHeader({
             </>
           )}
           {' · '}
-          {questionCount} question
-          {questionCount === 1 ? '' : 's'}
+          {uploadedPaper
+            ? 'Uploaded paper'
+            : `${questionCount} question${questionCount === 1 ? '' : 's'}`}
           {attemptsCount > 0 && (
             <>
               {' · '}

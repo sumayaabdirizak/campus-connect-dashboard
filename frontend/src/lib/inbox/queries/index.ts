@@ -11,11 +11,9 @@ export function useInbox() {
   return useQuery({
     queryKey: inboxKeys.all,
     queryFn: () => apiClient<InboxResponse>('/inbox'),
-    staleTime: 0,
+    staleTime: 60_000,
     refetchOnWindowFocus: true,
-    // Light polling stands in for a dedicated inbox socket in this phase; the
-    // underlying conversations already update in realtime once opened.
-    refetchInterval: 10_000
+    refetchInterval: false,
   });
 }
 

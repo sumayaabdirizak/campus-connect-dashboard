@@ -25,39 +25,11 @@ export const updateUserByAdmin = async (req, res) => {
     },
   });
 
-  let officeStaff = undefined;
-  if (Object.prototype.hasOwnProperty.call(req.body, 'officeId')) {
-    const officeIdRaw = req.body.officeId;
-    if (officeIdRaw === null) {
-      await prisma.supportOfficeStaff.deleteMany({ where: { userId: id } });
-      officeStaff = null;
-    } else {
-      const officeId = Number(officeIdRaw);
-      const staffRole = req.body.officeStaffRole === 'MANAGER' ? 'MANAGER' : 'AGENT';
-      const office = await prisma.supportOffice.findUnique({
-        where: { id: officeId },
-        select: { id: true, name: true, slug: true },
-      });
-      if (!office) throw new HttpError(400, 'Selected office was not found.', null);
-      // One primary office from the user form: replace prior memberships.
-      await prisma.supportOfficeStaff.deleteMany({ where: { userId: id } });
-      const row = await prisma.supportOfficeStaff.create({
-        data: { officeId, userId: id, role: staffRole },
-        select: {
-          role: true,
-          office: { select: { id: true, name: true, slug: true } },
-        },
-      });
-      officeStaff = { officeId: office.id, role: row.role, office: row.office };
-    }
-  }
-
   res.json({
     message: 'User updated successfully',
     user: {
       ...user,
       role: user.role.name,
-      ...(officeStaff !== undefined ? { officeStaff } : {}),
     },
   });
 };

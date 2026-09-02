@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { isDeanRole, isOfficeMessagesOnlyRole } from '@shared/roles'
+import { isDeanRole } from '@shared/roles'
 import { useAuthStore } from '@/lib/auth-store'
 import { useCreateGroupDm, useGroupDmCandidates } from '@/lib/discussions/queries/queries'
 import type { GroupDmCandidate } from '@/lib/discussions/queries/types'
@@ -15,7 +15,7 @@ export function useDmCreateForm(
 ) {
   const router = useRouter()
   const role = useAuthStore((s) => s.user?.role)
-  const deanGroupMode = isOfficeMessagesOnlyRole(role)
+  const deanGroupMode = false
   const facultyDeanMode = isDeanRole(role)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')

@@ -35,7 +35,6 @@ import pushRouter from './announcements/routes.push.js';
 import debugRouter from './debug/announcement-test-users.js';
 import discussionsRouter from './discussions/discussions.js';
 import clubsRouter from './clubs/clubs.js';
-import officesRouter from '../controllers/offices/offices.js';
 import inboxRouter from './inbox/inbox.js';
 import calendarRouter from './calendar/calendar.js';
 import rbacRouter from './rbac/rbac.routes.js';
@@ -96,9 +95,8 @@ export function mountRoutes(app) {
   app.use('/api/calendar', calendarRouter);
   app.use('/api/discussions', discussionsRateLimit, discussionsRouter);
 
-  // Category 7: Clubs, offices, inbox
+  // Category 7: Clubs, inbox
   app.use('/api/clubs', clubsRouter);
-  app.use('/api/offices', officesRouter);
   app.use('/api/inbox', inboxRouter);
 
   // Debug helpers — never expose in production.

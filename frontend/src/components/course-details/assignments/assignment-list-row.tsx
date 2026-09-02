@@ -7,11 +7,13 @@ import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import { cn } from '@/lib/utils';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import { serverNowDate } from '@/lib/server-clock';
+import { assignmentMarksLabel } from './assignments-table-utils';
 import { AssignmentRowActions } from './assignment-row-actions';
 
 interface AssignmentListRowProps {
   assignment: Assignment;
   col: (id: string) => boolean;
+  courseMaxMarks?: number;
   isSelected: boolean;
   onToggleSelect: (id: number) => void;
   onOpenSubmissions: (a: Assignment) => void;
@@ -23,6 +25,7 @@ interface AssignmentListRowProps {
 export function AssignmentListRow({
   assignment: a,
   col,
+  courseMaxMarks,
   isSelected,
   onToggleSelect,
   onOpenSubmissions,
@@ -73,6 +76,13 @@ export function AssignmentListRow({
               <p className='line-clamp-1 text-xs text-muted-foreground'>{a.description}</p>
             ) : null}
           </div>
+        </PosTableCell>
+      ) : null}
+      {col('marks') ? (
+        <PosTableCell>
+          <span className='text-sm font-medium tabular-nums text-foreground'>
+            {assignmentMarksLabel(a, courseMaxMarks)}
+          </span>
         </PosTableCell>
       ) : null}
       {col('work') ? (

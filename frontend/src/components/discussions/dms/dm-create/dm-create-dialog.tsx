@@ -31,11 +31,9 @@ export function DmCreateDialog({
     if (open) window.setTimeout(() => form.searchRef.current?.focus(), 0)
   }, [open, form.searchRef])
 
-  const description = form.deanGroupMode
-    ? `Pick at least ${MIN_OTHER_MEMBERS} people — Deans, Office Staff, or both. Filter roles and use Select all for the list shown.`
-    : form.facultyDeanMode
-      ? `Choose teachers, students, or your faculty office staff (${MIN_OTHER_MEMBERS + 1}–${MAX_OTHER_MEMBERS + 1} total).`
-      : `Choose at least ${MIN_OTHER_MEMBERS} people (you + them = ${MIN_OTHER_MEMBERS + 1}–${MAX_OTHER_MEMBERS + 1}). Filter by Students / Teachers, then department → batch → section — or search.`
+  const description = form.facultyDeanMode
+    ? `Choose teachers or students (${MIN_OTHER_MEMBERS + 1}–${MAX_OTHER_MEMBERS + 1} total).`
+    : `Choose at least ${MIN_OTHER_MEMBERS} people (you + them = ${MIN_OTHER_MEMBERS + 1}–${MAX_OTHER_MEMBERS + 1}). Filter by Students / Teachers, then department → batch → section — or search.`
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -46,15 +44,13 @@ export function DmCreateDialog({
         )}
       >
         <DialogHeader className='shrink-0 space-y-1.5 border-b bg-background px-6 pt-6 pb-4 pr-12 text-left'>
-          <DialogTitle>
-            {form.deanGroupMode ? 'New staff group' : 'New group message'}
-          </DialogTitle>
+          <DialogTitle>New group message</DialogTitle>
           <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
 
         <div className='min-h-0 flex-1 overflow-y-auto px-6 py-4'>
           <DmCandidatePicker
-            key={form.deanGroupMode ? 'ao' : form.facultyDeanMode ? 'dean' : 'student'}
+            key={form.facultyDeanMode ? 'dean' : 'student'}
             {...form}
           />
         </div>

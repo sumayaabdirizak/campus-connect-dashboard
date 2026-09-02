@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { Landmark, Pencil, Plus, Search, User, Users } from 'lucide-react';
+import { Pencil, Plus, Search, User, Users } from 'lucide-react';
 import { Input } from '@/features/ui/components/input';
 import { Button } from '@/features/ui/components/button';
 import {
@@ -26,7 +26,6 @@ export function InboxListHeader({
   canUseGroupDm,
   onNewMessage,
   onNewGroupMessage,
-  onContactOffice,
   onDiscover,
   discoverActive = false,
   showDiscover = true,
@@ -41,7 +40,6 @@ export function InboxListHeader({
   canUseGroupDm: boolean;
   onNewMessage: () => void;
   onNewGroupMessage: () => void;
-  onContactOffice: () => void;
   onDiscover?: () => void;
   discoverActive?: boolean;
   showDiscover?: boolean;
@@ -89,9 +87,6 @@ export function InboxListHeader({
                 <Users className='mr-2 size-4' /> New group message
               </DropdownMenuItem>
             ) : null}
-            <DropdownMenuItem onClick={onContactOffice}>
-              <Landmark className='mr-2 size-4' /> Contact an office
-            </DropdownMenuItem>
             {canAuthor ? (
               <DropdownMenuItem
                 onClick={() => router.push('/dashboard/announcements')}

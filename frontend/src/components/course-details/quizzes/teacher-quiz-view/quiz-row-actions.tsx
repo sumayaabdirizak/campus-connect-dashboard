@@ -17,7 +17,7 @@ import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 /// everything rarer lives in the overflow menu, matching the assignments row.
 export function QuizRowActions({
   quiz: q,
-  isEmpty,
+  previewDisabled,
   onEditQuiz,
   onViewAttempts,
   onDelete,
@@ -26,7 +26,7 @@ export function QuizRowActions({
   onPreview
 }: {
   quiz: Quiz;
-  isEmpty: boolean;
+  previewDisabled: boolean;
   onEditQuiz: () => void;
   onViewAttempts: () => void;
   onDelete: () => void;
@@ -91,7 +91,7 @@ export function QuizRowActions({
           <DropdownMenuItem onClick={onTogglePublish}>
             {q.is_draft ? 'Publish' : 'Unpublish'}
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={onPreview} disabled={isEmpty} className='gap-2'>
+          <DropdownMenuItem onClick={onPreview} disabled={previewDisabled} className='gap-2'>
             <Eye className='size-4' /> Preview as student
           </DropdownMenuItem>
           <DropdownMenuItem onClick={onDuplicate} className='gap-2'>

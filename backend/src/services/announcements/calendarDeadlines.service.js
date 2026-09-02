@@ -84,7 +84,7 @@ export async function loadVisibleCalendarDeadlineRows(prisma, visibilityUser, fr
  */
 export function buildVisibleOfferingWhere(loaded) {
   const role = loaded?.role;
-  if (role === 'SUPER_ADMIN' || role === 'ACADEMIC_OFFICE') return {};
+  if (role === 'SUPER_ADMIN') return {};
   if (role === 'TEACHER') return { teacherId: Number(loaded.userId) };
   if (role === 'STUDENT') {
     return { sectionId: { in: (loaded.sectionIds ?? []).map(Number) } };

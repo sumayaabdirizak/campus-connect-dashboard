@@ -56,27 +56,27 @@ export function GroupMemberRow({
         <div className='flex shrink-0 items-center gap-1'>
           <Button
             variant='outline'
-            size='sm'
-            className={`h-8 gap-1 border-border px-2 text-xs font-medium ${
+            size='icon'
+            className={`size-8 shrink-0 ${
               isLeader ? 'border-amber-300 bg-amber-50 text-amber-800' : ''
             }`}
             onClick={onToggleLeader}
             disabled={togglePending}
+            aria-label={isLeader ? 'Remove leader role' : 'Set as leader'}
             title={isLeader ? 'Remove leader role' : 'Set as leader'}
           >
-            <Crown className='size-3.5' />
-            {isLeader ? 'Leader' : 'Make leader'}
+            <Crown className='size-4' />
           </Button>
           <Button
             variant='outline'
-            size='sm'
-            className='h-8 gap-1 border-destructive/30 px-2 text-xs font-medium text-destructive hover:bg-destructive/5'
+            size='icon'
+            className='size-8 shrink-0 border-destructive/30 text-destructive hover:bg-destructive/5'
             onClick={onRemove}
             disabled={removePending}
+            aria-label='Remove from group'
             title='Remove from group'
           >
-            <UserMinus className='size-3.5' />
-            Remove
+            <UserMinus className='size-4' />
           </Button>
         </div>
       ) : null}

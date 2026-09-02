@@ -14,8 +14,6 @@ export type UserFormState = {
   academicYearId: string;
   semesterId: string;
   courseIds: string[];
-  officeId: string;
-  officeStaffRole: 'AGENT' | 'MANAGER';
 };
 
 export const EMPTY_USER_FORM: UserFormState = {
@@ -34,20 +32,11 @@ export const EMPTY_USER_FORM: UserFormState = {
   academicYearId: '',
   semesterId: '',
   courseIds: [],
-  officeId: '',
-  officeStaffRole: 'AGENT'
 };
-
-export function roleRequiresOffice(role: string): boolean {
-  const key = role.toUpperCase();
-  if (key === 'ACADEMIC_OFFICE') return false;
-  return key === 'OFFICE_STAFF' || key.includes('OFFICE') || key.includes('STAFF');
-}
 
 export const CREATE_ROLES = [
   'STUDENT',
   'TEACHER',
   'DEAN',
-  'ACADEMIC_OFFICE',
-  'SUPER_ADMIN'
+  'SUPER_ADMIN',
 ] as const;

@@ -18,9 +18,6 @@ export function joinRoom(room: RoomKey): void {
   } else if (room.startsWith('groupdm:')) {
     const groupDmId = room.split(':')[1];
     s.emit('groupdm:join', { groupDmId }, () => undefined);
-  } else if (room.startsWith('officeThread:')) {
-    const officeThreadId = Number(room.split(':')[1]);
-    s.emit('officeThread:join', { officeThreadId }, () => undefined);
   } else if (room.startsWith('discussion:')) {
     const groupId = room.split(':')[1];
     s.emit('join:group', { groupId, deviceId: 'web-default', fromVersion: 0 }, () => undefined);
@@ -43,37 +40,21 @@ function emitLeaveForRoom(s: Socket, room: RoomKey) {
     s.emit('channel:leave', { channelId: room.split(':')[1] });
   } else if (room.startsWith('groupdm:')) {
     s.emit('groupdm:leave', { groupDmId: room.split(':')[1] });
-  } else if (room.startsWith('officeThread:')) {
-    s.emit('officeThread:leave', { officeThreadId: Number(room.split(':')[1]) });
   } else if (room.startsWith('discussion:')) {
     s.emit('leave:group', { groupId: room.split(':')[1] });
   }
 }
 
-export function emitTypingStart(args: {
-  channelId?: string;
-  groupDmId?: string;
-  officeThreadId?: number;
-}) {
+export function emitTypingStart(args: { channelId?: string; groupDmId?: string }) {
   const s = ensureSocket();
   if (args.channelId) s.emit('typing:start', { channelId: args.channelId }, () => undefined);
   if (args.groupDmId) s.emit('typing:start', { groupDmId: args.groupDmId }, () => undefined);
-  if (args.officeThreadId) {
-    s.emit('typing:start', { officeThreadId: args.officeThreadId }, () => undefined);
-  }
 }
 
-export function emitTypingStop(args: {
-  channelId?: string;
-  groupDmId?: string;
-  officeThreadId?: number;
-}) {
+export function emitTypingStop(args: { channelId?: string; groupDmId?: string }) {
   const s = ensureSocket();
   if (args.channelId) s.emit('typing:stop', { channelId: args.channelId }, () => undefined);
   if (args.groupDmId) s.emit('typing:stop', { groupDmId: args.groupDmId }, () => undefined);
-  if (args.officeThreadId) {
-    s.emit('typing:stop', { officeThreadId: args.officeThreadId }, () => undefined);
-  }
 }
 
 export function emitMessageRead(args: {

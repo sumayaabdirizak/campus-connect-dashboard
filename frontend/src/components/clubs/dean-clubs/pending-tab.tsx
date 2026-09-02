@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { ScrollArea } from '@/components/ui/scroll-area'
 import { Icons } from '@/components/icons'
 import { Textarea } from '@/components/ui/textarea'
 import {
@@ -63,16 +62,16 @@ export function PendingTab() {
 
   return (
     <>
-      <ScrollArea className='flex-1'>
-        <div className='mx-auto max-w-3xl space-y-4 p-6'>
+      <div className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2 py-2 [-webkit-overflow-scrolling:touch]'>
+        <div className='mx-auto max-w-xl space-y-1'>
           {isLoading ? (
             <>
-              <Skeleton className='h-32 rounded-xl' />
-              <Skeleton className='h-32 rounded-xl' />
+              <Skeleton className='h-28 rounded-lg' />
+              <Skeleton className='h-28 rounded-lg' />
             </>
           ) : clubs.length === 0 ? (
-            <div className='flex flex-col items-center justify-center gap-2 py-16'>
-              <Icons.circleCheck className='h-10 w-10 text-muted-foreground/50' />
+            <div className='flex flex-col items-center justify-center gap-2 py-12'>
+              <Icons.circleCheck className='h-8 w-8 text-muted-foreground/50' />
               <h3 className='text-sm font-medium'>All caught up!</h3>
               <p className='text-xs text-muted-foreground'>
                 No pending club applications to review
@@ -90,7 +89,7 @@ export function PendingTab() {
             ))
           )}
         </div>
-      </ScrollArea>
+      </div>
 
       <AlertDialog open={!!approveTarget} onOpenChange={() => setApproveTarget(null)}>
         <AlertDialogContent>

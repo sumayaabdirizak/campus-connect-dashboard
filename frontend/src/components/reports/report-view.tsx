@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useQueryClient } from '@/lib/async-query';
@@ -12,9 +12,11 @@ import {
 import { showToast } from '@/lib/notifications';
 import {
   inferPresetFromRange,
+  clampReportDateRange,
   presetToDateRange,
   readDateRangeFromParams,
   reportDateRangeErrorMessage,
+  resolveAppliedReportFilters,
   validateReportDateRange
 } from '@/lib/reports/period-utils';
 import { scheduleRouterReplace } from '@/lib/safe-router-navigation';
@@ -62,23 +64,27 @@ export function ReportView() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
-  const scope = parseReportScope(searchParams?.get('scope'));
   const subjectId = searchParams?.get('id') ?? null;
-  const period = parsePeriod(searchParams?.get('period'));
-  const appliedRange = readDateRangeFromParams(
-    new URLSearchParams(searchParams?.toString() ?? '')
-  );
-  const appliedStatus = searchParams?.get('status') ?? 'all';
 
+  const [appliedFilters, setAppliedFilters] = useState<ReportFilterValues>(() =>
+    filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''))
+  );
   const [pendingFilters, setPendingFilters] = useState<ReportFilterValues>(() =>
     filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''))
   );
+
+  const appliedResolved = useMemo(
+    () => resolveAppliedReportFilters(appliedFilters),
+    [appliedFilters]
+  );
+  const scope = appliedFilters.scope;
 
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebounce(search.trim(), 300);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(25);
   const [sort, setSort] = useState<{ key: string; dir: 'asc' | 'desc' } | null>(null);
+  const skipUrlSyncRef = useRef(false);
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
@@ -92,7 +98,13 @@ export function ReportView() {
   }, [router, searchParams]);
 
   useEffect(() => {
-    setPendingFilters(filtersFromParams(new URLSearchParams(searchParams?.toString() ?? '')));
+    if (skipUrlSyncRef.current) {
+      skipUrlSyncRef.current = false;
+      return;
+    }
+    const fromUrl = filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''));
+    setAppliedFilters(fromUrl);
+    setPendingFilters(fromUrl);
   }, [searchParams]);
 
   useEffect(() => {
@@ -103,7 +115,13 @@ export function ReportView() {
 
   useEffect(() => {
     setPage(1);
-  }, [period, appliedRange.from, appliedRange.to, appliedStatus, debouncedSearch]);
+  }, [
+    appliedResolved.period,
+    appliedResolved.dateRange.from,
+    appliedResolved.dateRange.to,
+    appliedFilters.status,
+    debouncedSearch
+  ]);
 
   useEffect(() => {
     if (sort && !REPORT_SCOPE_COLUMNS[scope].includes(sort.key)) {
@@ -113,14 +131,18 @@ export function ReportView() {
 
   const windowParams = useMemo(
     () => ({
-      from: appliedRange.from,
-      to: appliedRange.to,
-      status: appliedStatus
+      from: appliedResolved.dateRange.from,
+      to: appliedResolved.dateRange.to,
+      status: appliedResolved.status
     }),
-    [appliedRange.from, appliedRange.to, appliedStatus]
+    [
+      appliedResolved.dateRange.from,
+      appliedResolved.dateRange.to,
+      appliedResolved.status
+    ]
   );
 
-  const listQuery = useReportList(scope, period, {
+  const listQuery = useReportList(scope, appliedResolved.period, {
     page,
     pageSize,
     search: debouncedSearch,
@@ -138,6 +160,7 @@ export function ReportView() {
   };
 
   const applyFilters = (filters: ReportFilterValues) => {
+    skipUrlSyncRef.current = true;
     replaceParams((params) => {
       params.set('scope', filters.scope);
 
@@ -164,15 +187,27 @@ export function ReportView() {
   };
 
   const handleGenerate = () => {
-    if (pendingFilters.periodPreset === 'custom') {
-      const errors = validateReportDateRange(pendingFilters.dateRange, { requireAny: true });
+    let filters = pendingFilters;
+
+    if (filters.periodPreset === 'custom') {
+      const clamped = clampReportDateRange(filters.dateRange);
+      if (
+        clamped.from !== filters.dateRange.from ||
+        clamped.to !== filters.dateRange.to
+      ) {
+        filters = { ...filters, dateRange: clamped };
+      }
+
+      const errors = validateReportDateRange(filters.dateRange, { requireAny: true });
       if (errors) {
         showToast('error', reportDateRangeErrorMessage(errors));
         return;
       }
     }
 
-    applyFilters(pendingFilters);
+    setAppliedFilters(filters);
+    setPendingFilters(filters);
+    applyFilters(filters);
     void queryClient.invalidateQueries({ queryKey: entityReportKeys.all });
   };
 
@@ -190,7 +225,7 @@ export function ReportView() {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
     params.set('scope', scope);
     params.set('id', id);
-    if (!params.get('period')) params.set('period', period);
+    if (!params.get('period')) params.set('period', appliedResolved.period);
     router.push(`/dashboard/reports?${params.toString()}`, { scroll: false });
   };
 
@@ -204,7 +239,7 @@ export function ReportView() {
     const total = listQuery.data?.total ?? 0;
     if (total === 0) return;
     const exportSize = Math.min(total, 200);
-    return fetchReportList(scope, period, {
+    return fetchReportList(scope, appliedResolved.period, {
       page: 1,
       pageSize: exportSize,
       search: debouncedSearch,
@@ -231,7 +266,7 @@ export function ReportView() {
         <ReportDetailPage
           scope={scope}
           subjectId={subjectId}
-          period={period}
+          period={appliedResolved.period}
           window={windowParams}
           onBack={closeDetail}
           filtersPanel={filtersPanel}
@@ -290,7 +325,7 @@ export function ReportView() {
             exportReportListPdf({
               scope,
               plural: meta.plural,
-              period,
+              period: appliedResolved.period,
               rows: data.rows,
               page: 1,
               pageSize: data.rows.length,
@@ -305,7 +340,7 @@ export function ReportView() {
             exportReportListCsv({
               scope,
               plural: meta.plural,
-              period,
+              period: appliedResolved.period,
               rows: data.rows,
               page: 1,
               pageSize: data.rows.length,

@@ -17,6 +17,7 @@ import Joi from "joi";
 const QUESTION_TYPES = ["MCQ", "TRUE_FALSE", "SHORT_ANSWER"];
 const TIMING_MODES = ["flexible", "fixed"];
 const QUIZ_MODES = ["online", "offline"];
+const OFFLINE_DELIVERY = ["built", "uploaded"];
 
 // Teacher's marks-distribution plan (Quiz Settings → Marks tab). Purely a
 // planning aid the question builder reads back to render section blocks —
@@ -88,11 +89,13 @@ export const createQuizBodySchema = Joi.object({
   shuffle_answers: Joi.boolean().default(false),
   max_attempts: Joi.number().integer().min(1).max(100).default(1),
   passing_score: Joi.number().min(0).max(100).default(50),
+  maxMarks: Joi.number().integer().min(1).max(100).optional(),
   timing_mode: Joi.string().valid(...TIMING_MODES).default("flexible"),
   scheduled_duration: Joi.number().integer().min(1).max(480).allow(null).optional(),
   // "online" (default) — students take it in-app. "offline" — printed/handed
   // out on paper; informational only, doesn't change scoring or access.
   mode: Joi.string().valid(...QUIZ_MODES).default("online"),
+  offline_delivery: Joi.string().valid(...OFFLINE_DELIVERY).allow(null).optional(),
   // Marks-distribution plan sketched in Quiz Settings. Optional; null/omit
   // means "no plan" and the question builder falls back to its flat list.
   marksPlan: marksPlanSchema,
@@ -150,9 +153,11 @@ export const patchQuizBodySchema = Joi.object({
   shuffle_answers: Joi.boolean().optional(),
   max_attempts: Joi.number().integer().min(1).max(100).optional(),
   passing_score: Joi.number().min(0).max(100).optional(),
+  maxMarks: Joi.number().integer().min(1).max(100).optional(),
   timing_mode: Joi.string().valid(...TIMING_MODES).optional(),
   scheduled_duration: Joi.number().integer().min(1).max(480).allow(null).optional(),
   mode: Joi.string().valid(...QUIZ_MODES).optional(),
+  offline_delivery: Joi.string().valid(...OFFLINE_DELIVERY).allow(null).optional(),
   marksPlan: marksPlanSchema,
   moduleId: Joi.number().integer().positive().allow(null).optional(),
   confidence_scoring: Joi.boolean().optional(),

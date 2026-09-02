@@ -13,7 +13,7 @@ import {
 import { Input } from '@/features/ui/components/input';
 import { useAuthStore } from '@/lib/auth-store';
 import { useGroupDmCandidates } from '@/lib/discussions/queries';
-import { canDirectMessage, isOfficeStaffRole } from '@shared/roles';
+import { canDirectMessage } from '@shared/roles';
 import { useStartDirectDm } from '@/lib/inbox/queries';
 import { newMessageCopyForRole } from './new-message-copy';
 import { NewMessageBrowse } from './new-message-browse';
@@ -44,10 +44,7 @@ export function NewMessageDialog({
   const [roleChip, setRoleChip] = useState<NewMessageRoleChip>('ALL');
   const [pendingId, setPendingId] = useState<number | null>(null);
   const { data, isLoading } = useGroupDmCandidates(q, 'direct', open && canDirectDm);
-  const copy = newMessageCopyForRole(
-    role,
-    isOfficeStaffRole(role) ? (data?.dmScope ?? null) : null
-  );
+  const copy = newMessageCopyForRole(role);
   const startDm = useStartDirectDm();
   const raw = data?.results ?? [];
   const candidates = copy.showRoleChips
@@ -94,11 +91,7 @@ export function NewMessageDialog({
         </DialogHeader>
 
         {copy.showRoleChips ? (
-          <NewMessageRoleChips
-            value={roleChip}
-            onChange={setRoleChip}
-            variant={copy.showRoleChips}
-          />
+          <NewMessageRoleChips value={roleChip} onChange={setRoleChip} />
         ) : null}
 
         <div className='relative'>

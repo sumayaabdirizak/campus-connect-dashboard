@@ -54,8 +54,6 @@ export const updateUser = async ({
     full_name: string;
     email: string;
     number: string;
-    officeId?: number | null;
-    officeStaffRole?: 'AGENT' | 'MANAGER';
   };
 }) =>
   apiClient<unknown>(`/users/${id}`, {

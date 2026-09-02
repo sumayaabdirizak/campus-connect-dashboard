@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { isDeanRole, isOfficeMessagesOnlyRole } from '@shared/roles'
+import { isDeanRole } from '@shared/roles'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAddGroupDmMembers, useGroupDmCandidates } from '@/lib/discussions/queries/queries'
 import type { GroupDmCandidate } from '@/lib/discussions/queries/types'
@@ -14,7 +14,6 @@ export function useAddMembersForm(
   onOpenChange: (next: boolean) => void
 ) {
   const role = useAuthStore((s) => s.user?.role)
-  const deanGroupMode = isOfficeMessagesOnlyRole(role)
   const facultyDeanMode = isDeanRole(role)
   const [search, setSearch] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -64,7 +63,6 @@ export function useAddMembersForm(
   }
 
   return {
-    deanGroupMode,
     facultyDeanMode,
     search,
     setSearch,

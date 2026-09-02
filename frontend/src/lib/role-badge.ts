@@ -55,12 +55,6 @@ export function roleBadgeVariant(role: Role | null | undefined): RoleBadgeStyle 
         className: 'border-info text-info bg-info-muted',
         label: 'Super Admin'
       };
-    case 'ACADEMIC_OFFICE':
-      return {
-        variant: 'outline',
-        className: 'border-primary text-primary bg-primary/10',
-        label: 'Academic Office'
-      };
     case 'DEAN':
       return { variant: 'info', label: 'Dean' };
     case 'TEACHER':

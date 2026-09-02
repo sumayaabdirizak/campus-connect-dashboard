@@ -1,10 +1,9 @@
 ﻿'use client';
 
 import { useMemo } from 'react';
-import { useQuery } from '@/lib/async-query';
-import { apiClient } from '@/lib/api-client';
 import { useStudentCourses } from '@/lib/student-courses/queries';
-import { useAnnouncements } from '@/lib/announcements/queries';
+import { useRecentAnnouncements } from '@/lib/announcements/queries';
+import { useCalendarDeadlines } from '@/lib/calendar/queries';
 import { filterUpcomingDeadlines } from '@/components/calendar/deadline-calendar';
 import type { DeadlineRow } from '@/components/calendar/lib';
 
@@ -12,7 +11,7 @@ export type CourseFilter = 'all' | 'inprogress' | 'completed';
 
 export function useStudentDashboardData() {
   const { data: coursesData, isLoading: coursesLoading } = useStudentCourses();
-  const { data: announcementsData } = useAnnouncements();
+  const { data: announcementsData, isLoading: announcementsLoading } = useRecentAnnouncements(5);
   const courses = coursesData?.offerings ?? [];
   const announcements = announcementsData ?? [];
 
@@ -24,13 +23,10 @@ export function useStudentDashboardData() {
     };
   }, []);
 
-  const { data: deadlineData, isLoading: deadlinesLoading } = useQuery({
-    queryKey: ['calendar', 'deadlines', 'dashboard', fromIso],
-    queryFn: () =>
-      apiClient<{ results: DeadlineRow[] }>(
-        `/announcements/calendar-deadlines?from=${encodeURIComponent(fromIso)}&to=${encodeURIComponent(toIso)}`
-      )
-  });
+  const { data: deadlineData, isLoading: deadlinesLoading } = useCalendarDeadlines(
+    fromIso,
+    toIso
+  );
 
   const timelineItems = useMemo(
     () => filterUpcomingDeadlines(deadlineData?.results),
@@ -54,6 +50,7 @@ export function useStudentDashboardData() {
   return {
     courses,
     announcements,
+    announcementsLoading,
     coursesLoading,
     deadlinesLoading,
     timelineItems,
@@ -66,4 +63,3 @@ export function useStudentDashboardData() {
     nextUp,
   };
 }
-

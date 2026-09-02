@@ -1,11 +1,5 @@
 import * as z from 'zod';
 
-export interface UserOfficeStaff {
-  officeId: number;
-  role: 'AGENT' | 'MANAGER';
-  office: { id: number; name: string; slug: string };
-}
-
 export interface User {
   id: number;
   full_name: string;
@@ -17,7 +11,6 @@ export interface User {
   status?: string;
   created_at?: string;
   updated_at?: string;
-  officeStaff?: UserOfficeStaff | null;
 }
 
 export type UserFilters = {

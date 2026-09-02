@@ -55,6 +55,24 @@ export function assertQuestionsAllowedForMode(mode, questions) {
   }
 }
 
+/** Uploaded paper quiz — teacher file + course marks, no in-app questions. */
+export function isUploadedOfflineQuiz(quiz) {
+  return quiz?.mode === 'offline' && quiz?.offline_delivery === 'uploaded';
+}
+
+/** Max points for grading / offline score entry. */
+export function resolveQuizAttemptMaxPoints(quiz, questions = []) {
+  if (isUploadedOfflineQuiz(quiz) && Number(quiz.maxMarks) > 0) {
+    return quiz.maxMarks;
+  }
+  return (questions ?? []).reduce((sum, q) => sum + (Number(q.points) || 0), 0);
+}
+
+export function normalizeOfflineDelivery(mode, offlineDelivery) {
+  if (mode !== 'offline') return null;
+  return offlineDelivery === 'uploaded' ? 'uploaded' : 'built';
+}
+
 /** Strip answer keys (and optionally explanations) from a quiz payload. */
 export function stripQuizAnswerKeys(quiz) {
   return {

@@ -61,11 +61,11 @@ export function AnnouncementContent({ announcement, titleId }: AnnouncementConte
     <div>
       <h3
         id={titleId}
-        className='text-sm font-semibold leading-snug tracking-tight text-foreground'
+        className='text-xs font-semibold leading-snug tracking-tight text-foreground'
       >
         {announcement.title}
       </h3>
-      <div className='mt-1' dir={isRtl ? 'rtl' : undefined}>
+      <div className='mt-0.5' dir={isRtl ? 'rtl' : undefined}>
         {renderBody()}
       </div>
     </div>

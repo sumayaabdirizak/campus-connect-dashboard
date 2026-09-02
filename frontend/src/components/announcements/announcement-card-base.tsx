@@ -104,9 +104,9 @@ export function AnnouncementCardBase({
     >
       <div
         ref={cardRef}
-        className='w-full rounded-xl border border-border bg-muted/50 p-3 shadow-sm transition-shadow duration-200 hover:shadow-md'
+        className='w-full rounded-lg border border-border bg-muted/50 p-2.5 shadow-sm transition-shadow duration-200 hover:shadow-md'
       >
-        <div className='mb-2 flex items-start justify-between gap-2'>
+        <div className='mb-1.5 flex items-start justify-between gap-1.5'>
           <AnnouncementHeader announcement={announcement} />
           <div className='flex shrink-0 items-center gap-1'>
             <p
@@ -164,7 +164,7 @@ export function AnnouncementCardBase({
         </div>
 
         {(showPriority || isPinned) && (
-          <div className='mb-2 flex items-center justify-between gap-2'>
+          <div className='mb-1 flex items-center justify-between gap-1.5'>
             <div className='flex min-w-0 items-center gap-1.5'>
               {showPriority && <PriorityBadge priority={announcement.priority} />}
             </div>
@@ -182,7 +182,7 @@ export function AnnouncementCardBase({
           </div>
         )}
         {!showPriority && !isPinned && (
-          <div className='mb-2 flex justify-end'>
+          <div className='mb-1 flex justify-end'>
             <AnnouncementExpiryRow announcement={announcement} />
           </div>
         )}
@@ -194,7 +194,7 @@ export function AnnouncementCardBase({
 
         {!isDraftStatus && (
           <>
-            <div className='my-1.5 h-px bg-border' />
+            <div className='my-1 h-px bg-border' />
             <AnnouncementActions announcement={announcement} />
           </>
         )}

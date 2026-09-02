@@ -1,4 +1,4 @@
-import { roleRequiresOffice, type UserFormState } from './user-form-state';
+import { type UserFormState } from './user-form-state';
 
 export function validateUserForm(form: UserFormState, isEdit: boolean): string | null {
   if (!form.full_name.trim()) {
@@ -20,10 +20,6 @@ export function validateUserForm(form: UserFormState, isEdit: boolean): string |
     }
   }
 
-  if (!isEdit && roleRequiresOffice(form.role) && !form.officeId) {
-    return 'Select an office for this staff user';
-  }
-
   return null;
 }
 
@@ -42,6 +38,5 @@ export function isUserFormSubmitDisabled(form: UserFormState, isEdit: boolean): 
   ) {
     return true;
   }
-  if (roleRequiresOffice(form.role) && !form.officeId) return true;
   return false;
 }

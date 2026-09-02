@@ -11,6 +11,12 @@ import {
   assignmentKeys,
   useUpdateAssignment
 } from '@/lib/course-details/queries/assignments-queries';
+import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  markBudgetExceededMessage,
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import type { AssignmentFormValues } from './create-assignment-form';
 
@@ -32,6 +38,16 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
   const togglePublish = (assignment: Assignment) => {
     const key = assignmentKeys.list(s.courseId);
     const nextDraft = !assignment.is_draft;
+    if (!nextDraft) {
+      const budget = queryClient.getQueryData<CourseMarkBudget>(
+        markBudgetKeys.offering(s.courseId)
+      );
+      const marks = assignment.maxMarks ?? 10;
+      if (budget && wouldExceedMarkBudget(budget, marks, 0)) {
+        toast.error(markBudgetExceededMessage(budget, marks, 0));
+        return;
+      }
+    }
     const snapshot = queryClient.getQueryData<Assignment[]>(key);
     queryClient.setQueryData<Assignment[]>(key, (prev) =>
       (prev ?? []).map((a) => (a.id === assignment.id ? { ...a, is_draft: nextDraft } : a))
@@ -41,6 +57,7 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
       {
         onSuccess: () => {
           toast.success(nextDraft ? 'Assignment unpublished' : 'Assignment published');
+          queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(s.courseId) });
         },
         onError: (e: Error) => {
           if (snapshot) queryClient.setQueryData<Assignment[]>(key, snapshot);
@@ -60,6 +77,7 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
     const okCount = results.filter((r) => r.status === 'fulfilled').length;
     const failCount = results.length - okCount;
     queryClient.invalidateQueries({ queryKey: assignmentKeys.list(s.courseId) });
+    queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(s.courseId) });
     if (failCount === 0) {
       toast.success(`${label} ${okCount} assignment${okCount === 1 ? '' : 's'}`);
     } else if (okCount === 0) {
@@ -72,10 +90,31 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
     s.clearAssignmentSelection();
   };
 
-  const handleBulkPublishAssignments = (draft: boolean) =>
+  const handleBulkPublishAssignments = (draft: boolean) => {
+    if (!draft) {
+      const budget = queryClient.getQueryData<CourseMarkBudget>(
+        markBudgetKeys.offering(s.courseId)
+      );
+      const assignments =
+        queryClient.getQueryData<Assignment[]>(assignmentKeys.list(s.courseId)) ?? [];
+      if (budget) {
+        for (const id of s.selectedAssignmentIds) {
+          const assignment = assignments.find((a) => a.id === id);
+          if (!assignment || !assignment.is_draft) continue;
+          const marks = assignment.maxMarks ?? 10;
+          if (wouldExceedMarkBudget(budget, marks, 0)) {
+            toast.error(
+              `"${assignment.title}": ${markBudgetExceededMessage(budget, marks, 0)}`
+            );
+            return;
+          }
+        }
+      }
+    }
     runAssignmentBulk(draft ? 'Unpublished' : 'Published', (id) =>
       updateAssignmentCall(id, { is_draft: draft })
     );
+  };
   const handleBulkDeleteAssignments = () =>
     runAssignmentBulk('Deleted', (id) => deleteAssignmentCall(id));
 
@@ -119,6 +158,7 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
         }
       });
       toast.success('Assignment updated');
+      queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(s.courseId) });
       s.setEditTarget(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Update failed');

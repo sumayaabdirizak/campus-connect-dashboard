@@ -42,7 +42,7 @@ function formatId(prefix, serial, pad = 3) {
  * TEACHER: TCH-{deptCode}-{NNN}
  * DEAN: DEAN-{facultyCode}-{NNN}
  * SUPER_ADMIN: SA-{NNN}
- * ACADEMIC_OFFICE: AO-{NNN}
+ * SUPER_ADMIN: SA-{NNN}
  * Custom roles: {ROLE}-{NNN}  e.g. OFFICE-STAFF-001
  */
 export async function generateUniversityId({
@@ -96,12 +96,7 @@ export async function generateUniversityId({
     return formatId(prefix, await nextSerialForPrefix(prefix));
   }
 
-  if (role === 'ACADEMIC_OFFICE') {
-    const prefix = 'AO';
-    return formatId(prefix, await nextSerialForPrefix(prefix));
-  }
-
-  // Custom platform roles (e.g. OFFICE_STAFF): ROLECODE-{NNN}
+  // Custom platform roles: ROLECODE-{NNN}
   const customPrefix = sanitizeCode(String(role || '').replace(/_/g, '-'));
   if (customPrefix.length >= 2) {
     return formatId(customPrefix, await nextSerialForPrefix(customPrefix));

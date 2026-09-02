@@ -18,7 +18,7 @@ async function main() {
 
   // --- 1. Roles ---
   console.log('Seeding Roles...');
-  const roleNames = ['SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN', 'TEACHER', 'STUDENT'];
+  const roleNames = ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'];
   const roleMap = {};
   for (const name of roleNames) {
     const role = await prisma.role.upsert({
@@ -611,19 +611,6 @@ async function main() {
     console.log('Resource type options seeded.');
   } catch (e) {
     console.error('Resource type options seed failed:', e?.message || e);
-    throw e;
-  }
-
-  try {
-    const { ensureDefaultSupportOffices } = await import(
-      '../src/features/offices/ensureDefaultSupportOffices.js'
-    );
-    const officeResult = await ensureDefaultSupportOffices();
-    console.log(
-      `Support offices ensured (${officeResult.created} created, ${officeResult.updated} updated).`
-    );
-  } catch (e) {
-    console.error('Support offices seed failed:', e?.message || e);
     throw e;
   }
 

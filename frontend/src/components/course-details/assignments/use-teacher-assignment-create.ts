@@ -1,10 +1,17 @@
 'use client';
 
 import { toast } from 'sonner';
+import { useQueryClient } from '@/lib/async-query';
 import {
   useCreateAssignment,
   useUploadAttachments
 } from '@/lib/course-details/queries/assignments-queries';
+import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
+import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
+import {
+  markBudgetExceededMessage,
+  wouldExceedMarkBudget
+} from '@/lib/course-details/services/mark-budget-utils';
 import { useGroups } from '@/lib/course-details/queries/groups-queries';
 import type { AssignmentFormValues } from './create-assignment-form';
 
@@ -20,6 +27,7 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
   const { data: groups = [] } = useGroups(s.courseId);
   const createMutation = useCreateAssignment(s.courseId);
   const uploadMutation = useUploadAttachments(s.courseId);
+  const queryClient = useQueryClient();
 
   const addPendingFiles = (files: File[]) => {
     if (files.length === 0) return;
@@ -47,6 +55,16 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
       );
       return;
     }
+    const budget = queryClient.getQueryData<CourseMarkBudget>(
+      markBudgetKeys.offering(s.courseId)
+    );
+    if (
+      budget &&
+      wouldExceedMarkBudget(budget, values.maxMarks, 0)
+    ) {
+      toast.error(markBudgetExceededMessage(budget, values.maxMarks, 0));
+      return;
+    }
     try {
       const created = await createMutation.mutateAsync({
         title: values.title,
@@ -56,9 +74,10 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
         workMode: values.workMode,
         gradingScope: values.gradingScope,
         lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0,
-        maxMarks: values.maxMarks
+        maxMarks: values.maxMarks,
+        is_draft: true
       });
-      if (s.pendingFiles.length === 0) toast.success('Assignment created');
+      if (s.pendingFiles.length === 0) toast.success('Assignment created as draft');
       else {
         try {
           const { count } = await uploadMutation.mutateAsync({
@@ -77,6 +96,7 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
       s.setCreateOpen(false);
       s.setPendingFiles([]);
       if (s.fileInputRef.current) s.fileInputRef.current.value = '';
+      queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(s.courseId) });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'Create failed');
     }

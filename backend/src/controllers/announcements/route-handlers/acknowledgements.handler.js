@@ -66,7 +66,7 @@ export async function handleAnnouncementAcknowledgementsList(req, res) {
     const id = Number.parseInt(req.params.id, 10);
     if (!Number.isFinite(id)) return res.status(400).json({ message: "Invalid id" });
     const role = String(req.user?.role ?? "").toUpperCase();
-    if (!["DEAN", "SUPER_ADMIN", "ACADEMIC_OFFICE", "OFFICE_STAFF", "ADMIN"].includes(role)) {
+    if (!["DEAN", "SUPER_ADMIN", "ADMIN"].includes(role)) {
       return res.status(403).json({ message: "Forbidden" });
     }
     const authorGate = await assertCanManageAnnouncementById(prisma, Number(req.user.sub), id);

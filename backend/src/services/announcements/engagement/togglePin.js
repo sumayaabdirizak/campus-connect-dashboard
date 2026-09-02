@@ -22,7 +22,7 @@ export async function togglePin(announcementId, jwtUser) {
     return {
       ok: false,
       status: 403,
-      message: "Only SUPER_ADMIN, ACADEMIC_OFFICE, DEAN, or OFFICE_STAFF may pin announcements",
+      message: "Only SUPER_ADMIN or DEAN may pin announcements",
     };
   }
 

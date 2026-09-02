@@ -28,7 +28,7 @@ export async function prepareCreateAnnouncementData(user, parsed) {
     return {
       ok: false,
       status: 403,
-      message: "Only SUPER_ADMIN, ACADEMIC_OFFICE, DEAN, or OFFICE_STAFF may create announcements",
+      message: "Only SUPER_ADMIN or DEAN may create announcements",
     };
   }
 

@@ -23,9 +23,6 @@ export const registerUserBodySchema = Joi.object({
   academicYearId: Joi.number().integer().positive().optional(),
   semesterId: Joi.number().integer().positive().optional(),
   courseIds: Joi.array().items(Joi.number().integer().positive()).optional().default([]),
-  /** Optional: assign new user as office staff in the same request. */
-  officeId: Joi.number().integer().positive().optional(),
-  officeStaffRole: Joi.string().valid('AGENT', 'MANAGER').optional().default('AGENT'),
 });
 
 export const registerStudentsBulkBodySchema = Joi.object({
@@ -58,7 +55,4 @@ export const adminUpdateUserBodySchema = Joi.object({
   full_name: Joi.string().trim().min(1).max(200).required(),
   email: Joi.string().email().required(),
   number: Joi.string().trim().min(1).max(64).required(),
-  /** Set/replace office staff membership; omit to leave unchanged. null clears. */
-  officeId: Joi.number().integer().positive().allow(null).optional(),
-  officeStaffRole: Joi.string().valid('AGENT', 'MANAGER').optional().default('AGENT'),
 });

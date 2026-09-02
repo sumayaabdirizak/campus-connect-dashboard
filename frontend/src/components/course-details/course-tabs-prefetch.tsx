@@ -20,10 +20,8 @@ import { useGradebook, useMyGrades } from '@/lib/course-details/queries/gradeboo
  * Warm the cache, do not poll it.
  *
  * This ran with `live: true`, which is what a *visible* tab asks for — so all
- * eight tabs polled every 10s whether or not you were looking at them, and a
- * course page sat at roughly eleven pollers. Prefetching only needs the first
- * fetch; the tab you actually open sets up its own live refresh, and
- * `refetchOnWindowFocus` still catches anything stale on return.
+ * eight tabs polled every 10s whether or not you were looking at them. Prefetch
+ * uses `live: false`; open tabs rely on socket/mutations + window-focus refetch.
  */
 const PREFETCH = { live: false } as const;
 

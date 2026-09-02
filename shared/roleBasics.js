@@ -1,10 +1,9 @@
 /**
  * Role primitives — imported by `roles.js` and `communicationRoles.js` (no cycles).
- * @type {readonly ['SUPER_ADMIN', 'ACADEMIC_OFFICE', 'DEAN', 'TEACHER', 'STUDENT']}
+ * @type {readonly ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT']}
  */
 export const ROLES = Object.freeze([
   'SUPER_ADMIN',
-  'ACADEMIC_OFFICE',
   'DEAN',
   'TEACHER',
   'STUDENT',
@@ -63,16 +62,5 @@ export function isStudentRole(role) {
 
 /** Cross-faculty academic leadership (not system/roles/audit). */
 export function isCrossFacultyAdmin(role) {
-  const r = roleKey(role);
-  return r === 'SUPER_ADMIN' || r === 'ACADEMIC_OFFICE';
-}
-
-/** Create/update support offices and manage staff as platform admin. */
-export function canManageOffices(role) {
-  return isCrossFacultyAdmin(role) || isDeanRole(role);
-}
-
-/** Seed / ensure default university + faculty desks. */
-export function canEnsureOfficeDefaults(role) {
-  return isCrossFacultyAdmin(role);
+  return isSuperAdminRole(role);
 }

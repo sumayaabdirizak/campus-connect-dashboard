@@ -3,6 +3,8 @@ export interface StudentWorkAssignment {
   title: string;
   due_date: string;
   gradingScope: 'INDIVIDUAL' | 'GROUP';
+  maxMarks: number;
+  lateWindowMinutes: number;
 }
 
 export interface StudentWorkSubmission {
@@ -22,7 +24,7 @@ export interface StudentWorkQuizAttempt {
   score: number | null;
   grade: number | null;
   submitted_at: string | null;
-  quiz: { id: number; title: string; passing_score: number };
+  quiz: { id: number; title: string; passing_score: number; maxMarks: number };
 }
 
 export interface StudentWorkStats {

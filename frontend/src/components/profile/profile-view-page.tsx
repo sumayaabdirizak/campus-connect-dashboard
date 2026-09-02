@@ -8,7 +8,6 @@ import type { ProfileMe } from '@/lib/profile/services';
 import { ProfileAcademicCard } from './profile-view/profile-academic-card';
 import { ProfileBasicInfoCard } from './profile-view/profile-basic-info-card';
 import { ProfileNotificationsCard } from './profile-view/profile-notifications-card';
-import { ProfileOfficeCard } from './profile-view/profile-office-card';
 import { ProfilePasswordCard } from './profile-view/profile-password-card';
 
 export default function ProfileViewPage() {
@@ -57,7 +56,6 @@ export default function ProfileViewPage() {
             <ProfileBasicInfoCard profile={data} onUpdated={syncAuth} />
             <ProfilePasswordCard />
             <ProfileAcademicCard profile={data} />
-            <ProfileOfficeCard profile={data} />
             <ProfileNotificationsCard profile={data} onUpdated={syncAuth} />
           </>
         ) : null}

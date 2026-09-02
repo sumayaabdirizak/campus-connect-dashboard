@@ -39,9 +39,6 @@ function emitJoinForRoom(s: Socket, room: RoomKey) {
   } else if (room.startsWith('groupdm:')) {
     const groupDmId = room.split(':')[1];
     s.emit('groupdm:join', { groupDmId }, () => undefined);
-  } else if (room.startsWith('officeThread:')) {
-    const officeThreadId = Number(room.split(':')[1]);
-    s.emit('officeThread:join', { officeThreadId }, () => undefined);
   } else if (room.startsWith('discussion:')) {
     const groupId = room.split(':')[1];
     s.emit('join:group', { groupId, deviceId: 'web-default', fromVersion: 0 }, () => undefined);

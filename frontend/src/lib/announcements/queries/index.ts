@@ -6,16 +6,51 @@ import {
   deleteAnnouncement,
   getAnnouncementUnreadCount,
   getAnnouncementDraftsCount,
+  getAnnouncementPublishedTotal,
+  getRecentAnnouncements,
   togglePinAnnouncement,
   updateAnnouncement
 } from '../services';
 import { Announcement, CreateAnnouncementDTO } from '../types';
 import { handleApiError, showToast } from '@/lib/notifications';
+import {
+  ANNOUNCEMENT_REFETCH_INTERVAL,
+  ANNOUNCEMENT_STALE_MS,
+} from './query-config';
+
+function markAnnouncementReadInCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  id: number
+) {
+  const markRead = (current: Announcement[] | undefined) =>
+    (current ?? []).map((item) =>
+      String(item.id) === String(id) ? { ...item, isRead: true } : item
+    );
+  queryClient.updateQueriesDataByPrefix<Announcement[]>(
+    ['announcements', 'list'],
+    markRead
+  );
+  queryClient.updateQueriesDataByPrefix<Announcement[]>(
+    ['announcements', 'scheduled'],
+    markRead
+  );
+  queryClient.updateQueriesDataByPrefix<Announcement[]>(
+    ['announcements', 'recent'],
+    markRead
+  );
+  queryClient.setQueryData<{ unreadCount: number }>(
+    ['announcements', 'unread-count'],
+    (old) => ({
+      unreadCount: Math.max(0, (old?.unreadCount ?? 0) - 1),
+    })
+  );
+}
 
 export const useAnnouncements = (opts?: {
   scheduled?: boolean;
   drafts?: boolean;
   audienceRole?: string;
+  enabled?: boolean;
 }) => {
   const mode = opts?.scheduled ? 'scheduled' : opts?.drafts ? 'drafts' : 'list';
   const ar = opts?.audienceRole?.trim().toUpperCase();
@@ -23,20 +58,45 @@ export const useAnnouncements = (opts?: {
   return useQuery({
     queryKey: ['announcements', mode, audienceKey],
     queryFn: () => getAnnouncements(opts),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    enabled: opts?.enabled ?? true,
+    staleTime: ANNOUNCEMENT_STALE_MS,
+    refetchOnWindowFocus: false,
+    refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 };
+
+/** Dashboard sidebar — fetches only N recent rows, not the full feed. */
+export const useRecentAnnouncements = (
+  limit = 5,
+  opts?: { enabled?: boolean }
+) =>
+  useQuery({
+    queryKey: ['announcements', 'recent', limit],
+    queryFn: () => getRecentAnnouncements(limit),
+    enabled: opts?.enabled ?? true,
+    staleTime: ANNOUNCEMENT_STALE_MS,
+    refetchOnWindowFocus: false,
+    refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
+  });
+
+export const useAnnouncementPublishedTotal = (opts?: { enabled?: boolean }) =>
+  useQuery({
+    queryKey: ['announcements', 'published-total'],
+    queryFn: getAnnouncementPublishedTotal,
+    enabled: opts?.enabled ?? true,
+    staleTime: ANNOUNCEMENT_STALE_MS,
+    refetchOnWindowFocus: false,
+    refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
+  });
 
 export const useAnnouncementDraftsCount = (opts?: { enabled?: boolean }) => {
   return useQuery({
     queryKey: ['announcements', 'drafts-count'],
     queryFn: getAnnouncementDraftsCount,
     enabled: Boolean(opts?.enabled),
-    staleTime: 0,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    staleTime: ANNOUNCEMENT_STALE_MS,
+    refetchOnWindowFocus: false,
+    refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 };
 
@@ -44,9 +104,9 @@ export const useAnnouncementUnreadCount = () => {
   return useQuery({
     queryKey: ['announcements', 'unread-count'],
     queryFn: getAnnouncementUnreadCount,
-    staleTime: 0,
+    staleTime: 30_000,
     refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 };
 
@@ -70,10 +130,13 @@ export const useMarkAsRead = () => {
 
   return useMutation({
     mutationFn: (id: number) => markAnnouncementAsRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['announcements'] });
+    onMutate: async (id: number) => {
+      await queryClient.cancelQueries({ queryKey: ['announcements'] });
+      markAnnouncementReadInCache(queryClient, id);
+    },
+    onError: () => {
       queryClient.invalidateQueries({ queryKey: ['announcements', 'unread-count'] });
-    }
+    },
   });
 };
 

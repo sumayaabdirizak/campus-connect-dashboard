@@ -9,13 +9,10 @@ export {
   isTeacherRole,
   isStudentRole,
   isCrossFacultyAdmin,
-  canManageOffices,
-  canEnsureOfficeDefaults,
-  isOfficeInboxOversight,
-  isOfficeMessagesOnlyRole,
   canDirectMessage,
-  isOfficeStaffRole,
+  canCreateGroupDm,
   canStudentGroupDm,
+  isOfficeMessagesOnlyRole,
   ANNOUNCEMENT_MANAGER_ROLES,
   ANNOUNCEMENT_AUDIENCE_ROLES,
   canManageAnnouncements,
@@ -27,9 +24,4 @@ export {
 /** Any platform role name (built-in or custom). */
 export type Role = string;
 
-export type BuiltinRole =
-  | 'SUPER_ADMIN'
-  | 'ACADEMIC_OFFICE'
-  | 'DEAN'
-  | 'TEACHER'
-  | 'STUDENT';
+export type BuiltinRole = 'SUPER_ADMIN' | 'DEAN' | 'TEACHER' | 'STUDENT';

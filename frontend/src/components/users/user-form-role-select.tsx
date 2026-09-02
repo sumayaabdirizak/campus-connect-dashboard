@@ -36,8 +36,6 @@ export function UserFormRoleSelect({
             academicYearId: '',
             semesterId: '',
             courseIds: [],
-            officeId: '',
-            officeStaffRole: 'AGENT'
           })
         }
       >

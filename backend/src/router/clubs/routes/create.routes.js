@@ -25,7 +25,7 @@ router.post('/', async (req, res, next) => {
 
     if (isDeanMode) {
       // Path B — dean / super-admin direct create
-      if (!['DEAN', 'SUPER_ADMIN', 'ACADEMIC_OFFICE'].includes(req.user.role)) {
+      if (!['DEAN', 'SUPER_ADMIN'].includes(req.user.role)) {
         return res.status(403).json(apiErrorBody('Only deans and academic leadership can create clubs directly'));
       }
 

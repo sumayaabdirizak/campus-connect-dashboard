@@ -31,16 +31,6 @@ export type ProfileMe = {
     faculty?: ProfileAcademicUnit | null;
   } | null;
   faculties?: ProfileAcademicUnit[];
-  officeMemberships?: {
-    role: string;
-    office: {
-      id: number;
-      name: string;
-      slug: string;
-      codePrefix: string;
-      faculty?: ProfileAcademicUnit | null;
-    };
-  }[];
   scope?: {
     facultyId?: number | null;
     departmentId?: number | null;

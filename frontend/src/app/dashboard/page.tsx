@@ -18,8 +18,6 @@ export default function DashboardPage() {
       return <TeacherDashboard user={user} />;
     case 'DEAN':
       return <AdminDashboard user={user} />;
-    case 'ACADEMIC_OFFICE':
-      return <AdminDashboard user={user} />;
     case 'SUPER_ADMIN':
       return <SuperAdminDashboard user={user} />;
     default:

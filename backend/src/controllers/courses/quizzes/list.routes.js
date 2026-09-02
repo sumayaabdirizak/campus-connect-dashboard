@@ -21,6 +21,7 @@ export function register(router) {
           orderBy: { order_index: 'asc' },
         },
         module: { select: { id: true, title: true, position: true, publishedAt: true } },
+        paperFile: true,
         _count: {
           select: {
             attempts: { where: { submitted_at: { not: null } } },

@@ -53,8 +53,8 @@ export function LocalQuestionList({
             </>
           ) : (
             <>
-              Finish the quiz settings above, then use{' '}
-              <strong className='text-foreground'>Create with AI</strong> to generate questions.
+              Add questions using <strong className='text-foreground'>Add Question</strong> inside each
+              section below, or use <strong className='text-foreground'>Create with AI</strong>.
             </>
           )}
         </p>
