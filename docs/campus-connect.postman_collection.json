@@ -1,0 +1,760 @@
+{
+  "info": {
+    "name": "Campus Connect",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_postman_id": "24103929-f113-4bf2-ab25-5d0b25c4019a",
+    "description": "Campus Connect ↔ Jazeera University integration API.\n\nEvery request is signed by the collection pre-request script using the `partnerCode` and `apiKey` environment variables. Dean and student flows additionally use separate role tokens — `deanToken` and `studentToken` — set by the login requests in folder 02. See campus-connect/README.md for the full reference."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost/campus-connect"
+    },
+    {
+      "key": "partnerCode",
+      "value": "campus_connect"
+    },
+    {
+      "key": "apiKey",
+      "value": "<replace-with-your-api-key>"
+    },
+    {
+      "key": "deanToken",
+      "value": ""
+    },
+    {
+      "key": "studentToken",
+      "value": ""
+    },
+    {
+      "key": "partnerAuth",
+      "value": ""
+    },
+    {
+      "key": "timestamp",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "exec": [
+          "// Campus Connect partner signature (computed per request)",
+          "const ts = Math.floor(Date.now() / 1000).toString();",
+          "pm.variables.set(\"timestamp\", ts);",
+          "",
+          "const sig = CryptoJS.SHA512(pm.variables.get(\"apiKey\") + ts).toString(CryptoJS.enc.Hex);",
+          "pm.variables.set(\"partnerAuth\", btoa(pm.variables.get(\"partnerCode\") + \":\" + sig));"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "01 · Setup & Partner Auth",
+      "description": "Verifies the partner API key is signed correctly.",
+      "item": [
+        {
+          "name": "Ping — verify partner credentials",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/ping",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "ping"
+              ]
+            }
+          },
+          "response": [],
+          "description": "Connectivity check. Requires a valid partner signature; the pre-request script computes it automatically from partnerCode + apiKey."
+        }
+      ]
+    },
+    {
+      "name": "02 · Login (role tokens)",
+      "description": "Exchange credentials for a role token (X-Access-Token). The dean token is stored in `deanToken`, the student token in `studentToken` — each reused by its respective folder below.",
+      "item": [
+        {
+          "name": "Dean login (staff_user)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/dean/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "dean",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"<dean-username>\",\n  \"password\": \"<dean-password>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "description": "Authenticates a dean from the admin dashboard (staff_user). Returns a JWT signed with the partner secret and the list of faculties this dean may access (config + emp_user_faculties).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set(\"deanToken\", json.data.token);",
+                  "    pm.test(\"Login stored deanToken\", () => pm.collectionVariables.get(\"deanToken\").length > 0);",
+                  "}",
+                  "pm.test(\"Login succeeded\", () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(json.resultCode).to.eql('0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Student login (online_student_login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/auth/student/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "auth",
+                "student",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"<StudentID>\",\n  \"password\": \"<student-password>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "description": "Authenticates a student using the student portal credentials. Only active (enrolled) students of an allowed faculty (economics, facultyId 12) may log in. Returns a JWT signed with the partner secret.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const json = pm.response.json();",
+                  "if (json && json.data && json.data.token) {",
+                  "    pm.collectionVariables.set(\"studentToken\", json.data.token);",
+                  "    pm.test(\"Login stored studentToken\", () => pm.collectionVariables.get(\"studentToken\").length > 0);",
+                  "}",
+                  "pm.test(\"Login succeeded\", () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    pm.expect(json.resultCode).to.eql('0');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "03 · Dean · Faculty Overview",
+      "description": "Faculty-scoped reads. Requires a dean X-Access-Token (folder 02 — run the Dean login request first; it stores the token). Every request is restricted to the faculties the dean is allowed to access; batches list only active batches (with enrolled students). All parameters are required unless noted otherwise.",
+      "item": [
+        {
+          "name": "Faculties",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/faculties",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "faculties"
+              ]
+            }
+          },
+          "response": [],
+          "description": "Faculties the dean may access, with department/batch/student counts."
+        },
+        {
+          "name": "Departments of a faculty",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/departments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "departments"
+              ],
+              "query": [
+                {
+                  "key": "facultyId",
+                  "value": "12",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Active departments of faculty 12 (Economics) with counts."
+        },
+        {
+          "name": "Active batches (REQUIRED: facultyId, departmentId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/batches",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "batches"
+              ],
+              "query": [
+                {
+                  "key": "facultyId",
+                  "value": "12",
+                  "description": ""
+                },
+                {
+                  "key": "departmentId",
+                  "value": "21",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Batches with at least one enrolled student. REQUIRED parameters: facultyId, departmentId."
+        },
+        {
+          "name": "Students (REQUIRED: facultyId, departmentId, batch, status, limit)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "students"
+              ],
+              "query": [
+                {
+                  "key": "facultyId",
+                  "value": "12",
+                  "description": ""
+                },
+                {
+                  "key": "departmentId",
+                  "value": "16",
+                  "description": ""
+                },
+                {
+                  "key": "batch",
+                  "value": "ba10",
+                  "description": ""
+                },
+                {
+                  "key": "status",
+                  "value": "active",
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Students within faculty 12. REQUIRED parameters: facultyId, departmentId, batch, status, limit. status = active | graduated | all. Optional: offset for pagination."
+        },
+        {
+          "name": "Courses (REQUIRED: facultyId, batch | OPTIONAL: semester)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/courses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "courses"
+              ],
+              "query": [
+                {
+                  "key": "facultyId",
+                  "value": "12",
+                  "description": ""
+                },
+                {
+                  "key": "batch",
+                  "value": "bf03",
+                  "description": ""
+                },
+                {
+                  "key": "term",
+                  "value": "current",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Active courses offered in faculty 12 for a specific batch. REQUIRED parameters: facultyId, batch. OPTIONAL: semester (defaults to active term), departmentId. term = current (default) | year (both semesters) | all (every offering)."
+        }
+      ]
+    },
+    {
+      "name": "04 · Student · My Data",
+      "description": "Reads scoped to the logged-in student. Requires a student X-Access-Token (folder 02 — run the Student login request first).",
+      "item": [
+        {
+          "name": "Me — profile, standing, courses",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{studentToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/students/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "students",
+                "me"
+              ]
+            }
+          },
+          "response": [],
+          "description": "The authenticated student's profile, academic standing, current term and that term's active courses."
+        }
+      ]
+    },
+    {
+      "name": "05 · AIS Reads (partner-level)",
+      "description": "Machine-to-machine reads for Campus Connect. Only the partner signature is required (no role token).",
+      "item": [
+        {
+          "name": "Verify student",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/students/verify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "students",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"studentId\": \"<StudentID>\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "description": "Verify a University ID and account status."
+        },
+        {
+          "name": "Student info",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/students/info",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "students",
+                "info"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "<StudentID>",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Basic student information."
+        },
+        {
+          "name": "Enrollment",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/students/enrollment",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "students",
+                "enrollment"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "<StudentID>",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Batch, section, semester and current active term."
+        },
+        {
+          "name": "Academic standing",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/students/academic-standing",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "students",
+                "academic-standing"
+              ],
+              "query": [
+                {
+                  "key": "studentId",
+                  "value": "<StudentID>",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Academic status and a course-results summary."
+        },
+        {
+          "name": "Course catalog",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/courses/catalog",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "courses",
+                "catalog"
+              ],
+              "query": [
+                {
+                  "key": "active",
+                  "value": "1",
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Official course catalog, restricted to the allowed faculties; active courses by default (active=0 shows all). Optional facultyId/departmentId/semester filters."
+        },
+        {
+          "name": "Course offerings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/courses/offerings",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "courses",
+                "offerings"
+              ],
+              "query": [
+                {
+                  "key": "facultyId",
+                  "value": "12",
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Courses offered in a term, restricted to the allowed faculties (economics = 12). semester/academicYear default to the active term; optional batch/departmentId."
+        },
+        {
+          "name": "Course roster",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/courses/roster",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "courses",
+                "roster"
+              ],
+              "query": [
+                {
+                  "key": "courseCode",
+                  "value": "<COURSE_CODE>",
+                  "description": ""
+                },
+                {
+                  "key": "limit",
+                  "value": "50",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Enrolled students in a course for the active term, grouped by batch and section. Optional batch, section, gender (Male|Female|M|F), semester, academicYear."
+        }
+      ]
+    }
+  ]
+}
