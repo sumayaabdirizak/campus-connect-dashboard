@@ -18,7 +18,7 @@ export function computeKpis({
         ) / 100
       : 0;
 
-  const attendanceRate =
+  const onTimeRate =
     totalSubmissions > 0 ? Math.round((onTimeSubmissions / totalSubmissions) * 100) : 0;
 
   const passedQuizzes = allQuizAttempts.filter(
@@ -44,7 +44,7 @@ export function computeKpis({
 
   return {
     avgGpa,
-    attendanceRate,
+    onTimeRate,
     quizPassRate,
     courseCompletionRate,
     enrollmentByMonth,
@@ -94,7 +94,7 @@ export function buildKpiSection({
     activeStudents,
     totalFacultyMembers,
   } = counts;
-  const { avgGpa, attendanceRate, courseCompletionRate, enrollmentTrend } = kpis;
+  const { avgGpa, onTimeRate, courseCompletionRate, enrollmentTrend } = kpis;
 
   return {
     totalDepartments: departments.length,
@@ -106,7 +106,7 @@ export function buildKpiSection({
     assignmentsSubmitted: submissionCount,
     quizAttempts: allQuizAttempts.length,
     averageGpa: avgGpa,
-    attendanceRate,
+    onTimeRate,
     courseCompletionRate,
     trends: {
       totalStudents: enrollmentTrend,
@@ -116,7 +116,7 @@ export function buildKpiSection({
       assignmentsSubmitted: trendPct(totalSubmissions, Math.max(1, totalSubmissions - 50)),
       quizAttempts: 8,
       averageGpa: avgGpa >= 3 ? 4 : -2,
-      attendanceRate: attendanceRate >= 80 ? 3 : -4,
+      onTimeRate: onTimeRate >= 80 ? 3 : -4,
       courseCompletionRate: courseCompletionRate >= 70 ? 6 : -3,
     },
   };

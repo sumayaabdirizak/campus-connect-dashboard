@@ -1,33 +1,16 @@
 import { prisma } from '../../../db/prisma.js';
-import { safe, messageSenderFacultyWhere, toMonthKey } from '../analytics-helpers.js';
+import { safe, toMonthKey } from '../analytics-helpers.js';
+import { aggregateMessagesByMonth } from '../helpers/aggregations.js';
 
 export async function buildTrendSeries({
   scopedFacultyId,
   since,
   months,
   offeringIds,
-  userGrowthRows,
+  userByMonth,
 }) {
-  const messageScopeFilter = messageSenderFacultyWhere(scopedFacultyId);
-
-  const [recentMsgDates, recentSubmDates] = await Promise.all([
-    safe(
-      () =>
-        scopedFacultyId
-          ? prisma.discussionMessage.findMany({
-              where: {
-                deletedAt: null,
-                createdAt: { gte: since },
-                ...messageScopeFilter,
-              },
-              select: { createdAt: true },
-            })
-          : prisma.discussionMessage.findMany({
-              where: { deletedAt: null, createdAt: { gte: since } },
-              select: { createdAt: true },
-            }),
-      []
-    ),
+  const [msgByMonth, recentSubmDates] = await Promise.all([
+    aggregateMessagesByMonth(since, scopedFacultyId),
     safe(
       () =>
         offeringIds.length
@@ -46,30 +29,18 @@ export async function buildTrendSeries({
                 rows.map((s) => ({
                   submitted_at: s.submitted_at,
                   grade: s.gradeRow?.score ?? null,
-                })),
+                }))
               )
           : [],
       []
     ),
   ]);
 
-  const msgByMonth = {};
-  for (const m of recentMsgDates) {
-    const k = toMonthKey(m.createdAt);
-    msgByMonth[k] = (msgByMonth[k] ?? 0) + 1;
-  }
-
   const gradeByMonth = {};
   for (const s of recentSubmDates) {
     const k = toMonthKey(s.submitted_at);
     if (!gradeByMonth[k]) gradeByMonth[k] = [];
     gradeByMonth[k].push(s.grade ?? 0);
-  }
-
-  const userByMonth = {};
-  for (const u of userGrowthRows) {
-    const k = toMonthKey(u.created_at);
-    userByMonth[k] = (userByMonth[k] ?? 0) + 1;
   }
 
   const communicationActivity = months.map(({ label, key }) => ({
@@ -91,5 +62,5 @@ export async function buildTrendSeries({
     users: userByMonth[key] ?? 0,
   }));
 
-  return { messageScopeFilter, communicationActivity, learningProgress, userGrowth };
+  return { communicationActivity, learningProgress, userGrowth };
 }

@@ -40,7 +40,7 @@ export const useAdminAnalytics = (filters: AdminAnalyticsFilters = {}) =>
   useQuery({
     queryKey: adminKeys.analytics(filters),
     queryFn: () => adminApi.getAnalytics(filters),
-    staleTime: 60_000,
+    staleTime: 300_000,
   });
 
 export const useAdminFaculties = () =>

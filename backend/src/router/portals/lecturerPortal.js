@@ -4,7 +4,14 @@ import fs from 'fs';
 import path from 'path';
 import { requireRole } from "../../middleware/requireRole.js";
 import { getMyAssignments } from '../../controllers/portals/lecturerPortal.controller.js';
-import { getMyCourses, getCourseDetail, updateCourseCover } from '../../controllers/portals/teacherCourse.controller/index.js';
+import {
+  getMyCourses,
+  getCourseDetail,
+  getGradingWorkload,
+  listCourseReports,
+  getCourseReport,
+  updateCourseCover,
+} from '../../controllers/portals/teacherCourse.controller/index.js';
 import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
 
 const router = Router();
@@ -44,6 +51,9 @@ function coverUploadMw(req, res, next) {
 }
 
 router.get('/my-assignments', getMyAssignments);
+router.get('/grading-workload', getGradingWorkload);
+router.get('/course-reports', listCourseReports);
+router.get('/course-reports/:offeringId', getCourseReport);
 router.get('/courses', getMyCourses);
 router.get('/courses/:offeringId', getCourseDetail);
 router.post('/courses/:offeringId/cover', uploadRateLimit, coverUploadMw, updateCourseCover);

@@ -15,9 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
-import {
-  wouldExceedMarkBudget
-} from '@/lib/course-details/services/mark-budget-utils';
+import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget-utils';
 import { DraftQuestionEditor } from '../quiz-builder/draft-question-editor';
 import { questionTypesForMode } from '../quiz-question-types';
 import { BasicsTab } from '../quiz-settings-form/basics-tab';
@@ -55,8 +53,8 @@ export function EditQuizPage({
   const saveBlockedByBudget =
     !p.form.is_draft &&
     markBudget != null &&
-    p.form.marksPlanTotal > 0 &&
-    wouldExceedMarkBudget(markBudget, p.form.marksPlanTotal, excludePublishedMarks);
+    quiz.is_draft &&
+    isMarkBudgetExhausted(markBudget);
   const [configTab, setConfigTab] = useState<QuizSettingsTab>('basics');
 
   useEffect(() => {
@@ -111,7 +109,10 @@ export function EditQuizPage({
     : null;
 
   const content = (
-    <div className='fixed inset-0 z-[100] overflow-y-auto bg-[#f8f9fb] text-foreground'>
+    <div
+      data-theme='campus-connect'
+      className='fixed inset-0 z-[100] overflow-y-auto bg-[#f8f9fb] text-foreground'
+    >
       <div className='mx-auto max-w-[1400px] space-y-5 p-4 pb-24 sm:p-6'>
         <header className='flex items-center justify-between gap-3'>
           <div className='min-w-0'>

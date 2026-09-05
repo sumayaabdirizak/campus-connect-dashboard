@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useDebounce } from '@/hooks/use-debounce';
 import { useQueryClient } from '@/lib/async-query';
+import { useAuthStore } from '@/lib/auth-store';
 import {
   entityReportKeys,
   fetchReportList,
@@ -21,6 +22,7 @@ import {
 } from '@/lib/reports/period-utils';
 import { scheduleRouterReplace } from '@/lib/safe-router-navigation';
 import {
+  activityReportScopesForRole,
   REPORT_PERIODS,
   REPORT_SCOPE_META,
   type ReportScope
@@ -37,7 +39,7 @@ import {
 } from './report-filters-panel';
 import { ReportListTable } from './report-list-table';
 import { REPORT_SCOPE_COLUMNS, REPORT_SEARCH_PLACEHOLDER } from './report-scope-columns';
-import { parseReportScope } from './report-scope-tabs';
+import { parseReportScope, ReportScopeTabs } from './report-scope-tabs';
 import { TITLE_LG } from './report-theme';
 
 function parsePeriod(raw: string | null | undefined): string {
@@ -46,8 +48,11 @@ function parsePeriod(raw: string | null | undefined): string {
   return 'all';
 }
 
-function filtersFromParams(sp: URLSearchParams): ReportFilterValues {
-  const scope = parseReportScope(sp.get('scope'));
+function filtersFromParams(
+  sp: URLSearchParams,
+  allowedScopes: readonly ReportScope[]
+): ReportFilterValues {
+  const scope = parseReportScope(sp.get('scope'), allowedScopes);
   const periodParam = parsePeriod(sp.get('period'));
   const dateRange = readDateRangeFromParams(sp);
   const periodPreset = inferPresetFromRange(dateRange, periodParam);
@@ -65,12 +70,14 @@ export function ReportView() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const subjectId = searchParams?.get('id') ?? null;
+  const role = useAuthStore((s) => s.user?.role);
+  const allowedScopes = useMemo(() => activityReportScopesForRole(role), [role]);
 
   const [appliedFilters, setAppliedFilters] = useState<ReportFilterValues>(() =>
-    filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''))
+    filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''), allowedScopes)
   );
   const [pendingFilters, setPendingFilters] = useState<ReportFilterValues>(() =>
-    filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''))
+    filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''), allowedScopes)
   );
 
   const appliedResolved = useMemo(
@@ -88,24 +95,36 @@ export function ReportView() {
 
   useEffect(() => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
-    if (!params.get('scope')) params.set('scope', 'course');
-    if (!params.get('period')) params.set('period', 'all');
+    const rawScope = params.get('scope');
+    let changed = false;
+    if (!rawScope || !allowedScopes.includes(rawScope as ReportScope)) {
+      params.set('scope', allowedScopes[0] ?? 'course');
+      params.delete('id');
+      changed = true;
+    }
+    if (!params.get('period')) {
+      params.set('period', 'all');
+      changed = true;
+    }
     const next = params.toString();
     const current = searchParams?.toString() ?? '';
-    if (next !== current) {
+    if (changed && next !== current) {
       scheduleRouterReplace(router, `/dashboard/reports?${next}`, { scroll: false });
     }
-  }, [router, searchParams]);
+  }, [router, searchParams, allowedScopes]);
 
   useEffect(() => {
     if (skipUrlSyncRef.current) {
       skipUrlSyncRef.current = false;
       return;
     }
-    const fromUrl = filtersFromParams(new URLSearchParams(searchParams?.toString() ?? ''));
+    const fromUrl = filtersFromParams(
+      new URLSearchParams(searchParams?.toString() ?? ''),
+      allowedScopes
+    );
     setAppliedFilters(fromUrl);
     setPendingFilters(fromUrl);
-  }, [searchParams]);
+  }, [searchParams, allowedScopes]);
 
   useEffect(() => {
     setSearch('');
@@ -153,6 +172,28 @@ export function ReportView() {
     status: windowParams.status
   });
 
+  // Teacher "My activity" is always a single row (self) — open the detail directly.
+  useEffect(() => {
+    if (role !== 'TEACHER' || scope !== 'teacher' || subjectId) return;
+    const rows = listQuery.data?.rows;
+    if (!rows || rows.length !== 1) return;
+    const id = rows[0]?.id;
+    if (id == null) return;
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+    params.set('scope', 'teacher');
+    params.set('id', String(id));
+    if (!params.get('period')) params.set('period', appliedResolved.period);
+    scheduleRouterReplace(router, `/dashboard/reports?${params.toString()}`, { scroll: false });
+  }, [
+    role,
+    scope,
+    subjectId,
+    listQuery.data?.rows,
+    searchParams,
+    router,
+    appliedResolved.period
+  ]);
+
   const replaceParams = (mutate: (params: URLSearchParams) => void) => {
     const params = new URLSearchParams(searchParams?.toString() ?? '');
     mutate(params);
@@ -162,7 +203,14 @@ export function ReportView() {
   const applyFilters = (filters: ReportFilterValues) => {
     skipUrlSyncRef.current = true;
     replaceParams((params) => {
-      params.set('scope', filters.scope);
+      // Never let a stale pending scope rewrite the URL while a detail id is
+      // open — that mixed teacher id=373 with scope=course and crashed Prisma
+      // on CourseOffering.publicId (UUID).
+      const urlScope = searchParams?.get('scope');
+      const scopeToKeep =
+        subjectId && urlScope ? urlScope : filters.scope;
+      params.set('scope', scopeToKeep);
+      if (subjectId) params.set('id', subjectId);
 
       if (filters.periodPreset === 'custom') {
         params.set('period', 'custom');
@@ -205,10 +253,26 @@ export function ReportView() {
       }
     }
 
+    // Keep scope aligned with the open report (URL / applied), not a stale pending tab.
+    const urlScope = parseReportScope(
+      searchParams?.get('scope') ?? appliedFilters.scope,
+      allowedScopes
+    );
+    filters = { ...filters, scope: urlScope };
+
     setAppliedFilters(filters);
     setPendingFilters(filters);
     applyFilters(filters);
-    void queryClient.invalidateQueries({ queryKey: entityReportKeys.all });
+    // Targeted invalidation only — invalidating every entity report races the
+    // list + detail force-refetches and can park a refresh error on top of
+    // data that already loaded successfully.
+    if (subjectId) {
+      void queryClient.invalidateQueries({
+        queryKey: [...entityReportKeys.all, 'detail', urlScope, subjectId]
+      });
+    } else {
+      void queryClient.invalidateQueries({ queryKey: entityReportKeys.all });
+    }
   };
 
   const handleFilterChange = (patch: Partial<ReportFilterValues>) => {
@@ -267,20 +331,27 @@ export function ReportView() {
           scope={scope}
           subjectId={subjectId}
           period={appliedResolved.period}
-          window={windowParams}
+          dateWindow={windowParams}
           onBack={closeDetail}
           filtersPanel={filtersPanel}
-          isGenerating={listQuery.isFetching}
+          isGenerating={false}
         />
       </div>
     );
   }
 
   const meta = REPORT_SCOPE_META[scope];
+  const pageTitle =
+    role === 'TEACHER' ? 'My course activity reports' : 'LMS activity reports';
 
   return (
     <div className='flex flex-col gap-4'>
-      <h1 className={TITLE_LG}>{meta.title}</h1>
+      <div className='space-y-1'>
+        <h1 className={TITLE_LG}>{pageTitle}</h1>
+        <p className='text-sm text-muted-foreground'>{meta.blurb}</p>
+      </div>
+
+      <ReportScopeTabs scope={scope} allowedScopes={allowedScopes} />
 
       {filtersPanel}
 

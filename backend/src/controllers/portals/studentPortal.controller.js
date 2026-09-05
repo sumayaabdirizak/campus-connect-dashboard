@@ -2,6 +2,7 @@ import { prisma } from "../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../utils/publicAssetUrl.js";
 import { respondInternalError } from "../../utils/httpError.js";
 import { ensureSectionOfferings } from "../../services/academic/ensureSectionOfferings.js";
+import { loadUniversityAcademicForUserId, resolveOfferingTermFromUniversity, loadBatchSemesterForUserId } from "../../services/integrations/academicInfoSystem/universityStudentAcademic.js";
 
 function buildQuickLinks(resources = []) {
   const visible = resources.filter((r) => !r.is_draft && r.status === "APPROVED");
@@ -53,7 +54,7 @@ function computeOfferingProgress(offering) {
  */
 export const getMyCourses = async (req, res) => {
   try {
-    const userId = Number(req.user.sub);
+    const userId = Number(req.user.sub ?? req.user.id);
     if (!userId) {
       return res.status(401).json({ message: "Invalid user context" });
     }
@@ -82,6 +83,33 @@ export const getMyCourses = async (req, res) => {
 
     const isGraduated = registration.status === "GRADUATED";
 
+    const universityAcademic = await loadUniversityAcademicForUserId(userId, {
+      refresh: true,
+    });
+    const universityTerms = await resolveOfferingTermFromUniversity(universityAcademic);
+
+    let termAcademicYearId = registration.currentAcademicYearId;
+    let termSemesterId = registration.currentSemesterId;
+
+    if (universityTerms) {
+      termAcademicYearId = universityTerms.currentAcademicYearId;
+      termSemesterId = universityTerms.currentSemesterId;
+
+      if (
+        registration.currentAcademicYearId !== termAcademicYearId ||
+        registration.currentSemesterId !== termSemesterId
+      ) {
+        await prisma.studentRegistration.update({
+          where: { id: registration.id },
+          data: {
+            currentAcademicYearId: termAcademicYearId,
+            currentSemesterId: termSemesterId,
+            registrationAcademicYearId: termAcademicYearId,
+          },
+        });
+      }
+    }
+
     if (!isGraduated) {
       const facultyId = registration.batchSection.batch.program.department.facultyId;
       const deptRows = await prisma.department.findMany({
@@ -92,8 +120,8 @@ export const getMyCourses = async (req, res) => {
 
       await ensureSectionOfferings({
         sectionId: registration.batchSectionId,
-        academicYearId: registration.currentAcademicYearId,
-        semesterId: registration.currentSemesterId,
+        academicYearId: termAcademicYearId,
+        semesterId: termSemesterId,
         curriculumSemester: registration.batchSection.batch.semester_number,
         departmentIds,
         programDepartmentId: registration.batchSection.batch.program.departmentId,
@@ -103,8 +131,8 @@ export const getMyCourses = async (req, res) => {
     const offerings = await prisma.courseOffering.findMany({
       where: {
         sectionId: registration.batchSectionId,
-        semesterId: registration.currentSemesterId,
-        academicYearId: registration.currentAcademicYearId,
+        semesterId: termSemesterId,
+        academicYearId: termAcademicYearId,
       },
       include: {
         course: {
@@ -155,6 +183,8 @@ export const getMyCourses = async (req, res) => {
       },
     });
 
+    const universityAcademicForResponse = universityAcademic;
+
     const transformed = offerings.map((o) => {
       const metrics = computeOfferingProgress(o);
       const fromAssignings = (o.course.teacherAssignings ?? [])
@@ -180,15 +210,19 @@ export const getMyCourses = async (req, res) => {
       };
     });
 
+    const batchSemester = await loadBatchSemesterForUserId(userId);
+
     res.json({
       success: true,
       offerings: transformed,
       isGraduated,
       graduatedAt: registration.graduatedAt,
+      universityAcademic: universityAcademicForResponse ?? null,
+      batchSemester,
       registration: {
         batch: registration.batchSection.batch.name,
         section: registration.batchSection.name,
-        semester: registration.currentSemester.name,
+        semester: batchSemester.label ?? null,
       },
     });
   } catch (e) {
@@ -204,7 +238,7 @@ export const getMyCourses = async (req, res) => {
  */
 export const getSemesterHistory = async (req, res) => {
   try {
-    const userId = Number(req.user.sub);
+    const userId = Number(req.user.sub ?? req.user.id);
     if (!userId) {
       return res.status(401).json({ message: "Invalid user context" });
     }
@@ -264,7 +298,7 @@ export const getSemesterHistory = async (req, res) => {
 export const getCourseDetail = async (req, res) => {
   try {
     const { offeringId } = req.params;
-    const userId = Number(req.user.sub);
+    const userId = Number(req.user.sub ?? req.user.id);
 
     const offering = await prisma.courseOffering.findFirst({
       where: {

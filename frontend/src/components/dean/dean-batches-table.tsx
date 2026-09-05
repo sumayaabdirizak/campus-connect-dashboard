@@ -64,8 +64,8 @@ export function DeanBatchesTable() {
               <PosTableHeaderCell>Batch</PosTableHeaderCell>
               <PosTableHeaderCell>Program</PosTableHeaderCell>
               <PosTableHeaderCell>Department</PosTableHeaderCell>
-              <PosTableHeaderCell>Academic Year</PosTableHeaderCell>
-              <PosTableHeaderCell>Semester</PosTableHeaderCell>
+              <PosTableHeaderCell>Academic Year (cohort)</PosTableHeaderCell>
+              <PosTableHeaderCell>Cohort semester</PosTableHeaderCell>
               <PosTableHeaderCell align='right'>Sections</PosTableHeaderCell>
             </tr>
           </PosTableHead>
@@ -80,7 +80,9 @@ export function DeanBatchesTable() {
                 <td className='px-4 py-3 text-sm text-muted-foreground'>
                   {batch.academicYear?.name ?? batch.academic_year}
                 </td>
-                <td className='px-4 py-3 text-sm text-muted-foreground'>{batch.semester_number}</td>
+                <td className='px-4 py-3 text-sm text-muted-foreground'>
+                  {batch.cohortSemester ?? batch.semester_number}
+                </td>
                 <td className='px-4 py-3 text-right text-sm tabular-nums'>
                   {batch._count?.sections ?? batch.sections?.length ?? 0}
                 </td>

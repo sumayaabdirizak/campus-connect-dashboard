@@ -20,6 +20,7 @@ const ENTITY_SCOPE_CODE: Record<string, string> = {
   batch: 'BAT',
   section: 'SEC',
   faculty: 'FAC',
+  class: 'CLS',
 };
 
 export type ReportInvoiceMeta = {

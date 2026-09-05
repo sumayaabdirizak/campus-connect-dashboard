@@ -48,7 +48,7 @@ export function FeedCardList({
         role='feed'
         aria-busy={isLoading}
         aria-label={i18n.feedLabel}
-        className='space-y-1 px-0.5 pb-2'
+        className='space-y-3 px-1 pb-3'
       >
         {visibleAnnouncements.map((announcement, index) => (
           <AnnouncementCard

@@ -61,12 +61,12 @@ export function AnnouncementActions({ announcement }: { announcement: Announceme
         disabled={busy}
         aria-pressed={liked}
         aria-label={liked ? 'Remove like' : 'Like post'}
-        className={`flex items-center gap-1 text-xs transition-colors disabled:opacity-50 ${
+        className={`flex items-center gap-1.5 text-sm transition-colors disabled:opacity-50 ${
           liked ? 'text-red-500' : 'text-foreground/65 hover:text-red-500'
         }`}
       >
-        <Icons.heart className='h-3.5 w-3.5' />
-        {likeCount > 0 ? <span className='text-[10px]'>{likeCount}</span> : null}
+        <Icons.heart className='h-4 w-4' />
+        {likeCount > 0 ? <span className='text-xs'>{likeCount}</span> : null}
       </button>
     </div>
   );

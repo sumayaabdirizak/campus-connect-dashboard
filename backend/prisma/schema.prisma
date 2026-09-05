@@ -462,13 +462,15 @@ model CalendarReminderJob {
 }
 
 model StudentProfile {
-  id             Int    @id @default(autoincrement())
-  userId         Int    @unique
-  student_number String @unique
-  admission_year Int
-  facultyId      Int
-  departmentId   Int
-  programId      Int
+  id                      Int     @id @default(autoincrement())
+  userId                  Int     @unique
+  student_number          String  @unique
+  admission_year          Int
+  facultyId               Int
+  departmentId            Int
+  programId               Int
+  universityAcademicYear  String? @map("university_academic_year")
+  universitySemesterNumber Int?   @map("university_semester_number")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }

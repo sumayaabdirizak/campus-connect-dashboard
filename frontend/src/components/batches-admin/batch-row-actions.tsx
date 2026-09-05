@@ -15,14 +15,11 @@ import { handleApiError, showToast } from '@/lib/notifications';
 import { adminBatchSectionsQueryKey, adminBatchesQueryKey } from '@/lib/batches-admin/queries';
 import { deleteAdminBatch, type AdminBatch } from '@/lib/batches-admin/services';
 import { BatchSectionsDialog } from './batch-sections-dialog';
-import { SectionFormSheet } from './section-form-sheet';
 
 export function BatchRowActions({ batch }: { batch: AdminBatch }) {
-  const [sectionOpen, setSectionOpen] = useState(false);
   const [sectionsOpen, setSectionsOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const queryClient = useQueryClient();
-  const inactive = batch.isGraduated || batch.status === 'INACTIVE';
 
   const deletion = useMutation({
     mutationFn: deleteAdminBatch,
@@ -45,9 +42,6 @@ export function BatchRowActions({ batch }: { batch: AdminBatch }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end' className='w-44'>
           <DropdownMenuItem onClick={() => setSectionsOpen(true)}>View sections</DropdownMenuItem>
-          {!inactive ? (
-            <DropdownMenuItem onClick={() => setSectionOpen(true)}>Add section</DropdownMenuItem>
-          ) : null}
           <DropdownMenuItem
             className='text-destructive focus:text-destructive'
             onClick={() => setDeleteOpen(true)}
@@ -62,11 +56,6 @@ export function BatchRowActions({ batch }: { batch: AdminBatch }) {
         batchName={batch.name}
         open={sectionsOpen}
         onOpenChange={setSectionsOpen}
-      />
-      <SectionFormSheet
-        open={sectionOpen}
-        onOpenChange={setSectionOpen}
-        defaultBatchId={batch.id}
       />
       <AlertModal
         isOpen={deleteOpen}

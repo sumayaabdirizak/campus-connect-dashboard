@@ -27,7 +27,7 @@ export function buildFacultyReportCatalog(data?: DeanReports): FacultyReportCata
       id: 'student-performance',
       name: 'Student Performance',
       category: 'Student',
-      description: `Performance and attendance across ${faculty}.`,
+      description: `Performance and on-time submissions across ${faculty}.`,
     },
     {
       id: 'enrollment-report',
@@ -72,7 +72,7 @@ export function downloadFacultyReportsCsv(data: DeanReports) {
     ['Instructors', String(data.kpis.totalInstructors)],
     ['Courses', String(data.kpis.totalCourses)],
     ['Average GPA', String(data.kpis.averageGpa)],
-    ['Attendance Rate', `${data.kpis.attendanceRate}%`],
+    ['On-time submissions', `${data.kpis.onTimeRate}%`],
     ['Completion Rate', `${data.kpis.courseCompletionRate}%`],
   ];
   const csv = rows.map((r) => r.map((v) => `"${v.replace(/"/g, '""')}"`).join(',')).join('\n');

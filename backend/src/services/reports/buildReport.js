@@ -76,8 +76,26 @@ export async function buildReport({
     since: since ?? periodStart(months),
     until,
   };
+
+  // Isolate domain failures — one broken table/query must not blank the whole report.
   const results = await Promise.all(
-    names.map((name) => DOMAIN_FNS[name](ctx, window))
+    names.map(async (name) => {
+      try {
+        return await DOMAIN_FNS[name](ctx, window);
+      } catch (err) {
+        console.error('[reports] domain failed', {
+          scope,
+          id: resolved.subject?.id,
+          domain: name,
+          message: err?.message,
+        });
+        return {
+          kpis: [{ key: `${name}Error`, label: 'Unavailable', value: null }],
+          rows: [],
+          error: err?.message || 'Failed to load this section',
+        };
+      }
+    })
   );
 
   const sections = names.map((name, i) => ({

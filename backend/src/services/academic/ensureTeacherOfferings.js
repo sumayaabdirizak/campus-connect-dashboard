@@ -1,5 +1,5 @@
 import { prisma } from "../../db/prisma.js";
-import { getCurrentAcademicYearBounds } from "./academicCalendar.js";
+import { resolveActiveAcademicTerm } from "./resolveActiveAcademicTerm.js";
 
 /**
  * Ensure CourseOfferings exist for a teacher's assigned catalogue courses.
@@ -31,7 +31,8 @@ export async function ensureTeacherOfferings(teacherId) {
   ];
   if (departmentIds.length === 0) return { created: 0 };
 
-  const currentYearName = getCurrentAcademicYearBounds().name;
+  const activeTerm = await resolveActiveAcademicTerm({ includeDb: false });
+  const currentYearName = activeTerm.academicYearName;
 
   let regs = await prisma.studentRegistration.findMany({
     where: {

@@ -1,4 +1,7 @@
-import { assertCourseMarkBudget } from '../../../services/courses/courseMarkBudget.service.js';
+import {
+  assertCourseMarkBudget,
+  reserveCourseMarkWeight,
+} from '../../../services/courses/courseMarkBudget.service.js';
 
 /** Default course mark weight when the client omits maxMarks (share of 100). */
 export const DEFAULT_ASSIGNMENT_MARK_WEIGHT = 10;
@@ -42,6 +45,24 @@ export async function validateAssignmentMarkBudget(
   );
   if (budget.error) return { error: budget.error };
   return { data: budget.data };
+}
+
+/** Resolve assignment maxMarks against remaining budget (draft + publish). */
+export async function resolveAssignmentMaxMarks(
+  courseOfferingId,
+  requestedMarks,
+  excludeAssignmentId,
+  tx
+) {
+  const requested = Number.isInteger(requestedMarks) ? requestedMarks : DEFAULT_ASSIGNMENT_MARK_WEIGHT;
+  const reserved = await reserveCourseMarkWeight(
+    courseOfferingId,
+    requested,
+    { excludeAssignmentId },
+    tx
+  );
+  if (reserved.error) return { error: reserved.error };
+  return { data: reserved.data };
 }
 
 /** Coerce late window to int minutes; omit when undefined/null. */

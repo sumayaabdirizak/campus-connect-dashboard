@@ -50,7 +50,7 @@ export type OversightScope = 'dean' | 'admin';
 export const REPORT_SCOPES = ['course', 'teacher', 'student', 'batch', 'section', 'faculty'] as const;
 export type ReportScope = (typeof REPORT_SCOPES)[number];
 
-/** Primary activity reports shown in navigation. */
+/** Primary activity reports shown in navigation (dean / super-admin). */
 export const ACTIVITY_REPORT_SCOPES: ReportScope[] = [
   'course',
   'section',
@@ -58,6 +58,13 @@ export const ACTIVITY_REPORT_SCOPES: ReportScope[] = [
   'student',
   'teacher'
 ];
+
+/** Lecturers: only courses they teach + their own activity. */
+export const TEACHER_ACTIVITY_REPORT_SCOPES: ReportScope[] = ['course', 'teacher'];
+
+export function activityReportScopesForRole(role: string | null | undefined): ReportScope[] {
+  return role === 'TEACHER' ? TEACHER_ACTIVITY_REPORT_SCOPES : ACTIVITY_REPORT_SCOPES;
+}
 
 export const REPORT_SCOPE_META: Record<
   ReportScope,

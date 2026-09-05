@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import type { Assignment, Submission } from '@/lib/course-details/services/assignments-types';
 import type { GroupRow } from './shared';
+import { isGradeInputAllowed } from './grade-input-utils';
 
 export function PerMemberGrades({
   assignment,
@@ -61,13 +62,15 @@ export function PerMemberGrades({
                 min={0}
                 max={cap}
                 value={memberGrades.get(member.id) ?? ''}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const next = e.target.value;
+                  if (!isGradeInputAllowed(next, cap)) return;
                   setMemberGrades((prev) => {
-                    const next = new Map(prev);
-                    next.set(member.id, e.target.value);
-                    return next;
-                  })
-                }
+                    const map = new Map(prev);
+                    map.set(member.id, next);
+                    return map;
+                  });
+                }}
                 placeholder={`0-${cap}`}
                 className='w-24 h-8 text-sm'
               />

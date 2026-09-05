@@ -28,7 +28,7 @@ export function PostSkeleton() {
 
 export function AnnouncementListSkeleton() {
   return (
-    <div className='space-y-2 px-2 py-2 sm:px-3'>
+    <div className='mx-auto w-full max-w-2xl space-y-3 px-1 py-2'>
       <PostSkeleton />
       <PostSkeleton />
       <PostSkeleton />

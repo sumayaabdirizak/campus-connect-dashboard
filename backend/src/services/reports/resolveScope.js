@@ -1,4 +1,5 @@
 import { prisma } from '../../db/prisma.js';
+import { isCourseOfferingPublicId } from './courseOfferingPublicId.js';
 
 /**
  * Every report scope narrows to the same two things: a set of course
@@ -46,8 +47,13 @@ const offeringIdsForSections = async (sectionIds) =>
 
 /** Course offerings are addressed by `publicId` in URLs, never the numeric id. */
 async function resolveCourse(publicId) {
+  const pid = String(publicId ?? '').trim();
+  // Guard before Prisma: a teacher user id like "373" is not a UUID and
+  // crashes findUnique on @db.Uuid with "invalid length".
+  if (!isCourseOfferingPublicId(pid)) return null;
+
   const offering = await prisma.courseOffering.findUnique({
-    where: { publicId: String(publicId) },
+    where: { publicId: pid },
     select: {
       id: true,
       course: { select: { code: true, name: true } },
@@ -70,7 +76,7 @@ async function resolveCourse(publicId) {
 
   return {
     subject: {
-      id: publicId,
+      id: pid,
       name: `${offering.course.code} — ${offering.course.name}`,
       subtitle: `${offering.section.batch.name} · Section ${offering.section.name}`,
       meta: [
@@ -130,19 +136,31 @@ async function resolveStudent(userId) {
   });
   if (!student) return null;
 
-  const registrations = await prisma.studentRegistration.findMany({
-    where: { studentId: id },
+  const activeReg = await prisma.studentRegistration.findFirst({
+    where: { studentId: id, status: 'ACTIVE' },
+    orderBy: { created_at: 'desc' },
     select: {
       batchSectionId: true,
-      status: true,
+      currentAcademicYearId: true,
+      currentSemesterId: true,
       batchSection: {
         select: { name: true, batch: { select: { id: true, name: true } } },
       },
     },
   });
-  const sectionIds = [...new Set(registrations.map((r) => r.batchSectionId))];
-  const offeringIds = await offeringIdsForSections(sectionIds);
-  const current = registrations[0];
+
+  const offeringIds = activeReg
+    ? (
+        await prisma.courseOffering.findMany({
+          where: {
+            sectionId: activeReg.batchSectionId,
+            academicYearId: activeReg.currentAcademicYearId,
+            semesterId: activeReg.currentSemesterId,
+          },
+          select: { id: true },
+        })
+      ).map((o) => o.id)
+    : [];
 
   return {
     subject: {
@@ -151,16 +169,16 @@ async function resolveStudent(userId) {
       subtitle: student.email,
       meta: [
         { label: 'Student number', value: student.number ?? '—' },
-        { label: 'Batch', value: current?.batchSection?.batch?.name ?? '—' },
-        { label: 'Section', value: current?.batchSection?.name ?? '—' },
-        { label: 'Courses', value: String(offeringIds.length) },
+        { label: 'Batch', value: activeReg?.batchSection?.batch?.name ?? '—' },
+        { label: 'Section', value: activeReg?.batchSection?.name ?? '—' },
+        { label: 'Courses (this term)', value: String(offeringIds.length) },
       ],
     },
     offeringIds,
     studentIds: [id],
     facultyIds: null,
-    batchIds: [...new Set(registrations.map((r) => r.batchSection?.batch?.id).filter(Boolean))],
-    sectionIds,
+    batchIds: activeReg?.batchSection?.batch?.id ? [activeReg.batchSection.batch.id] : [],
+    sectionIds: activeReg ? [activeReg.batchSectionId] : [],
   };
 }
 

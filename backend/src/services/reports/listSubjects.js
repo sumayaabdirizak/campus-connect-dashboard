@@ -7,21 +7,25 @@ import { prisma } from '../../db/prisma.js';
  * separate list endpoints — those return different shapes, page differently
  * and carry their own role rules, which would leak into every report page.
  */
-export async function listSubjects(scope, search = '') {
+export async function listSubjects(scope, search = '', { teacherId = null } = {}) {
   const q = String(search || '').trim();
   const contains = q ? { contains: q, mode: 'insensitive' } : undefined;
+  const tid = teacherId != null ? Number(teacherId) : null;
 
   switch (scope) {
     case 'course': {
       const rows = await prisma.courseOffering.findMany({
-        where: contains
-          ? {
-              OR: [
-                { course: { name: contains } },
-                { course: { code: contains } },
-              ],
-            }
-          : undefined,
+        where: {
+          ...(tid != null ? { teacherId: tid } : {}),
+          ...(contains
+            ? {
+                OR: [
+                  { course: { name: contains } },
+                  { course: { code: contains } },
+                ],
+              }
+            : {}),
+        },
         select: {
           publicId: true,
           course: { select: { code: true, name: true } },
@@ -42,9 +46,12 @@ export async function listSubjects(scope, search = '') {
 
     case 'teacher': {
       // Only staff who actually run a course — an empty report helps nobody.
+      // When teacherId is set (lecturer session), return only that user.
       const rows = await prisma.user.findMany({
         where: {
-          teacherOfferings: { some: {} },
+          ...(tid != null
+            ? { id: tid }
+            : { teacherOfferings: { some: {} } }),
           ...(contains ? { OR: [{ full_name: contains }, { email: contains }] } : {}),
         },
         select: {

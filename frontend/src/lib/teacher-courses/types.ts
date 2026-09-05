@@ -3,6 +3,7 @@ export interface Course {
   courseCode: string;
   courseName: string;
   department: string;
+  batch?: string | null;
   section: string;
   thumbnail: string | null;
   totalStudents: number;

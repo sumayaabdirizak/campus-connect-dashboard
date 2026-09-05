@@ -161,7 +161,12 @@ export function PosTableToolbar({
       )}
     >
       <div className='flex min-w-0 w-full flex-1 flex-wrap items-center gap-2'>
-        <div className='relative min-w-0 w-full flex-1 sm:min-w-[10rem] sm:max-w-md'>
+        <div
+          className={cn(
+            'relative min-w-0 w-full sm:min-w-[10rem]',
+            toolbarStart ? 'sm:max-w-xs sm:flex-none' : 'flex-1 sm:max-w-md'
+          )}
+        >
           <Icons.search className='text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2' />
           <Input
             value={search ?? ''}

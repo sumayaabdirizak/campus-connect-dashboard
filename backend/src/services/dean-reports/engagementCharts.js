@@ -1,10 +1,6 @@
 import { DAY_LABELS, toDayKey, toMonthKey } from './helpers.js';
 
-// Wire format keeps the `attendance`/`attendanceRate` field names for API
-// compatibility with existing frontend consumers, but this is submission
-// timeliness (on-time vs late), not formal attendance — the real Attendance
-// feature was removed from the app. See the "Platform engagement — activity,
-// not formal attendance" disclaimer in faculty-reports-usage-tab.tsx.
+// On-time vs late submission rates — not formal class attendance.
 export function buildEngagementCharts({ recentSubmissions, months, offerings }) {
   const dailyEngagement = Array.from({ length: 7 }, (_, i) => {
     const d = new Date();
@@ -27,8 +23,7 @@ export function buildEngagementCharts({ recentSubmissions, months, offerings }) 
   });
 
   // Same on-time/late formula as daily/monthly, grouped by department via
-  // offering -> course -> department, instead of reusing passRate (a
-  // different metric that was previously mislabeled as attendance).
+  // offering -> course -> department.
   const offeringDepartment = new Map(
     offerings.map((o) => [o.id, o.course?.department ?? null])
   );

@@ -18,6 +18,14 @@ export interface DeanUser {
     hire_date?: string;
     faculties?: { faculty: { id: number; name: string; code: string } }[];
   };
+  registration?: {
+    batchSectionId: number;
+    batchSectionName: string;
+    batchId: number;
+    batchName: string;
+    departmentId: number;
+    departmentName: string;
+  } | null;
 }
 
 export interface DeanBatch {
@@ -25,6 +33,10 @@ export interface DeanBatch {
   name: string;
   academic_year: number;
   semester_number: number;
+  cohortSemester?: number;
+  maxSemesters?: number;
+  currentAcademicYearName?: string;
+  currentSemesterInYear?: number;
   program: { id: number; name: string; code: string; department: { id: number; name: string } };
   academicYear: { id: number; name: string };
   sections: DeanSection[];
@@ -64,8 +76,13 @@ export interface Course {
 }
 
 export type DeanUsersListResponse = {
-  users: DeanUser[];
-  pagination: { total: number; page: number; pageSize: number };
+  users?: DeanUser[];
+  results?: DeanUser[];
+  total?: number;
+  totalCount?: number;
+  page?: number;
+  pageSize?: number;
+  pagination?: { total: number; page: number; pageSize: number };
 };
 
 export interface DeanAnalytics {
@@ -106,7 +123,7 @@ export interface DeanReports {
     assignmentsSubmitted: number;
     quizAttempts: number;
     averageGpa: number;
-    attendanceRate: number;
+    onTimeRate: number;
     courseCompletionRate: number;
     trends: Record<string, number>;
   };
@@ -116,7 +133,7 @@ export interface DeanReports {
     topCourses: { course: string; name: string; department: string; avgScore: number; completion: number; engagement: number }[];
     bottomCourses: { course: string; name: string; department: string; avgScore: number; completion: number; engagement: number }[];
     performanceDistribution: { band: string; count: number }[];
-    attendance: {
+    onTimeSubmissions: {
       daily: { day: string; rate: number }[];
       monthly: { month: string; rate: number }[];
       byDepartment: { department: string; rate: number }[];
@@ -157,7 +174,7 @@ export interface DeanStudentReportRow {
   department: string;
   level: string;
   gpa: number;
-  attendance: number;
+  onTimeRate: number;
   status: string;
 }
 
@@ -202,7 +219,7 @@ export interface DeanRiskStudent {
   name: string;
   department: string;
   gpa: number;
-  attendance: number;
+  onTimeRate: number;
   reason: string;
   priority: 'high' | 'medium' | 'low';
 }

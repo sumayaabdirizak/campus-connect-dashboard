@@ -78,15 +78,20 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
         );
 
         // Check if any nav item matches the current pathname exactly or as a parent
-        // Sort by length descending to get the most specific match first
-        const applicableItems = allNavItems.filter(
-          (item) => pathname === item.url || pathname.startsWith(item.url + '/')
-        );
+        // Sort by length descending to get the most specific match first.
+        // Nav urls may include ?query — compare path only.
+        const pathOf = (url: string) => url.split('?')[0];
+        const applicableItems = allNavItems.filter((item) => {
+          const base = pathOf(item.url);
+          return pathname === base || pathname.startsWith(base + '/');
+        });
 
         if (applicableItems.length > 0) {
-          // Find the most specific match (longest URL)
-          const maxLen = Math.max(...applicableItems.map((i) => i.url.length));
-          const mostSpecificItems = applicableItems.filter((i) => i.url.length === maxLen);
+          // Find the most specific match (longest path, ignoring query)
+          const maxLen = Math.max(...applicableItems.map((i) => pathOf(i.url).length));
+          const mostSpecificItems = applicableItems.filter(
+            (i) => pathOf(i.url).length === maxLen
+          );
 
           // Access is allowed if ANY of the most specific matches allow the role
           // or if they don't have role restrictions.

@@ -5,6 +5,7 @@ import {
   BarChart3,
   BookOpen,
   GraduationCap,
+  Layers,
   UserCog,
   Users
 } from 'lucide-react';
@@ -35,6 +36,11 @@ const SCOPE_UI: Record<
     title: 'A batch',
     hint: 'Whole cohort — sections and courses together'
   },
+  section: {
+    icon: Layers,
+    title: 'A section',
+    hint: 'One batch section — students and courses in the period'
+  },
   faculty: {
     icon: BarChart3,
     title: 'A faculty',
@@ -60,7 +66,7 @@ export function ReportScopePicker({ scope }: { scope: ReportScope | null }) {
 
   return (
     <div className='space-y-2'>
-      <p className='text-sm font-medium text-[#101828] dark:text-foreground'>
+      <p className='text-sm font-medium text-foreground'>
         What do you want to check?
       </p>
       <div className='grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'>
@@ -76,25 +82,25 @@ export function ReportScopePicker({ scope }: { scope: ReportScope | null }) {
               className={cn(
                 'flex items-start gap-3 rounded-xl border px-3.5 py-3 text-left transition-all duration-200',
                 active
-                  ? 'border-[#3B82F6] bg-[#EFF6FF] shadow-[0_1px_2px_rgba(16,24,40,0.06)] dark:border-blue-500 dark:bg-blue-950/30'
-                  : 'border-[#E5E7EB] bg-white hover:border-[#98A2B3] hover:bg-[#F9FAFB] dark:border-border dark:bg-card'
+                  ? 'border-primary bg-primary/10 shadow-sm'
+                  : 'border-border bg-card hover:bg-muted/60'
               )}
             >
               <span
                 className={cn(
                   'grid size-9 shrink-0 place-items-center rounded-lg',
                   active
-                    ? 'bg-[#3B82F6] text-white'
-                    : 'bg-[#F2F4F7] text-[#3B82F6] dark:bg-muted'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted text-primary'
                 )}
               >
                 <Icon className='size-4' aria-hidden />
               </span>
               <span className='min-w-0'>
-                <span className='block text-sm font-semibold text-[#101828] dark:text-foreground'>
+                <span className='block text-sm font-semibold text-foreground'>
                   {ui.title}
                 </span>
-                <span className='mt-0.5 block text-xs leading-snug text-[#667085] dark:text-muted-foreground'>
+                <span className='mt-0.5 block text-xs leading-snug text-muted-foreground'>
                   {ui.hint}
                 </span>
               </span>

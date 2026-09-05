@@ -14,9 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
-import {
-  wouldExceedMarkBudget
-} from '@/lib/course-details/services/mark-budget-utils';
+import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget-utils';
 import type { AiSectionPlanItem } from '../ai-generate-dialog/section-plan';
 import {
   quizFormCardClass,
@@ -56,10 +54,7 @@ export function NewQuizPage({
   const p = useNewQuizPage(courseId, onCreated);
   const { data: markBudget } = useCourseMarkBudget(courseId);
   const [configTab, setConfigTab] = useState<QuizSettingsTab>('basics');
-  const createBlockedByBudget =
-    markBudget != null &&
-    p.form.marksPlanTotal > 0 &&
-    wouldExceedMarkBudget(markBudget, p.form.marksPlanTotal, 0);
+  const createBlockedByBudget = markBudget != null && isMarkBudgetExhausted(markBudget);
 
   // Escapes the dashboard's sidebar/topbar chrome — this flow is big enough
   // (config + live question sections + preview panel) that it deserves the
@@ -130,7 +125,10 @@ export function NewQuizPage({
   const anyEditorOpen = p.draft != null || p.aiOpen;
 
   const content = (
-    <div className='fixed inset-0 z-[100] overflow-y-auto bg-[#f8f9fb] text-foreground'>
+    <div
+      data-theme='campus-connect'
+      className='fixed inset-0 z-[100] overflow-y-auto bg-[#f8f9fb] text-foreground'
+    >
       <div className='mx-auto max-w-[1400px] space-y-5 p-4 pb-24 sm:p-6'>
       <header className='flex items-center justify-between gap-3'>
         <div className='min-w-0'>
@@ -160,7 +158,7 @@ export function NewQuizPage({
               isUploadedPaper && !p.pendingPaperFile
                 ? 'Upload the quiz document on the Marking tab'
                 : createBlockedByBudget
-                ? 'Total marks exceed available course marks'
+                ? 'All course marks are allocated'
                 : p.questions.length === 0
                   ? 'Add at least one question first'
                   : p.draft != null

@@ -47,7 +47,7 @@ export function AuditLogsFiltersBar({
   onReset,
 }: AuditLogsFiltersBarProps) {
   return (
-    <div className='shrink-0 border-b p-2'>
+    <div className='rounded-xl border border-border bg-card p-3'>
       <div className='flex flex-wrap items-end gap-2'>
         <FilterField label='Search' className='min-w-[180px] flex-1'>
           <Input
@@ -55,7 +55,7 @@ export function AuditLogsFiltersBar({
             onChange={(e) => setDraft({ ...draft, search: e.target.value })}
             onKeyDown={(e) => e.key === 'Enter' && onApply()}
             placeholder='Search actions, users, modules…'
-            className='h-8'
+            className='h-9'
           />
         </FilterField>
         <FilterField label='User' className='w-[150px]'>
@@ -65,7 +65,7 @@ export function AuditLogsFiltersBar({
               setDraft({ ...draft, actorId: v === 'all' ? null : Number(v) })
             }
           >
-            <SelectTrigger className='h-8'>
+            <SelectTrigger className='h-9'>
               <SelectValue placeholder='All users' />
             </SelectTrigger>
             <SelectContent>
@@ -97,7 +97,7 @@ export function AuditLogsFiltersBar({
             value={draft.status}
             onValueChange={(v) => setDraft({ ...draft, status: v as AuditStatus })}
           >
-            <SelectTrigger className='h-8'>
+            <SelectTrigger className='h-9'>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -116,11 +116,17 @@ export function AuditLogsFiltersBar({
             options={PERIOD_OPTIONS}
           />
         </FilterField>
-        <Button type='button' size='sm' className='h-8' onClick={onApply}>
+        <Button type='button' size='sm' className='h-9 rounded-full' onClick={onApply}>
           Apply
         </Button>
         {hasActiveFilters ? (
-          <Button type='button' variant='ghost' size='sm' className='h-8' onClick={onReset}>
+          <Button
+            type='button'
+            variant='ghost'
+            size='sm'
+            className='h-9 rounded-full'
+            onClick={onReset}
+          >
             <RotateCcw className='mr-1.5 size-3.5' />
             Reset
           </Button>

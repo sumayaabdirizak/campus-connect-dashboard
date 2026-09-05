@@ -23,8 +23,11 @@ async function loadOfferingIndex() {
     select: {
       id: true,
       publicId: true,
+      courseId: true,
       teacherId: true,
       sectionId: true,
+      semesterId: true,
+      academicYearId: true,
       course: { select: { code: true, name: true } },
       teacher: { select: { full_name: true } },
       section: {
@@ -50,6 +53,7 @@ async function loadOfferingIndex() {
   return offerings.map((o) => ({
     id: o.id,
     publicId: o.publicId,
+    courseId: o.courseId,
     courseCode: o.course.code,
     courseName: o.course.name,
     teacherId: o.teacherId,
@@ -60,6 +64,8 @@ async function loadOfferingIndex() {
     batchName: o.section?.batch?.name ?? null,
     programCode: o.section?.batch?.program?.code ?? null,
     facultyId: o.section?.batch?.program?.department?.facultyId ?? null,
+    semesterId: o.semesterId,
+    academicYearId: o.academicYearId,
   }));
 }
 
@@ -144,8 +150,13 @@ function totals(counts, offeringIds) {
   return out;
 }
 
-export async function listReport(scope, { since = null, until = null } = {}) {
-  const offerings = await loadOfferingIndex();
+export async function listReport(scope, { since = null, until = null, teacherId = null } = {}) {
+  let offerings = await loadOfferingIndex();
+  // Lecturers only see rows for courses they teach (and their own teacher roll-up).
+  if (teacherId != null) {
+    const tid = Number(teacherId);
+    offerings = offerings.filter((o) => Number(o.teacherId) === tid);
+  }
   const counts = await loadCountsByOffering(since, until);
 
   /** Group offerings by an owner key, then emit one row per group. */
@@ -206,14 +217,26 @@ export async function listReport(scope, { since = null, until = null } = {}) {
 
   if (scope === 'student') {
     const registrations = await prisma.studentRegistration.findMany({
+      where: { status: 'ACTIVE' },
       select: {
         studentId: true,
         batchSectionId: true,
+        currentAcademicYearId: true,
+        currentSemesterId: true,
         student: { select: { id: true, full_name: true, number: true } },
         batchSection: { select: { name: true, batch: { select: { name: true } } } },
       },
     });
+
     const offeringsBySection = rollUp((o) => o.sectionId);
+
+    /** Offerings for this student's current term only (matches My Courses). */
+    const currentTermOfferings = (r) =>
+      (offeringsBySection.get(r.batchSectionId) ?? []).filter(
+        (o) =>
+          o.semesterId === r.currentSemesterId &&
+          o.academicYearId === r.currentAcademicYearId
+      );
 
     // Attempts and submissions are per person, so they cannot come from the
     // per-offering rollup — count them by student directly. They follow the
@@ -242,7 +265,7 @@ export async function listReport(scope, { since = null, until = null } = {}) {
     for (const r of registrations) {
       if (seen.has(r.studentId)) continue;
       seen.add(r.studentId);
-      const mine = offeringsBySection.get(r.batchSectionId) ?? [];
+      const mine = currentTermOfferings(r);
       rows.push({
         id: r.studentId,
         name: r.student.full_name,

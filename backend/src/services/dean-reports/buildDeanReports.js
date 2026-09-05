@@ -99,7 +99,7 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     departments,
     gradedSubmissions,
     recentSubmissions,
-    attendanceRate: kpis.attendanceRate,
+    onTimeRate: kpis.onTimeRate,
     filters: scope.filters ?? filters,
   });
 
@@ -122,7 +122,7 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
   const insights = buildInsights({
     rankedDepartments,
     enrollmentTrend: kpis.enrollmentTrend,
-    attendanceRate: kpis.attendanceRate,
+    onTimeRate: kpis.onTimeRate,
     studentsAtRisk,
     coursesAtRisk,
   });

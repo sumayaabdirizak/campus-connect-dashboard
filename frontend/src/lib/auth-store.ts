@@ -34,7 +34,7 @@ const API_BASE_URL = getApiBaseUrl();
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       user: null,
       isAuthenticated: false,
       isSessionChecked: false,
@@ -45,14 +45,8 @@ export const useAuthStore = create<AuthState>()(
           isSessionChecked: true
         })),
       validateSession: async () => {
+        const { apiClient, ApiError } = await import('@/lib/api-client');
         try {
-          // A plain fetch here never attempts the silent-refresh flow, so a
-          // merely-expired (but still refreshable) access token looked
-          // identical to "truly logged out" — the caller would clear auth
-          // and redirect to sign-in even though the refresh token was still
-          // good. Route through apiClient so the same 401→refresh→retry
-          // logic every other call gets is applied here too.
-          const { apiClient } = await import('@/lib/api-client');
           const userData = await apiClient<Partial<User> & { role?: unknown }>('/users/me');
           if (!userData || !isRole(userData.role)) {
             set({ user: null, isAuthenticated: false, isSessionChecked: true });
@@ -61,9 +55,14 @@ export const useAuthStore = create<AuthState>()(
           const user = userData as User;
           set({ user, isAuthenticated: true, isSessionChecked: true });
           return true;
-        } catch {
-          set({ user: null, isAuthenticated: false, isSessionChecked: true });
-          return false;
+        } catch (err) {
+          const status = err instanceof ApiError ? err.status : undefined;
+          if (status === 401 || status === 403) {
+            set({ user: null, isAuthenticated: false, isSessionChecked: true });
+            return false;
+          }
+          set({ isSessionChecked: true });
+          return get().isAuthenticated;
         }
       },
       clearAuth: () => {

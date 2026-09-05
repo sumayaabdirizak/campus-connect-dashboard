@@ -129,7 +129,9 @@ export async function apiClient<T>(
   const method = (options.method || 'GET').toUpperCase();
   const needsCsrf =
     method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH';
-  if (!isFormData) {
+  // Do not set Content-Type on GET/HEAD — it forces a CORS preflight and is
+  // useless without a body.
+  if (!isFormData && method !== 'GET' && method !== 'HEAD') {
     headers.set('Content-Type', 'application/json');
   }
   if (

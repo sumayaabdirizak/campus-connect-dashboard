@@ -17,6 +17,34 @@ export function getIsProduction() {
 }
 
 /**
+ * Resolve a login identifier to a user — email (contains @) or university ID / username.
+ * @param {string} identifier
+ */
+export async function resolveLoginUser(identifier) {
+  const raw = String(identifier ?? '').trim();
+  if (!raw) return null;
+
+  if (raw.includes('@')) {
+    const byEmail = await prisma.user.findUnique({
+      where: { email: raw.toLowerCase() },
+      include: { role: true },
+    });
+    if (byEmail) return byEmail;
+  }
+
+  const byNumber = await prisma.user.findUnique({
+    where: { number: raw },
+    include: { role: true },
+  });
+  if (byNumber) return byNumber;
+
+  return prisma.user.findFirst({
+    where: { number: { equals: raw, mode: 'insensitive' } },
+    include: { role: true },
+  });
+}
+
+/**
  * @param {object} user
  * @param {string} [overrideRoleName] Role to sign the token as, when different
  *   from `user.role.name` (used by `POST /auth/switch-role`). Caller must
@@ -115,7 +143,7 @@ export function issueRefreshToken(payload) {
   );
 }
 
-export function setAuthCookies(res, accessToken, refreshToken) {
+export function setAccessCookie(res, accessToken) {
   const isProduction = getIsProduction();
   res.cookie(ACCESS_COOKIE, accessToken, {
     httpOnly: true,
@@ -124,6 +152,23 @@ export function setAuthCookies(res, accessToken, refreshToken) {
     maxAge: ACCESS_TTL_SECONDS * 1000,
     path: '/',
   });
+}
+
+export function setAuthCookies(res, accessToken, refreshToken) {
+  setAccessCookie(res, accessToken);
+  const isProduction = getIsProduction();
+  res.cookie(REFRESH_COOKIE, refreshToken, {
+    httpOnly: true,
+    secure: isProduction,
+    sameSite: 'lax',
+    maxAge: REFRESH_TTL_SECONDS * 1000,
+    path: '/',
+  });
+}
+
+/** Extend refresh cookie lifetime without rotating the token (multi-tab safe). */
+export function touchRefreshCookie(res, refreshToken) {
+  const isProduction = getIsProduction();
   res.cookie(REFRESH_COOKIE, refreshToken, {
     httpOnly: true,
     secure: isProduction,

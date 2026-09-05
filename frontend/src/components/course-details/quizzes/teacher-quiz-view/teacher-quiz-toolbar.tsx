@@ -7,9 +7,13 @@ import { CourseTabHeader } from '../../_shared/course-tab-header';
 export function TeacherQuizToolbar({
   quizCount,
   onCreate,
+  createDisabled,
+  createDisabledReason,
 }: {
   quizCount: number;
   onCreate: () => void;
+  createDisabled?: boolean;
+  createDisabledReason?: string;
 }) {
   return (
     <CourseTabHeader
@@ -20,7 +24,13 @@ export function TeacherQuizToolbar({
           : `${quizCount} ${quizCount === 1 ? 'quiz' : 'quizzes'} · create, publish, and grade attempts.`
       }
       actions={
-        <Button onClick={onCreate} size='sm' className='gap-1.5 rounded-full'>
+        <Button
+          onClick={onCreate}
+          size='sm'
+          className='gap-1.5 rounded-full'
+          disabled={createDisabled}
+          title={createDisabled ? createDisabledReason : undefined}
+        >
           <Plus className='size-4' /> Create quiz
         </Button>
       }

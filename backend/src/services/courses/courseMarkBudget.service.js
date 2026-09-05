@@ -61,6 +61,40 @@ export function budgetErrorMessage(budget, requestedMarks) {
   return `Course has ${budget.courseMax} marks total. ${budget.allocated} already allocated to published assignments and quizzes; ${budget.remaining} remaining. Cannot assign ${requestedMarks} marks.`;
 }
 
+export const MARK_BUDGET_FULL_MESSAGE =
+  'Course mark budget is fully allocated. Unpublish or reduce marks on existing assignments and quizzes before adding more.';
+
+/**
+ * Reserve mark weight for a new or draft item (published work only counts toward allocated).
+ * Clamps requested marks to remaining budget; rejects when nothing is left.
+ */
+export async function reserveCourseMarkWeight(
+  courseOfferingId,
+  requestedMarks,
+  exclude = {},
+  tx = prisma
+) {
+  if (!Number.isInteger(requestedMarks) || requestedMarks < 1) {
+    return { error: 'Mark weight must be a positive integer' };
+  }
+  const budget = await getCourseMarkBudget(courseOfferingId, exclude, tx);
+  if (budget.remaining <= 0) {
+    return { error: MARK_BUDGET_FULL_MESSAGE, budget };
+  }
+  const marks = Math.min(requestedMarks, budget.remaining);
+  return {
+    data: {
+      marks,
+      budget,
+      clamped: marks < requestedMarks,
+      clampMessage:
+        marks < requestedMarks
+          ? `Mark weight reduced from ${requestedMarks} to ${marks} (only ${budget.remaining} marks available).`
+          : null,
+    },
+  };
+}
+
 export async function assertCourseMarkBudget(
   courseOfferingId,
   requestedMarks,

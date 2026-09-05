@@ -2,13 +2,12 @@
 
 import { cn } from '@/lib/utils';
 
-export type NewMessageRoleChip = 'ALL' | 'TEACHER' | 'STUDENT' | 'OFFICE_STAFF';
+export type NewMessageRoleChip = 'ALL' | 'TEACHER' | 'STUDENT';
 
 const DEAN_CHIPS: { key: NewMessageRoleChip; label: string }[] = [
   { key: 'ALL', label: 'All' },
   { key: 'TEACHER', label: 'Teachers' },
   { key: 'STUDENT', label: 'Students' },
-  { key: 'OFFICE_STAFF', label: 'Staff' }
 ];
 
 export function NewMessageRoleChips({
@@ -51,8 +50,5 @@ export function matchesNewMessageRoleChip(
   if (chip === 'ALL') return true;
   const r = String(role || '').toUpperCase();
   if (chip === 'TEACHER') return r === 'TEACHER' || r === 'LECTURER';
-  if (chip === 'OFFICE_STAFF') {
-    return r !== 'STUDENT' && r !== 'TEACHER' && r !== 'LECTURER';
-  }
   return r === chip;
 }

@@ -1,6 +1,8 @@
 export {
   announcementEngagementCountInclude,
   CREATE_ANNOUNCEMENT_ROLES,
+  ANNOUNCEMENT_MANAGER_ROLES,
+  canManageAnnouncements,
   DEAN_SCOPE_FORBIDDEN,
   MAX_PINNED_PER_CREATOR,
 } from "./helpers/constants.js";

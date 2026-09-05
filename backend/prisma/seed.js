@@ -1,16 +1,130 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.js';
-import { runFullDiscussionSetup } from '../src/features/discussions/discussionSetup.service.js';
+import { runFullDiscussionSetup } from '../src/services/discussions/discussionSetup.service.js';
 
 const prisma = new PrismaClient();
 
 const SEED_MINIMAL = ["1", "true", "yes"].includes(
   String(process.env.SEED_MINIMAL ?? "").toLowerCase()
 );
+const SEED_UNIVERSITY_ONLY = ["1", "true", "yes"].includes(
+  String(process.env.SEED_UNIVERSITY_ONLY ?? "").toLowerCase()
+);
+
+async function seedPlatformBasics({ roleMap, hashedPassword }) {
+  const superAdminEmail = String(process.env.SUPER_ADMIN_EMAIL || 'super.admin@university.edu')
+    .trim()
+    .toLowerCase();
+  const superAdminName = String(process.env.SUPER_ADMIN_NAME || 'System Super Admin').trim();
+  const superAdminNumber = String(process.env.SUPER_ADMIN_NUMBER || 'ADMIN001').trim();
+
+  await prisma.user.upsert({
+    where: { email: superAdminEmail },
+    update: {
+      full_name: superAdminName,
+      number: superAdminNumber,
+      roleId: roleMap['SUPER_ADMIN'],
+    },
+    create: {
+      full_name: superAdminName,
+      email: superAdminEmail,
+      number: superAdminNumber,
+      password_hash: hashedPassword,
+      roleId: roleMap['SUPER_ADMIN'],
+      must_change_password: false,
+    },
+  });
+}
+
+async function seedAcademicCalendar() {
+  const academicYearData = SEED_UNIVERSITY_ONLY || SEED_MINIMAL
+    ? [
+        { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
+        { name: '2025/2026', start: '2025-09-01', end: '2026-08-31' },
+      ]
+    : [
+        { name: '2022/2023', start: '2022-09-01', end: '2023-08-31' },
+        { name: '2023/2024', start: '2023-09-01', end: '2024-08-31' },
+        { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
+        { name: '2025/2026', start: '2025-09-01', end: '2026-08-31' },
+      ];
+
+  const academicYearsMap = new Map();
+  const semestersAll = [];
+
+  for (const data of academicYearData) {
+    const ay = await prisma.academicYear.upsert({
+      where: { name: data.name },
+      update: {},
+      create: {
+        name: data.name,
+        start_date: new Date(data.start),
+        end_date: new Date(data.end),
+      },
+    });
+    academicYearsMap.set(data.name, ay);
+
+    const semesterNames = ['First Semester', 'Second Semester'];
+    for (let i = 0; i < 2; i++) {
+      const semName = semesterNames[i];
+      const existingSem = await prisma.semester.findFirst({
+        where: { name: semName, academicYearId: ay.id },
+      });
+
+      let sem;
+      if (!existingSem) {
+        sem = await prisma.semester.create({
+          data: {
+            name: semName,
+            sequence: i + 1,
+            start_date:
+              i === 0 ? new Date(data.start) : new Date(`${data.name.split('/')[1]}-01-01`),
+            end_date:
+              i === 0 ? new Date(`${data.name.split('/')[0]}-12-31`) : new Date(data.end),
+            academicYearId: ay.id,
+          },
+        });
+      } else {
+        sem = existingSem;
+      }
+      semestersAll.push(sem);
+    }
+  }
+
+  return {
+    academicYears: Array.from(academicYearsMap.values()),
+    semestersAll,
+  };
+}
+
+async function seedAuxiliaryCatalogs() {
+  try {
+    await seedClubVocabulary();
+    console.log('Club vocabulary seeded (interest tags + quota policy).');
+  } catch (e) {
+    console.error('Club vocabulary seed failed:', e?.message || e);
+    throw e;
+  }
+
+  try {
+    const { ensureResourceTypeOptions } = await import(
+      '../src/services/resources/resourceTypeOptions.js'
+    );
+    await ensureResourceTypeOptions();
+    console.log('Resource type options seeded.');
+  } catch (e) {
+    console.error('Resource type options seed failed:', e?.message || e);
+    throw e;
+  }
+}
 
 async function main() {
   console.log('--- Starting Seeding Process ---');
-  if (SEED_MINIMAL) {
+  if (SEED_UNIVERSITY_ONLY) {
+    console.log(
+      'SEED_UNIVERSITY_ONLY=1 — roles, super admin, academic years only. Use university AIS sync for roster data.'
+    );
+  } else if (SEED_MINIMAL) {
     console.log('SEED_MINIMAL=1 — seeding roles, one faculty chain, one teacher/student, and discussion setup only.');
   }
 
@@ -29,76 +143,18 @@ async function main() {
     roleMap[name] = role.id;
   }
 
-  // Bootstrap a deterministic SUPER_ADMIN account for local QA/RBAC checks.
-  await prisma.user.upsert({
-    where: { email: 'super.admin@university.edu' },
-    update: {
-      full_name: 'System Super Admin',
-      number: 'ADMIN001',
-      roleId: roleMap['SUPER_ADMIN'],
-    },
-    create: {
-      full_name: 'System Super Admin',
-      email: 'super.admin@university.edu',
-      number: 'ADMIN001',
-      password_hash: hashedPassword,
-      roleId: roleMap['SUPER_ADMIN'],
-    },
-  });
+  await seedPlatformBasics({ roleMap, hashedPassword });
 
   // --- 2. Academic Years & Semesters ---
   console.log('Seeding Academic Years & Semesters...');
-  const academicYearData = SEED_MINIMAL
-    ? [{ name: '2024/2025', start: '2024-09-01', end: '2025-08-31' }]
-    : [
-    { name: '2022/2023', start: '2022-09-01', end: '2023-08-31' },
-    { name: '2023/2024', start: '2023-09-01', end: '2024-08-31' },
-    { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
-    { name: '2025/2026', start: '2025-09-01', end: '2026-08-31' },
-  ];
+  const { academicYears, semestersAll } = await seedAcademicCalendar();
 
-  const academicYearsMap = new Map();
-  const semestersAll = [];
-
-  for (const data of academicYearData) {
-    const ay = await prisma.academicYear.upsert({
-      where: { name: data.name },
-      update: {},
-      create: {
-        name: data.name,
-        start_date: new Date(data.start),
-        end_date: new Date(data.end),
-      },
-    });
-    academicYearsMap.set(data.name, ay);
-
-    // Create 2 semesters for each AY if they don't exist
-    const semesterNames = ['First Semester', 'Second Semester'];
-    for (let i = 0; i < 2; i++) {
-        const semName = semesterNames[i];
-        const existingSem = await prisma.semester.findFirst({
-            where: { name: semName, academicYearId: ay.id }
-        });
-
-        let sem;
-        if (!existingSem) {
-            sem = await prisma.semester.create({
-                data: {
-                  name: semName,
-                  sequence: i + 1,
-                  start_date: i === 0 ? new Date(data.start) : new Date(`${data.name.split('/')[1]}-01-01`),
-                  end_date: i === 0 ? new Date(`${data.name.split('/')[0]}-12-31`) : new Date(data.end),
-                  academicYearId: ay.id,
-                },
-            });
-        } else {
-            sem = existingSem;
-        }
-        semestersAll.push(sem);
-    }
+  if (SEED_UNIVERSITY_ONLY) {
+    await seedAuxiliaryCatalogs();
+    console.log('--- Seeding Completed (university-only baseline) ---');
+    console.log('Next: node scripts/sync-university-faculty-students.js');
+    return;
   }
-
-  const academicYears = Array.from(academicYearsMap.values());
 
   // --- 3. Faculties & Departments & deans ---
   console.log('Seeding Faculties, Departments & Deans...');
@@ -595,24 +651,7 @@ async function main() {
     throw e;
   }
 
-  try {
-    await seedClubVocabulary();
-    console.log('Club vocabulary seeded (interest tags + quota policy).');
-  } catch (e) {
-    console.error('Club vocabulary seed failed:', e?.message || e);
-    throw e;
-  }
-
-  try {
-    const { ensureResourceTypeOptions } = await import(
-      '../src/features/resources/resourceTypeOptions.js'
-    );
-    await ensureResourceTypeOptions();
-    console.log('Resource type options seeded.');
-  } catch (e) {
-    console.error('Resource type options seed failed:', e?.message || e);
-    throw e;
-  }
+  await seedAuxiliaryCatalogs();
 
   console.log('--- Seeding Completed Successfully ---');
 }

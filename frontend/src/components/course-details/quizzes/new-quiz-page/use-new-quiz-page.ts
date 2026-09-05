@@ -8,8 +8,9 @@ import { uploadQuizPaperFile } from '@/lib/course-details/services/quizzes-servi
 import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
 import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import {
-  markBudgetExceededMessage,
-  wouldExceedMarkBudget
+  clampToMarkBudget,
+  isMarkBudgetExhausted,
+  MARK_BUDGET_FULL_MESSAGE
 } from '@/lib/course-details/services/mark-budget-utils';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import {
@@ -192,16 +193,19 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     const budget = queryClient.getQueryData<CourseMarkBudget>(
       markBudgetKeys.offering(courseId)
     );
-    if (
-      requested > 0 &&
-      budget &&
-      wouldExceedMarkBudget(budget, requested, 0)
-    ) {
-      toast.error(markBudgetExceededMessage(budget, requested, 0));
+    if (budget && isMarkBudgetExhausted(budget, 0)) {
+      toast.error(MARK_BUDGET_FULL_MESSAGE);
       createInFlightRef.current = false;
       return;
     }
-    const basePayload = toPayload(form);
+    const marksPlanTotal =
+      budget && requested > 0
+        ? clampToMarkBudget(budget, requested, 0)
+        : requested;
+    const basePayload = toPayload({
+      ...form,
+      marksPlanTotal
+    });
     const payload = uploaded
       ? basePayload
       : {
@@ -210,6 +214,8 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
         };
     try {
       const quiz = await createMutation.mutateAsync(payload);
+      const notice = (quiz as { markBudgetNotice?: string }).markBudgetNotice;
+      if (notice) toast.info(notice);
       if (uploaded && pendingPaperFile) {
         try {
           await uploadQuizPaperFile(quiz.id, pendingPaperFile);
@@ -222,10 +228,15 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
           return;
         }
       }
+      const published = !form.is_draft;
       toast.success(
         uploaded
-          ? `Created "${quiz.title}" — open Attempts to enter student marks`
-          : `Created "${quiz.title}" with ${questions.length} question${questions.length === 1 ? '' : 's'}`
+          ? published
+            ? `Published "${quiz.title}" — open Attempts to enter student marks`
+            : `Saved "${quiz.title}" as draft — open Attempts to enter student marks`
+          : published
+            ? `Published "${quiz.title}" with ${questions.length} question${questions.length === 1 ? '' : 's'}`
+            : `Saved "${quiz.title}" as draft with ${questions.length} question${questions.length === 1 ? '' : 's'}`
       );
       onCreated(quiz);
     } catch (e) {

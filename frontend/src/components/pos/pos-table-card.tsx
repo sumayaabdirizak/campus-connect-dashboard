@@ -29,6 +29,8 @@ type Props = {
   toolbarStart?: ReactNode;
   toolbarEnd?: ReactNode;
   className?: string;
+  /** Classes for the scrollable region between toolbar and footer. */
+  bodyClassName?: string;
 };
 
 /** DreamsPOS Units-style white card: pill toolbar + table body + pagination. */
@@ -51,38 +53,46 @@ export function PosTableCard({
   onExportExcel,
   toolbarStart,
   toolbarEnd,
-  className
+  className,
+  bodyClassName
 }: Props) {
   return (
     <div
       className={cn(
-        'w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-border bg-card',
+        'flex w-full min-w-0 max-w-full flex-col overflow-hidden rounded-xl border border-border bg-card',
         className
       )}
     >
-      <PosTableToolbar
-        search={search}
-        onSearchChange={onSearchChange}
-        searchPlaceholder={searchPlaceholder}
-        showDateRange={showDateRange}
-        dateRange={dateRange}
-        onDateRangeChange={onDateRangeChange}
-        columns={columns}
-        visibleColumnIds={visibleColumnIds}
-        onVisibleColumnsChange={onVisibleColumnsChange}
-        sortOptions={sortOptions}
-        sortId={sortId}
-        onSortChange={onSortChange}
-        onExportPdf={onExportPdf}
-        onExportExcel={onExportExcel}
-        toolbarStart={toolbarStart}
-        toolbarEnd={toolbarEnd}
-      />
-      {/* min-w-0 + overflow-x-auto: keep card within viewport; scroll wide tables */}
-      <div className='w-full min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]'>
+      <div className='shrink-0'>
+        <PosTableToolbar
+          search={search}
+          onSearchChange={onSearchChange}
+          searchPlaceholder={searchPlaceholder}
+          showDateRange={showDateRange}
+          dateRange={dateRange}
+          onDateRangeChange={onDateRangeChange}
+          columns={columns}
+          visibleColumnIds={visibleColumnIds}
+          onVisibleColumnsChange={onVisibleColumnsChange}
+          sortOptions={sortOptions}
+          sortId={sortId}
+          onSortChange={onSortChange}
+          onExportPdf={onExportPdf}
+          onExportExcel={onExportExcel}
+          toolbarStart={toolbarStart}
+          toolbarEnd={toolbarEnd}
+        />
+      </div>
+      {/* min-w-0 + overflow: keep card within viewport; scroll wide / tall tables */}
+      <div
+        className={cn(
+          'w-full min-w-0 overflow-x-auto overscroll-x-contain [-webkit-overflow-scrolling:touch]',
+          bodyClassName
+        )}
+      >
         {children}
       </div>
-      {footer}
+      {footer ? <div className='shrink-0'>{footer}</div> : null}
     </div>
   );
 }

@@ -41,10 +41,19 @@ export type {
   DeanActivityItem,
 };
 
+function withQuery(path: string, params?: Record<string, string>) {
+  if (!params || Object.keys(params).length === 0) return path;
+  const qs = new URLSearchParams(params).toString();
+  return `${path}?${qs}`;
+}
+
 // API client for dean operations
 export const deanApi = {
   getUsers: (params?: Record<string, string>) =>
-    apiClient<{ users: any[] }>('/dean/users', { method: 'GET' }),
+    apiClient<DeanUsersListResponse & { results?: DeanUser[]; total?: number; totalCount?: number }>(
+      withQuery('/dean/users', params),
+      { method: 'GET' }
+    ),
   getUserById: (id: number) =>
     apiClient<any>(`/dean/users/${id}`, { method: 'GET' }),
   getClubStats: () =>
@@ -62,7 +71,7 @@ export const deanApi = {
   getTeachers: (params?: Record<string, string>) =>
     apiClient<any>('/dean/teachers', { method: 'GET' }),
   getCourses: (params?: Record<string, string>) =>
-    apiClient<any>('/dean/courses', { method: 'GET' }),
+    apiClient<any>(withQuery('/dean/courses', params), { method: 'GET' }),
   getCourse: (id: number) =>
     apiClient<any>(`/dean/courses/${id}`, { method: 'GET' }),
   getCourseById: (id: number) =>

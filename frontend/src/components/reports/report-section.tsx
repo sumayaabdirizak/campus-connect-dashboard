@@ -1,18 +1,18 @@
 'use client';
 
 import { format } from 'date-fns';
-import type { ReportSection as Section } from '@/lib/reports/types';
-import { countLabel } from './report-format';
 import {
-  BODY,
-  CARD,
-  META,
-  TABLE_HEAD,
-  TABLE_ROW,
-  TD,
-  TH,
-  TITLE_MD
-} from './report-theme';
+  PosTable,
+  PosTableBody,
+  PosTableCell,
+  PosTableHead,
+  PosTableHeaderCell,
+  PosTableRow
+} from '@/features/pos/components/pos-table';
+import type { ReportSection as Section } from '@/lib/reports/types';
+import { cn } from '@/lib/utils';
+import { countLabel } from './report-format';
+import { BODY, CARD, META, TITLE_MD } from './report-theme';
 
 /// Columns come from the rows the API sends, so a domain can add a field
 /// without the UI needing to know about it.
@@ -59,14 +59,14 @@ const HIDDEN_COLUMNS = new Set(['id']);
  */
 const HIDDEN_KPIS = new Set(['quizSubmitted', 'gradedPct', 'resourceViewers']);
 
-/// Status as a quiet pill, matching the template's table badges.
+/// Status as a quiet pill, matching PosTable row badges.
 const STATUS_TONE: Record<string, string> = {
   Published: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
   Open: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
   APPROVED: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400',
   PENDING: 'bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400',
-  Draft: 'bg-[#F2F4F7] text-[#667085] dark:bg-muted dark:text-muted-foreground',
-  Closed: 'bg-[#F2F4F7] text-[#667085] dark:bg-muted dark:text-muted-foreground'
+  Draft: 'bg-muted text-muted-foreground',
+  Closed: 'bg-muted text-muted-foreground'
 };
 
 function renderCell(key: string, value: unknown) {
@@ -108,9 +108,6 @@ export function ReportSectionBlock({
       ? Object.keys(section.rows[0]).filter((c) => !HIDDEN_COLUMNS.has(c))
       : [];
 
-  // A domain with nothing in it still gets a line, so it stays clear the
-  // report looked and found none — but not a full empty card, which on a
-  // quiet course was most of the page height saying nothing.
   if (section.rows.length === 0) {
     if (embedded) {
       return (
@@ -118,27 +115,26 @@ export function ReportSectionBlock({
       );
     }
     return (
-      <section className='flex items-center justify-between gap-3 rounded-xl border border-dashed border-[#D0D5DD] bg-white px-4 py-3 dark:border-border dark:bg-card'>
+      <section
+        className='flex items-center justify-between gap-3 rounded-xl border border-dashed border-border bg-card px-4 py-3'
+      >
         <h2 className={`text-sm font-medium ${BODY}`}>{section.label}</h2>
         <span className={META}>No activity in this period</span>
       </section>
     );
   }
 
-  // A compact summary beats a second grid of numbers above every table. The
-  // figures carry the weight; the words stay quiet, so the line can be read
-  // at a glance instead of parsed.
   const summary = section.kpis.filter(
     (k) => k.value !== null && !HIDDEN_KPIS.has(k.key)
   );
 
   return (
-    <section className={embedded ? 'overflow-hidden' : `overflow-hidden ${CARD}`}>
+    <section className={embedded ? 'overflow-hidden' : cn('overflow-hidden', CARD)}>
       <header
         className={
           embedded
             ? 'mb-2 flex flex-wrap items-start justify-between gap-2'
-            : 'flex flex-wrap items-start justify-between gap-2 border-b border-[#E5E7EB] px-4 py-3 dark:border-border'
+            : 'flex flex-wrap items-start justify-between gap-2 border-b border-border px-4 py-3'
         }
       >
         <div className='min-w-0'>
@@ -149,7 +145,7 @@ export function ReportSectionBlock({
             >
               {summary.map((k) => (
                 <span key={k.label}>
-                  <span className='font-semibold tabular-nums text-[#101828] dark:text-foreground'>
+                  <span className='font-semibold tabular-nums text-foreground'>
                     {k.value!.toLocaleString()}
                     {k.unit ?? ''}
                   </span>{' '}
@@ -164,39 +160,47 @@ export function ReportSectionBlock({
         </span>
       </header>
 
-      <div className={embedded ? 'max-h-[min(28rem,50vh)] overflow-auto rounded-lg border border-[#E5E7EB] dark:border-border' : 'max-h-[26rem] overflow-auto'}>
-        <table className='w-full min-w-[42rem] text-sm'>
-          <thead className={`sticky top-0 z-10 backdrop-blur ${TABLE_HEAD}`}>
+      <div
+        className={
+          embedded
+            ? 'max-h-[min(28rem,50vh)] overflow-auto rounded-lg border border-border'
+            : 'max-h-[26rem] overflow-auto'
+        }
+      >
+        <PosTable>
+          <PosTableHead className='sticky top-0 z-10'>
             <tr>
               {columns.map((c) => (
-                <th
+                <PosTableHeaderCell
                   key={c}
-                  className={`whitespace-nowrap ${TH} ${
-                    NUMERIC.has(c) ? 'text-right' : 'text-left'
-                  }`}
+                  align={NUMERIC.has(c) ? 'right' : 'left'}
                 >
                   {HEADER_LABELS[c] ?? c}
-                </th>
+                </PosTableHeaderCell>
               ))}
             </tr>
-          </thead>
-          <tbody>
+          </PosTableHead>
+          <PosTableBody>
             {section.rows.map((row, i) => (
-              <tr key={i} className={TABLE_ROW}>
+              <PosTableRow key={i}>
                 {columns.map((c) => (
-                  <td
+                  <PosTableCell
                     key={c}
-                    className={`${TD} ${
-                      NUMERIC.has(c) ? 'text-right tabular-nums' : 'text-left'
-                    } ${c === 'title' || c === 'name' ? 'font-medium text-[#101828] dark:text-foreground' : 'text-[#344054] dark:text-muted-foreground'}`}
+                    align={NUMERIC.has(c) ? 'right' : 'left'}
+                    className={cn(
+                      NUMERIC.has(c) && 'tabular-nums',
+                      c === 'title' || c === 'name'
+                        ? 'font-medium'
+                        : 'text-muted-foreground'
+                    )}
                   >
                     {renderCell(c, row[c])}
-                  </td>
+                  </PosTableCell>
                 ))}
-              </tr>
+              </PosTableRow>
             ))}
-          </tbody>
-        </table>
+          </PosTableBody>
+        </PosTable>
       </div>
     </section>
   );

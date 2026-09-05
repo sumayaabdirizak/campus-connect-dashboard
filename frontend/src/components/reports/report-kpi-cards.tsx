@@ -80,7 +80,7 @@ export function ReportKpiCards({ report }: { report: Report }) {
       {cards.map((c) => (
         <div
           key={c.key}
-          className={`flex items-center gap-3 rounded-xl border border-[#E5E7EB] border-l-4 px-4 py-4 dark:border-border ${c.accent}`}
+          className={`flex items-center gap-3 rounded-xl border border-border border-l-4 px-4 py-4 ${c.accent}`}
         >
           <span
             className={`grid size-11 shrink-0 place-items-center rounded-lg ${KPI_TILE}`}

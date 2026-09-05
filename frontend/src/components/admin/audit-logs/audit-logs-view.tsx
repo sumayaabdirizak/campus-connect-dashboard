@@ -1,12 +1,28 @@
 'use client';
 
-import { Input } from '@/features/ui/components/input';
+import { Download, FileSpreadsheet, FileText, Search } from 'lucide-react';
+import PageContainer from '@/features/layout/components/page-container';
+import { PosPageHeader } from '@/features/pos/components/pos-page-header';
+import { Button } from '@/features/ui/components/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/features/ui/components/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/features/ui/components/tabs';
 import { AuditLogDetailSheet } from '@/components/admin/audit-logs/audit-log-detail-sheet';
+import {
+  downloadAuditCsv,
+  downloadAuditExcel,
+  printAuditPdf,
+} from '@/components/admin/audit-logs/export-audit-logs';
+import { AuditLogsAdminTable } from './audit-logs-admin-table';
 import { AuditLogsFiltersBar } from './audit-logs-filters-bar';
-import { AuditLogsPagination } from './audit-logs-pagination';
-import { AuditLogsTable } from './audit-logs-table';
-import { AuditLogsToolbar } from './audit-logs-toolbar';
-import { AuditModuleTabNav } from './audit-module-tabs';
+import { StatChip } from './audit-stat-chip';
+import { AUDIT_MODULE_TABS } from './audit-module-tabs';
 import { useAuditLogsView } from './use-audit-logs-view';
 
 export type { AuditLogFilterState } from './audit-filters';
@@ -21,87 +37,127 @@ export function AuditLogsView() {
       : `No ${v.activeModuleLabel.toLowerCase()} events match your current filters.`;
 
   return (
-    <div className='grid h-[calc(100dvh-var(--header-height)-0.5rem)] max-h-[calc(100dvh-var(--header-height)-0.5rem)] min-h-0 grid-rows-[auto_minmax(0,1fr)] gap-1.5 overflow-hidden md:h-[calc(100dvh-var(--header-height)-0.75rem)] md:max-h-[calc(100dvh-var(--header-height)-0.75rem)]'>
-      <AuditLogsToolbar
-        stats={v.stats}
-        statsLoading={v.statsLoading}
-        isLoading={v.isLoading}
-        showAdvanced={v.showAdvanced}
-        selectedCount={v.selected.size}
-        exportRows={v.exportRows}
+    <PageContainer scrollable={false}>
+      <PosPageHeader
+        title='Audit Logs'
         onRefresh={v.refreshAll}
-        onToggleAdvanced={() => v.setShowAdvanced((s) => !s)}
-      />
+        refreshing={v.isLoading}
+        showFullscreen
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              type='button'
+              variant='outline'
+              className='h-9 flex-1 gap-1.5 rounded-full px-4 sm:flex-none'
+            >
+              <Download className='size-4' />
+              Export
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align='end' className='w-52'>
+            <DropdownMenuLabel>Export scope</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => downloadAuditCsv(v.exportRows)}>
+              <FileText className='mr-2 size-4' />
+              {v.selected.size ? 'Selected rows (CSV)' : 'Current page (CSV)'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => downloadAuditExcel(v.exportRows)}>
+              <FileSpreadsheet className='mr-2 size-4' />
+              {v.selected.size ? 'Selected rows (Excel)' : 'Current page (Excel)'}
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => printAuditPdf(v.exportRows)}>
+              <FileText className='mr-2 size-4' />
+              Print / PDF
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
-      <div className='flex min-h-0 flex-col overflow-hidden rounded-xl border bg-card'>
-        {v.showAdvanced || v.hasActiveFilters ? (
-          <AuditLogsFiltersBar
-            draft={v.draft}
-            setDraft={v.setDraft}
-            actors={v.actors}
-            hasActiveFilters={v.hasActiveFilters}
-            onApply={v.applyFilters}
-            onReset={v.resetFilters}
-          />
-        ) : null}
+        <Button
+          type='button'
+          variant={v.showAdvanced ? 'default' : 'outline'}
+          className='h-9 flex-1 gap-1.5 rounded-full px-4 sm:flex-none'
+          onClick={() => v.setShowAdvanced((s) => !s)}
+        >
+          <Search className='size-4' />
+          Filters
+        </Button>
+      </PosPageHeader>
 
-        <div className='flex shrink-0 items-center gap-2 border-b px-3'>
-          <div className='min-w-0 flex-1'>
-            <AuditModuleTabNav active={v.filters.module} onChange={v.handleModuleTab} />
-          </div>
-          {!v.showAdvanced && !v.hasActiveFilters ? (
-            <Input
-              value={v.draft.search}
-              onChange={(e) => v.setDraft({ ...v.draft, search: e.target.value })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') v.applyFilters();
-              }}
-              placeholder='Quick search…'
-              className='h-8 w-40 shrink-0 sm:w-52'
-            />
+      <div className='text-muted-foreground mb-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs sm:text-sm'>
+        <StatChip label='total' value={v.stats?.totalEvents ?? 0} loading={v.statsLoading} />
+        <StatChip label='today' value={v.stats?.todayActivities ?? 0} loading={v.statsLoading} />
+        <StatChip label='failed' value={v.stats?.failedActions ?? 0} loading={v.statsLoading} />
+        <StatChip label='critical' value={v.stats?.criticalEvents ?? 0} loading={v.statsLoading} />
+        <StatChip
+          label='active users'
+          value={v.stats?.activeUsersToday ?? 0}
+          loading={v.statsLoading}
+        />
+      </div>
+
+      <Tabs
+        value={v.filters.module}
+        onValueChange={(value) => v.handleModuleTab(value as typeof v.filters.module)}
+        className='gap-3'
+      >
+        <TabsList className='h-10 w-full max-w-full justify-start overflow-x-auto rounded-full bg-muted/80 p-1 sm:w-auto'>
+          {AUDIT_MODULE_TABS.map((tab) => (
+            <TabsTrigger key={tab.id} value={tab.id} className='rounded-full px-4'>
+              {tab.label}
+            </TabsTrigger>
+          ))}
+        </TabsList>
+
+        <TabsContent value={v.filters.module} className='mt-0'>
+          {v.showAdvanced || v.hasActiveFilters ? (
+            <div className='mb-3'>
+              <AuditLogsFiltersBar
+                draft={v.draft}
+                setDraft={v.setDraft}
+                actors={v.actors}
+                hasActiveFilters={v.hasActiveFilters}
+                onApply={v.applyFilters}
+                onReset={v.resetFilters}
+              />
+            </div>
           ) : null}
-        </div>
 
-        {v.error ? (
-          <div className='shrink-0 border-b border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'>
-            {v.error.message}
-          </div>
-        ) : null}
+          {v.error ? (
+            <div className='mb-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive'>
+              {v.error.message}
+            </div>
+          ) : null}
 
-        <div className='relative min-h-0 flex-1 overflow-hidden'>
-          <AuditLogsTable
+          <AuditLogsAdminTable
             rows={v.rows}
             isLoading={v.isLoading}
             selected={v.selected}
             allSelected={v.allSelected}
             showModuleColumn={v.showModuleColumn}
             emptyHint={emptyHint}
+            search={v.search}
+            onSearchChange={v.setSearch}
+            visibleCols={v.visibleCols}
+            onVisibleColsChange={v.setVisibleCols}
+            total={v.total}
+            page={v.page}
+            pageSize={v.pageSize}
+            onPageChange={(page) => v.setFilters({ ...v.filters, page })}
+            onPageSizeChange={(pageSize) => v.setFilters({ ...v.filters, pageSize, page: 1 })}
             onToggleAll={v.toggleAll}
             onToggleRow={v.toggleRow}
             onView={v.setDetailEntry}
             onCopyId={v.copyLogId}
           />
-        </div>
-
-        <AuditLogsPagination
-          selectedCount={v.selected.size}
-          total={v.total}
-          showingFrom={v.showingFrom}
-          showingTo={v.showingTo}
-          page={v.page}
-          pageCount={v.pageCount}
-          pageSize={v.pageSize}
-          onPageSize={(size) => v.setFilters({ ...v.filters, pageSize: size, page: 1 })}
-          onPrev={() => v.setFilters({ ...v.filters, page: v.page - 1 })}
-          onNext={() => v.setFilters({ ...v.filters, page: v.page + 1 })}
-        />
-      </div>
+        </TabsContent>
+      </Tabs>
 
       <AuditLogDetailSheet
         entry={v.detailEntry}
         open={v.detailEntry != null}
         onOpenChange={(open) => !open && v.setDetailEntry(null)}
       />
-    </div>
+    </PageContainer>
   );
 }

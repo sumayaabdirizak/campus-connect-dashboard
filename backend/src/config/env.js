@@ -45,6 +45,16 @@ export const env = {
   CORS_ORIGINS: process.env.CORS_ORIGINS || "http://localhost:3000",
   SOCKET_CORS: process.env.SOCKET_CORS || process.env.CORS_ORIGINS || "http://localhost:3000",
   REDIS_URL: process.env.REDIS_URL || null,
+  /** Incoming integration calls (university SIS → Campus Connect). */
+  INTEGRATION_API_KEY: process.env.INTEGRATION_API_KEY || null,
+  /** Outbound Jazeera University AIS (Campus Connect → university API). */
+  UNIVERSITY_API_BASE_URL: process.env.UNIVERSITY_API_BASE_URL || null,
+  UNIVERSITY_API_PARTNER_CODE: process.env.UNIVERSITY_API_PARTNER_CODE || 'campus_connect',
+  UNIVERSITY_API_KEY: process.env.UNIVERSITY_API_KEY || null,
+  UNIVERSITY_DEAN_USERNAME: process.env.UNIVERSITY_DEAN_USERNAME || null,
+  UNIVERSITY_DEAN_PASSWORD: process.env.UNIVERSITY_DEAN_PASSWORD || null,
+  /** Default password for newly synced students (must_change_password stays true). */
+  UNIVERSITY_SYNC_DEFAULT_PASSWORD: process.env.UNIVERSITY_SYNC_DEFAULT_PASSWORD || null,
   isProduction: (process.env.NODE_ENV || "development") === "production",
   isDevelopment: (process.env.NODE_ENV || "development") !== "production",
 };

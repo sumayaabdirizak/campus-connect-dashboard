@@ -19,7 +19,7 @@ export const REPORT_TABLE_LABELS: Record<string, string> = {
   clubs: 'Clubs',
   sections: 'Sections',
   students: 'Students',
-  courses: 'Courses',
+  courses: 'Courses (this term)',
   quizzes: 'Quizzes',
   assignments: 'Assignments',
   resources: 'Resources',

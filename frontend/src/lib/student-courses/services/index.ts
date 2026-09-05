@@ -1,15 +1,9 @@
 import { apiClient } from '@/lib/api-client';
-import type { SemesterHistoryEntry, StudentCourse } from '../types';
+import type { SemesterHistoryEntry, StudentCourse, StudentCoursesResponse } from '../types';
 import type { CourseOfferingDetail } from '@/lib/teacher-courses/types';
 
 export const getStudentCourses = async () => {
-  return apiClient<{
-    success: boolean;
-    offerings: StudentCourse[];
-    registration: unknown;
-    isGraduated?: boolean;
-    graduatedAt?: string | null;
-  }>('/student-portal/my-courses');
+  return apiClient<StudentCoursesResponse>('/student-portal/my-courses');
 };
 
 export const getSemesterHistory = async () => {

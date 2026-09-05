@@ -8,7 +8,7 @@ export function FacultyDeanReportsRiskPanel({ data }: { data?: DeanReports }) {
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className='xl:col-span-2 space-y-4 rounded-xl border bg-card p-4'
+      className='xl:col-span-2 space-y-4 rounded-xl border border-border bg-card p-4'
     >
       <div className='flex items-center gap-2'>
         <AlertTriangle className='size-5 text-amber-500' />
@@ -22,7 +22,7 @@ export function FacultyDeanReportsRiskPanel({ data }: { data?: DeanReports }) {
           <div className='space-y-2'>
             {data?.risks.students.length ? (
               data.risks.students.map((s) => (
-                <div key={s.id} className='rounded-lg border px-3 py-2 text-sm'>
+                <div key={s.id} className='rounded-lg border border-border px-3 py-2 text-sm'>
                   <div className='flex items-center justify-between gap-2'>
                     <span className='font-medium'>{s.name}</span>
                     {priorityBadge(s.priority)}
@@ -42,7 +42,7 @@ export function FacultyDeanReportsRiskPanel({ data }: { data?: DeanReports }) {
           <div className='space-y-2'>
             {data?.risks.courses.length ? (
               data.risks.courses.map((c) => (
-                <div key={c.course} className='rounded-lg border px-3 py-2 text-sm'>
+                <div key={c.course} className='rounded-lg border border-border px-3 py-2 text-sm'>
                   <div className='flex items-center justify-between gap-2'>
                     <span className='font-medium'>{c.course}</span>
                     {priorityBadge(c.priority)}
@@ -64,7 +64,7 @@ export function FacultyDeanReportsRiskPanel({ data }: { data?: DeanReports }) {
           <div className='space-y-2'>
             {data?.risks.departments.length ? (
               data.risks.departments.map((d) => (
-                <div key={d.department} className='rounded-lg border px-3 py-2 text-sm'>
+                <div key={d.department} className='rounded-lg border border-border px-3 py-2 text-sm'>
                   <div className='flex items-center justify-between gap-2'>
                     <span className='font-medium'>{d.department}</span>
                     {priorityBadge(d.priority)}

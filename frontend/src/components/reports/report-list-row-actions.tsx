@@ -15,7 +15,7 @@ export function ReportListRowActions({
       type='button'
       variant='outline'
       size='sm'
-      className='h-8 gap-1 border-[#D0D5DD] px-3 text-xs font-medium dark:border-border'
+      className='h-8 gap-1 px-3 text-xs font-medium'
       onClick={(e) => {
         e.stopPropagation();
         onView();

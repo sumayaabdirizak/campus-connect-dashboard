@@ -7,7 +7,8 @@ import {
   normaliseModes,
   normaliseMaxMarks,
   normaliseLateWindow,
-  validateAssignmentMarkBudget,
+  resolveAssignmentMaxMarks,
+  DEFAULT_ASSIGNMENT_MARK_WEIGHT,
 } from '../../../controllers/courses/assignments/shared.js';
 import { notifyAssignmentPublished } from '../../../controllers/courses/assignments/notifyStudents.js';
 import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
@@ -42,12 +43,12 @@ router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(as
   const offeringPublicId = req.courseOffering.publicId;
   const actorUserId = Number(req.user?.id ?? req.user?.sub) || null;
   const draft = Boolean(is_draft);
-  const effectiveMaxMarks = marks.data.maxMarks ?? DEFAULT_ASSIGNMENT_MARK_WEIGHT;
+  const requestedMax =
+    marks.data.maxMarks != null ? marks.data.maxMarks : DEFAULT_ASSIGNMENT_MARK_WEIGHT;
 
-  if (!draft) {
-    const budgetCheck = await validateAssignmentMarkBudget(coId, effectiveMaxMarks);
-    if (budgetCheck.error) return res.status(400).json({ message: budgetCheck.error });
-  }
+  const markResolve = await resolveAssignmentMaxMarks(coId, requestedMax);
+  if (markResolve.error) return res.status(400).json({ message: markResolve.error });
+  const finalMaxMarks = markResolve.data.marks;
 
   const assignment = await prisma.$transaction(async (tx) => {
     const created = await tx.assignment.create({
@@ -59,7 +60,7 @@ router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(as
         courseOfferingId: coId,
         ...modes.data,
         ...late.data,
-        ...marks.data,
+        maxMarks: finalMaxMarks,
       },
       include: {
         submissions: true,
@@ -93,7 +94,12 @@ router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(as
     notifyAssignmentPublished(assignment, offeringPublicId);
   }
 
-  res.status(201).json(dto);
+  res.status(201).json({
+    ...dto,
+    ...(markResolve.data.clamped && markResolve.data.clampMessage
+      ? { markBudgetNotice: markResolve.data.clampMessage }
+      : {}),
+  });
 }));
 
 export default router;

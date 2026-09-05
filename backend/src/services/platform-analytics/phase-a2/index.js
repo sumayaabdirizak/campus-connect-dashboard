@@ -12,7 +12,7 @@ export async function runAnalyticsPhaseA2(ctx) {
     buildCourseCompletion(ctx.uniqueCourses, ctx.offerings),
   ]);
   const gradeDistribution = buildGradeDistribution(ctx.gradedSubmissions);
-  const trends = await buildTrendSeries(ctx);
+  const trends = await buildTrendSeries({ ...ctx, userByMonth: ctx.userByMonth });
   const audience = await buildAudienceCharts({ ...ctx, submissionsByCourse });
 
   return {

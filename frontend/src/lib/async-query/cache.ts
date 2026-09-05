@@ -134,6 +134,8 @@ export function setFetchSuccess(serialized: string, result: unknown) {
 
 export function setFetchError(serialized: string, err: Error) {
   errorCache.set(serialized, err);
+  // Do not delete successful data — a failed refresh should not erase the
+  // last good report from the cache (UI can keep showing it).
   lastFetchedAt.set(serialized, Date.now());
 }
 

@@ -22,6 +22,8 @@ export type ProfileMe = {
     program?: ProfileAcademicUnit | null;
     student_number?: string;
     admission_year?: number;
+    batch_semester_number?: number | null;
+    semester_label?: string | null;
   } | null;
   lecturerProfile?: {
     specialty?: string | null;

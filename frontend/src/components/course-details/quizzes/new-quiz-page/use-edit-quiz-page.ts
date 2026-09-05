@@ -8,8 +8,9 @@ import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries
 import { quizKeys } from '@/lib/course-details/queries/quizzes-queries/keys';
 import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import {
-  markBudgetExceededMessage,
-  wouldExceedMarkBudget
+  clampToMarkBudget,
+  isMarkBudgetExhausted,
+  MARK_BUDGET_FULL_MESSAGE
 } from '@/lib/course-details/services/mark-budget-utils';
 import type { Quiz, QuizQuestionType } from '@/lib/course-details/services/quizzes-types';
 import { emptyDraft } from '../quiz-builder/draft-empty';
@@ -145,19 +146,32 @@ export function useEditQuizPage(
       );
       const requested = form.marksPlanTotal;
       const excludePublished = quiz.is_draft ? 0 : quiz.maxMarks ?? requested;
-      if (
-        requested > 0 &&
-        budget &&
-        wouldExceedMarkBudget(budget, requested, excludePublished)
-      ) {
-        toast.error(markBudgetExceededMessage(budget, requested, excludePublished));
+      if (budget && quiz.is_draft && isMarkBudgetExhausted(budget, excludePublished)) {
+        toast.error(MARK_BUDGET_FULL_MESSAGE);
         return;
       }
     }
+    let payloadForm = form;
+    if (!form.is_draft) {
+      const budget = queryClient.getQueryData<CourseMarkBudget>(
+        markBudgetKeys.offering(courseId)
+      );
+      const requested = form.marksPlanTotal;
+      const excludePublished = quiz.is_draft ? 0 : quiz.maxMarks ?? requested;
+      if (budget && requested > 0) {
+        const clamped = clampToMarkBudget(budget, requested, excludePublished);
+        if (clamped !== requested) {
+          payloadForm = { ...form, marksPlanTotal: clamped };
+          toast.info(`Course marks reduced to ${clamped} to fit the remaining budget.`);
+        }
+      }
+    }
     updateMutation.mutate(
-      { quizId: quiz.id, input: toPayload(form) },
+      { quizId: quiz.id, input: toPayload(payloadForm) },
       {
-        onSuccess: async () => {
+        onSuccess: async (updated) => {
+          const notice = (updated as { markBudgetNotice?: string }).markBudgetNotice;
+          if (notice) toast.info(notice);
           try {
             if (pendingPaperFile && isUploadedOfflineForm(form)) {
               await uploadQuizPaperFile(quiz.id, pendingPaperFile);

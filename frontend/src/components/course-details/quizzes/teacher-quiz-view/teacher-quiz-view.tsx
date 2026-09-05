@@ -15,6 +15,7 @@ import { TeacherQuizToolbar } from './teacher-quiz-toolbar';
 import { useTeacherQuizActions } from './use-teacher-quiz-actions';
 import { CourseTabPage } from '../../_shared/course-tab-page';
 import { CourseMarkBudgetBanner } from '../../_shared/course-mark-budget-banner';
+import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget-utils';
 
 export function TeacherView({ courseId }: { courseId: string }) {
   const { data: quizzes = [], isLoading } = useQuizzes(courseId, { live: true });
@@ -79,11 +80,15 @@ export function TeacherView({ courseId }: { courseId: string }) {
     );
   }
 
+  const budgetExhausted = markBudget != null && isMarkBudgetExhausted(markBudget);
+
   return (
     <CourseTabPage>
       <TeacherQuizToolbar
         quizCount={sorted.length}
         onCreate={() => setCreatingQuiz(true)}
+        createDisabled={budgetExhausted}
+        createDisabledReason='All course marks are allocated'
       />
 
       <CourseMarkBudgetBanner budget={markBudget} />

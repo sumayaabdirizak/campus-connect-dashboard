@@ -2,6 +2,36 @@ import { prisma } from "../../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../../utils/publicAssetUrl.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import { ensureTeacherOfferings } from "../../../services/academic/ensureTeacherOfferings.js";
+import { resolveActiveAcademicTerm } from "../../../services/academic/resolveActiveAcademicTerm.js";
+
+const OFFERING_INCLUDE = {
+  course: {
+    include: {
+      department: true,
+      _count: { select: { resources: { where: { is_draft: false } } } },
+    },
+  },
+  section: {
+    include: {
+      batch: { select: { id: true, name: true } },
+      _count: { select: { studentRegistrations: true } },
+    },
+  },
+  resources: {
+    where: { is_draft: false, status: 'APPROVED' },
+    select: { id: true },
+  },
+  quizzes: {
+    where: { is_draft: false },
+    select: { id: true },
+  },
+  assignments: {
+    where: { lifecycle: { publishStatus: 'PUBLISHED' } },
+    include: {
+      _count: { select: { submissions: { where: { gradeRow: { is: null } } } } },
+    },
+  },
+};
 
 /**
  * GET /api/lecturer/courses
@@ -14,46 +44,45 @@ export const getMyCourses = async (req, res) => {
 
     await ensureTeacherOfferings(userId);
 
-    const offerings = await prisma.courseOffering.findMany({
-      where: {
-        teacherId: userId
-      },
-      include: {
-        course: {
-          include: {
-            department: true,
-            _count: { select: { resources: { where: { is_draft: false } } } }
-          }
-        },
-        section: {
-          include: {
-            _count: { select: { studentRegistrations: true } }
-          }
-        },
-        resources: {
-          where: { is_draft: false, status: 'APPROVED' },
-          select: { id: true }
-        },
-        quizzes: {
-          where: { is_draft: false },
-          select: { id: true }
-        },
-        assignments: {
-          where: { lifecycle: { publishStatus: 'PUBLISHED' } },
-          include: {
-            _count: { select: { submissions: { where: { gradeRow: { is: null } } } } }
-          }
-        }
-      }
+    const assignings = await prisma.teacherAssigning.findMany({
+      where: { teacherId: userId },
+      select: { courseId: true },
     });
+    const assignedCourseIds = [...new Set(assignings.map((a) => a.courseId))];
 
-    const result = offerings.map(o => {
+    const accessOr = [{ teacherId: userId }];
+    if (assignedCourseIds.length > 0) {
+      accessOr.push({ courseId: { in: assignedCourseIds } });
+    }
+
+    const activeTerm = await resolveActiveAcademicTerm({ includeDb: true });
+    let offerings = [];
+
+    if (activeTerm.academicYearId) {
+      offerings = await prisma.courseOffering.findMany({
+        where: {
+          OR: accessOr,
+          academicYearId: activeTerm.academicYearId,
+        },
+        include: OFFERING_INCLUDE,
+      });
+    }
+
+    if (offerings.length === 0) {
+      offerings = await prisma.courseOffering.findMany({
+        where: { OR: accessOr },
+        include: OFFERING_INCLUDE,
+      });
+    }
+
+    const result = offerings.map((o) => {
       const totalLessons = o.resources.length + o.assignments.length + o.quizzes.length;
       return {
         id: o.publicId,
         courseCode: o.course.code,
         courseName: o.course.name,
         department: o.course.department.name,
+        batch: o.section.batch?.name ?? null,
         section: o.section.name,
         thumbnail: resolveCourseThumbnail(o.course.thumbnail, o.course.code),
         totalStudents: o.section._count.studentRegistrations,
@@ -62,7 +91,7 @@ export const getMyCourses = async (req, res) => {
         drafts: o.course._count.resources,
         status: 'active',
         createdAt: o.created_at.toISOString(),
-        nextClass: null
+        nextClass: null,
       };
     });
 

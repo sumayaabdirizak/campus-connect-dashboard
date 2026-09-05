@@ -1,24 +1,10 @@
 import { prisma } from '../../../db/prisma.js';
 import { safe, facultyUserWhere } from '../analytics-helpers.js';
+import { aggregateUsersByMonth } from '../helpers/aggregations.js';
 
 export async function fetchGrowthMetrics({ scopedFacultyId, since, announcementWhere }) {
-  const [userGrowthRows, roleGroups, facultyAnnouncementIds] = await Promise.all([
-    safe(
-      () =>
-        scopedFacultyId
-          ? prisma.user.findMany({
-              where: {
-                created_at: { gte: since },
-                ...facultyUserWhere(scopedFacultyId),
-              },
-              select: { created_at: true },
-            })
-          : prisma.user.findMany({
-              where: { created_at: { gte: since } },
-              select: { created_at: true },
-            }),
-      []
-    ),
+  const [userByMonth, roleGroups, facultyAnnouncementIds] = await Promise.all([
+    aggregateUsersByMonth(since, scopedFacultyId),
     safe(
       () =>
         scopedFacultyId
@@ -48,5 +34,5 @@ export async function fetchGrowthMetrics({ scopedFacultyId, since, announcementW
     ),
   ]);
 
-  return { userGrowthRows, roleGroups, facultyAnnouncementIds };
+  return { userByMonth, roleGroups, facultyAnnouncementIds };
 }

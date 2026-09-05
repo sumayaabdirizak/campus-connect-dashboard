@@ -20,7 +20,8 @@ export const deanSetupNavGroup: NavGroup = {
     { title: 'Departments', url: '/dashboard/departments', icon: 'forms', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Programs', url: '/dashboard/programs', icon: 'forms', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Batches', url: '/dashboard/dean/batches', icon: 'kanban', isActive: false, access: { roles: ['DEAN'] } },
-    { title: 'Users', url: '/dashboard/dean/users', icon: 'userCog', isActive: false, access: { roles: ['DEAN'] } },
+    { title: 'Students', url: '/dashboard/dean/students', icon: 'student', isActive: false, access: { roles: ['DEAN'] } },
+    { title: 'Lecturers', url: '/dashboard/dean/lecturers', icon: 'teacher', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Courses', url: '/dashboard/dean/courses', icon: 'fileCheck', isActive: false, access: { roles: ['DEAN'] } },
     { title: 'Clubs', url: '/dashboard/dean/clubs', icon: 'teams', isActive: false, access: { roles: ['DEAN'] } },
   ],
@@ -32,7 +33,6 @@ export const universityStructureNavGroup: NavGroup = {
     { title: 'Faculties', url: '/dashboard/faculties', icon: 'teams', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Departments', url: '/dashboard/departments', icon: 'userTie', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Programs', url: '/dashboard/programs', icon: 'forms', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
-    { title: 'Academic Years', url: '/dashboard/academic-years', icon: 'calendar', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Courses', url: '/dashboard/courses', icon: 'fileCheck', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Batches', url: '/dashboard/batches', icon: 'kanban', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
   ],
@@ -82,6 +82,10 @@ const reportRoles: PermissionCheck = {
   roles: ['SUPER_ADMIN', 'DEAN'],
 };
 
+const teacherReportRoles: PermissionCheck = {
+  roles: ['TEACHER'],
+};
+
 const entityReport = (scope: string, title: string, icon: NavItem['icon']) => ({
   title,
   url: `/dashboard/reports?scope=${scope}&period=all`,
@@ -94,9 +98,28 @@ export const reportsNavGroup: NavGroup = {
   items: [
     {
       title: 'Reports',
+      url: '/dashboard/faculty-dean/reports',
+      icon: 'barChart',
+      access: { roles: ['DEAN'] },
+      items: [
+        {
+          title: 'Academic reports',
+          url: '/dashboard/faculty-dean/reports',
+          icon: 'activity',
+          access: { roles: ['DEAN'] },
+        },
+        entityReport('course', 'Course activity', 'billing'),
+        entityReport('section', 'Section activity', 'forms'),
+        entityReport('batch', 'Batch activity', 'kanban'),
+        entityReport('student', 'Student activity', 'profile'),
+        entityReport('teacher', 'Teacher activity', 'userCog'),
+      ],
+    },
+    {
+      title: 'Reports',
       url: '/dashboard/reports?scope=course&period=all',
       icon: 'barChart',
-      access: reportRoles,
+      access: { roles: ['SUPER_ADMIN'] },
       items: [
         entityReport('course', 'Course activity', 'billing'),
         entityReport('section', 'Section activity', 'forms'),
@@ -108,6 +131,20 @@ export const reportsNavGroup: NavGroup = {
           url: '/dashboard/admin/report',
           icon: 'activity',
           access: { roles: ['SUPER_ADMIN'] },
+        },
+      ],
+    },
+    {
+      title: 'Reports',
+      url: '/dashboard/reports/course-reports',
+      icon: 'barChart',
+      access: teacherReportRoles,
+      items: [
+        {
+          title: 'Course reports',
+          url: '/dashboard/reports/course-reports',
+          icon: 'billing',
+          access: teacherReportRoles,
         },
       ],
     },

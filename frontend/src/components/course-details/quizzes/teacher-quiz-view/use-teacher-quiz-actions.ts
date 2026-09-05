@@ -17,9 +17,8 @@ import {
 import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
 import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import {
-  markBudgetExceededMessage,
-  resolveQuizRequestedCourseMarks,
-  wouldExceedMarkBudget
+  isMarkBudgetExhausted,
+  resolveQuizRequestedCourseMarks
 } from '@/lib/course-details/services/mark-budget-utils';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 
@@ -66,8 +65,8 @@ export function useTeacherQuizActions(courseId: string) {
         toast.error('Set course marks for this quiz before publishing');
         return;
       }
-      if (budget && wouldExceedMarkBudget(budget, requested, 0)) {
-        toast.error(markBudgetExceededMessage(budget, requested, 0));
+      if (budget && isMarkBudgetExhausted(budget, 0)) {
+        toast.error('All course marks are allocated');
         return;
       }
     }
@@ -78,7 +77,9 @@ export function useTeacherQuizActions(courseId: string) {
     updateMutation.mutate(
       { quizId: quiz.id, input: { is_draft: nextDraft } },
       {
-        onSuccess: () => {
+        onSuccess: (updated) => {
+          const notice = (updated as { markBudgetNotice?: string }).markBudgetNotice;
+          if (notice) toast.info(notice);
           toast.success(nextDraft ? 'Quiz unpublished' : 'Quiz published');
           queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseId) });
         },
@@ -121,19 +122,9 @@ export function useTeacherQuizActions(courseId: string) {
       const budget = queryClient.getQueryData<CourseMarkBudget>(
         markBudgetKeys.offering(courseId)
       );
-      const quizzes = queryClient.getQueryData<Quiz[]>(quizKeys.list(courseId)) ?? [];
-      if (budget) {
-        for (const id of selectedIds) {
-          const quiz = quizzes.find((q) => q.id === id);
-          if (!quiz || !quiz.is_draft) continue;
-          const requested = resolveQuizRequestedCourseMarks(quiz);
-          if (requested > 0 && wouldExceedMarkBudget(budget, requested, 0)) {
-            toast.error(
-              `"${quiz.title}": ${markBudgetExceededMessage(budget, requested, 0)}`
-            );
-            return;
-          }
-        }
+      if (budget && isMarkBudgetExhausted(budget, 0)) {
+        toast.error('All course marks are allocated');
+        return;
       }
     }
     runBulk(draft ? 'Unpublished' : 'Published', (id) =>

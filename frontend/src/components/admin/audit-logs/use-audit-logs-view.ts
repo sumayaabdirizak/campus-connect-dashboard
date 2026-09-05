@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useDeferredValue, useEffect, useMemo, useState } from 'react';
 import {
   useAdminAuditActors,
   useAdminAuditLogs,
@@ -15,13 +15,22 @@ import {
   type AuditLogFilterState,
 } from './audit-filters';
 import { AUDIT_MODULE_TABS } from './audit-module-tabs';
+import { AUDIT_ALL_COLS, type AuditColumnId } from './audit-table-utils';
 
 export function useAuditLogsView() {
   const [filters, setFilters] = useState<AuditLogFilterState>(DEFAULT_FILTERS);
   const [draft, setDraft] = useState(DEFAULT_FILTERS);
+  const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search.trim());
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [detailEntry, setDetailEntry] = useState<PlatformAuditLogEntry | null>(null);
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const [visibleCols, setVisibleCols] = useState<AuditColumnId[]>([...AUDIT_ALL_COLS]);
+
+  useEffect(() => {
+    setFilters((prev) => ({ ...prev, search: deferredSearch, page: 1 }));
+    setDraft((prev) => ({ ...prev, search: deferredSearch }));
+  }, [deferredSearch]);
 
   const queryFilters = useMemo(() => auditFiltersToQuery(filters), [filters]);
   const { data, isLoading, error, refetch } = useAdminAuditLogs(queryFilters);
@@ -48,6 +57,7 @@ export function useAuditLogsView() {
   const resetFilters = () => {
     setDraft(DEFAULT_FILTERS);
     setFilters(DEFAULT_FILTERS);
+    setSearch('');
     setSelected(new Set());
   };
 
@@ -81,11 +91,15 @@ export function useAuditLogsView() {
     setFilters,
     draft,
     setDraft,
+    search,
+    setSearch,
     selected,
     detailEntry,
     setDetailEntry,
     showAdvanced,
     setShowAdvanced,
+    visibleCols,
+    setVisibleCols,
     rows,
     total,
     page,

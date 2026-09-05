@@ -8,14 +8,14 @@ export function buildRiskSections({
     .slice(0, 8)
     .map((s) => {
       const lowGpa = s.gpa < 2.0;
-      const poorAttendance = s.attendance < 60;
+      const lowOnTimeRate = s.onTimeRate < 60;
       const reason =
-        lowGpa && poorAttendance
-          ? 'Low GPA & poor attendance'
+        lowGpa && lowOnTimeRate
+          ? 'Low GPA & low on-time submissions'
           : lowGpa
             ? 'Low GPA'
-            : poorAttendance
-              ? 'Poor attendance'
+            : lowOnTimeRate
+              ? 'Low on-time submissions'
               : 'At risk';
       return {
         id: s.id,

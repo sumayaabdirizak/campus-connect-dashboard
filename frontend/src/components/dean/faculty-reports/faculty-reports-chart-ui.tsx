@@ -13,7 +13,7 @@ export function ChartCard({
   action?: React.ReactNode;
 }) {
   return (
-    <div className='rounded-xl border bg-card p-4'>
+    <div className='rounded-xl border border-border bg-card p-4'>
       <div className='mb-3 flex items-center justify-between gap-2'>
         <p className='text-sm font-semibold'>{title}</p>
         {action}

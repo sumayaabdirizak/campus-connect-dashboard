@@ -17,15 +17,25 @@ export const entityReportKeys = {
     scope: ReportScope,
     id: string,
     period: string,
-    window: ReportWindowParams
+    dateWindow: ReportWindowParams = {}
   ) =>
-    [...entityReportKeys.all, 'detail', scope, id, period, window.from, window.to] as const
+    [
+      ...entityReportKeys.all,
+      'detail',
+      scope,
+      id,
+      period,
+      dateWindow.from ?? null,
+      dateWindow.to ?? null
+    ] as const
 };
 
-function appendWindowParams(query: URLSearchParams, window: ReportWindowParams) {
-  if (window.from) query.set('from', window.from);
-  if (window.to) query.set('to', window.to);
-  if (window.status && window.status !== 'all') query.set('status', window.status);
+function appendWindowParams(query: URLSearchParams, dateWindow: ReportWindowParams) {
+  if (dateWindow.from) query.set('from', dateWindow.from);
+  if (dateWindow.to) query.set('to', dateWindow.to);
+  if (dateWindow.status && dateWindow.status !== 'all') {
+    query.set('status', dateWindow.status);
+  }
 }
 
 export function useReportSubjects(scope: ReportScope) {
@@ -43,19 +53,23 @@ export function useReport(
   scope: ReportScope,
   id: string | null,
   period: string,
-  window: ReportWindowParams = {}
+  dateWindow: ReportWindowParams = {}
 ) {
+  const from = dateWindow.from ?? null;
+  const to = dateWindow.to ?? null;
+  const status = dateWindow.status ?? null;
+
   return useQuery({
-    queryKey: entityReportKeys.detail(scope, id ?? '', period, window),
+    queryKey: entityReportKeys.detail(scope, id ?? '', period, { from, to, status }),
     queryFn: () => {
-      const query = new URLSearchParams({
-        id: id ?? '',
-        period
-      });
-      appendWindowParams(query, window);
+      const query = new URLSearchParams();
+      query.set('id', String(id ?? ''));
+      query.set('period', String(period || 'all'));
+      appendWindowParams(query, { from, to, status });
       return apiClient<Report>(`/reports/${scope}?${query.toString()}`);
     },
-    enabled: !!id
+    enabled: !!id,
+    staleTime: 60_000
   });
 }
 

@@ -2,10 +2,7 @@ import { prisma } from "../../../db/prisma.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import { namedListSuccess } from "../../../utils/apiEnvelope.js";
 import { parsePaginationQuery } from "../../../utils/pagination.js";
-import {
-  getCurrentAcademicYearBounds,
-  getSemesterInYear,
-} from "../../../services/academic/academicCalendar.js";
+import { resolveActiveAcademicTerm } from "../../../services/academic/resolveActiveAcademicTerm.js";
 import { ensureAcademicYearForDate } from "../../../services/academic/ensureAcademicYear.js";
 import { renumberSemestersGloballyIfNeeded } from "../../../services/academic/semesterSequence.js";
 import { graduateCompletedCohorts } from "../../../services/academic/graduateCompletedCohorts.js";
@@ -40,8 +37,9 @@ export const getAllAcademicYears = async (req, res) => {
       }),
     ]);
 
-    const slot = getSemesterInYear(new Date());
-    const currentName = getCurrentAcademicYearBounds(new Date()).name;
+    const activeTerm = await resolveActiveAcademicTerm({ includeDb: false });
+    const slot = activeTerm.semesterNumberInYear;
+    const currentName = activeTerm.academicYearName;
     const enriched = years.map((year) => {
       const ordered = [...(year.semesters ?? [])].sort((a, b) => a.sequence - b.sequence);
       const inActiveWindow = isYearInActiveWindow(year.name);
@@ -55,16 +53,22 @@ export const getAllAcademicYears = async (req, res) => {
       };
     });
 
-    res.json(
-      namedListSuccess({
+    res.json({
+      ...namedListSuccess({
         message: "Academic years fetched",
         name: "years",
         items: enriched,
         page,
         pageSize,
         totalCount,
-      })
-    );
+      }),
+      activeTerm: {
+        source: activeTerm.source,
+        academicYearName: currentName,
+        academicYearLabel: activeTerm.academicYearLabel,
+        semesterNumberInYear: slot,
+      },
+    });
   } catch (err) {
     respondInternalError(res, "Failed to fetch academic years", err);
   }

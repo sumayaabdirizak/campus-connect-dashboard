@@ -82,7 +82,7 @@ export function AnnouncementCardBase({
       data-priority={announcement.priority ?? 'normal'}
       tabIndex={clickOpensDraft || clickMarkReadActive ? 0 : undefined}
       className={cn(
-        'mx-auto w-full max-w-xl',
+        'mx-auto w-full max-w-2xl',
         (clickMarkReadActive || clickOpensDraft) &&
           'cursor-pointer rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
       )}
@@ -104,16 +104,16 @@ export function AnnouncementCardBase({
     >
       <div
         ref={cardRef}
-        className='w-full rounded-lg border border-border bg-muted/50 p-2.5 shadow-sm transition-shadow duration-200 hover:shadow-md'
+        className='w-full rounded-xl border border-border bg-muted/50 p-4 shadow-sm transition-shadow duration-200 hover:shadow-md'
       >
-        <div className='mb-1.5 flex items-start justify-between gap-1.5'>
+        <div className='mb-2.5 flex items-start justify-between gap-2'>
           <AnnouncementHeader announcement={announcement} />
-          <div className='flex shrink-0 items-center gap-1'>
+          <div className='flex shrink-0 items-center gap-1.5'>
             <p
-              className='flex items-center gap-0.5 text-[10px] font-medium text-foreground/75'
+              className='flex items-center gap-1 text-xs font-medium text-foreground/75'
               title={new Date(createdAt).toLocaleString()}
             >
-              <Icons.clock className='h-3 w-3 shrink-0' aria-hidden />
+              <Icons.clock className='h-3.5 w-3.5 shrink-0' aria-hidden />
               <time dateTime={createdAt}>{timeAgoLong(createdAt)}</time>
             </p>
             {canManage && (
@@ -122,9 +122,9 @@ export function AnnouncementCardBase({
                   <button
                     type='button'
                     aria-label='Announcement actions'
-                    className='shrink-0 rounded-full p-0.5 text-foreground/60 transition-colors hover:bg-muted hover:text-foreground'
+                    className='shrink-0 rounded-full p-1 text-foreground/60 transition-colors hover:bg-muted hover:text-foreground'
                   >
-                    <Icons.ellipsis className='h-3 w-3' />
+                    <Icons.ellipsis className='h-4 w-4' />
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align='end'>
@@ -164,16 +164,16 @@ export function AnnouncementCardBase({
         </div>
 
         {(showPriority || isPinned) && (
-          <div className='mb-1 flex items-center justify-between gap-1.5'>
-            <div className='flex min-w-0 items-center gap-1.5'>
+          <div className='mb-2 flex items-center justify-between gap-2'>
+            <div className='flex min-w-0 items-center gap-2'>
               {showPriority && <PriorityBadge priority={announcement.priority} />}
             </div>
-            <div className='flex shrink-0 items-center gap-1.5'>
+            <div className='flex shrink-0 items-center gap-2'>
               {isPinned && (
                 <span
-                  className='inline-flex items-center gap-0.5 rounded-full bg-primary/15 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-[0.08em] text-primary ring-1 ring-inset ring-primary/35'
+                  className='inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[10px] font-bold uppercase tracking-[0.08em] text-primary ring-1 ring-inset ring-primary/35'
                 >
-                  <Icons.pin className='size-2.5 shrink-0' aria-hidden />
+                  <Icons.pin className='size-3 shrink-0' aria-hidden />
                   {i18n.pinned}
                 </span>
               )}
@@ -182,7 +182,7 @@ export function AnnouncementCardBase({
           </div>
         )}
         {!showPriority && !isPinned && (
-          <div className='mb-1 flex justify-end'>
+          <div className='mb-2 flex justify-end'>
             <AnnouncementExpiryRow announcement={announcement} />
           </div>
         )}
@@ -194,7 +194,7 @@ export function AnnouncementCardBase({
 
         {!isDraftStatus && (
           <>
-            <div className='my-1 h-px bg-border' />
+            <div className='my-2.5 h-px bg-border' />
             <AnnouncementActions announcement={announcement} />
           </>
         )}

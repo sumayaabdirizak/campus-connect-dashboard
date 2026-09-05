@@ -5,7 +5,6 @@ import { ArrowLeft } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AttemptGrader } from '../attempt-grader';
-import { QuizLiveMonitor } from '../quiz-live-monitor';
 import { useQuizAttempts, useQuizzes } from '@/lib/course-details/queries/quizzes-queries';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
 import type { Quiz, QuizAttempt } from '@/lib/course-details/services/quizzes-types';
@@ -70,7 +69,6 @@ export function TeacherAttemptsPanel({
         </div>
       </div>
 
-      <QuizLiveMonitor quizId={quiz.id} />
       <AttemptsTable
         isLoading={isLoading}
         allRows={allRows}

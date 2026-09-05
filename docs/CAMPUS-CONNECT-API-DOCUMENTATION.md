@@ -612,6 +612,217 @@ GET /v1/dean/courses?facultyId=12&batch=bf03&semester=1
 
 ---
 
+#### `GET /dean/lecturers`
+
+Returns distinct lecturers (employees) assigned to courses within the dean's allowed faculties. **No required parameters** — automatically scoped based on the dean's token.
+
+**Authentication:** Partner + Dean token required
+
+**Optional Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `facultyId` | integer | No | Filter by specific faculty (must be in dean's scope) |
+| `departmentId` | integer | No | Filter by department |
+
+**Request:**
+```bash
+# All lecturers in dean's allowed faculties
+GET /v1/dean/lecturers
+
+# Filter by specific faculty (must be in dean's scope)
+GET /v1/dean/lecturers?facultyId=12
+
+# Filter by department
+GET /v1/dean/lecturers?departmentId=21
+```
+
+**Response (200):**
+```json
+{
+  "resultCode": "0",
+  "resultMessage": "OK",
+  "data": {
+    "scope": [12],
+    "departmentId": null,
+    "lecturers": [
+      {
+        "id": 5,
+        "employee_name": "Dr. Ahmed Hassan",
+        "gender": "Male"
+      },
+      {
+        "id": 12,
+        "employee_name": "Fatima Ali",
+        "gender": "Female"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+- `403 FORBIDDEN` — Faculty not in dean's scope (if facultyId provided)
+
+---
+
+#### `GET /dean/lecturer-courses`
+
+Returns courses assigned to a specific lecturer within the dean's allowed faculties.
+
+**Authentication:** Partner + Dean token required
+
+**Required Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `lecturerId` | integer | Yes | Lecturer/employee ID |
+
+**Optional Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `semester` | integer | No | Filter by semester |
+| `academicYear` | string | No | Filter by academic year |
+
+**Request:**
+```bash
+# All courses for a lecturer
+GET /v1/dean/lecturer-courses?lecturerId=5
+
+# Filter by semester
+GET /v1/dean/lecturer-courses?lecturerId=5&semester=1
+```
+
+**Response (200):**
+```json
+{
+  "resultCode": "0",
+  "resultMessage": "OK",
+  "data": {
+    "lecturerId": 5,
+    "scope": [12],
+    "courses": [
+      {
+        "CourseCode": "ECO101",
+        "CourseName": "Principles of Economics",
+        "Semester": 1,
+        "AcademicYear": "2025-2026",
+        "Batch": "23-BA-01",
+        "DepartmentID": 21,
+        "DeptName": "Business Administration"
+      },
+      {
+        "CourseCode": "ECO201",
+        "CourseName": "Microeconomics",
+        "Semester": 2,
+        "AcademicYear": "2025-2026",
+        "Batch": "23-BA-01",
+        "DepartmentID": 21,
+        "DeptName": "Business Administration"
+      }
+    ]
+  }
+}
+```
+
+**Error Responses:**
+- `400 MISSING_PARAM` — Missing required parameter
+
+---
+
+#### `GET /dean/course-students`
+
+Returns students enrolled in a specific course (via batch assignment) within the dean's allowed faculties.
+
+**Authentication:** Partner + Dean token required
+
+**Required Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `courseCode` | string | Yes | Course code (e.g., `ECO101`) |
+| `batch` | string | Yes | Batch code (e.g., `23-BA-01`) |
+
+**Optional Parameters:**
+
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `section` | string | No | Filter by section |
+| `gender` | string | No | `Male`, `Female`, `M`, or `F` |
+| `limit` | integer | No | Page size (1-500, default 50) |
+| `offset` | integer | No | Pagination offset (default 0) |
+
+**Request:**
+```bash
+# All students in a course for a batch
+GET /v1/dean/course-students?courseCode=ECO101&batch=23-BA-01
+
+# Filter by section
+GET /v1/dean/course-students?courseCode=ECO101&batch=23-BA-01&section=A
+
+# Filter by gender
+GET /v1/dean/course-students?courseCode=ECO101&batch=23-BA-01&gender=Male
+```
+
+**Response (200):**
+```json
+{
+  "resultCode": "0",
+  "resultMessage": "OK",
+  "data": {
+    "courseCode": "ECO101",
+    "batch": "23-BA-01",
+    "scope": [12],
+    "groups": [
+      {
+        "section": "A",
+        "students": [
+          {
+            "id": 1234,
+            "StudentID": "JU-2023-001",
+            "JU_ID": "JU-2023-001",
+            "StudentName": "Mohamed Ali",
+            "Gender": "Male",
+            "Section": "A",
+            "BatchCode": "23-BA-01",
+            "Phone": "+25261xxxxxxx",
+            "Email": "mohamed@example.com"
+          }
+        ]
+      },
+      {
+        "section": "B",
+        "students": [
+          {
+            "id": 1235,
+            "StudentID": "JU-2023-002",
+            "JU_ID": "JU-2023-002",
+            "StudentName": "Fatima Hassan",
+            "Gender": "Female",
+            "Section": "B",
+            "BatchCode": "23-BA-01",
+            "Phone": "+25261xxxxxxx",
+            "Email": "fatima@example.com"
+          }
+        ]
+      }
+    ],
+    "pagination": {
+      "limit": 50,
+      "offset": 0,
+      "total": 35
+    }
+  }
+}
+```
+
+**Error Responses:**
+- `400 MISSING_PARAM` — Missing required parameter
+- `400 INVALID_PARAM` — Invalid gender value
+
+---
+
 ### 4. Student Endpoints
 
 #### `GET /students/me`

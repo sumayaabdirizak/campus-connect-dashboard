@@ -22,7 +22,7 @@ export function LiveTile({ tile }: { tile: LiveAttemptTile }) {
       return (
         <Badge variant='success' className='gap-1'>
           <CheckCircle2 className='w-3 h-3' />
-          Submitted{tile.score != null && ` · ${Math.round(tile.score)}% marks`}
+          Submitted
         </Badge>
       );
     }

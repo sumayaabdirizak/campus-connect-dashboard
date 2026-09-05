@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
 import PageContainer from '@/features/layout/components/page-container'
@@ -9,7 +9,6 @@ import { useStudentCourses } from '@/lib/student-courses/queries'
 import { CourseList } from '@/components/teacher-courses/course-list'
 import { StudentCourseList } from '@/components/student-courses/course-list'
 import { GraduatedBanner } from '@/components/student-courses/graduated-banner'
-import { SemesterHistoryPanel } from '@/components/student-courses/semester-history-panel'
 import { AdminCoursesPage } from '@/components/courses-admin/components/admin-courses-page'
 
 export default function CoursesPage() {
@@ -62,13 +61,20 @@ export default function CoursesPage() {
         refreshing={isFetching}
         showFullscreen={false}
       />
+      {!isTeacher &&
+      !Array.isArray(data) &&
+      data?.batchSemester?.label ? (
+        <p className='mb-4 text-sm text-muted-foreground'>
+          {data.batchSemester.label}
+        </p>
+      ) : null}
 
       {error ? (
-        <div className='flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 text-center'>
-          <p className='text-sm font-semibold text-red-700'>
-            Couldnâ€™t load courses
+        <div className='flex min-h-[240px] flex-col items-center justify-center rounded-xl border border-red-200 bg-red-50 px-6 text-center'>
+          <p className='text-sm font-semibold text-red-700'>Couldn't load courses</p>
+          <p className='mt-1 text-xs text-red-600/80'>
+            {(error as Error).message || 'Please try again later'}
           </p>
-          <p className='mt-1 text-xs text-red-600/80'>Please try again later</p>
         </div>
       ) : isTeacher ? (
         <CourseList
@@ -84,7 +90,6 @@ export default function CoursesPage() {
             courses={!Array.isArray(data) ? (data?.offerings ?? []) : []}
             isLoading={isLoading}
           />
-          {isStudent ? <SemesterHistoryPanel /> : null}
         </>
       )}
     </PageContainer>

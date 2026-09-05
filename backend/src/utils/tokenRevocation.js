@@ -46,11 +46,16 @@ export async function revokeJti(jti, expiresAt, meta = {}) {
  */
 export async function isJtiRevoked(jti) {
   if (!jti) return false;
-  const row = await prisma.revokedToken.findUnique({
-    where: { jti },
-    select: { jti: true },
-  });
-  return !!row;
+  try {
+    const row = await prisma.revokedToken.findUnique({
+      where: { jti },
+      select: { jti: true },
+    });
+    return !!row;
+  } catch (e) {
+    console.error("[tokenRevocation] isJtiRevoked lookup failed", { message: e?.message });
+    throw e;
+  }
 }
 
 /**

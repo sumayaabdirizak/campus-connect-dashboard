@@ -23,9 +23,12 @@ import type { ReportScope } from '@/lib/reports/types';
 import { CARD, LABEL_SM } from './report-theme';
 
 const fieldLabel =
-  'text-[11px] font-semibold uppercase tracking-wide text-[#667085] dark:text-muted-foreground';
+  'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground';
 
 const fieldError = 'text-xs text-destructive';
+
+const fieldControl =
+  'h-10 border-border bg-background';
 
 export type ReportFilterValues = {
   scope: ReportScope;
@@ -100,7 +103,7 @@ export function ReportFiltersPanel({
           <div className='min-w-0 flex-1 space-y-1.5'>
             <span className={fieldLabel}>Period</span>
             <Select value={periodPreset} onValueChange={handlePeriodChange}>
-              <SelectTrigger className='h-10 w-full border-[#D0D5DD] bg-white dark:border-border dark:bg-background'>
+              <SelectTrigger className={cn('w-full', fieldControl)}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -123,7 +126,7 @@ export function ReportFiltersPanel({
                 max={fromMax}
                 onChange={(e) => setFrom(e.target.value)}
                 className={cn(
-                  'h-10 border-[#D0D5DD] bg-white dark:border-border dark:bg-background',
+                  fieldControl,
                   isCustom && dateErrors?.from && 'border-destructive'
                 )}
                 aria-invalid={isCustom && dateErrors?.from ? true : undefined}
@@ -141,7 +144,7 @@ export function ReportFiltersPanel({
                 max={today}
                 onChange={(e) => setTo(e.target.value)}
                 className={cn(
-                  'h-10 border-[#D0D5DD] bg-white dark:border-border dark:bg-background',
+                  fieldControl,
                   isCustom && dateErrors?.to && 'border-destructive'
                 )}
                 aria-invalid={isCustom && dateErrors?.to ? true : undefined}
@@ -166,15 +169,15 @@ export function ReportFiltersPanel({
         ) : null}
 
         {scope === 'batch' ? (
-          <div className='flex flex-col gap-3 border-t border-[#E5E7EB] pt-4 dark:border-border sm:flex-row sm:items-center'>
+          <div className='flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center'>
             <div className='flex shrink-0 items-center gap-2'>
-              <Filter className='size-4 text-[#667085] dark:text-muted-foreground' aria-hidden />
+              <Filter className='size-4 text-muted-foreground' aria-hidden />
               <span className={LABEL_SM}>Filters</span>
             </div>
 
             <Select value={status} onValueChange={(v) => onChange({ status: v })}>
               <SelectTrigger
-                className='h-10 w-full min-w-[10rem] border-[#D0D5DD] bg-white sm:w-44 dark:border-border dark:bg-background'
+                className={cn('w-full min-w-[10rem] sm:w-44', fieldControl)}
                 aria-label='Batch status'
               >
                 <SelectValue placeholder='All status' />

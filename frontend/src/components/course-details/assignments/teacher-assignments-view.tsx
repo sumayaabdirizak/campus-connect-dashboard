@@ -6,6 +6,7 @@ import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-qu
 import { CourseTabHeader } from '../_shared/course-tab-header';
 import { CourseTabPage } from '../_shared/course-tab-page';
 import { CourseMarkBudgetBanner } from '../_shared/course-mark-budget-banner';
+import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget-utils';
 import { AssignmentsEmptyState } from './shared';
 import { AssignmentBulkBar } from './assignment-bulk-bar';
 import { AssignmentListTable } from './assignment-list-table';
@@ -53,6 +54,7 @@ export function TeacherAssignmentsView({ list, courseId }: TeacherAssignmentsVie
 
   const showEmpty =
     !isLoading && filteredAssignments.length === 0 && assignments.length === 0;
+  const budgetExhausted = markBudget != null && isMarkBudgetExhausted(markBudget);
 
   return (
     <CourseTabPage>
@@ -60,7 +62,13 @@ export function TeacherAssignmentsView({ list, courseId }: TeacherAssignmentsVie
         title='Assignments'
         description='Manage course assignments, submissions, and grading.'
         actions={
-          <Button onClick={() => setCreateOpen(true)} size='sm' className='gap-1.5 rounded-full'>
+          <Button
+            onClick={() => setCreateOpen(true)}
+            size='sm'
+            className='gap-1.5 rounded-full'
+            disabled={budgetExhausted}
+            title={budgetExhausted ? 'All course marks are allocated' : undefined}
+          >
             <Plus className='size-4' /> Create assignment
           </Button>
         }

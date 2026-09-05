@@ -6,7 +6,7 @@ import { patchQuizBodySchema } from '../../../validation/quizSchemas.js';
 import { resolveModuleIdForOffering, assertMarksPlanAllowedForMode, normalizeOfflineDelivery } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
 import {
-  assertCourseMarkBudget,
+  reserveCourseMarkWeight,
   resolveQuizCourseMarks,
 } from '../../../services/courses/courseMarkBudget.service.js';
 
@@ -142,6 +142,7 @@ export function register(router) {
       ? 0
       : existing.questions.reduce((s, q) => s + q.points, 0);
     let nextCourseMarks = existing.maxMarks;
+    let markBudgetNotice = null;
 
     if (willPublish || maxMarks !== undefined || !existing.is_draft) {
       nextCourseMarks = resolveQuizCourseMarks({
@@ -156,12 +157,14 @@ export function register(router) {
         });
       }
       if (nextCourseMarks > 0) {
-        const budget = await assertCourseMarkBudget(
+        const reserved = await reserveCourseMarkWeight(
           existing.courseOfferingId,
           nextCourseMarks,
           { excludeQuizId: qid }
         );
-        if (budget.error) return res.status(400).json({ message: budget.error });
+        if (reserved.error) return res.status(400).json({ message: reserved.error });
+        nextCourseMarks = reserved.data.marks;
+        if (reserved.data.clamped) markBudgetNotice = reserved.data.clampMessage;
       }
     }
 
@@ -229,7 +232,10 @@ export function register(router) {
       notifyQuizPublished(quiz, req.courseOffering.publicId);
     }
 
-    res.json(quiz);
+    res.json({
+      ...quiz,
+      ...(markBudgetNotice ? { markBudgetNotice } : {}),
+    });
   }));
 
   router.delete('/:quizId', requireQuizManage(), asyncHandler(async (req, res) => {

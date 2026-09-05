@@ -15,8 +15,9 @@ import { MaxMarksField } from './max-marks-field';
 import { handleExtensionDateChange, toDatetimeLocalMin } from '../extension-date-utils';
 import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import {
-  markBudgetExceededMessage,
-  wouldExceedMarkBudget
+  clampToMarkBudget,
+  isMarkBudgetExhausted,
+  MARK_BUDGET_FULL_MESSAGE
 } from '@/lib/course-details/services/mark-budget-utils';
 import { toast } from 'sonner';
 
@@ -64,17 +65,22 @@ export function CreateAssignmentForm({
     defaultValues: { ...defaultAssignmentValues, ...initialValues } as AssignmentFormValues,
     validators: { onChange: assignmentSchema },
     onSubmit: async ({ value }) => {
+      if (enforceMarkBudget && markBudget && isMarkBudgetExhausted(markBudget, excludePublishedMarks)) {
+        toast.error(MARK_BUDGET_FULL_MESSAGE);
+        return;
+      }
+      const maxMarks =
+        enforceMarkBudget && markBudget
+          ? clampToMarkBudget(markBudget, value.maxMarks, excludePublishedMarks)
+          : value.maxMarks;
       if (
         enforceMarkBudget &&
         markBudget &&
-        wouldExceedMarkBudget(markBudget, value.maxMarks, excludePublishedMarks)
+        maxMarks < value.maxMarks
       ) {
-        toast.error(
-          markBudgetExceededMessage(markBudget, value.maxMarks, excludePublishedMarks)
-        );
-        return;
+        toast.info(`Mark weight reduced to ${maxMarks} to fit the remaining course budget.`);
       }
-      await onSubmit(value);
+      await onSubmit({ ...value, maxMarks });
     }
   });
 
@@ -192,12 +198,12 @@ export function CreateAssignmentForm({
           </Button>
           <form.Subscribe selector={(s) => s.values.maxMarks}>
             {(maxMarks) => {
-              const blocked =
+              const exhausted =
                 enforceMarkBudget &&
                 markBudget != null &&
-                wouldExceedMarkBudget(markBudget, maxMarks, excludePublishedMarks);
+                isMarkBudgetExhausted(markBudget, excludePublishedMarks);
               return (
-                <Button type='submit' disabled={pending || blocked} className='gap-1.5'>
+                <Button type='submit' disabled={pending || exhausted} className='gap-1.5'>
                   {showSubmitIcon ? <Plus className='size-4' aria-hidden /> : null}
                   {pending ? pendingLabel : submitLabel}
                 </Button>

@@ -1,7 +1,7 @@
 export function buildInsights({
   rankedDepartments,
   enrollmentTrend,
-  attendanceRate,
+  onTimeRate,
   studentsAtRisk,
   coursesAtRisk,
 }) {
@@ -17,8 +17,10 @@ export function buildInsights({
   } else if (enrollmentTrend < 0) {
     insights.push(`Enrollment declined ${Math.abs(enrollmentTrend)}% — review outreach programs.`);
   }
-  if (attendanceRate < 75) {
-    insights.push('Faculty-wide attendance is below target — consider engagement initiatives.');
+  if (onTimeRate < 75) {
+    insights.push(
+      'Faculty-wide on-time submission rate is below target — consider engagement initiatives.'
+    );
   }
   if (studentsAtRisk.length > 0) {
     insights.push(

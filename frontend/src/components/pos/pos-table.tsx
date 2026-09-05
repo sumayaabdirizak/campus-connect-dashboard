@@ -23,9 +23,18 @@ export function PosTable({
   );
 }
 
-export function PosTableHead({ children }: { children: ReactNode }) {
+export function PosTableHead({
+  children,
+  className
+}: {
+  children: ReactNode;
+  className?: string;
+}) {
   return (
-    <thead className='border-b' style={{ borderColor: c.border, backgroundColor: c.headerBg }}>
+    <thead
+      className={cn('border-b', className)}
+      style={{ borderColor: c.border, backgroundColor: c.headerBg }}
+    >
       {children}
     </thead>
   );

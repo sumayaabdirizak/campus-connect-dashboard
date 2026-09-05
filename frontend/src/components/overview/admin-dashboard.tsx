@@ -45,9 +45,9 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   // Map dean reports to DreamsPOS metric structure
   const totalCourses = reportsData?.kpis.totalCourses ?? 0
   const activeStudents = reportsData?.kpis.totalStudents ?? 0
-  const totalFaculty = reportsData?.kpis.totalInstructors ?? 0
+  const totalLecturers = reportsData?.kpis.totalInstructors ?? 0
   const passRate = reportsData?.kpis.courseCompletionRate ?? 0
-  const attendanceRate = reportsData?.kpis.attendanceRate ?? 0
+  const onTimeRate = reportsData?.kpis.onTimeRate ?? 0
 
   return (
     <div className='w-full space-y-3 pb-6'>
@@ -103,8 +103,8 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
           />
           <PlatformCountTile
             icon={UsersRound}
-            value={totalFaculty.toLocaleString()}
-            label='Faculty Members'
+            value={totalLecturers.toLocaleString()}
+            label='Lecturers'
             tone='lightGreen'
           />
         </div>
@@ -121,8 +121,8 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
         />
         <RetailStatCard
           icon={CheckCircle2}
-          label='Attendance Rate'
-          value={`${attendanceRate}%`}
+          label='On-time submissions'
+          value={`${onTimeRate}%`}
           tone='emerald'
           loading={reportsLoading}
         />

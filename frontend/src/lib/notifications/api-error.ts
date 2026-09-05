@@ -43,7 +43,22 @@ function isNetworkError(error: unknown): boolean {
 
 function formatErrorDetails(data: unknown): string | undefined {
   if (!data || typeof data !== 'object') return undefined;
-  const details = (data as { details?: unknown }).details;
+  const record = data as { details?: unknown; issues?: unknown };
+
+  // Zod issues from announcement create/patch: { message, issues: [{ message, path }] }
+  const issues = record.issues;
+  if (Array.isArray(issues) && issues.length > 0) {
+    const msgs = issues
+      .map((issue) => {
+        if (!issue || typeof issue !== 'object') return null;
+        const msg = (issue as { message?: unknown }).message;
+        return typeof msg === 'string' && msg.trim() ? msg.trim() : null;
+      })
+      .filter(Boolean);
+    if (msgs.length > 0) return msgs.join(' · ');
+  }
+
+  const details = record.details;
   if (typeof details === 'string' && details.trim()) return details.trim();
   if (Array.isArray(details) && details.length > 0) {
     return details.map(String).filter(Boolean).join(' · ');

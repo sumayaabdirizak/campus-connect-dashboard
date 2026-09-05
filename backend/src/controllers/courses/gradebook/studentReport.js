@@ -103,7 +103,7 @@ export async function getStudentCourseReport(req, res) {
   res.json({
     kpis: {
       avgGpa: kpis.avgGpa,
-      onTimeRate: kpis.attendanceRate,
+      onTimeRate: kpis.onTimeRate,
       quizPassRate: kpis.quizPassRate,
     },
     performanceDistribution,

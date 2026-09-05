@@ -56,10 +56,7 @@ export function assembleDeanReport({
       topCourses,
       bottomCourses,
       performanceDistribution,
-      // Wire key stays `attendance` for frontend API compatibility, but the
-      // data is submission-timeliness engagement, not formal attendance —
-      // see engagementCharts.js.
-      attendance: {
+      onTimeSubmissions: {
         daily: dailyEngagement,
         monthly: monthlyEngagement,
         byDepartment: departmentEngagement,

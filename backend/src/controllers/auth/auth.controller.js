@@ -12,19 +12,19 @@ import {
   issueAccessToken,
   issueRefreshToken,
   setAuthCookies,
+  setAccessCookie,
+  touchRefreshCookie,
   getIsProduction,
   issueCsrfCookie,
   listAvailableRoleNames,
+  resolveLoginUser,
 } from './auth.helpers.js';
 
 export async function postLogin(req, res) {
   const { email, password } = req.body;
   const { verifyPassword } = await import('../../utils/password.js');
 
-  const user = await prisma.user.findUnique({
-    where: { email },
-    include: { role: true },
-  });
+  const user = await resolveLoginUser(email);
 
   if (!user) {
     throw new HttpError(401, 'Invalid credentials', null);
@@ -161,11 +161,17 @@ export async function postRefresh(req, res) {
 
     // Enforce the revocation deny-list on the refresh path — the `auth`
     // middleware only checks it for access tokens. Without this, a refresh
-    // token revoked on logout or by rotation would still mint fresh access
-    // tokens.
-    if (payload.jti && (await isJtiRevoked(payload.jti))) {
-      clearAuthCookies(res);
-      return res.status(401).json({ message: 'Invalid refresh token' });
+    // token revoked on logout would still mint fresh access tokens.
+    if (payload.jti) {
+      try {
+        if (await isJtiRevoked(payload.jti)) {
+          clearAuthCookies(res);
+          return res.status(401).json({ message: 'Invalid refresh token' });
+        }
+      } catch (err) {
+        console.error('[auth] refresh revocation lookup failed', { message: err?.message });
+        return res.status(503).json({ message: 'Auth temporarily unavailable' });
+      }
     }
 
     const user = await prisma.user.findUnique({
@@ -197,19 +203,12 @@ export async function postRefresh(req, res) {
 
     const jwtPayload = await buildPayload(user);
     const newAccessToken = issueAccessToken(jwtPayload);
-    const newRefreshToken = issueRefreshToken(jwtPayload);
-    setAuthCookies(res, newAccessToken, newRefreshToken);
+    // Keep the same refresh token. Rotating it revokes the previous jti and
+    // breaks other tabs that still hold the old cookie for a moment — users
+    // saw random sign-outs every time the access token expired.
+    setAccessCookie(res, newAccessToken);
+    touchRefreshCookie(res, refreshToken);
     const csrfToken = issueCsrfCookie(req, res);
-
-    // Refresh-token rotation: revoke the OLD refresh token now that a fresh
-    // one has been issued. Without this, an attacker who captured the
-    // refresh token could keep refreshing indefinitely.
-    if (payload?.jti && payload?.exp) {
-      await revokeJti(payload.jti, new Date(payload.exp * 1000), {
-        userId: typeof payload.sub === 'number' ? payload.sub : null,
-        reason: 'refresh_rotation',
-      });
-    }
 
     return res.json({ success: true, csrfToken });
   } catch {

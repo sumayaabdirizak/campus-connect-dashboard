@@ -38,26 +38,14 @@ export function FacultyDeanReportsHeader({
       return;
     }
     printFacultyReport(
-      'Faculty Reports & Analytics',
+      'Academic reports',
       `<p>${data.scope.facultyName} — ${data.scope.periodLabel}</p>`
     );
   };
 
   return (
-    <div className='flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between'>
-      <div>
-        <h1 className='text-2xl font-semibold tracking-tight'>Faculty Reports & Analytics</h1>
-        <p className='text-muted-foreground mt-1 text-sm'>
-          Monitor academic performance, departmental activities, and faculty-wide insights.
-        </p>
-        {data ? (
-          <p className='text-muted-foreground mt-1 text-xs'>
-            {data.scope.facultyName} · {data.scope.periodLabel}
-          </p>
-        ) : null}
-      </div>
-      <div className='flex flex-wrap gap-2'>
-        <DropdownMenu>
+    <div className='flex flex-wrap items-center justify-end gap-2'>
+      <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size='sm' variant='outline'>
               <Download className='mr-1.5 size-4' />
@@ -82,7 +70,6 @@ export function FacultyDeanReportsHeader({
           <RefreshCw className={cn('mr-1.5 size-4', isRefreshing && 'animate-spin')} />
           Refresh Data
         </Button>
-      </div>
     </div>
   );
 }

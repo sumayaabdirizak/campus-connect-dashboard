@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useAuthStore } from '@/lib/auth-store'
-import { useStudentCourses, useSemesterHistory } from '@/lib/student-courses/queries'
+import { useStudentCourses } from '@/lib/student-courses/queries'
 import { getMyGrades } from '@/lib/course-details/services/gradebook-service'
 import { CourseCard } from '@/components/teacher-courses/course-card'
 import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card'
@@ -16,7 +16,6 @@ import type { MyGradeItem } from '@/lib/course-details/services/gradebook-types'
 export function StudentDashboard() {
   const user = useAuthStore((state) => state.user)
   const coursesQuery = useStudentCourses(true)
-  const semesterQuery = useSemesterHistory(true)
   const [allGrades, setAllGrades] = useState<Record<string, any>>({})
   const [gradesLoading, setGradesLoading] = useState(true)
 
@@ -139,7 +138,8 @@ export function StudentDashboard() {
   const gpa = calculateGPA()
   const upcomingAssignments = getUpcomingAssignments()
   const recentActivity = getRecentActivity()
-  const currentSemester = semesterQuery.data?.semesters?.[0]?.semesterName || 'Current Semester'
+  const currentSemester =
+    coursesQuery.data?.batchSemester?.label ?? 'Semester not available'
 
   const isLoading = coursesQuery.isLoading || gradesLoading
   const hasError = coursesQuery.error

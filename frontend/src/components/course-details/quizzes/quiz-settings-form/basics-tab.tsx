@@ -85,8 +85,10 @@ export function BasicsTab({ form, setForm, modules }: BasicsTabProps) {
 
           <label className={quizFormSwitchRowClass}>
             <span>
-              <span className='block text-sm font-medium'>Keep as draft</span>
-          
+              <span className='block text-sm font-medium'>Save as draft</span>
+              <span className='text-xs text-muted-foreground'>
+                Off by default — quiz is published when you create it
+              </span>
             </span>
             <Switch
               checked={form.is_draft}

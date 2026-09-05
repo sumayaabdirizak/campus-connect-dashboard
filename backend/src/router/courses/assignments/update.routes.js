@@ -7,7 +7,7 @@ import {
   normaliseModes,
   normaliseMaxMarks,
   normaliseLateWindow,
-  validateAssignmentMarkBudget,
+  resolveAssignmentMaxMarks,
   DEFAULT_ASSIGNMENT_MARK_WEIGHT,
 } from '../../../controllers/courses/assignments/shared.js';
 import {
@@ -68,14 +68,19 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
   const willPublish = is_draft === false && wasDraft;
   const isPublished = before.lifecycle?.publishStatus === 'PUBLISHED';
   const nextMaxMarks = marks.data.maxMarks ?? before.maxMarks ?? DEFAULT_ASSIGNMENT_MARK_WEIGHT;
+  const shouldResolveMarks = marks.data.maxMarks !== undefined || willPublish;
+  let markBudgetNotice = null;
+  let resolvedMaxMarks = nextMaxMarks;
 
-  if (willPublish || (isPublished && marks.data.maxMarks !== undefined)) {
-    const budgetCheck = await validateAssignmentMarkBudget(
+  if (shouldResolveMarks) {
+    const markResolve = await resolveAssignmentMaxMarks(
       before.courseOfferingId,
       nextMaxMarks,
       id
     );
-    if (budgetCheck.error) return res.status(400).json({ message: budgetCheck.error });
+    if (markResolve.error) return res.status(400).json({ message: markResolve.error });
+    resolvedMaxMarks = markResolve.data.marks;
+    if (markResolve.data.clamped) markBudgetNotice = markResolve.data.clampMessage;
   }
 
   const assignment = await prisma.$transaction(async (tx) => {
@@ -88,7 +93,7 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
         ...(due_date && { due_date: new Date(due_date) }),
         ...modes.data,
         ...late.data,
-        ...marks.data,
+        ...(shouldResolveMarks ? { maxMarks: resolvedMaxMarks } : {}),
       },
       include: {
         submissions: true,
@@ -139,7 +144,10 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
     notifyAssignmentUpdated(assignment, publicId);
   }
 
-  res.json(dto);
+  res.json({
+    ...dto,
+    ...(markBudgetNotice ? { markBudgetNotice } : {}),
+  });
 }));
 
 export default router;

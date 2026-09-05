@@ -2,7 +2,7 @@
   "info": {
     "name": "Campus Connect",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "_postman_id": "24103929-f113-4bf2-ab25-5d0b25c4019a",
+    "_postman_id": "8d30f395-a8a0-4b5f-a33d-27fbb403ec16",
     "description": "Campus Connect ↔ Jazeera University integration API.\n\nEvery request is signed by the collection pre-request script using the `partnerCode` and `apiKey` environment variables. Dean and student flows additionally use separate role tokens — `deanToken` and `studentToken` — set by the login requests in folder 02. See campus-connect/README.md for the full reference."
   },
   "variable": [
@@ -439,6 +439,124 @@
           },
           "response": [],
           "description": "Active courses offered in faculty 12 for a specific batch. REQUIRED parameters: facultyId, batch. OPTIONAL: semester (defaults to active term), departmentId. term = current (default) | year (both semesters) | all (every offering)."
+        },
+        {
+          "name": "Lecturers (OPTIONAL: facultyId, departmentId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/lecturers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "lecturers"
+              ]
+            }
+          },
+          "response": [],
+          "description": "Distinct lecturers assigned to courses within the dean's allowed faculties. No parameters required — automatically scoped to dean's faculties. OPTIONAL: facultyId (must be in dean's scope), departmentId to filter by department."
+        },
+        {
+          "name": "Lecturer Courses (REQUIRED: lecturerId)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/lecturer-courses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "lecturer-courses"
+              ],
+              "query": [
+                {
+                  "key": "lecturerId",
+                  "value": "5",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Courses assigned to a specific lecturer within the dean's allowed faculties. REQUIRED: lecturerId. OPTIONAL: semester, academicYear to filter by term."
+        },
+        {
+          "name": "Course Students (REQUIRED: courseCode, batch)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "{{partnerAuth}}"
+              },
+              {
+                "key": "X-Timestamp",
+                "value": "{{timestamp}}"
+              },
+              {
+                "key": "X-Access-Token",
+                "value": "{{deanToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/dean/course-students",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "dean",
+                "course-students"
+              ],
+              "query": [
+                {
+                  "key": "courseCode",
+                  "value": "ECO101",
+                  "description": ""
+                },
+                {
+                  "key": "batch",
+                  "value": "23-BA-01",
+                  "description": ""
+                }
+              ]
+            }
+          },
+          "response": [],
+          "description": "Students enrolled in a specific course (via batch assignment). REQUIRED: courseCode, batch. OPTIONAL: section, gender (Male|Female|M|F), limit, offset."
         }
       ]
     },

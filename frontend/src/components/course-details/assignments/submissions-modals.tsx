@@ -67,7 +67,6 @@ export function SubmissionsModals({
         onSaveGrade={gradeActions.handleSaveGrade}
         onSaveIndividual={gradeActions.handleSaveIndividualGrades}
         onExtend={gradeActions.handleGiveAnotherChance}
-        onMarkMissing={gradeActions.handleMarkMissing}
         templates={s.templatesApi.templates}
         templatesMenuOpen={s.templatesApi.templatesMenuOpen}
         setTemplatesMenuOpen={s.templatesApi.setTemplatesMenuOpen}

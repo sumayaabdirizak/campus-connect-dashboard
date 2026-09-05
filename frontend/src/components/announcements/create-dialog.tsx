@@ -5,6 +5,7 @@ import { Sheet, SheetContent } from '@/features/ui/components/sheet';
 import { useAuthStore } from '@/lib/auth-store';
 import { toast } from 'sonner';
 import { useQueryClient } from '@/lib/async-query';
+import { parseApiError } from '@/lib/notifications';
 import { deleteAnnouncement, updateAnnouncement } from '@/lib/announcements/services';
 import type { CreateDialogProps } from './create-dialog/types';
 import { validateComposeStep, validateAudienceStep } from './create-dialog/validate';
@@ -154,8 +155,9 @@ export function CreateDialog({
       );
       resetForm();
       onOpenChange(false);
-    } catch {
-      fields.setFormError('Failed to post announcement. Please try again.');
+    } catch (err) {
+      const parsed = parseApiError(err, 'Failed to post announcement. Please try again.');
+      fields.setFormError(parsed.message);
     } finally {
       fields.setIsSubmitting(false);
     }

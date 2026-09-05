@@ -17,6 +17,7 @@ import {
   isPastExtensionDate,
   toDatetimeLocalMin
 } from './extension-date-utils';
+import { isGradeInputAllowed } from './grade-input-utils';
 
 export function BulkGradeDialog({
   open,
@@ -49,8 +50,7 @@ export function BulkGradeDialog({
         </DialogHeader>
         <div className='space-y-3 py-2'>
           <p className='text-xs text-muted-foreground'>
-            Apply the same grade and feedback to every selected student. Leave grade
-            blank to mark reviewed without a score.
+            Apply the same grade and feedback to every selected student.
           </p>
           <div className='space-y-1.5'>
             <Label className='text-xs'>Grade (0–{maxMarks})</Label>
@@ -59,7 +59,10 @@ export function BulkGradeDialog({
               min={0}
               max={maxMarks}
               value={gradeValue}
-              onChange={(e) => setGradeValue(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (isGradeInputAllowed(next, maxMarks)) setGradeValue(next);
+              }}
               placeholder={`e.g. ${Math.round(maxMarks * 0.85)}`}
             />
           </div>

@@ -42,7 +42,6 @@ type Props = {
   onSaveGrade: (next: Submission | null) => void;
   onSaveIndividual: () => void;
   onExtend: () => void;
-  onMarkMissing: () => void;
   templates: string[];
   templatesMenuOpen: boolean;
   setTemplatesMenuOpen: (u: boolean | ((v: boolean) => boolean)) => void;
@@ -79,13 +78,6 @@ export function GradingDrawer(props: Props) {
           !props.extensionDate ||
           isPastExtensionDate(props.extensionDate),
         onClick: () => props.onExtend()
-      };
-    }
-    if (props.outcome === 'missing' && !isGraded) {
-      return {
-        label: props.gradePending ? 'Saving…' : 'Mark as reviewed',
-        disabled: props.gradePending,
-        onClick: () => props.onMarkMissing()
       };
     }
     return {
@@ -159,7 +151,6 @@ export function GradingDrawer(props: Props) {
                   onSaveGrade={props.onSaveGrade}
                   onSaveIndividual={props.onSaveIndividual}
                   onExtend={props.onExtend}
-                  onMarkMissing={props.onMarkMissing}
                 />
                 {(props.outcome !== 'extend' || isGraded) && (
                   <FeedbackTemplatesPanel

@@ -66,6 +66,19 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
   const staleTime = opts.staleTime ?? 30_000;
   const refetchOnWindowFocus = opts.refetchOnWindowFocus ?? false;
 
+  // When the query key changes, re-bind React state to that key's cache entry
+  // so a previous subject's data/error cannot leak into the new view.
+  useEffect(() => {
+    const cached = getCachedData<T>(serialized);
+    setData(cached);
+    // Prefer cached data over a stale refresh error for this key.
+    setError(cached !== undefined ? null : (getCachedError(serialized) ?? null));
+    setIsLoading(
+      enabled && cached === undefined && !hasCachedError(serialized)
+    );
+    setIsFetching(false);
+  }, [serialized, enabled]);
+
   const isQueryStale = useCallback(() => {
     const cachedAt = getLastFetchedAt(serialized);
     if (cachedAt == null) return true;

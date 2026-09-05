@@ -5,6 +5,7 @@ import { PharmacyShell } from '@/features/layout/components/pharmacy/pharmacy-sh
 import { RoleGuard } from '@/components/auth/role-guard';
 import { usePathname } from 'next/navigation';
 import { useAnnouncementSocket } from '@/lib/announcements/queries/use-announcement-socket';
+import { useProactiveSessionRefresh } from '@/lib/use-proactive-session-refresh';
 
 import { InfobarProvider } from '@/features/ui/components/infobar';
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -12,8 +13,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isMessagesRoute = pathname === '/dashboard/messages';
   const isAnnouncementsRoute = pathname?.startsWith('/dashboard/announcements');
   const isCourseDetailRoute = Boolean(pathname?.match(/^\/dashboard\/courses\/[^/]+$/));
-  const isAuditLogsRoute = pathname === '/dashboard/audit-logs';
-  const isDeanUsersRoute = pathname === '/dashboard/dean/users';
+  const isDeanUsersRoute =
+    pathname === '/dashboard/dean/students' || pathname === '/dashboard/dean/lecturers';
   const isDeanClubsRoute = pathname === '/dashboard/dean/clubs';
   const isClubsDiscoverRoute = pathname === '/dashboard/clubs';
   const isClubDetailRoute = Boolean(pathname?.match(/^\/dashboard\/clubs\/[^/]+$/));
@@ -22,7 +23,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     isMessagesRoute ||
     isAnnouncementsRoute ||
     isCourseDetailRoute ||
-    isAuditLogsRoute ||
     isDeanUsersRoute ||
     isDeanClubsRoute ||
     isClubsDiscoverRoute ||
@@ -30,6 +30,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     isClubManageRoute;
 
   useAnnouncementSocket({ enabled: true, playSound: false });
+  useProactiveSessionRefresh(true);
 
   return (
     <KBar>
@@ -39,9 +40,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             className={
               isMessagesRoute
                 ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-2 md:p-3'
-                : isAuditLogsRoute
-                  ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-1 md:p-1.5'
-                  : isCourseDetailRoute
+                : isCourseDetailRoute
                     ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden px-4 pb-4 pt-4 md:px-5 md:pb-5 md:pt-5'
                     : isViewportFitRoute
                       ? 'flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden p-4 md:p-5'
@@ -50,13 +49,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           >
             <InfobarProvider
               className={
-                isAuditLogsRoute
-                  ? 'flex h-full min-h-0 w-full min-w-0 flex-col overflow-hidden !min-h-0'
-                  : isViewportFitRoute && !isMessagesRoute
+                isViewportFitRoute && !isMessagesRoute
+                  ? 'flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 flex-col overflow-hidden !min-h-0'
+                  : isMessagesRoute
                     ? 'flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 flex-col overflow-hidden !min-h-0'
-                    : isMessagesRoute
-                      ? 'flex h-0 min-h-0 w-full min-w-0 flex-1 basis-0 flex-col overflow-hidden !min-h-0'
-                      : 'min-w-0 w-full'
+                    : 'min-w-0 w-full'
               }
             >
               {children}

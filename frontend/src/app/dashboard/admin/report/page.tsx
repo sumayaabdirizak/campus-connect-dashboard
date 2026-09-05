@@ -1,11 +1,33 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 import PageContainer from '@/features/layout/components/page-container';
 import { PosPageHeader } from '@/features/pos/components/pos-page-header';
 import { useAdminAnalytics, useAdminFaculties } from '@/lib/admin/queries';
 import type { AdminReportFilterState } from '@/components/admin/admin-report-filters';
-import { AdminReportsDashboard } from '@/components/admin/admin-reports/admin-reports-dashboard';
+import { Skeleton } from '@/features/ui/components/skeleton';
+
+const AdminReportsDashboard = dynamic(
+  () =>
+    import('@/components/admin/admin-reports/admin-reports-dashboard').then(
+      (m) => m.AdminReportsDashboard
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <div className='space-y-4'>
+        <Skeleton className='h-24 rounded-xl' />
+        <div className='grid grid-cols-2 gap-3 xl:grid-cols-4'>
+          {Array.from({ length: 7 }).map((_, i) => (
+            <Skeleton key={i} className='h-24 rounded-xl' />
+          ))}
+        </div>
+        <Skeleton className='h-64 rounded-xl' />
+      </div>
+    ),
+  }
+);
 
 export default function AdminReportPage() {
   const [filters, setFilters] = useState<AdminReportFilterState>({
@@ -23,7 +45,7 @@ export default function AdminReportPage() {
     <PageContainer fill>
       <div className='flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4'>
         <PosPageHeader
-          title='Reports'
+          title='Platform analytics'
           onRefresh={() => void refetch()}
           refreshing={isFetching}
           showFullscreen={false}

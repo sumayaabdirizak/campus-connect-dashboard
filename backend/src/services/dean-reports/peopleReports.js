@@ -5,7 +5,7 @@ export function buildStudentReports({
   departments,
   gradedSubmissions,
   recentSubmissions,
-  attendanceRate,
+  onTimeRate,
   filters = {},
 }) {
   const studentGradesByUser = new Map();
@@ -30,9 +30,9 @@ export function buildStudentReports({
       sp.user.studentRegistrations?.[0]?.batchSection?.batch?.program?.level ?? 'UNDERGRADUATE';
     const levelKey = String(rawLevel).toUpperCase().replace(/\s+/g, '_');
     const lateCount = recentSubmissions.filter((s) => s.lateState === 'LATE').length;
-    const attendance = Math.max(0, Math.min(100, attendanceRate - (lateCount > 5 ? 15 : 0)));
+    const studentOnTimeRate = Math.max(0, Math.min(100, onTimeRate - (lateCount > 5 ? 15 : 0)));
     let status = 'Good Standing';
-    if (gpa < 2.0 || attendance < 60) status = 'At Risk';
+    if (gpa < 2.0 || studentOnTimeRate < 60) status = 'At Risk';
     else if (gpa < 2.5) status = 'Probation';
     else if (gpa >= 3.5) status = "Dean's List";
     return {
@@ -42,7 +42,7 @@ export function buildStudentReports({
       level: String(rawLevel).replace(/_/g, ' '),
       levelKey,
       gpa,
-      attendance,
+      onTimeRate: studentOnTimeRate,
       status,
     };
   });

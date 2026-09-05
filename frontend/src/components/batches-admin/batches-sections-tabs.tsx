@@ -8,17 +8,13 @@ import {
   adminBatchSectionsQueryKey,
   adminBatchesQueryKey
 } from '@/lib/batches-admin/queries';
-import { BatchFormModal } from './batch-form-sheet';
 import { BatchesAdminTable } from './batches-admin-table';
-import { SectionFormSheet } from './section-form-sheet';
 import { SectionsAdminTable } from './sections-admin-table';
 
 type TabId = 'batches' | 'sections';
 
 export function BatchesSectionsTabs() {
   const [tab, setTab] = useState<TabId>('batches');
-  const [batchOpen, setBatchOpen] = useState(false);
-  const [sectionOpen, setSectionOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const refresh = () => {
@@ -30,8 +26,6 @@ export function BatchesSectionsTabs() {
     <>
       <PosPageHeader
         title={tab === 'batches' ? 'Batches' : 'Sections'}
-        addLabel='Add New'
-        onAdd={() => (tab === 'batches' ? setBatchOpen(true) : setSectionOpen(true))}
         onRefresh={refresh}
       />
 
@@ -56,9 +50,6 @@ export function BatchesSectionsTabs() {
           <SectionsAdminTable />
         </TabsContent>
       </Tabs>
-
-      <BatchFormModal open={batchOpen} onOpenChange={setBatchOpen} />
-      <SectionFormSheet open={sectionOpen} onOpenChange={setSectionOpen} />
     </>
   );
 }

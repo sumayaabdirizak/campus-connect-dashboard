@@ -14,12 +14,9 @@ import { SignInFormHeader } from './sign-in-form-header';
 import { SignInPasswordField } from './sign-in-password-field';
 
 const signInSchema = z.object({
-  email: z
-    .string()
-    .trim()
-    .min(1, 'University email is required.')
-    .email('Enter a valid email address.'),
-  password: z.string().min(1, 'Password is required.')
+  email: z.string().trim().min(1, 'University ID or username is required.'),
+  // Trim so a trailing space from paste does not cause "Invalid credentials".
+  password: z.string().trim().min(1, 'Password is required.')
 });
 
 interface FieldErrors {
@@ -80,15 +77,14 @@ export function SignInForm() {
       <form onSubmit={handleLogin} className='space-y-4' noValidate autoComplete='off'>
         <div className='space-y-2'>
           <Label htmlFor='email'>
-            University Email <span className='text-destructive'>*</span>
+            University ID or username <span className='text-destructive'>*</span>
           </Label>
           <Input
             id='email'
             name='email'
-            type='email'
-            inputMode='email'
-            autoComplete='off'
-            placeholder='name@jazeera.edu'
+            type='text'
+            autoComplete='username'
+            placeholder='Student ID or staff username'
             value={email}
             onChange={(event) => {
               setEmail(event.target.value);

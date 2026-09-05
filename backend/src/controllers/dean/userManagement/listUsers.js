@@ -5,25 +5,45 @@ import { respondInternalError } from "../../../utils/httpError.js";
 
 export const getFacultyUsers = async (req, res) => {
   try {
-    const { role, search, page = 1, limit = 20 } = req.query;
+    const {
+      role,
+      search,
+      page = 1,
+      limit = 20,
+      departmentId,
+      batchId,
+      batchSectionId,
+    } = req.query;
     const { facultyId } = req;
     const skip = (Number(page) - 1) * Number(limit);
 
+    const andClauses = [];
+    if (departmentId) {
+      andClauses.push({ studentProfile: { departmentId: Number(departmentId) } });
+    }
+    if (batchSectionId) {
+      andClauses.push({
+        studentRegistrations: { some: { batchSectionId: Number(batchSectionId) } },
+      });
+    } else if (batchId) {
+      andClauses.push({
+        studentRegistrations: { some: { batchSection: { batchId: Number(batchId) } } },
+      });
+    }
+    if (search) {
+      andClauses.push({
+        OR: [
+          { full_name: { contains: search, mode: "insensitive" } },
+          { email: { contains: search, mode: "insensitive" } },
+          { number: { contains: search, mode: "insensitive" } },
+          { studentProfile: { student_number: { contains: search, mode: "insensitive" } } },
+        ],
+      });
+    }
+
     const where = inFacultyWhere(facultyId, {
       ...(role ? { role: { name: role } } : {}),
-      ...(search
-        ? {
-            AND: [
-              {
-                OR: [
-                  { full_name: { contains: search, mode: "insensitive" } },
-                  { email: { contains: search, mode: "insensitive" } },
-                  { number: { contains: search, mode: "insensitive" } },
-                ],
-              },
-            ],
-          }
-        : {}),
+      ...(andClauses.length ? { AND: andClauses } : {}),
     });
 
     const [users, total] = await Promise.all([
@@ -51,7 +71,32 @@ export const getFacultyUsers = async (req, res) => {
               programId: true,
             },
           },
-          studentRegistrations: { select: { id: true }, take: 1 },
+          studentRegistrations: {
+            where: { status: "ACTIVE" },
+            take: 1,
+            select: {
+              batchSectionId: true,
+              batchSection: {
+                select: {
+                  id: true,
+                  name: true,
+                  batchId: true,
+                  batch: {
+                    select: {
+                      id: true,
+                      name: true,
+                      program: {
+                        select: {
+                          departmentId: true,
+                          department: { select: { id: true, name: true } },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
           lecturerProfile: {
             select: {
               specialty: true,
@@ -67,12 +112,26 @@ export const getFacultyUsers = async (req, res) => {
       prisma.user.count({ where }),
     ]);
 
-    const mapped = users.map((u) => ({
-      ...u,
-      role: u.role.name,
-      isAssigned: (u.studentRegistrations?.length ?? 0) > 0,
-      studentRegistrations: undefined,
-    }));
+    const mapped = users.map((u) => {
+      const registration = u.studentRegistrations?.[0];
+      const batchSection = registration?.batchSection;
+      return {
+        ...u,
+        role: u.role.name,
+        isAssigned: (u.studentRegistrations?.length ?? 0) > 0,
+        registration: batchSection
+          ? {
+              batchSectionId: registration.batchSectionId,
+              batchSectionName: batchSection.name,
+              batchId: batchSection.batch?.id,
+              batchName: batchSection.batch?.name,
+              departmentId: batchSection.batch?.program?.departmentId,
+              departmentName: batchSection.batch?.program?.department?.name,
+            }
+          : null,
+        studentRegistrations: undefined,
+      };
+    });
 
     res.json(
       paginatedPayload({

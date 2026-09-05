@@ -48,7 +48,9 @@ export function MaxMarksField({
           }
           const parsed = Number(raw);
           if (!Number.isFinite(parsed)) return;
-          onChange(Math.min(courseMax, Math.max(1, Math.trunc(parsed))));
+          const upper =
+            available != null ? Math.min(courseMax, available) : courseMax;
+          onChange(Math.min(upper, Math.max(1, Math.trunc(parsed))));
         }}
         placeholder='10'
         className={assignmentFormFieldClass}

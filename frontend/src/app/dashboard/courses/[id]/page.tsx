@@ -39,7 +39,7 @@ export default function CourseDetailPage() {
   }
 
   if (error || !data) {
-    return <CourseNotFoundState />;
+    return <CourseNotFoundState errorMessage={error} />;
   }
 
   return (

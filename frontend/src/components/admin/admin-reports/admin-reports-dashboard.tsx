@@ -1,5 +1,6 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useMemo } from 'react'
 import type { PlatformAnalytics } from '@/lib/admin/services'
 import {
@@ -7,10 +8,18 @@ import {
   type AdminReportFilterState,
 } from '@/components/admin/admin-report-filters'
 import { buildReportCatalog } from '@/components/admin/admin-reports/export-reports'
-import { ReportsActivity } from './reports-activity'
 import { ReportsCharts } from './reports-charts'
 import { ReportsHeader } from './reports-header'
 import { ReportsKpiGrid } from './reports-kpi-grid'
+import { Skeleton } from '@/features/ui/components/skeleton'
+
+const ReportsActivity = dynamic(
+  () => import('./reports-activity').then((m) => m.ReportsActivity),
+  {
+    ssr: false,
+    loading: () => <Skeleton className='h-48 rounded-xl' />,
+  }
+)
 
 interface AdminReportsDashboardProps {
   data?: PlatformAnalytics

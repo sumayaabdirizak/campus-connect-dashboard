@@ -6,7 +6,7 @@ import { EmptyState } from '../_shared/empty-state';
 
 import type { Assignment, Submission, SubmissionExtension } from '@/lib/course-details/services/assignments-types';
 import { serverNowDate } from '@/lib/server-clock';
-export type Outcome = 'grade' | 'extend' | 'missing';
+export type Outcome = 'grade' | 'extend';
 
 export type SubmissionRow = {
   studentId: number;

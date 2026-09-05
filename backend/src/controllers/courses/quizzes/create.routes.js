@@ -6,7 +6,9 @@ import { createQuizBodySchema } from '../../../validation/quizSchemas.js';
 import { resolveModuleIdForOffering, assertQuestionsAllowedForMode, assertMarksPlanAllowedForMode, normalizeOfflineDelivery } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
 import {
-  assertCourseMarkBudget,
+  getCourseMarkBudget,
+  MARK_BUDGET_FULL_MESSAGE,
+  reserveCourseMarkWeight,
   resolveQuizCourseMarks,
 } from '../../../services/courses/courseMarkBudget.service.js';
 
@@ -97,9 +99,19 @@ export function register(router) {
           'Set course marks for this quiz (marks plan total or maxMarks) before publishing.',
       });
     }
-    if (!draft) {
-      const budget = await assertCourseMarkBudget(cid, courseWeight);
-      if (budget.error) return res.status(400).json({ message: budget.error });
+
+    const budget = await getCourseMarkBudget(cid);
+    if (budget.remaining <= 0) {
+      return res.status(400).json({ message: MARK_BUDGET_FULL_MESSAGE });
+    }
+
+    let finalCourseWeight = courseWeight;
+    let markBudgetNotice = null;
+    if (courseWeight > 0) {
+      const reserved = await reserveCourseMarkWeight(cid, courseWeight);
+      if (reserved.error) return res.status(400).json({ message: reserved.error });
+      finalCourseWeight = reserved.data.marks;
+      if (reserved.data.clamped) markBudgetNotice = reserved.data.clampMessage;
     }
 
     const quiz = await prisma.quiz.create({
@@ -110,7 +122,7 @@ export function register(router) {
         courseOfferingId: cid,
         is_draft: draft,
         auto_publish_at_open: schedulePublish,
-        maxMarks: courseWeight,
+        maxMarks: finalCourseWeight,
         open_at: open_at ? new Date(open_at) : null,
         close_at: close_at ? new Date(close_at) : null,
         shuffle_questions: shuffle_questions || false,
@@ -139,6 +151,9 @@ export function register(router) {
       notifyQuizPublished(quiz, req.courseOffering.publicId);
     }
 
-    res.json(quiz);
+    res.json({
+      ...quiz,
+      ...(markBudgetNotice ? { markBudgetNotice } : {}),
+    });
   }));
 }

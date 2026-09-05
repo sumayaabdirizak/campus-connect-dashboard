@@ -9,8 +9,9 @@ import {
 import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
 import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import {
-  markBudgetExceededMessage,
-  wouldExceedMarkBudget
+  clampToMarkBudget,
+  isMarkBudgetExhausted,
+  MARK_BUDGET_FULL_MESSAGE
 } from '@/lib/course-details/services/mark-budget-utils';
 import { useGroups } from '@/lib/course-details/queries/groups-queries';
 import type { AssignmentFormValues } from './create-assignment-form';
@@ -58,13 +59,12 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
     const budget = queryClient.getQueryData<CourseMarkBudget>(
       markBudgetKeys.offering(s.courseId)
     );
-    if (
-      budget &&
-      wouldExceedMarkBudget(budget, values.maxMarks, 0)
-    ) {
-      toast.error(markBudgetExceededMessage(budget, values.maxMarks, 0));
+    if (budget && isMarkBudgetExhausted(budget, 0)) {
+      toast.error(MARK_BUDGET_FULL_MESSAGE);
       return;
     }
+    const maxMarks =
+      budget ? clampToMarkBudget(budget, values.maxMarks, 0) : values.maxMarks;
     try {
       const created = await createMutation.mutateAsync({
         title: values.title,
@@ -74,9 +74,11 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
         workMode: values.workMode,
         gradingScope: values.gradingScope,
         lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0,
-        maxMarks: values.maxMarks,
+        maxMarks,
         is_draft: true
       });
+      const notice = (created as { markBudgetNotice?: string }).markBudgetNotice;
+      if (notice) toast.info(notice);
       if (s.pendingFiles.length === 0) toast.success('Assignment created as draft');
       else {
         try {

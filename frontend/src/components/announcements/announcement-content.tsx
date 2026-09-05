@@ -36,7 +36,7 @@ export function AnnouncementContent({ announcement, titleId }: AnnouncementConte
     if (kind === 'html' && sanitizedHtml) {
       return (
         <div
-          className='announcement-html text-xs leading-relaxed text-foreground [&_a]:font-medium [&_a]:text-primary [&_a]:underline-offset-4 [&_a]:hover:underline [&_p]:mb-1 [&_p]:last:mb-0 [&_ul]:mb-1 [&_ol]:mb-1'
+          className='announcement-html text-sm leading-relaxed text-foreground [&_a]:font-medium [&_a]:text-primary [&_a]:underline-offset-4 [&_a]:hover:underline [&_p]:mb-1.5 [&_p]:last:mb-0 [&_ul]:mb-1.5 [&_ol]:mb-1.5'
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       );
@@ -51,7 +51,7 @@ export function AnnouncementContent({ announcement, titleId }: AnnouncementConte
       );
     }
     return (
-      <p className='select-text whitespace-pre-wrap break-words text-xs leading-relaxed text-foreground'>
+      <p className='select-text whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground'>
         {plainBody}
       </p>
     );
@@ -61,11 +61,11 @@ export function AnnouncementContent({ announcement, titleId }: AnnouncementConte
     <div>
       <h3
         id={titleId}
-        className='text-xs font-semibold leading-snug tracking-tight text-foreground'
+        className='text-sm font-semibold leading-snug tracking-tight text-foreground sm:text-base'
       >
         {announcement.title}
       </h3>
-      <div className='mt-0.5' dir={isRtl ? 'rtl' : undefined}>
+      <div className='mt-1.5' dir={isRtl ? 'rtl' : undefined}>
         {renderBody()}
       </div>
     </div>

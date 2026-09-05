@@ -1,10 +1,11 @@
 import { prisma } from '../../../db/prisma.js';
 import { HttpError } from '../../../utils/httpError.js';
 import { listAvailableRoleNames } from '../auth.helpers.js';
+import { loadBatchSemesterForUserId } from '../../../services/integrations/academicInfoSystem/universityStudentAcademic.js';
 
 async function enrichStudentAcademic(studentProfile) {
   if (!studentProfile) return null;
-  const [faculty, department, program] = await Promise.all([
+  const [faculty, department, program, batchSemester] = await Promise.all([
     prisma.faculty.findUnique({
       where: { id: studentProfile.facultyId },
       select: { id: true, name: true, code: true },
@@ -17,12 +18,16 @@ async function enrichStudentAcademic(studentProfile) {
       where: { id: studentProfile.programId },
       select: { id: true, name: true, code: true },
     }),
+    loadBatchSemesterForUserId(studentProfile.userId),
   ]);
+
   return {
     ...studentProfile,
     faculty,
     department,
     program,
+    batch_semester_number: batchSemester.number,
+    semester_label: batchSemester.label,
   };
 }
 

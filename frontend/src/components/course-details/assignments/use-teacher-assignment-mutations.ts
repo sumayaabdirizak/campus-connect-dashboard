@@ -12,11 +12,6 @@ import {
   useUpdateAssignment
 } from '@/lib/course-details/queries/assignments-queries';
 import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
-import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
-import {
-  markBudgetExceededMessage,
-  wouldExceedMarkBudget
-} from '@/lib/course-details/services/mark-budget-utils';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import type { AssignmentFormValues } from './create-assignment-form';
 
@@ -38,16 +33,6 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
   const togglePublish = (assignment: Assignment) => {
     const key = assignmentKeys.list(s.courseId);
     const nextDraft = !assignment.is_draft;
-    if (!nextDraft) {
-      const budget = queryClient.getQueryData<CourseMarkBudget>(
-        markBudgetKeys.offering(s.courseId)
-      );
-      const marks = assignment.maxMarks ?? 10;
-      if (budget && wouldExceedMarkBudget(budget, marks, 0)) {
-        toast.error(markBudgetExceededMessage(budget, marks, 0));
-        return;
-      }
-    }
     const snapshot = queryClient.getQueryData<Assignment[]>(key);
     queryClient.setQueryData<Assignment[]>(key, (prev) =>
       (prev ?? []).map((a) => (a.id === assignment.id ? { ...a, is_draft: nextDraft } : a))
@@ -55,7 +40,9 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
     updateAssignmentMutation.mutate(
       { id: assignment.id, input: { is_draft: nextDraft } },
       {
-        onSuccess: () => {
+        onSuccess: (data) => {
+          const notice = (data as { markBudgetNotice?: string }).markBudgetNotice;
+          if (notice) toast.info(notice);
           toast.success(nextDraft ? 'Assignment unpublished' : 'Assignment published');
           queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(s.courseId) });
         },
@@ -91,26 +78,6 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
   };
 
   const handleBulkPublishAssignments = (draft: boolean) => {
-    if (!draft) {
-      const budget = queryClient.getQueryData<CourseMarkBudget>(
-        markBudgetKeys.offering(s.courseId)
-      );
-      const assignments =
-        queryClient.getQueryData<Assignment[]>(assignmentKeys.list(s.courseId)) ?? [];
-      if (budget) {
-        for (const id of s.selectedAssignmentIds) {
-          const assignment = assignments.find((a) => a.id === id);
-          if (!assignment || !assignment.is_draft) continue;
-          const marks = assignment.maxMarks ?? 10;
-          if (wouldExceedMarkBudget(budget, marks, 0)) {
-            toast.error(
-              `"${assignment.title}": ${markBudgetExceededMessage(budget, marks, 0)}`
-            );
-            return;
-          }
-        }
-      }
-    }
     runAssignmentBulk(draft ? 'Unpublished' : 'Published', (id) =>
       updateAssignmentCall(id, { is_draft: draft })
     );
@@ -144,7 +111,7 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
   const handleEditAssignment = async (values: AssignmentFormValues) => {
     if (!s.editTarget) return;
     try {
-      await updateAssignmentMutation.mutateAsync({
+      const updated = await updateAssignmentMutation.mutateAsync({
         id: s.editTarget.id,
         input: {
           title: values.title,
@@ -157,6 +124,8 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
           maxMarks: values.maxMarks
         }
       });
+      const notice = (updated as { markBudgetNotice?: string }).markBudgetNotice;
+      if (notice) toast.info(notice);
       toast.success('Assignment updated');
       queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(s.courseId) });
       s.setEditTarget(null);

@@ -10,7 +10,18 @@ WHERE u."roleId" IN (
 AND sa.name = 'SUPER_ADMIN';
 
 -- Drop office-linked messages, then remove FK columns before dropping office tables.
-DELETE FROM "DiscussionMessage" WHERE "officeThreadId" IS NOT NULL;
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'DiscussionMessage'
+      AND column_name = 'officeThreadId'
+  ) THEN
+    DELETE FROM "DiscussionMessage" WHERE "officeThreadId" IS NOT NULL;
+  END IF;
+END $$;
 
 ALTER TABLE "DiscussionMessage" DROP COLUMN IF EXISTS "officeThreadId";
 ALTER TABLE "DiscussionMessage" DROP COLUMN IF EXISTS "isInternalNote";

@@ -35,7 +35,7 @@ export function AnnouncementImages({
   return (
     <>
       <div
-        className={`mt-1 grid w-full min-w-0 gap-1 overflow-hidden rounded-md ${
+        className={`mt-2.5 grid w-full min-w-0 gap-1.5 overflow-hidden rounded-lg ${
           single ? 'grid-cols-1 justify-items-center' : 'grid-cols-2'
         }`}
       >
@@ -45,7 +45,7 @@ export function AnnouncementImages({
             type='button'
             aria-label={item.alt || `Open image ${idx + 1} of ${items.length}`}
             className={`relative block min-w-0 overflow-hidden bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              single ? 'h-28 w-full max-w-[14rem] rounded-md' : 'aspect-square w-full rounded-md'
+              single ? 'h-40 w-full max-w-[20rem] rounded-lg' : 'aspect-square w-full rounded-lg'
             }`}
             onClick={(e) => {
               e.stopPropagation();

@@ -5,7 +5,7 @@ import type { PlatformAnalytics } from '@/lib/admin/services'
 import { formatReportScopeSummary } from '@/components/admin/admin-report-filters'
 import {
   downloadReportsCsv,
-  printReportsPdf,
+  printPlatformAnalyticsPdf,
   type ReportCatalogItem,
 } from '@/components/admin/admin-reports/export-reports'
 import { Button } from '@/features/ui/components/button'
@@ -29,25 +29,16 @@ type Props = {
 export function ReportsHeader({ data, catalog, isRefreshing, onRefresh }: Props) {
   const exportPdfSummary = () => {
     if (!data) return
-    const rows = catalog
-      .map(
-        (r) =>
-          `<tr><td>${r.name}</td><td>${r.category}</td><td>${r.status}</td><td>${data.scope.periodLabel}</td></tr>`
-      )
-      .join('')
-    printReportsPdf(
-      'Reports & Analytics',
-      `<table><thead><tr><th>Report</th><th>Category</th><th>Status</th><th>Period</th></tr></thead><tbody>${rows}</tbody></table>`
-    )
+    printPlatformAnalyticsPdf(data, catalog)
   }
 
   return (
     <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
       <div>
-        <h1 className='text-2xl font-semibold tracking-tight'>Reports & Analytics</h1>
+        <h1 className='text-2xl font-semibold tracking-tight'>Platform analytics</h1>
         <p className='text-muted-foreground mt-1 max-w-2xl text-sm'>
-          Monitor platform performance, user engagement, academic activities, and operational
-          insights.
+          Cross-faculty LMS usage, registrations, and assessment activity. For per-entity drill-down,
+          use LMS activity reports in the sidebar.
         </p>
         {data ? (
           <p className='text-muted-foreground mt-1 text-xs'>{formatReportScopeSummary(data.scope)}</p>
@@ -74,8 +65,8 @@ export function ReportsHeader({ data, catalog, isRefreshing, onRefresh }: Props)
             <DropdownMenuItem onClick={() => downloadReportsCsv(catalog)}>
               <FileSpreadsheet className='mr-2 size-4' /> Excel — catalog
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={exportPdfSummary}>
-              <FileText className='mr-2 size-4' /> PDF — summary
+            <DropdownMenuItem onClick={exportPdfSummary} disabled={!data}>
+              <FileText className='mr-2 size-4' /> PDF — full report
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

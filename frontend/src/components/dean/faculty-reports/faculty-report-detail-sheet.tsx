@@ -40,7 +40,7 @@ export function FacultyReportDetailSheet({
     { label: 'Students', value: data.kpis.totalStudents },
     { label: 'Instructors', value: data.kpis.totalInstructors },
     { label: 'Average GPA', value: data.kpis.averageGpa.toFixed(2) },
-    { label: 'Attendance', value: `${data.kpis.attendanceRate}%` },
+    { label: 'On-time submissions', value: `${data.kpis.onTimeRate}%` },
     { label: 'Completion', value: `${data.kpis.courseCompletionRate}%` },
   ];
 

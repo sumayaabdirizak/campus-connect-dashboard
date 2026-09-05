@@ -3,6 +3,7 @@ import { prisma } from '../../../db/prisma.js';
 import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
 import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
+import { reserveCourseMarkWeight } from '../../../services/courses/courseMarkBudget.service.js';
 
 const router = Router();
 
@@ -20,6 +21,12 @@ router.post(
     });
     if (!source) return res.status(404).json({ message: 'Assignment not found' });
 
+    const reserved = await reserveCourseMarkWeight(
+      source.courseOfferingId,
+      source.maxMarks ?? 10
+    );
+    if (reserved.error) return res.status(400).json({ message: reserved.error });
+
     const created = await prisma.$transaction(async (tx) => {
       const fresh = await tx.assignment.create({
         data: {
@@ -31,7 +38,7 @@ router.post(
           workMode: source.workMode,
           gradingScope: source.gradingScope,
           lateWindowMinutes: source.lateWindowMinutes,
-          maxMarks: source.maxMarks,
+          maxMarks: reserved.data.marks,
         },
       });
 
@@ -74,7 +81,12 @@ router.post(
       });
     });
 
-    res.status(201).json(enrichAssignmentDto(created));
+    res.status(201).json({
+      ...enrichAssignmentDto(created),
+      ...(reserved.data.clamped && reserved.data.clampMessage
+        ? { markBudgetNotice: reserved.data.clampMessage }
+        : {}),
+    });
   })
 );
 

@@ -37,7 +37,7 @@ export const BLANK: FormState = {
   title: '',
   description: '',
   duration_minutes: 30,
-  is_draft: true,
+  is_draft: false,
   open_at_local: '',
   close_at_local: '',
   shuffle_questions: false,
@@ -194,9 +194,6 @@ export function validateForm(s: FormState, editing: Quiz | null): string | null 
   }
   if (!s.is_draft && editing && (editing.questions?.length ?? 0) === 0) {
     return 'Add at least one question before publishing';
-  }
-  if (!s.is_draft && !editing) {
-    return 'Save as a draft first, then publish after adding questions';
   }
   return null;
 }

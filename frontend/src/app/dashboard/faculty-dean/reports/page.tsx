@@ -1,8 +1,7 @@
-﻿'use client';
+'use client';
 
 import { useMemo, useState } from 'react';
 import PageContainer from '@/features/layout/components/page-container';
-import { PosPageHeader } from '@/features/pos/components/pos-page-header';
 import { FacultyDeanReportsDashboard } from '@/components/dean/faculty-reports/faculty-dean-reports-dashboard';
 import {
   defaultFacultyReportFilters,
@@ -26,12 +25,6 @@ export default function FacultyDeanReportsPage() {
   return (
     <PageContainer fill>
       <div className='flex min-h-0 w-full min-w-0 flex-1 flex-col overflow-y-auto p-3 md:p-4'>
-        <PosPageHeader
-          title='Reports'
-          onRefresh={() => void refetch()}
-          refreshing={isFetching}
-          showFullscreen={false}
-        />
         <FacultyDeanReportsDashboard
           data={data}
           isLoading={isLoading && !data}

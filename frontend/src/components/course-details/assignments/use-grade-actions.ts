@@ -108,26 +108,6 @@ export function useGradeActions(a: {
       setDrawerOpen: a.setDrawerOpen
     });
   };
-  const handleMarkMissing = () => {
-    if (!a.selectedSubmission) return;
-    a.gradeMutation.mutate(
-      {
-        assignmentId: selectedAssignment.id,
-        input: {
-          submissionId: a.selectedSubmission.id,
-          feedback: a.feedback || undefined,
-          is_reviewed: true
-        }
-      },
-      {
-        onSuccess: () => {
-          toast.success('Marked as reviewed (no grade)');
-          a.setDrawerOpen(false);
-        },
-        onError: (e: Error) => toast.error(e.message)
-      }
-    );
-  };
   const handleGiveAnotherChance = () => {
     if (!a.selectedSubmission) return;
     grantAnotherChance({
@@ -144,7 +124,6 @@ export function useGradeActions(a: {
     openGrading,
     handleSaveGrade,
     handleSaveIndividualGrades,
-    handleMarkMissing,
     handleGiveAnotherChance
   };
 }

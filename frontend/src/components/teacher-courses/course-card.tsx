@@ -10,6 +10,7 @@ export interface TeacherCourseCardData {
   courseCode: string
   courseName: string
   department: string
+  batch?: string | null
   section: string
   thumbnail: string | null
   totalStudents: number
@@ -64,7 +65,9 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
             {course.courseName}
           </h3>
           <p className='mt-0.5 truncate text-xs text-muted-foreground'>
-            {course.section} · {course.department}
+            {[course.batch, course.section, course.department]
+              .filter(Boolean)
+              .join(' · ')}
           </p>
 
           <div className='mt-3 flex items-center gap-3 border-t border-border pt-3 text-[11px] text-muted-foreground'>

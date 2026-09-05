@@ -140,7 +140,10 @@ describe('StudentDashboard', () => {
     beforeEach(() => {
       vi.spyOn(authStore, 'useAuthStore').mockReturnValue({ user: mockUser } as any)
       vi.spyOn(studentCoursesQueries, 'useStudentCourses').mockReturnValue({
-        data: { offerings: mockCourses },
+        data: {
+          offerings: mockCourses,
+          batchSemester: { number: 3, batch: 'PA01', label: 'Semester 3' },
+        },
         isLoading: false,
         error: null
       } as any)
@@ -183,7 +186,7 @@ describe('StudentDashboard', () => {
 
       render(<StudentDashboard />)
 
-      expect(screen.getByText('Fall 2024')).toBeInTheDocument()
+      expect(screen.getByText('Semester 3')).toBeInTheDocument()
     })
 
     it('should handle N/A GPA when no grades exist', () => {

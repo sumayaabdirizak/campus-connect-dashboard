@@ -22,6 +22,11 @@ export function ProfileAcademicCard({ profile }: { profile: ProfileMe }) {
     if (dept) rows.push({ label: 'Department', value: dept });
     if (program) rows.push({ label: 'Program', value: program });
     if (sp.student_number) rows.push({ label: 'Student number', value: sp.student_number });
+    if (sp.semester_label) {
+      rows.push({ label: 'Semester', value: sp.semester_label });
+    } else if (sp.batch_semester_number != null && sp.batch_semester_number > 0) {
+      rows.push({ label: 'Semester', value: `Semester ${sp.batch_semester_number}` });
+    }
     if (sp.admission_year) {
       rows.push({ label: 'Admission year', value: String(sp.admission_year) });
     }

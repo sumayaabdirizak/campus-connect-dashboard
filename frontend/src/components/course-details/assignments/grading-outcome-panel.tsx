@@ -3,18 +3,18 @@
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { CalendarClock, CheckCircle2, ClipboardCheck } from 'lucide-react';
+import { CalendarClock, ClipboardCheck } from 'lucide-react';
 import type { Assignment, Submission } from '@/lib/course-details/services/assignments-types';
 import type { GroupRow, Outcome } from './shared';
 import { PerMemberGrades } from './per-member-grades';
 import { GradingDrawerSection } from './grading-drawer-section';
 import { handleExtensionDateChange, toDatetimeLocalMin } from './extension-date-utils';
 import { gradingBlue } from './grading-drawer-blue';
+import { isGradeInputAllowed } from './grade-input-utils';
 
 const TAB_HELP: Record<Outcome, string> = {
   grade: 'Enter the points this student earned.',
-  extend: 'Give this student more time to submit or resubmit.',
-  missing: 'Mark as reviewed when no grade is needed.'
+  extend: 'Give this student more time to submit or resubmit.'
 };
 
 const ACTIONS: {
@@ -23,8 +23,7 @@ const ACTIONS: {
   icon: typeof ClipboardCheck;
 }[] = [
   { id: 'grade', label: 'Give a grade', icon: ClipboardCheck },
-  { id: 'extend', label: 'Extend deadline', icon: CalendarClock },
-  { id: 'missing', label: 'Mark reviewed', icon: CheckCircle2 }
+  { id: 'extend', label: 'Extend deadline', icon: CalendarClock }
 ];
 
 const inputClass = cn(
@@ -101,7 +100,6 @@ export function GradingOutcomePanel({
   onSaveGrade: (next: Submission | null) => void;
   onSaveIndividual: () => void;
   onExtend: () => void;
-  onMarkMissing: () => void;
 }) {
   const cap = assignment.maxMarks ?? 100;
   const isGraded = submission.is_reviewed && submission.grade != null;
@@ -122,7 +120,7 @@ export function GradingOutcomePanel({
       hint={isGraded ? 'Change the score or feedback, then save.' : TAB_HELP[outcome]}
     >
       {!isGraded ? (
-        <div className='mb-4 grid grid-cols-3 gap-1 rounded-xl bg-muted p-1'>
+        <div className='mb-4 grid grid-cols-2 gap-1 rounded-xl bg-muted p-1'>
           {ACTIONS.map((action) => (
             <ActionTab
               key={action.id}
@@ -161,7 +159,10 @@ export function GradingOutcomePanel({
               min={0}
               max={cap}
               value={grade}
-              onChange={(e) => setGrade(e.target.value)}
+              onChange={(e) => {
+                const next = e.target.value;
+                if (isGradeInputAllowed(next, cap)) setGrade(next);
+              }}
               placeholder={`e.g. ${Math.round(cap * 0.9)}`}
               className={cn(inputClass, 'max-w-[140px] text-base font-semibold tabular-nums')}
             />
@@ -203,11 +204,6 @@ export function GradingOutcomePanel({
         </div>
       ) : null}
 
-      {outcome === 'missing' && !isGraded ? (
-        <p className={cn('rounded-lg border px-3 py-2.5 text-sm', gradingBlue.reviewHint)}>
-          The student will see this assignment as reviewed. No points will be added.
-        </p>
-      ) : null}
     </GradingDrawerSection>
   );
 }

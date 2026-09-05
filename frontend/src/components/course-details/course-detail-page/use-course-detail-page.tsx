@@ -11,8 +11,10 @@ import { TEACHER_COURSE_TABS, STUDENT_COURSE_TABS } from '@/lib/course-details/c
 
 export function useCourseDetailPage(offeringId: string) {
   const { user, isSessionChecked } = useAuthStore();
-  const isStudent = user?.role === 'STUDENT';
-  const isTeacher = user?.role === 'TEACHER';
+  const role = user?.role;
+  const isStudent = role === 'STUDENT';
+  // Dean / super-admin use the lecturer portal detail endpoint (RBAC allows read/manage).
+  const isStaff = role === 'TEACHER' || role === 'DEAN' || role === 'SUPER_ADMIN';
 
   const visibleTabs: CourseTabDef[] = (isStudent ? STUDENT_COURSE_TABS : TEACHER_COURSE_TABS).filter(
     (t) => t.visible !== false
@@ -20,15 +22,18 @@ export function useCourseDetailPage(offeringId: string) {
 
   const [activeTab, setActiveTab] = useState<CourseTabId>(visibleTabs[0]?.id ?? 'announcements');
 
-  const teacherQuery = useCourseDetail(offeringId, isSessionChecked && isTeacher);
-  const studentQuery = useStudentCourseDetail(offeringId, isSessionChecked && isStudent);
+  const teacherQuery = useCourseDetail(offeringId, isSessionChecked && !!user && isStaff);
+  const studentQuery = useStudentCourseDetail(offeringId, isSessionChecked && !!user && isStudent);
 
   const isLoading =
     !isSessionChecked ||
-    (isTeacher && teacherQuery.isLoading) ||
+    !user ||
+    (isStaff && teacherQuery.isLoading) ||
     (isStudent && studentQuery.isLoading);
-  const error = (isStudent ? studentQuery.error : teacherQuery.error) as Error | null;
-  const data = isStudent ? studentQuery.data : teacherQuery.data;
+  const error = (
+    isStudent ? studentQuery.error : isStaff ? teacherQuery.error : null
+  ) as Error | null;
+  const data = isStudent ? studentQuery.data : isStaff ? teacherQuery.data : undefined;
 
   const [headerCompact, setHeaderCompact] = useState(true);
   const tabPanelRef = useRef<HTMLDivElement | null>(null);
