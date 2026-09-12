@@ -6,13 +6,24 @@ import {
   PosTable,
   PosTableBody,
   PosTableHead,
-  PosTableHeaderCell
+  PosTableHeaderCell,
+  PosTableCell,
+  PosTableRow
 } from '@/features/pos/components/pos-table';
+import { Button } from '@/features/ui/components/button';
+import {
+  DeanHierarchyFilters,
+  defaultDeanHierarchyFilters,
+  type DeanHierarchyFilterState
+} from '@/components/dean/dean-hierarchy-filters';
+import { DeanAssignCourseSheet } from '@/components/dean/dean-assign-course-sheet';
 import { useDeanBatches } from '@/lib/dean/queries';
 import type { DeanBatch } from '@/lib/dean/types';
 
 export function DeanBatchesTable() {
   const [search, setSearch] = useState('');
+  const [filters, setFilters] = useState<DeanHierarchyFilterState>(defaultDeanHierarchyFilters);
+  const [assignBatchId, setAssignBatchId] = useState<number | null>(null);
   const deferredSearch = useDeferredValue(search.trim().toLowerCase());
 
   const { data, isLoading, error } = useDeanBatches();
@@ -20,20 +31,29 @@ export function DeanBatchesTable() {
   const batches: DeanBatch[] = useMemo(() => {
     const raw = data as unknown;
     if (Array.isArray(raw)) return raw as DeanBatch[];
-    if (raw && typeof raw === 'object' && Array.isArray((raw as any).batches)) {
-      return (raw as any).batches as DeanBatch[];
+    if (raw && typeof raw === 'object' && Array.isArray((raw as { batches?: DeanBatch[] }).batches)) {
+      return (raw as { batches: DeanBatch[] }).batches;
     }
     return [];
   }, [data]);
 
   const filtered = useMemo(() => {
-    if (!deferredSearch) return batches;
-    return batches.filter(
-      (b) =>
+    return batches.filter((b) => {
+      if (filters.departmentId !== 'all') {
+        const deptId = b.program?.department?.id;
+        if (String(deptId) !== filters.departmentId) return false;
+      }
+      if (filters.programId !== 'all') {
+        if (String(b.program?.id) !== filters.programId) return false;
+      }
+      if (!deferredSearch) return true;
+      return (
         b.name?.toLowerCase().includes(deferredSearch) ||
-        b.program?.name?.toLowerCase().includes(deferredSearch)
-    );
-  }, [batches, deferredSearch]);
+        b.program?.name?.toLowerCase().includes(deferredSearch) ||
+        b.program?.department?.name?.toLowerCase().includes(deferredSearch)
+      );
+    });
+  }, [batches, deferredSearch, filters]);
 
   if (isLoading && !data) {
     return (
@@ -52,46 +72,73 @@ export function DeanBatchesTable() {
   }
 
   return (
-    <PosTableCard search={search} onSearchChange={setSearch} searchPlaceholder='Search batches...'>
-      {filtered.length === 0 ? (
-        <div className='p-10 text-center'>
-          <p className='font-medium'>{deferredSearch ? 'No matches' : 'No batches yet'}</p>
-        </div>
-      ) : (
-        <PosTable>
-          <PosTableHead>
-            <tr>
-              <PosTableHeaderCell>Batch</PosTableHeaderCell>
-              <PosTableHeaderCell>Program</PosTableHeaderCell>
-              <PosTableHeaderCell>Department</PosTableHeaderCell>
-              <PosTableHeaderCell>Academic Year (cohort)</PosTableHeaderCell>
-              <PosTableHeaderCell>Cohort semester</PosTableHeaderCell>
-              <PosTableHeaderCell align='right'>Sections</PosTableHeaderCell>
-            </tr>
-          </PosTableHead>
-          <PosTableBody>
-            {filtered.map((batch) => (
-              <tr key={batch.id} className='border-b last:border-0'>
-                <td className='px-4 py-3 text-sm font-medium'>{batch.name}</td>
-                <td className='px-4 py-3 text-sm text-muted-foreground'>{batch.program?.name}</td>
-                <td className='px-4 py-3 text-sm text-muted-foreground'>
-                  {batch.program?.department?.name}
-                </td>
-                <td className='px-4 py-3 text-sm text-muted-foreground'>
-                  {batch.academicYear?.name ?? batch.academic_year}
-                </td>
-                <td className='px-4 py-3 text-sm text-muted-foreground'>
-                  {batch.cohortSemester ?? batch.semester_number}
-                </td>
-                <td className='px-4 py-3 text-right text-sm tabular-nums'>
-                  {batch._count?.sections ?? batch.sections?.length ?? 0}
-                </td>
+    <>
+      <PosTableCard
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder='Search batches...'
+        toolbarStart={
+          <DeanHierarchyFilters filters={filters} onChange={setFilters} showProgram />
+        }
+      >
+        {filtered.length === 0 ? (
+          <div className='p-10 text-center'>
+            <p className='font-medium'>
+              {deferredSearch || filters.departmentId !== 'all' ? 'No matches' : 'No batches yet'}
+            </p>
+          </div>
+        ) : (
+          <PosTable>
+            <PosTableHead>
+              <tr>
+                <PosTableHeaderCell>Batch</PosTableHeaderCell>
+                <PosTableHeaderCell>Program</PosTableHeaderCell>
+                <PosTableHeaderCell>Department</PosTableHeaderCell>
+                <PosTableHeaderCell>Academic Year (cohort)</PosTableHeaderCell>
+                <PosTableHeaderCell>Cohort semester</PosTableHeaderCell>
+                <PosTableHeaderCell align='right'>Sections</PosTableHeaderCell>
+                <PosTableHeaderCell align='right'>Action</PosTableHeaderCell>
               </tr>
-            ))}
-          </PosTableBody>
-        </PosTable>
-      )}
-    </PosTableCard>
+            </PosTableHead>
+            <PosTableBody>
+              {filtered.map((batch) => (
+                <PosTableRow key={batch.id}>
+                  <PosTableCell>
+                    <span className='font-medium'>{batch.name}</span>
+                  </PosTableCell>
+                  <PosTableCell>{batch.program?.name}</PosTableCell>
+                  <PosTableCell>{batch.program?.department?.name}</PosTableCell>
+                  <PosTableCell>
+                    {batch.currentAcademicYearName ?? batch.academic_year}
+                  </PosTableCell>
+                  <PosTableCell>{batch.cohortSemester ?? batch.semester_number}</PosTableCell>
+                  <PosTableCell align='right'>{batch._count?.sections ?? '—'}</PosTableCell>
+                  <PosTableCell align='right'>
+                    <Button
+                      type='button'
+                      size='sm'
+                      variant='outline'
+                      className='h-8'
+                      onClick={() => setAssignBatchId(batch.id)}
+                    >
+                      Assign course
+                    </Button>
+                  </PosTableCell>
+                </PosTableRow>
+              ))}
+            </PosTableBody>
+          </PosTable>
+        )}
+      </PosTableCard>
+
+      <DeanAssignCourseSheet
+        open={assignBatchId != null}
+        onOpenChange={(open) => {
+          if (!open) setAssignBatchId(null);
+        }}
+        defaultBatchId={assignBatchId}
+      />
+    </>
   );
 }
 

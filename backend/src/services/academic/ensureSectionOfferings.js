@@ -2,9 +2,9 @@ import { prisma } from "../../db/prisma.js";
 
 /**
  * Ensure course offerings exist for a section for the given term.
- * Prefers catalogue courses whose semesterNumber matches the batch curriculum
- * semester (and have teachers). If none match, falls back to courses in the
- * program department with unset semesterNumber (legacy catalogue).
+ * Prefers catalogue courses in the program department whose semesterNumber
+ * matches the batch curriculum semester. Falls back to faculty-wide match,
+ * then program-department courses with unset semesterNumber (legacy).
  */
 export async function ensureSectionOfferings({
   sectionId,
@@ -32,32 +32,35 @@ export async function ensureSectionOfferings({
     orderBy: { assigned_at: "asc" },
   };
 
-  let courses = await prisma.course.findMany({
-    where: {
-      departmentId: { in: departmentIds },
-      semesterNumber: sem,
-      teacherAssignings: { some: {} },
-    },
-    select: {
-      id: true,
-      teacherAssignings: teacherSelect,
-    },
-  });
+  const programDeptId = programDepartmentId ? Number(programDepartmentId) : null;
 
-  if (courses.length === 0) {
-    const fallbackDeptIds = programDepartmentId
-      ? [Number(programDepartmentId)]
-      : departmentIds;
-    courses = await prisma.course.findMany({
-      where: {
-        departmentId: { in: fallbackDeptIds },
-        semesterNumber: null,
-        teacherAssignings: { some: {} },
-      },
+  async function findCourses(where) {
+    return prisma.course.findMany({
+      where: { ...where, teacherAssignings: { some: {} } },
       select: {
         id: true,
         teacherAssignings: teacherSelect,
       },
+    });
+  }
+
+  let courses = [];
+  if (programDeptId) {
+    courses = await findCourses({
+      departmentId: programDeptId,
+      semesterNumber: sem,
+    });
+  }
+  if (courses.length === 0) {
+    courses = await findCourses({
+      departmentId: { in: departmentIds },
+      semesterNumber: sem,
+    });
+  }
+  if (courses.length === 0 && programDeptId) {
+    courses = await findCourses({
+      departmentId: programDeptId,
+      semesterNumber: null,
     });
   }
 

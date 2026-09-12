@@ -16,7 +16,10 @@ import {
   resolveParentMessage,
   resolvePendingAttachmentIds,
 } from "../../../../controllers/discussions/serverChannelFeed/routes/postMessagePrepare.helpers.js";
-import { createChannelMessageTransaction } from "../../../../controllers/discussions/serverChannelFeed/routes/postMessageTx.helpers.js";
+import {
+  createChannelMessageNotifications,
+  createChannelMessageTransaction,
+} from "../../../../controllers/discussions/serverChannelFeed/routes/postMessageTx.helpers.js";
 import {
   resolveReplyToMessageId,
 } from "../../../../services/discussions/replyToMessage.js";
@@ -103,7 +106,6 @@ router.post(
       });
 
       const message = txResult?.message;
-      const notificationEvents = txResult?.notificationEvents ?? [];
       if (!message) return res.status(500).json(apiErrorBody("Failed to create message", null));
 
       const publicIdById = await buildMessagePublicIdMap([message]);
@@ -126,20 +128,53 @@ router.post(
       try {
         const io = getIo();
         if (io) {
-          io.to(`channel:${channelId}`).emit("message:new", wsPayload);
-          io.to(`channel:${channelId}`).emit("discussion:message:new", wsPayload);
+          // Numeric internal ids — same room names as socket discussionChannelRoom /
+          // discussionRoom helpers (clients join via channel:join / join:group).
+          const channelRoom = `channel:${Number(channelId)}`;
+          const serverRoom = `discussion:group:${Number(channel.serverId)}`;
+          io.to(channelRoom).emit("message:new", wsPayload);
+          io.to(channelRoom).emit("discussion:message:new", wsPayload);
+          io.to(serverRoom).emit("discussion:message:new", wsPayload);
+          io.to(serverRoom).emit("message:new", wsPayload);
         }
       } catch (emitErr) {
         console.warn("Socket emit failed for channel message:new", emitErr?.message);
       }
 
-      try {
-        await emitDiscussionNotificationEvents(notificationEvents);
-      } catch (emitErr) {
-        console.warn("Socket emit failed for channel notifications", emitErr?.message);
-      }
+      // Respond before notification fan-out — createMany + unread for every
+      // member was leaving the composer stuck on "Sending…".
+      res.status(201).json({ message: outPayload });
 
-      return res.status(201).json({ message: outPayload });
+      void (async () => {
+        const skipNotifyUserIds = new Set();
+        try {
+          const io = getIo();
+          if (io) {
+            for (const [, sock] of io.sockets.sockets) {
+              if (Number(sock.data?.activeDiscussionChannelId) === Number(channelId)) {
+                const uid = Number(sock.data?.user?.id);
+                if (Number.isFinite(uid) && uid > 0) skipNotifyUserIds.add(uid);
+              }
+            }
+          }
+        } catch {
+          /* best-effort */
+        }
+        try {
+          const notificationEvents = await createChannelMessageNotifications({
+            channel,
+            channelId,
+            userId,
+            message,
+            contentFields,
+            skipNotifyUserIds,
+          });
+          await emitDiscussionNotificationEvents(notificationEvents);
+        } catch (emitErr) {
+          console.warn("Socket emit failed for channel notifications", emitErr?.message);
+        }
+      })();
+      return;
     } catch (error) {
       console.error("POST /discussions/channels/:channelId/messages failed", error);
       return res.status(500).json(apiErrorBody("Failed to send message", null));

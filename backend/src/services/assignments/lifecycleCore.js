@@ -3,8 +3,14 @@
  * Schedule / publish / student-work status live here so all routes share one definition.
  */
 
+/** Sentinel: late submissions accepted with no time limit (just flagged late). */
+export const LATE_WINDOW_UNLIMITED = -1;
+
 export function getCloseAtMs(dueDate, lateWindowMinutes = 0) {
-  return new Date(dueDate).getTime() + (Number(lateWindowMinutes) || 0) * 60_000;
+  const minutes = Number(lateWindowMinutes) || 0;
+  // -1 (or any negative) = allow late forever; close date is never reached.
+  if (minutes < 0) return Number.MAX_SAFE_INTEGER;
+  return new Date(dueDate).getTime() + minutes * 60_000;
 }
 
 /** Prefer extension newDueAt when it is later than assignment.due_date. */

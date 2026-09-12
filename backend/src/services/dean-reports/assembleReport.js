@@ -3,6 +3,7 @@ import { buildKpiSection } from './kpis.js';
 export function assembleDeanReport({
   facultyId,
   monthsCount,
+  periodLabel,
   faculty,
   departments,
   counts,
@@ -34,7 +35,7 @@ export function assembleDeanReport({
       facultyId,
       facultyName: faculty?.name ?? 'Faculty',
       facultyCode: faculty?.code ?? '',
-      periodLabel: `Last ${monthsCount} months`,
+      periodLabel: periodLabel ?? `Last ${monthsCount} months`,
       generatedAt: new Date().toISOString(),
     },
     kpis: buildKpiSection({

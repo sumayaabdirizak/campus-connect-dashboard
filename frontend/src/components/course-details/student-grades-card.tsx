@@ -14,6 +14,8 @@ import {
 
 interface StudentGradesCardProps {
   courseId: string;
+  /** When true, show an empty state instead of rendering nothing. */
+  showEmpty?: boolean;
 }
 
 /** Pastel band color for a score bar: mint ≥80, peach ≥60, pink below. */
@@ -95,8 +97,8 @@ function GradeRow({ item }: { item: MyGradeItem }) {
   );
 }
 
-export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
-  const { data, isLoading, isError } = useMyGrades(courseId, true, { live: true });
+export function StudentGradesCard({ courseId, showEmpty = false }: StudentGradesCardProps) {
+  const { data, isLoading, error } = useMyGrades(courseId, true, { live: true });
 
   if (isLoading) {
     return (
@@ -110,7 +112,31 @@ export function StudentGradesCard({ courseId }: StudentGradesCardProps) {
     );
   }
 
-  if (isError || !data || data.totalItems === 0) return null;
+  if (error && showEmpty) {
+    return (
+      <div className='rounded-xl border border-destructive/30 bg-destructive/5 p-8 text-center'>
+        <p className='font-medium text-destructive'>Could not load your report</p>
+        <p className='mt-1 text-sm text-muted-foreground'>
+          {(error as Error).message || 'Please try again later.'}
+        </p>
+      </div>
+    );
+  }
+
+  if (!data || data.totalItems === 0) {
+    if (!showEmpty) return null;
+    return (
+      <div className='flex flex-col items-center justify-center rounded-xl border border-dashed bg-card px-6 py-14 text-center'>
+        <div className='mb-3 flex size-12 items-center justify-center rounded-full bg-primary/10 text-primary'>
+          <GraduationCap className='size-6' aria-hidden />
+        </div>
+        <p className='font-semibold text-foreground'>No graded work yet</p>
+        <p className='mt-1 max-w-sm text-sm text-muted-foreground'>
+          When assignments and quizzes are published and graded, your scores will appear here.
+        </p>
+      </div>
+    );
+  }
 
   const courseMax = data.courseMaxMarks ?? MAX_COURSE_MARK;
   const overallWidth =

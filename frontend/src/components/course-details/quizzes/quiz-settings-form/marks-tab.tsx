@@ -214,61 +214,69 @@ export function MarksTab({
         </p>
       )}
 
-      <div className='w-40'>
-        <Label className={quizFormLabelClass}>Total marks</Label>
-        <Input
-          type='number'
-          min={1}
-          max={maxPlanTotal}
-          value={form.marksPlanTotal}
-          onChange={(e) => {
-            const parsed = Math.max(1, parseInt(e.target.value, 10) || 1);
-            const next = Math.min(parsed, maxPlanTotal);
-            syncInput(e.target, next);
-            setForm((prev) => {
-              const merged = { ...prev, marksPlanTotal: next };
-              return courseAvailable != null
-                ? { ...merged, ...clampMarksPlanToBudget(merged, maxPlanTotal) }
-                : merged;
-            });
-          }}
-          className={`mt-1.5 ${quizFormFieldClass} max-w-[10rem]`}
-        />
-        {courseAvailable != null ? (
-          <p className={`mt-1.5 ${quizFormHintClass}`}>
-            <span className='font-medium tabular-nums text-foreground'>{courseAvailable}</span> of{' '}
-            {courseMax} course marks available for published work.
-          </p>
-        ) : null}
-        {overCourseBudget ? (
-          <p className='mt-1 text-xs text-destructive'>
-            Exceeds available course marks — lower this value or unpublish other assignments/quizzes.
-          </p>
-        ) : null}
-      </div>
-
-      {uploadedOnly ? null : (
-      <div>
-        <Label className={`${quizFormLabelClass} mb-2 block`}>
-          Which kinds of question will this quiz have?
-        </Label>
-        <div className='flex flex-wrap gap-3'>
-          {typeOrder.map((type) => (
-            <label
-              key={type}
-              className='flex cursor-pointer items-center gap-2.5 rounded-full border border-border/90 bg-card px-4 py-2.5 text-sm text-foreground hover:border-primary/30 hover:bg-secondary/50'
-            >
-              <Checkbox
-                checked={form.marksPlanTypes.includes(type)}
-                onCheckedChange={() => toggleType(type)}
-                className={quizFormCheckboxClass}
-              />
-              {TYPE_META[type]}
-            </label>
-          ))}
+      <div
+        className={
+          uploadedOnly
+            ? 'w-40'
+            : 'grid items-start gap-4 sm:grid-cols-[10rem_minmax(0,1fr)]'
+        }
+      >
+        <div className='w-40 sm:w-auto'>
+          <Label className={quizFormLabelClass}>Total marks</Label>
+          <Input
+            type='number'
+            min={1}
+            max={maxPlanTotal}
+            value={form.marksPlanTotal}
+            onChange={(e) => {
+              const parsed = Math.max(1, parseInt(e.target.value, 10) || 1);
+              const next = Math.min(parsed, maxPlanTotal);
+              syncInput(e.target, next);
+              setForm((prev) => {
+                const merged = { ...prev, marksPlanTotal: next };
+                return courseAvailable != null
+                  ? { ...merged, ...clampMarksPlanToBudget(merged, maxPlanTotal) }
+                  : merged;
+              });
+            }}
+            className={`mt-1.5 ${quizFormFieldClass} max-w-[10rem] w-full`}
+          />
+          {courseAvailable != null ? (
+            <p className={`mt-1.5 ${quizFormHintClass}`}>
+              <span className='font-medium tabular-nums text-foreground'>{courseAvailable}</span> of{' '}
+              {courseMax} course marks available for published work.
+            </p>
+          ) : null}
+          {overCourseBudget ? (
+            <p className='mt-1 text-xs text-destructive'>
+              Exceeds available course marks — lower this value or unpublish other assignments/quizzes.
+            </p>
+          ) : null}
         </div>
+
+        {uploadedOnly ? null : (
+          <div>
+            <Label className={`${quizFormLabelClass} mb-2 block`}>
+              Which kinds of question will this quiz have?
+            </Label>
+            <div className='flex flex-wrap gap-3'>
+              {typeOrder.map((type) => (
+                <label
+                  key={type}
+                  className='flex cursor-pointer items-center gap-2.5 rounded-full border border-border/90 bg-card px-4 py-2.5 text-sm text-foreground hover:border-primary/30 hover:bg-secondary/50'
+                >
+                  <Checkbox
+                    checked={form.marksPlanTypes.includes(type)}
+                    onCheckedChange={() => toggleType(type)}
+                    className={quizFormCheckboxClass}
+                  />
+                  {TYPE_META[type]}
+                </label>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-      )}
 
       {uploadedOnly ? null : form.marksPlanTypes.length > 0 && (
         <div className='space-y-3'>

@@ -57,7 +57,13 @@ export function NotificationTimeline({
           <li key={item.key}>
             <Link
               href={item.href}
-              onClick={() => onRead?.(item)}
+              onClick={(e) => {
+                onRead?.(item);
+                if (item.href.startsWith('/dashboard/courses/')) {
+                  e.preventDefault();
+                  window.location.assign(item.href);
+                }
+              }}
               className={cn(
                 'flex items-stretch gap-4 rounded-lg px-2 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',
                 !item.read && 'bg-primary/10/40'

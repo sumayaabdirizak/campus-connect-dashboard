@@ -1,4 +1,5 @@
 export interface GradebookAssignmentCell {
+  submissionId?: number | null;
   grade: number | null;
   maxMarks: number;
   pct: number | null;
@@ -30,7 +31,12 @@ export interface GradebookRow {
 
 export interface GradebookColumns {
   assignments: { id: number; title: string; maxMarks: number }[];
-  quizzes: { id: number; title: string; maxMarks: number }[];
+  quizzes: {
+    id: number;
+    title: string;
+    maxMarks: number;
+    mode?: 'online' | 'offline';
+  }[];
 }
 
 export interface GradebookClassAverages {

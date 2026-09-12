@@ -55,7 +55,14 @@ export function useSubmissionsData(
     sort
   });
   const filteredGroupSubs = isGroupMode
-    ? filterAndSortGroupRows({ rows: allGroupRows, filter, search, sort })
+    ? filterAndSortGroupRows({
+        rows: allGroupRows,
+        assignment,
+        extensions,
+        filter,
+        search,
+        sort
+      })
     : [];
   const gradableRows = isGroupMode
     ? filteredGroupSubs.filter((r) => r.submission !== null)

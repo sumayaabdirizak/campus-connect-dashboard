@@ -8,6 +8,12 @@ export function messagesChannelHref(
   channelId: string,
   serverId?: string | null
 ): string {
+  if (/^\d+$/.test(String(channelId).trim())) {
+    throw new Error('messagesChannelHref requires a channel publicId UUID, not a numeric id');
+  }
+  if (serverId != null && /^\d+$/.test(String(serverId).trim())) {
+    throw new Error('messagesChannelHref requires a server publicId UUID, not a numeric id');
+  }
   const q = new URLSearchParams();
   q.set('channel', channelId);
   if (serverId) {
@@ -17,6 +23,9 @@ export function messagesChannelHref(
 }
 
 export function messagesServerHref(serverId: string): string {
+  if (/^\d+$/.test(String(serverId).trim())) {
+    throw new Error('messagesServerHref requires a server publicId UUID, not a numeric id');
+  }
   return `/dashboard/messages?server=${serverId}`;
 }
 

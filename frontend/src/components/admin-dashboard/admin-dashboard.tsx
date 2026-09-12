@@ -91,7 +91,7 @@ export function AdminDashboard() {
           <ActionCard title='Manage Users' count={userCount} href='/dashboard/admin/users' />
           <ActionCard title='Manage Courses' count={courseCount} href='/dashboard/admin/courses' />
           <ActionCard title='Manage Departments' count={departmentCount} href='/dashboard/admin/departments' />
-          <ActionCard title='View Reports' count={0} href='/dashboard/admin/reports' />
+          <ActionCard title='View Reports' count={0} href='/dashboard/reports/course-reports' />
         </div>
       </div>
 

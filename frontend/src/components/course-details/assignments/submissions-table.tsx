@@ -48,6 +48,8 @@ type Props = {
   selectedRows: Set<number>;
   onToggleRow: (id: number, checked: boolean) => void;
   onGrade: (sub: Submission) => void;
+  /** Open extend flow for a roster row with no submission yet. */
+  onExtendMissing: (targetId: number) => void;
   filteredGroupSubs: GroupRow[];
   filteredSubs: SubmissionRow[];
   groupsEmpty: boolean;
@@ -207,6 +209,7 @@ export function SubmissionsTable(p: Props) {
                     selected={p.selectedRows.has(row.groupId)}
                     onToggle={p.onToggleRow}
                     onGrade={p.onGrade}
+                    onExtendMissing={p.onExtendMissing}
                   />
                 ))
               : (pageRows as SubmissionRow[]).map((row) => (
@@ -219,6 +222,7 @@ export function SubmissionsTable(p: Props) {
                     selected={p.selectedRows.has(row.studentId)}
                     onToggle={p.onToggleRow}
                     onGrade={p.onGrade}
+                    onExtendMissing={p.onExtendMissing}
                   />
                 ))}
           </PosTableBody>

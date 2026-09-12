@@ -26,6 +26,7 @@ import {
   type LiveQueryOptions,
   withCourseLiveRefresh
 } from './live-query-options';
+import { invalidateCourseOutcomeQueries } from './invalidate-course-outcomes';
 
 export const resourceKeys = {
   all: ['resources'] as const,
@@ -95,6 +96,7 @@ export function useCreateResource(courseId: string) {
     mutationFn: (data: CreateResourceData) => createResource(courseId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resourceKeys.all });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -106,6 +108,7 @@ export function useUpdateResource(courseId: string) {
       updateResource(String(resourceId), data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resourceKeys.all });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -116,6 +119,7 @@ export function useDeleteResource(courseId: string) {
     mutationFn: (resourceId: number) => deleteResource(String(resourceId)),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: resourceKeys.all });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }

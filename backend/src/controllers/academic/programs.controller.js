@@ -12,7 +12,7 @@ import { assertDepartmentInScope, assertProgramInScope } from "./programScope.js
 export const getAllPrograms = async (req, res) => {
   try {
     const scope = await facultyScopeForRestrictedAcademicRoles(req);
-    const { departmentId, level, search } = req.query;
+    const { departmentId, facultyId, level, search } = req.query;
     const { page, pageSize, skip } = parsePaginationQuery(req.query, {
       defaultPageSize: 50,
       maxPageSize: 200,
@@ -20,6 +20,9 @@ export const getAllPrograms = async (req, res) => {
 
     const where = { ...programWhereForFacultyScope(scope) };
     if (departmentId) where.departmentId = Number(departmentId);
+    else if (facultyId && scope.mode === "all") {
+      where.department = { facultyId: Number(facultyId) };
+    }
     if (level) where.level = level;
     if (search) {
       where.OR = [

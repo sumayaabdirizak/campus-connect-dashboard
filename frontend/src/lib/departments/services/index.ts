@@ -1,8 +1,19 @@
 import { apiClient } from '@/lib/api-client';
 import { Department, DepartmentsResponse } from '../types';
 
-export const fetchDepartments = async () => {
-  const response = await apiClient<DepartmentsResponse>('/departments');
+export type FetchDepartmentsParams = {
+  facultyId?: string;
+  search?: string;
+};
+
+export const fetchDepartments = async (params?: FetchDepartmentsParams) => {
+  const qs = new URLSearchParams();
+  if (params?.facultyId) qs.set('facultyId', params.facultyId);
+  if (params?.search) qs.set('search', params.search);
+  const query = qs.toString();
+  const response = await apiClient<DepartmentsResponse>(
+    query ? `/departments?${query}` : '/departments'
+  );
   if (Array.isArray(response.departments)) return response;
   return {
     ...response,

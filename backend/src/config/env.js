@@ -143,3 +143,42 @@ export function getSocketCorsAllowlist() {
     DEFAULT_DEV_ORIGINS;
   return parseCorsOrigins(raw);
 }
+
+function isPrivateOrLoopbackHostname(hostname) {
+  const host = String(hostname || "")
+    .trim()
+    .toLowerCase()
+    .replace(/^\[|\]$/g, "");
+  if (!host) return false;
+  if (host === "localhost" || host === "127.0.0.1" || host === "::1") return true;
+
+  // IPv4 private + Tailscale CGNAT (100.64.0.0/10)
+  const m = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(host);
+  if (!m) return false;
+  const parts = m.slice(1).map(Number);
+  if (parts.some((n) => n > 255)) return false;
+  const [a, b] = parts;
+  if (a === 10) return true;
+  if (a === 127) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  if (a === 100 && b >= 64 && b <= 127) return true; // Tailscale
+  return false;
+}
+
+/**
+ * Exact allowlist match, plus (outside production) loopback / LAN / Tailscale
+ * frontend origins so Socket.IO works when Next is opened via a network URL.
+ */
+export function isOriginAllowed(origin, allowlist, nodeEnv = process.env.NODE_ENV) {
+  if (!origin) return true;
+  if ((allowlist ?? []).includes(origin)) return true;
+  if (String(nodeEnv || "").toLowerCase() === "production") return false;
+  try {
+    const url = new URL(origin);
+    if (url.protocol !== "http:" && url.protocol !== "https:") return false;
+    return isPrivateOrLoopbackHostname(url.hostname);
+  } catch {
+    return false;
+  }
+}

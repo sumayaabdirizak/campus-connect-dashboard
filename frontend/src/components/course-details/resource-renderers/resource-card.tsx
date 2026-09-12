@@ -34,15 +34,43 @@ export function ResourceCard({
   const OpenIcon = isUploaded ? Download : ExternalLink;
   const [previewOpen, setPreviewOpen] = useState(false);
 
+  const openPreview = () => {
+    if (canPreview) setPreviewOpen(true);
+  };
+
   return (
     <article
+      role={canPreview ? 'button' : undefined}
+      tabIndex={canPreview ? 0 : undefined}
+      aria-label={canPreview ? `Preview ${resource.title}` : undefined}
+      onClick={canPreview ? openPreview : undefined}
+      onKeyDown={
+        canPreview
+          ? (e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                openPreview();
+              }
+            }
+          : undefined
+      }
       className={cn(
-        'min-w-0 rounded-xl border-2 border-border bg-card p-4 text-foreground',
+        'min-w-0 rounded-xl border-2 border-border bg-card p-4 text-foreground outline-none transition-colors',
+        canPreview &&
+          'cursor-pointer hover:border-primary/40 hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring'
       )}
     >
       <div className='flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between'>
         <div className='flex min-w-0 items-start gap-3'>
-          {dragHandle}
+          {dragHandle ? (
+            <div
+              className='shrink-0'
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => e.stopPropagation()}
+            >
+              {dragHandle}
+            </div>
+          ) : null}
           <div className='flex size-12 shrink-0 items-center justify-center rounded-xl border border-primary/20 bg-primary/10'>
             <MimeIcon mime={resource.mimeType} className='size-6 text-primary' />
           </div>
@@ -81,7 +109,11 @@ export function ResourceCard({
           </div>
         </div>
 
-        <div className='flex flex-wrap items-center gap-2 sm:justify-end sm:pt-0.5'>
+        <div
+          className='flex flex-wrap items-center gap-2 sm:justify-end sm:pt-0.5'
+          onClick={(e) => e.stopPropagation()}
+          onKeyDown={(e) => e.stopPropagation()}
+        >
           {canPreview ? (
             <Button
               variant='outline'

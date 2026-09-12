@@ -69,4 +69,28 @@ export function dueSoonLabel(msUntilDue: number): string | null {
   return `in ${Math.floor(hours / 24)}d`;
 }
 
+/** How late a submission was relative to the (effective) due date. */
+export function formatLateBy(
+  submittedAt: Date | string,
+  dueAt: Date | string
+): string | null {
+  const submitted = new Date(submittedAt).getTime();
+  const due = new Date(dueAt).getTime();
+  if (!Number.isFinite(submitted) || !Number.isFinite(due)) return null;
+  const ms = submitted - due;
+  if (ms <= 0) return null;
+  const mins = Math.floor(ms / 60_000);
+  if (mins < 1) return 'less than 1 min late';
+  if (mins < 60) return `${mins} min late`;
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+  if (hours < 48) {
+    return remMins > 0 ? `${hours}h ${remMins}m late` : `${hours}h late`;
+  }
+  const days = Math.floor(hours / 24);
+  const remHours = hours % 24;
+  return remHours > 0 ? `${days}d ${remHours}h late` : `${days}d late`;
+}
+
+
 

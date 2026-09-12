@@ -55,6 +55,7 @@ export async function loadClubServersForUser(userId) {
       server: {
         select: {
           id: true,
+          publicId: true,
           name: true,
           iconUrl: true,
           kind: true,
@@ -62,6 +63,8 @@ export async function loadClubServersForUser(userId) {
           defaultChannelId: true,
           parentServerId: true,
           status: true,
+          defaultChannel: { select: { id: true, publicId: true } },
+          parentServer: { select: { id: true, publicId: true } },
         },
       },
     },
@@ -71,11 +74,14 @@ export async function loadClubServersForUser(userId) {
     .filter((c) => c.server && c.server.status === 'ACTIVE')
     .map((c) => ({
       id: c.server.id,
+      publicId: c.server.publicId,
       name: c.name || c.server.name,
       iconUrl: c.iconUrl || c.server.iconUrl || null,
       kind: 'USER_SERVER',
       scopeType: 'CLUB',
       defaultChannelId: c.server.defaultChannelId,
       parentServerId: c.server.parentServerId,
+      defaultChannel: c.server.defaultChannel,
+      parentServer: c.server.parentServer,
     }))
 }

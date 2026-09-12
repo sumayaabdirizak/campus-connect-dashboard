@@ -46,7 +46,7 @@ export const MAIN_DASHBOARD_QUICK_ACTIONS: QuickActionItem[] = [
     icon: BarChart3,
     title: 'Reports',
     description: 'Platform analytics & exports',
-    href: '/dashboard/admin/report',
+    href: '/dashboard/reports/course-reports',
   },
   {
     icon: ScrollText,

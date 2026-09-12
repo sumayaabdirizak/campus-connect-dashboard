@@ -61,7 +61,12 @@ export function FeedBody(props: FeedBodyProps) {
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden'>
       <div
         ref={feedScrollRef}
-        className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain px-2 py-2 [-webkit-overflow-scrolling:touch]'
+        // A ground with actual depth for the white cards to sit on. `bg-muted`
+        // is not usable here: this theme sets --card #ffffff and --muted
+        // #f8fafc, four luminance points apart, so a muted ground under white
+        // cards is invisible. These two literals are a deliberate local
+        // exception — both modes are specified, so they stay theme-correct.
+        className='min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain bg-slate-100 px-2 py-2 dark:bg-slate-950/60 [-webkit-overflow-scrolling:touch]'
       >
         {error ? (
           <div className='p-4'>

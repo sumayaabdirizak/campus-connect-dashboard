@@ -31,6 +31,9 @@ debug-*.log
 .claude/
 .cursor/
 
+# Personal thesis drafts (not part of the public source repo)
+docs/*.docx
+
 # Vendor / ThemeForest templates (reference only — never commit)
 /themeforest-0MsmiFYq-dreamspos-pos-inventory-management-admin-dashboard-template/
 /themeforest-*/

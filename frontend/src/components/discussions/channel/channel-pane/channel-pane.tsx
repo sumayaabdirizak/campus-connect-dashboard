@@ -23,6 +23,7 @@ import { ThreadPanel } from '@/components/discussions/threads/thread-panel'
 import { DetailsPanel } from '@/components/discussions/details/details-panel'
 import { ChannelPaneEmpty } from './channel-pane-empty'
 import { ChannelPaneHeader } from './channel-pane-header'
+import { useCanonicalizeChannelUrl } from './use-canonicalize-channel-url'
 import { useChannelPaneNavigation, useThreadRootId } from './use-channel-pane-state'
 
 export function ChannelPane({ channelId }: { channelId: string | null }) {
@@ -41,6 +42,7 @@ export function ChannelPane({ channelId }: { channelId: string | null }) {
   const { data: channelData, isLoading } = useChannel(channelId)
   const channel = channelData?.channel ?? null
   const serverId = channel?.serverId ?? null
+  useCanonicalizeChannelUrl(channelId, channel)
   const { data: serverData } = useServer(serverId)
   useDiscussionServerRoom(serverId)
   const { data: memberData } = useChannelMembers(channelId)
@@ -52,7 +54,9 @@ export function ChannelPane({ channelId }: { channelId: string | null }) {
     [pinsData]
   )
 
-  const messagesStore = useChannelMessages(channelId)
+  const messagesStore = useChannelMessages(channelId, {
+    canonicalChannelId: channel?.id ?? null,
+  })
   const typers = useChannelTyping(channelId, myUserId ?? null)
 
   const {

@@ -9,7 +9,6 @@ import { cn } from '@/lib/utils';
 import type { QuizAttempt } from '@/lib/course-details/services/quizzes-types';
 import {
   earnedMarksFromPercent,
-  formatMarksFraction,
   formatMarksWithPercent
 } from '../quiz-marks-display';
 import { needsGrading, offlineOutcome, rowStatus, type AttemptRow } from './helpers';
@@ -21,7 +20,8 @@ export function AttemptTableRow({
   onGrade,
   isOffline,
   quizId,
-  totalPoints
+  totalPoints,
+  quizClosed = false
 }: {
   row: AttemptRow;
   col: (id: string) => boolean;
@@ -29,9 +29,10 @@ export function AttemptTableRow({
   isOffline: boolean;
   quizId: number;
   totalPoints: number;
+  quizClosed?: boolean;
 }) {
   const { studentId, student, attempt } = row;
-  const status = rowStatus(row);
+  const status = rowStatus(row, { quizClosed });
   const pending = attempt && !isOffline ? needsGrading(attempt) : false;
   const isAutoSubmit = attempt?.closure_reason === 'time_expired';
   const closedForViolations = attempt?.closure_reason === 'violations';
@@ -49,13 +50,20 @@ export function AttemptTableRow({
         ? status === 'submitted'
           ? 'Recorded'
           : 'Not recorded'
-        : status.replace('_', ' ');
+        : status === 'not_started'
+          ? 'Not started'
+          : status === 'in_progress'
+            ? 'In progress'
+            : status === 'missed'
+              ? 'Missed'
+              : 'Submitted';
 
   return (
     <PosTableRow
       className={cn(
         canOpen && 'cursor-pointer',
-        status === 'not_started' && !isOffline && 'bg-muted'
+        status === 'not_started' && !isOffline && 'bg-muted',
+        status === 'missed' && !isOffline && 'bg-destructive/5'
       )}
       onClick={() => canOpen && onGrade(attempt!)}
     >
@@ -105,7 +113,9 @@ export function AttemptTableRow({
                       ? 'text-success border-success'
                       : status === 'in_progress'
                         ? 'text-warning border-warning'
-                        : 'text-muted-foreground'
+                        : status === 'missed'
+                          ? 'text-destructive border-destructive/40'
+                          : 'text-muted-foreground'
               )}
             >
               {isAbsent ? <UserX className='size-3' /> : null}
@@ -114,7 +124,7 @@ export function AttemptTableRow({
                 <Check className='size-3' />
               ) : null}
               {status === 'in_progress' ? <Loader2 className='size-3 animate-spin' /> : null}
-              {!isAbsent && !isCheat && status === 'not_started' ? (
+              {!isAbsent && !isCheat && (status === 'not_started' || status === 'missed') ? (
                 <Square className='size-3' />
               ) : null}
               {statusLabel}
@@ -162,42 +172,36 @@ export function AttemptTableRow({
 
       {col('marks') ? (
         <PosTableCell align='right' className='tabular-nums'>
-          {attempt ? (
-            isOffline ? (
-              isAbsent ? (
-                <span className='text-sm text-muted-foreground'>Absent — no score</span>
-              ) : isCheat ? (
-                <span className='text-sm font-medium text-destructive'>
+          {isOffline ? (
+            <div onClick={(e) => e.stopPropagation()} className='space-y-1'>
+              {isAbsent ? (
+                <p className='text-xs text-muted-foreground'>Absent — no score</p>
+              ) : null}
+              {isCheat ? (
+                <p className='text-xs font-medium text-destructive'>
                   Cheating — 0 / {totalPoints}
-                </span>
-              ) : (
-                <span className='text-sm font-medium'>
-                  {formatMarksFraction(
-                    earnedMarksFromPercent(attempt.score ?? 0, totalPoints),
-                    totalPoints
-                  )}
-                </span>
-              )
-            ) : attempt.score != null ? (
-              <span className='text-sm font-medium'>
-                {formatMarksWithPercent(
-                  earnedMarksFromPercent(attempt.score, totalPoints),
-                  totalPoints,
-                  attempt.score
-                )}
-              </span>
-            ) : (
-              <span className='text-sm text-muted-foreground'>—</span>
-            )
-          ) : isOffline ? (
-            <div onClick={(e) => e.stopPropagation()}>
+                </p>
+              ) : null}
               <OfflineResultPicker
                 quizId={quizId}
                 studentId={studentId}
                 studentName={student.full_name}
                 totalPoints={totalPoints}
+                initialMarks={
+                  attempt && !isAbsent && !isCheat && attempt.score != null
+                    ? earnedMarksFromPercent(attempt.score, totalPoints)
+                    : null
+                }
               />
             </div>
+          ) : attempt?.score != null ? (
+            <span className='text-sm font-medium'>
+              {formatMarksWithPercent(
+                earnedMarksFromPercent(attempt.score, totalPoints),
+                totalPoints,
+                attempt.score
+              )}
+            </span>
           ) : (
             <span className='text-sm text-muted-foreground'>—</span>
           )}

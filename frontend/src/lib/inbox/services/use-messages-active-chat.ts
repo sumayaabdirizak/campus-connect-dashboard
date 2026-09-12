@@ -1,8 +1,9 @@
-﻿'use client'
+'use client'
 
 import { useCallback, useMemo, useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { parseInboxHref } from '@/lib/inbox/services/parse-inbox-href'
+import { isLegacyNumericDiscussionId } from '@/lib/inbox/services/is-legacy-numeric-discussion-id'
 import {
   messagesChannelHref,
   messagesClubHref,
@@ -63,6 +64,13 @@ export function useMessagesActiveChat() {
 
   const openChannel = useCallback(
     (channelId: string, serverId?: string | null) => {
+      if (
+        isLegacyNumericDiscussionId(channelId) ||
+        isLegacyNumericDiscussionId(serverId)
+      ) {
+        replaceRoute('/dashboard/messages')
+        return
+      }
       const clubPath = clubPathForServerId(serverId, clubs)
       const slug = clubPath ? slugFromClubHref(clubPath) : null
       if (slug) {

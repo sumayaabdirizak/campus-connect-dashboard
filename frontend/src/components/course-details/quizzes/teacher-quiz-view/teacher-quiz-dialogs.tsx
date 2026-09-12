@@ -2,7 +2,6 @@
 
 import { toast } from 'sonner';
 import { QuizSettingsDialog } from '../quiz-settings-form';
-import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type {
   CreateQuizInput,
   Quiz,
@@ -22,16 +21,16 @@ type MutateUpdate = (
 export function TeacherQuizDialogs({
   settingsTarget,
   liveEditing,
-  modules,
   pending,
+  quizzes = [],
   mutateCreate,
   mutateUpdate,
   onCloseSettings,
 }: {
   settingsTarget: Quiz | null;
   liveEditing: Quiz | null;
-  modules: CourseModule[];
   pending: boolean;
+  quizzes?: Quiz[];
   mutateCreate: MutateCreate;
   mutateUpdate: MutateUpdate;
   onCloseSettings: () => void;
@@ -69,7 +68,7 @@ export function TeacherQuizDialogs({
       onOpenChange={(open) => !open && onCloseSettings()}
       editing={liveEditing}
       pending={pending}
-      modules={modules}
+      existingQuizzes={quizzes}
       onSubmit={handleSettingsSubmit}
     />
   );

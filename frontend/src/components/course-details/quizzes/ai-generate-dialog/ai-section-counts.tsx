@@ -29,12 +29,18 @@ export function AiSectionCounts({
       <div>
         <Label className={quizFormLabelClass}>Questions per section</Label>
         <p className={`mt-1 ${quizFormHintClass}`}>
-          Sections come from Marking. Set how many questions each one needs.
+          Sections come from Marking. Choose how many questions — planned marks
+          are split across them (e.g. 5 marks ÷ 10 questions = 0.5 each).
         </p>
       </div>
       <div className='space-y-2'>
         {sections.map((s) => {
           const full = remainingIsFull(s);
+          const count = full ? 0 : (counts[s.type] ?? 0);
+          const each =
+            !full && count > 0 && s.remainingMarks > 0
+              ? s.remainingMarks / count
+              : null;
           return (
             <div
               key={s.type}
@@ -50,6 +56,9 @@ export function AiSectionCounts({
                     ? ` · ${s.remainingMarks} left`
                     : ''}
                   {full ? ' · section full' : ''}
+                  {each != null
+                    ? ` · ≈ ${Number.isInteger(each) ? each : each.toFixed(2)} marks each`
+                    : ''}
                 </p>
               </div>
               <div className='flex items-center gap-2'>
@@ -62,7 +71,7 @@ export function AiSectionCounts({
                   min={0}
                   max={25}
                   disabled={disabled || full}
-                  value={full ? 0 : (counts[s.type] ?? 0)}
+                  value={count}
                   onChange={(e) =>
                     setCount(
                       s.type,

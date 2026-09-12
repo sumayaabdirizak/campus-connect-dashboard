@@ -38,10 +38,11 @@ export function AssignmentAttachmentsField({
           onAddFiles(Array.from(e.dataTransfer.files));
         }}
       >
-        <input
+          <input
           ref={fileInputRef}
           type='file'
           multiple
+          accept='.pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt,.csv,.png,.jpg,.jpeg,.zip'
           onChange={onPickFiles}
           className='absolute inset-0 z-10 cursor-pointer opacity-0'
         />
@@ -50,7 +51,7 @@ export function AssignmentAttachmentsField({
         </span>
         <p className='text-sm text-foreground'>Click to upload or drag and drop</p>
         <p className='mt-0.5 text-xs text-muted-foreground'>
-          Up to 10 files, 25 MB each
+          Up to 10 files, 25 MB each · use a clear file name (letters/numbers)
         </p>
       </div>
       {files.length > 0 ? (

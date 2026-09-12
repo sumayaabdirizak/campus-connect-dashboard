@@ -10,6 +10,7 @@ import {
 import { posTableColors as c } from '@/components/pos/pos-colors';
 import type { Gradebook, GradebookRow } from '@/lib/course-details/services/gradebook-types';
 import { GradebookFooter } from './gradebook-footer';
+import type { GradebookEditTarget } from './gradebook-edit-dialog';
 import { GradebookListRow } from './gradebook-list-row';
 
 interface GradebookTableProps {
@@ -18,6 +19,7 @@ interface GradebookTableProps {
   search: string;
   filterLabel: string;
   onRowClick: (row: GradebookRow) => void;
+  onEditGrade?: (target: GradebookEditTarget) => void;
 }
 
 export function GradebookTable({
@@ -25,7 +27,8 @@ export function GradebookTable({
   rows,
   search,
   filterLabel,
-  onRowClick
+  onRowClick,
+  onEditGrade
 }: GradebookTableProps) {
   const { columns, courseMaxMarks } = data;
   const colSpan = columns.assignments.length + columns.quizzes.length + 2;
@@ -98,6 +101,7 @@ export function GradebookTable({
               courseMaxMarks={courseMaxMarks}
               stickyCellClass={stickyCell}
               onRowClick={onRowClick}
+              onEditGrade={onEditGrade}
             />
           ))}
 

@@ -11,8 +11,9 @@ import {
   PosTableHeaderCell,
   PosTableRow
 } from '@/features/pos/components/pos-table';
+import { AcademicScopeFilters } from '@/components/academic/academic-scope-filters';
 import { showToast } from '@/lib/notifications';
-import { useAdminBatchSections } from '@/lib/batches-admin/queries';
+import { useAdminBatches, useAdminBatchSections } from '@/lib/batches-admin/queries';
 import {
   SECTION_ALL_COLS,
   SECTION_COLUMN_OPTS,
@@ -23,32 +24,50 @@ import {
 } from '@/lib/batches-admin/services/sections-table-utils';
 import { SectionRowActions } from './section-row-actions';
 
-export function SectionsAdminTable() {
+export function SectionsAdminTable({
+  facultyId,
+  departmentId,
+  programId
+}: {
+  facultyId?: string;
+  departmentId?: string;
+  programId?: string;
+} = {}) {
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('name-asc');
   const [visibleCols, setVisibleCols] = useState<string[]>([...SECTION_ALL_COLS]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const { data: sections = [], isLoading, error } = useAdminBatchSections();
+  const { data: batchesData } = useAdminBatches({
+    facultyId,
+    departmentId,
+    programId
+  });
   const col = (id: string) => visibleCols.includes(id);
+
+  const scopedBatchIds = useMemo(() => {
+    if (!facultyId && !departmentId && !programId) return null;
+    return new Set((batchesData?.batches ?? []).map((b) => b.id));
+  }, [batchesData?.batches, facultyId, departmentId, programId]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matched = !q
-      ? sections
-      : sections.filter((section) => {
-          const hay = [section.name, section.batch?.name, String(section.batchId), String(section.id)]
-            .filter(Boolean)
-            .join(' ')
-            .toLowerCase();
-          return hay.includes(q);
-        });
+    const matched = sections.filter((section) => {
+      if (scopedBatchIds && !scopedBatchIds.has(section.batchId)) return false;
+      if (!q) return true;
+      const hay = [section.name, section.batch?.name, String(section.batchId), String(section.id)]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return hay.includes(q);
+    });
     return sortSections(matched, sortId);
-  }, [sections, search, sortId]);
+  }, [sections, search, sortId, scopedBatchIds]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, sortId]);
+  }, [search, sortId, facultyId, departmentId, programId]);
 
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -76,6 +95,7 @@ export function SectionsAdminTable() {
       search={search}
       onSearchChange={setSearch}
       searchPlaceholder='Search...'
+      toolbarStart={<AcademicScopeFilters />}
       columns={[...SECTION_COLUMN_OPTS]}
       visibleColumnIds={visibleCols}
       onVisibleColumnsChange={setVisibleCols}
@@ -106,7 +126,7 @@ export function SectionsAdminTable() {
           <p className='text-muted-foreground mt-1 text-sm'>
             {sections.length === 0
               ? 'Add a section to a batch from the Sections tab.'
-              : 'Try a different search.'}
+              : 'Try a different search or filter.'}
           </p>
         </div>
       ) : (

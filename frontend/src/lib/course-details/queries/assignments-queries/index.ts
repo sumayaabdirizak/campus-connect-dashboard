@@ -12,6 +12,7 @@ export {
   useDeleteAssignment,
   useDuplicateAssignment,
   useGradeSubmission,
+  useManualGradeAssignment,
   useGrantExtension,
   useGrantExtensionBatch,
   useSubmitWork,

@@ -6,6 +6,7 @@ import { EmptyState } from '../_shared/empty-state';
 import { ListSkeleton } from '../_shared/list-skeleton';
 import { CourseTabHeader } from '../_shared/course-tab-header';
 import { CourseTabPage } from '../_shared/course-tab-page';
+import { QueryErrorState } from '@/components/query-error-state';
 import { StudentProfileDrawer } from '../student-profile-drawer';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
 import { useCourseAccessList } from '@/lib/course-details/queries/access-queries';
@@ -21,7 +22,9 @@ interface CourseRosterProps {
 export function CourseRoster({ courseId }: CourseRosterProps) {
   const [selected, setSelected] = useState<RosterStudent | null>(null);
   const [search, setSearch] = useState('');
-  const { data: roster = [], isLoading, isError } = useRoster(courseId, { live: true });
+  const { data: roster = [], isLoading, isError, error, refetch } = useRoster(courseId, {
+    live: true
+  });
   const { data: accessRows = [] } = useCourseAccessList(courseId);
 
   const rows: RosterRow[] = useMemo(() => {
@@ -66,10 +69,10 @@ export function CourseRoster({ courseId }: CourseRosterProps) {
     return (
       <CourseTabPage>
         <CourseTabHeader title='Student logs' description='Students enrolled in this section.' />
-        <EmptyState
-          icon={Users}
+        <QueryErrorState
           title='Could not load roster'
-          description='Something went wrong fetching students. Try reloading the page.'
+          message={error?.message || 'Try reloading the page.'}
+          onRetry={() => void refetch()}
         />
       </CourseTabPage>
     );

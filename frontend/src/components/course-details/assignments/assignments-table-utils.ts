@@ -25,11 +25,10 @@ export const DEFAULT_COURSE_MAX_MARKS = 100;
 
 export function assignmentMarksLabel(
   a: Assignment,
-  courseMax = DEFAULT_COURSE_MAX_MARKS
+  _courseMax = DEFAULT_COURSE_MAX_MARKS
 ): string {
-  const cap = courseMax > 0 ? courseMax : DEFAULT_COURSE_MAX_MARKS;
   const marks = a.maxMarks ?? 10;
-  if (marks > 0) return `${marks}/${cap}`;
+  if (marks > 0) return String(marks);
   return '—';
 }
 

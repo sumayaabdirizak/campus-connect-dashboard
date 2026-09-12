@@ -3,19 +3,57 @@ import { safe } from './helpers.js';
 
 export async function fetchPeopleCollections({ facultyId, since, prevSince, filters = {} }) {
   const departmentId = filters.departmentId ? Number(filters.departmentId) : null;
+  const batchId = filters.batchId ? Number(filters.batchId) : null;
+  const sectionId = filters.sectionId ? Number(filters.sectionId) : null;
+  const levelRaw = filters.studentLevel
+    ? String(filters.studentLevel).toUpperCase().replace(/\s+/g, '_')
+    : null;
+  const programLevel =
+    levelRaw === 'UNDERGRADUATE' || levelRaw === 'POSTGRADUATE' ? levelRaw : null;
+
+  const batchScope = {
+    program: {
+      department: {
+        facultyId,
+        ...(departmentId ? { id: departmentId } : {}),
+      },
+      ...(programLevel ? { level: programLevel } : {}),
+    },
+    ...(batchId ? { id: batchId } : {}),
+  };
 
   const registrationScope = {
     batchSection: {
-      batch: {
-        program: {
-          department: {
-            facultyId,
-            ...(departmentId ? { id: departmentId } : {}),
-          },
-        },
-      },
+      ...(sectionId ? { id: sectionId } : {}),
+      batch: batchScope,
     },
   };
+
+  const studentRegistrationFilter =
+    batchId || sectionId || programLevel
+      ? {
+          studentRegistrations: {
+            some: {
+              ...(sectionId ? { batchSectionId: sectionId } : {}),
+              ...(batchId && !sectionId
+                ? { batchSection: { batchId } }
+                : {}),
+              ...(!batchId && !sectionId
+                ? {
+                    batchSection: {
+                      batch: {
+                        program: {
+                          ...(departmentId ? { departmentId } : {}),
+                          ...(programLevel ? { level: programLevel } : {}),
+                        },
+                      },
+                    },
+                  }
+                : {}),
+            },
+          },
+        }
+      : {};
 
   const [studentProfiles, registrations, prevRegistrations, teachers] = await Promise.all([
     safe(
@@ -24,6 +62,7 @@ export async function fetchPeopleCollections({ facultyId, since, prevSince, filt
           where: {
             facultyId,
             ...(departmentId ? { departmentId } : {}),
+            ...studentRegistrationFilter,
           },
           select: {
             id: true,

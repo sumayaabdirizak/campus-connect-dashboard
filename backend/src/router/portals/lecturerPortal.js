@@ -10,6 +10,12 @@ import {
   getGradingWorkload,
   listCourseReports,
   getCourseReport,
+  listStudentReports,
+  getStudentReport,
+  listLecturerReports,
+  getLecturerReport,
+  listBatchReports,
+  getBatchReport,
   updateCourseCover,
 } from '../../controllers/portals/teacherCourse.controller/index.js';
 import { uploadRateLimit } from "../../middleware/perUserRateLimit.js";
@@ -54,6 +60,12 @@ router.get('/my-assignments', getMyAssignments);
 router.get('/grading-workload', getGradingWorkload);
 router.get('/course-reports', listCourseReports);
 router.get('/course-reports/:offeringId', getCourseReport);
+router.get('/student-reports', listStudentReports);
+router.get('/student-reports/:studentId', getStudentReport);
+router.get('/lecturer-reports', listLecturerReports);
+router.get('/lecturer-reports/:teacherId', getLecturerReport);
+router.get('/batch-reports', listBatchReports);
+router.get('/batch-reports/:batchId', getBatchReport);
 router.get('/courses', getMyCourses);
 router.get('/courses/:offeringId', getCourseDetail);
 router.post('/courses/:offeringId/cover', uploadRateLimit, coverUploadMw, updateCourseCover);

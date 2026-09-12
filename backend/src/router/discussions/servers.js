@@ -29,7 +29,7 @@ import { getServerVisibleChannels } from "../../services/discussions/serverChann
 import { getDiscussionCallerUserId } from "../../services/discussions/discussionCaller.js";
 import { slugifyDiscussionChannelName } from "../../services/discussions/discussionChannelUtils.js";
 import { createChannelSchema } from "../../validation/serverSchemas.js";
-import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
+import { whereFromPublicId } from "../../services/discussions/publicIdResolution.js";
 import { resolveServerRow, resolveCategoryRow, toServerDto, toCategoryDto, toChannelDto } from "../../controllers/discussions/serverShared.js";
 import serverChannelsRouter from "../../controllers/discussions/serverChannels.routes.js";
 import serverMembersRouter from "./serverMembers.routes.js";
@@ -98,7 +98,7 @@ router.get("/servers/:serverId", async (req, res) => {
     const userId = getDiscussionCallerUserId(req);
     if (!userId) return res.status(401).json(apiErrorBody("Unauthorized", null));
 
-    const where = whereFromParam(req.params.serverId);
+    const where = whereFromPublicId(req.params.serverId);
     if (!where) {
       return res.status(400).json(apiErrorBody("Invalid serverId", null));
     }
@@ -267,4 +267,5 @@ router.use(serverChannelPinsRouter);
 router.use(serverPermissionOverwritesRouter);
 router.use(serverMessagesRouter);
 
+export { router as serversRouter };
 export default router;

@@ -1,10 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import Link from 'next/link'
-import { Clock } from 'lucide-react'
+import { Clock, GraduationCap } from 'lucide-react'
 import { Progress } from '@/features/ui/components/progress'
 import { resolvePublicAssetUrl } from '@/lib/resolve-public-asset-url'
+import { courseOfferingPath } from '@/lib/course-offering-href'
 
 export interface StudentCourseCardData {
   id: number | string
@@ -32,8 +32,8 @@ export function StudentCourseCard({
     .toUpperCase()
 
   return (
-    <Link href={`/dashboard/courses/${course.id}`} className='group block'>
-      <div className='overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-border hover:bg-muted'>
+    <div className='group overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-border hover:bg-muted'>
+      <a href={courseOfferingPath(course.id)} className='block'>
         <div className='relative h-36 w-full overflow-hidden bg-primary/10'>
           {showCover ? (
             // eslint-disable-next-line @next/next/no-img-element
@@ -55,7 +55,7 @@ export function StudentCourseCard({
           </span>
         </div>
 
-        <div className='space-y-3 p-4'>
+        <div className='space-y-3 p-4 pb-2'>
           <div>
             <h3 className='line-clamp-1 text-sm font-semibold text-foreground'>
               {course.courseName}
@@ -88,7 +88,17 @@ export function StudentCourseCard({
             </p>
           ) : null}
         </div>
+      </a>
+
+      <div className='border-t border-border px-4 py-2.5'>
+        <a
+          href={courseOfferingPath(course.id, { tab: 'grades' })}
+          className='inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline'
+        >
+          <GraduationCap className='size-3.5' aria-hidden />
+          My report
+        </a>
       </div>
-    </Link>
+    </div>
   )
 }

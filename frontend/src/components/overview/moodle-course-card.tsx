@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import type { StudentCourse } from '@/lib/student-courses/types';
 import { resolvePublicAssetUrl } from '@/lib/resolve-public-asset-url';
 import { courseColor } from '@/lib/student-courses/services/course-color';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 
 /**
  * Moodle-style "course overview" card: a colored header banner, course
@@ -16,8 +16,8 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
   const coverSrc = resolvePublicAssetUrl(course.thumbnail);
 
   return (
-    <Link
-      href={`/dashboard/courses/${course.id}`}
+    <a
+      href={courseOfferingPath(course.id)}
       className='group flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
     >
       {/* Banner — course thumbnail when available, else the identity color */}
@@ -69,6 +69,6 @@ export function MoodleCourseCard({ course }: { course: StudentCourse }) {
           />
         </div>
       </div>
-    </Link>
+    </a>
   );
 }

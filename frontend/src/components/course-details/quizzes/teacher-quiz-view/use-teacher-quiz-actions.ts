@@ -15,6 +15,7 @@ import {
   useUpdateQuiz,
 } from '@/lib/course-details/queries/quizzes-queries';
 import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
+import { invalidateCourseOutcomeQueries } from '@/lib/course-details/queries/invalidate-course-outcomes';
 import type { CourseMarkBudget } from '@/lib/course-details/services/mark-budget-service';
 import {
   isMarkBudgetExhausted,
@@ -107,6 +108,7 @@ export function useTeacherQuizActions(courseId: string) {
     queryClient.invalidateQueries({ queryKey: quizKeys.list(courseId) });
     queryClient.invalidateQueries({ queryKey: quizKeys.available(courseId) });
     queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseId) });
+    invalidateCourseOutcomeQueries(queryClient);
     if (failCount === 0) {
       toast.success(`${label} ${okCount} quiz${okCount === 1 ? '' : 'zes'}`);
     } else if (okCount === 0) {

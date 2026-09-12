@@ -1,5 +1,6 @@
 import { prisma } from "../../../db/prisma.js";
 import { syncDiscussionMembershipsForUser } from "../../../services/discussions/membershipSync.service.js";
+import { invalidateUserAnnouncementScope } from "../../../utils/userAnnouncementScope.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 
 export const assignStudentToSection = async (req, res) => {
@@ -64,6 +65,8 @@ export const assignStudentToSection = async (req, res) => {
         currentSemester: true,
       },
     });
+
+    invalidateUserAnnouncementScope(Number(studentId));
 
     try {
       await syncDiscussionMembershipsForUser(Number(studentId));

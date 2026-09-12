@@ -72,7 +72,7 @@ export async function computeFacultyKpis(facultyId) {
       ? prisma.submission.findMany({
           where: {
             assignment: { courseOfferingId: { in: offeringIds } },
-            gradeRow: { isNot: null, score: { not: null } },
+            gradeRow: { is: { score: { not: null } } },
           },
           select: { gradeRow: { select: { score: true } } },
         }).then((rows) => rows.map((s) => ({ grade: s.gradeRow?.score ?? null })))

@@ -45,12 +45,16 @@ function handleConnection(client) {
 
     for (const rememberedGroupId of rooms.getRememberedDiscussionRooms(user.id)) {
       client.join(rooms.discussionRoom(rememberedGroupId));
-    client.data.discussionRooms.add(Number(rememberedGroupId));
-  }
+      client.data.discussionRooms.add(Number(rememberedGroupId));
+    }
+    for (const rememberedChannelId of rooms.getRememberedChannelRooms(user.id)) {
+      client.join(rooms.discussionChannelRoom(rememberedChannelId));
+      client.data.discussionChannelRooms.add(Number(rememberedChannelId));
+    }
     for (const rememberedGdm of rooms.getRememberedGroupDmRooms(user.id)) {
       client.join(rooms.discussionGroupDmRoom(rememberedGdm));
-    client.data.discussionGroupDmRooms.add(Number(rememberedGdm));
-  }
+      client.data.discussionGroupDmRooms.add(Number(rememberedGdm));
+    }
 }
 
   function beginSession(socket) {

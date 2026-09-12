@@ -26,12 +26,21 @@ router.get('/:scope/list', reportStaff, async (req, res) => {
       .json(apiErrorBody(`Unknown report scope "${scope}"`, { allowed: REPORT_SCOPES }));
   }
   try {
-    const { since, until, months } = parseReportWindow(req.query);
+    const { since, until, months } = await parseReportWindow(req.query);
     let all = await listReport(scope, { since, until });
 
-    const status = String(req.query.status ?? '').trim();
-    if (scope === 'batch' && status && status !== 'all') {
-      all = all.filter((row) => row.status === status);
+    const statusRaw = String(req.query.status ?? '').trim();
+    // Batch lists default to ACTIVE unless the client asks for all / another status.
+    if (scope === 'batch') {
+      const status =
+        !statusRaw || statusRaw === 'ACTIVE'
+          ? 'ACTIVE'
+          : statusRaw === 'all'
+            ? ''
+            : statusRaw;
+      if (status) {
+        all = all.filter((row) => row.status === status);
+      }
     }
 
     const search = String(req.query.search ?? '').trim();
@@ -127,7 +136,7 @@ router.get('/:scope', reportStaff, async (req, res) => {
   }
 
   try {
-    const { since, until, months } = parseReportWindow(req.query);
+    const { since, until, months } = await parseReportWindow(req.query);
     const report = await buildReport({ scope, id, since, until, months });
     // Prisma Decimals / Dates / stray BigInts must not blow up res.json.
     const payload = JSON.parse(

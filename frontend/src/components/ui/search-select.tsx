@@ -51,7 +51,7 @@ export function SearchSelect({
   const selected = options.find((o) => o.value === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           variant='outline'
@@ -71,12 +71,16 @@ export function SearchSelect({
         </Button>
       </PopoverTrigger>
       <PopoverContent
-        className='w-[var(--radix-popover-trigger-width)] p-0'
+        className='z-[120] w-[var(--radix-popover-trigger-width)] p-0'
         align='start'
+        side='bottom'
+        sideOffset={4}
+        collisionPadding={16}
+        avoidCollisions
       >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
+          <CommandList className='max-h-60'>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (

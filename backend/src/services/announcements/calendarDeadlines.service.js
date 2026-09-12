@@ -134,11 +134,25 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
       take: 500,
     }),
     prisma.quiz.findMany({
-      where: { is_draft: false, close_at: { not: null, gte: fromRaw, lte: toRaw }, courseOffering },
+      where: {
+        is_draft: false,
+        courseOffering,
+        OR: [
+          { close_at: { not: null, gte: fromRaw, lte: toRaw } },
+          {
+            close_at: null,
+            timing_mode: 'fixed',
+            open_at: { not: null },
+          },
+        ],
+      },
       select: {
         id: true,
         title: true,
         close_at: true,
+        open_at: true,
+        duration_minutes: true,
+        timing_mode: true,
         courseOfferingId: true,
         courseOffering: { select: { publicId: true, course: { select: { code: true } } } },
       },
@@ -146,6 +160,30 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
       take: 500,
     }),
   ]);
+
+  const fromMs = fromRaw.getTime();
+  const toMs = toRaw.getTime();
+
+  const quizRows = quizzes
+    .map((q) => {
+      let deadlineAt = q.close_at;
+      if (!deadlineAt && q.timing_mode === 'fixed' && q.open_at) {
+        const mins = Number(q.duration_minutes) || 0;
+        deadlineAt = new Date(new Date(q.open_at).getTime() + mins * 60_000);
+      }
+      if (!deadlineAt) return null;
+      const t = new Date(deadlineAt).getTime();
+      if (Number.isNaN(t) || t < fromMs || t > toMs) return null;
+      return {
+        kind: NOTIF_KIND.QUIZ,
+        id: q.id,
+        title: q.title,
+        deadlineAt,
+        courseOfferingId: q.courseOffering?.publicId ?? null,
+        courseCode: q.courseOffering?.course?.code ?? null,
+      };
+    })
+    .filter(Boolean);
 
   return [
     ...assignments.map((a) => ({
@@ -156,14 +194,7 @@ export async function loadVisibleAcademicDeadlineRows(prisma, loaded, fromRaw, t
       courseOfferingId: a.courseOffering?.publicId ?? null,
       courseCode: a.courseOffering?.course?.code ?? null,
     })),
-    ...quizzes.map((q) => ({
-      kind: NOTIF_KIND.QUIZ,
-      id: q.id,
-      title: q.title,
-      deadlineAt: q.close_at,
-      courseOfferingId: q.courseOffering?.publicId ?? null,
-      courseCode: q.courseOffering?.course?.code ?? null,
-    })),
+    ...quizRows,
   ];
 }
 

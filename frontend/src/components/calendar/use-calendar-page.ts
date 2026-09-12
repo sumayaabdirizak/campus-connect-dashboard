@@ -1,7 +1,6 @@
 'use client';
 
 import { useCallback, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import {
   addDays,
   addMonths,
@@ -14,6 +13,7 @@ import {
 import { toast } from 'sonner';
 import type { CalendarItem, CalendarKind, CalendarView } from '@/lib/calendar/types';
 import type { PersonalEvent } from '@/lib/calendar/queries/api';
+import { navigateToCourseOffering } from '@/lib/course-offering-href';
 import { downloadCalendarCsv, downloadCalendarIcs } from './calendar-export';
 import { useCalendarItems, useCalendarRange } from './use-calendar-data';
 
@@ -33,7 +33,6 @@ export function useCalendarPage() {
     personal: true
   });
   const [hiddenCourses, setHiddenCourses] = useState<Set<string>>(new Set());
-  const router = useRouter();
 
   const { range, days, fromIso, toIso } = useCalendarRange(view, cursor);
   const { personalEvents, items, courses, eventsByDay, isLoading } = useCalendarItems(
@@ -53,12 +52,13 @@ export function useCalendarPage() {
         setEditingEvent(ev);
         setDialogDate(undefined);
         setDialogOpen(true);
-      } else if (item.courseOfferingId)
-        router.push(
-          `/dashboard/courses/${item.courseOfferingId}?tab=${item.kind === 'quiz' ? 'quizzes' : 'assignments'}`
-        );
+      } else if (item.courseOfferingId) {
+        navigateToCourseOffering(item.courseOfferingId, {
+          tab: item.kind === 'quiz' ? 'quizzes' : 'assignments',
+        });
+      }
     },
-    [personalEvents, router]
+    [personalEvents]
   );
 
   const openNewEvent = useCallback((date?: Date) => {

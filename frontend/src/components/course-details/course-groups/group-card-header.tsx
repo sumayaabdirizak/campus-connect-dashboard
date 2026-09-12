@@ -26,7 +26,7 @@ export function GroupCardHeader({
   onDelete: () => void;
 }) {
   return (
-    <div className='mb-3 flex items-start justify-between gap-2'>
+    <div className='flex items-start justify-between gap-2'>
       {renaming ? (
         <GroupRenameForm
           value={renameValue}
@@ -35,12 +35,15 @@ export function GroupCardHeader({
           onCancel={onRenameCancel}
         />
       ) : (
-        <h3 className='min-w-0 truncate text-base font-semibold tracking-tight text-foreground'>
+        <h3 className='min-w-0 truncate text-lg tracking-tight text-foreground font-display'>
           {name}
         </h3>
       )}
       {!isStudent && !renaming ? (
-        <div className='flex shrink-0 items-center gap-1'>
+        <div
+          className='flex shrink-0 items-center gap-1'
+          onClick={(e) => e.stopPropagation()}
+        >
           <Button
             variant='outline'
             size='sm'

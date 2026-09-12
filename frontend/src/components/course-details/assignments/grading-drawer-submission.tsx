@@ -4,16 +4,26 @@ import { format } from 'date-fns';
 import { Download, ExternalLink, FileText } from 'lucide-react';
 import { PdfViewer } from '../_shared/pdf-viewer-lazy';
 import { isPdfUrl } from '../_shared/is-pdf-url';
+import { parseSubmissionContent, formatLateBy } from './student-assignment-card/helpers';
 import type { Submission } from '@/lib/course-details/services/assignments-types';
-import { parseSubmissionContent } from './student-assignment-card/helpers';
 import { GradingDrawerSection } from './grading-drawer-section';
 import { gradingBlue } from './grading-drawer-blue';
 import { cn } from '@/lib/utils';
 
-export function GradingDrawerSubmission({ submission }: { submission: Submission }) {
+export function GradingDrawerSubmission({
+  submission,
+  dueAt
+}: {
+  submission: Submission;
+  dueAt?: Date | string | null;
+}) {
   const content = submission.content_url
     ? parseSubmissionContent(submission.content_url)
     : null;
+  const lateBy =
+    submission.is_late && dueAt
+      ? formatLateBy(submission.submitted_at, dueAt)
+      : null;
 
   return (
     <GradingDrawerSection title='Submitted work' hint='Open or download what the student sent.'>
@@ -52,7 +62,9 @@ export function GradingDrawerSubmission({ submission }: { submission: Submission
                       ? content.subtitle
                       : content.kind}
                   {submission.is_late ? (
-                    <span className='ml-1 font-medium text-warning-foreground'>· Late</span>
+                    <span className='ml-1 font-medium text-warning-foreground'>
+                      · {lateBy ?? 'Late'}
+                    </span>
                   ) : null}
                 </p>
               </div>

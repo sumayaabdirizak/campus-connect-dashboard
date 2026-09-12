@@ -16,6 +16,9 @@ function normalizeEvents(events) {
  *
  * Socket.IO is installed in server.js after app.js is imported, so this module
  * must tolerate being loaded before an io instance exists.
+ *
+ * Unread payloads are built in parallel — sequential awaits used to block
+ * channel sends for large servers.
  */
 export async function emitDiscussionNotificationEvents(events) {
   const io = getIo();
@@ -28,15 +31,17 @@ export async function emitDiscussionNotificationEvents(events) {
     io.to(`user:${userId}`).emit("notification:new", notification);
   }
 
-  for (const userId of touchedUserIds) {
-    try {
-      const unread = await buildUnreadSocketPayload(userId);
-      io.to(`user:${userId}`).emit("unread:update", unread);
-    } catch (error) {
-      console.warn("Failed to emit unread update", {
-        userId,
-        message: error?.message || error,
-      });
-    }
-  }
+  await Promise.all(
+    [...touchedUserIds].map(async (userId) => {
+      try {
+        const unread = await buildUnreadSocketPayload(userId);
+        io.to(`user:${userId}`).emit("unread:update", unread);
+      } catch (error) {
+        console.warn("Failed to emit unread update", {
+          userId,
+          message: error?.message || error,
+        });
+      }
+    }),
+  );
 }

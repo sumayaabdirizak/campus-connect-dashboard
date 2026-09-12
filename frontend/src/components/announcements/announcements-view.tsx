@@ -33,7 +33,13 @@ export function AnnouncementsView() {
     const allowed = new Set(['STUDENT', 'TEACHER', 'DEAN', 'SUPER_ADMIN']);
     return allowed.has(raw) ? raw : 'ALL';
   }, [searchParams]);
-  const { data: announcements = [], isLoading, error, refetch } = useAnnouncements({
+  const {
+    data: announcements = [],
+    isLoading,
+    isError,
+    error,
+    refetch
+  } = useAnnouncements({
     drafts: draftsTab,
     audienceRole: audienceRoleFromUrl
   });
@@ -112,7 +118,7 @@ export function AnnouncementsView() {
         <AnnouncementFeed
           announcements={sourceAnnouncements}
           isLoading={isLoading}
-          error={error as Error | null}
+          error={isError ? (error as Error | null) : null}
           onRetry={() => refetch()}
           userRole={user?.role}
           unreadCount={unreadCount}

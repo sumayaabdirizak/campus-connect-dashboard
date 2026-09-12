@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   bumpFetchGeneration,
+  clearCachedError,
   deleteInFlightFetch,
   getCachedData,
   getCachedError,
@@ -26,6 +27,11 @@ type UseQueryOptions<T> = {
   staleTime?: number;
   /** Refetch when the tab regains focus or becomes visible (if data is stale). */
   refetchOnWindowFocus?: boolean;
+  /**
+   * When the query key changes, keep showing the previous result until the new
+   * key's response arrives (background refresh UX — no blank/spinner flash).
+   */
+  keepPreviousData?: boolean;
 };
 
 type ExecuteFetchOptions = {
@@ -56,28 +62,46 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
     () => enabled && getCachedData(serialized) === undefined && !hasCachedError(serialized)
   );
   const [isFetching, setIsFetching] = useState(false);
-  const [error, setError] = useState<Error | null>(() => getCachedError(serialized) ?? null);
+  // Prefer last-good data over a stale refresh error (same rule as soft-fail).
+  const [error, setError] = useState<Error | null>(() => {
+    if (getCachedData(serialized) !== undefined) return null;
+    return getCachedError(serialized) ?? null;
+  });
   const [fetchVersion, setFetchVersion] = useState(0);
 
   const queryFnRef = useRef(opts.queryFn);
   queryFnRef.current = opts.queryFn;
   const queryKeyRef = useRef(queryKey);
   queryKeyRef.current = queryKey;
-  const staleTime = opts.staleTime ?? 30_000;
+  const staleTime = opts.staleTime ?? 60_000;
   const refetchOnWindowFocus = opts.refetchOnWindowFocus ?? false;
+  const keepPreviousData = opts.keepPreviousData === true;
+  const previousDataRef = useRef<T | undefined>(undefined);
 
   // When the query key changes, re-bind React state to that key's cache entry
   // so a previous subject's data/error cannot leak into the new view.
   useEffect(() => {
     const cached = getCachedData<T>(serialized);
-    setData(cached);
-    // Prefer cached data over a stale refresh error for this key.
-    setError(cached !== undefined ? null : (getCachedError(serialized) ?? null));
-    setIsLoading(
-      enabled && cached === undefined && !hasCachedError(serialized)
-    );
+    if (cached !== undefined) {
+      setData(cached);
+      setError(null);
+      setIsLoading(false);
+    } else if (keepPreviousData && previousDataRef.current !== undefined) {
+      // Keep last-good UI while the new key loads in the background.
+      setData(previousDataRef.current);
+      setError(null);
+      setIsLoading(false);
+    } else {
+      setData(undefined);
+      setError(getCachedError(serialized) ?? null);
+      setIsLoading(enabled && !hasCachedError(serialized));
+    }
     setIsFetching(false);
-  }, [serialized, enabled]);
+  }, [serialized, enabled, keepPreviousData]);
+
+  useEffect(() => {
+    if (data !== undefined) previousDataRef.current = data;
+  }, [data]);
 
   const isQueryStale = useCallback(() => {
     const cachedAt = getLastFetchedAt(serialized);
@@ -155,21 +179,43 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
       setError(null);
       try {
         const result = await promise;
-        // Stale completion after a newer fetch — keep current UI/cache.
-        if (getFetchGeneration(serialized) !== gen) {
-          return getCachedData<T>(serialized) ?? null;
+        // Stale completion: key changed while this fetch was in flight, or a
+        // newer invalidate bumped generation. Never write into React state for
+        // a key this hook instance is no longer bound to (that raced with
+        // URL canonicalize and flipped Messages channel A↔B).
+        if (
+          serializeKey(queryKeyRef.current) !== serialized ||
+          getFetchGeneration(serialized) !== gen
+        ) {
+          return getCachedData<T>(serializeKey(queryKeyRef.current)) ?? null;
         }
         setData(result);
+        setError(null);
         return result;
       } catch (e) {
-        if (getFetchGeneration(serialized) !== gen) {
-          return getCachedData<T>(serialized) ?? null;
+        if (
+          serializeKey(queryKeyRef.current) !== serialized ||
+          getFetchGeneration(serialized) !== gen
+        ) {
+          return getCachedData<T>(serializeKey(queryKeyRef.current)) ?? null;
         }
         const err = e instanceof Error ? e : new Error(String(e));
+        const cached = getCachedData<T>(serialized);
+        // Background refresh / revalidate failed — keep last good data on screen.
+        // Only surface a hard error when we have nothing to show.
+        if (cached !== undefined) {
+          clearCachedError(serialized);
+          setData(cached);
+          setError(null);
+          return cached;
+        }
         setError(err);
         return null;
       } finally {
-        if (getFetchGeneration(serialized) === gen) {
+        if (
+          serializeKey(queryKeyRef.current) === serialized &&
+          getFetchGeneration(serialized) === gen
+        ) {
           setIsLoading(false);
           setIsFetching(false);
         }
@@ -199,8 +245,7 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
 
     // A hidden tab has nobody looking at it, so a tick there buys nothing and
     // costs a request. Left running, a tab open overnight polls all night —
-    // and with ~11 pollers on a course page that is a lot of traffic for a
-    // screen nobody is reading.
+    // especially with several live course-tab pollers.
     const tick = () => {
       if (document.hidden) return;
       void executeFetch({ poll: true });
@@ -248,6 +293,10 @@ export function useQuery<T>(opts: UseQueryOptions<T>) {
     isPending: isLoading,
     error,
     isSuccess: !isLoading && !error && data !== undefined,
+    // Soft-fail already clears `error` above whenever cached data exists for
+    // the current key — gating here too on `data` falsely hides real errors
+    // for keepPreviousData consumers, where `data` can hold a previous key's
+    // stale value while `error` is freshly set for the new key.
     isError: error != null,
     refetch,
   };

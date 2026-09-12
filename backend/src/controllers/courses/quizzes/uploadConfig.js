@@ -1,6 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import {
+  QUIZ_PAPER_EXTENSIONS,
+  validateDocumentName,
+} from '../../../utils/validateDocumentName.js';
 
 const QUIZ_PAPER_UPLOAD_DIR = './uploads/quiz-papers';
 export const QUIZ_PAPER_FILE_LIMIT = 25 * 1024 * 1024;
@@ -28,10 +32,17 @@ export const quizPaperUpload = multer({
   storage: diskStorage(QUIZ_PAPER_UPLOAD_DIR),
   limits: { fileSize: QUIZ_PAPER_FILE_LIMIT },
   fileFilter: (_req, file, cb) => {
-    if (ALLOWED_MIME.has(file.mimetype)) {
-      cb(null, true);
+    const nameCheck = validateDocumentName(file.originalname, {
+      allowedExtensions: QUIZ_PAPER_EXTENSIONS,
+    });
+    if (!nameCheck.ok) {
+      cb(new Error(nameCheck.message));
       return;
     }
-    cb(new Error('Only PDF and Word documents are allowed'));
+    if (!ALLOWED_MIME.has(file.mimetype)) {
+      cb(new Error('Only PDF and Word documents are allowed'));
+      return;
+    }
+    cb(null, true);
   },
 });

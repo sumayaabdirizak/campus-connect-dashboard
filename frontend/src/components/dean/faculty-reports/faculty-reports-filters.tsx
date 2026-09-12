@@ -1,20 +1,25 @@
 'use client';
 
-import { Bookmark, RotateCcw, SlidersHorizontal } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useEffect, useMemo, useState } from 'react';
+import { SearchSelect } from '@/features/ui/components/search-select';
 import { cn } from '@/lib/utils';
-import { showToast } from '@/lib/notifications';
+import {
+  GlobalFilterField,
+  GlobalReportFilters,
+  GLOBAL_FILTER_CONTROL
+} from '@/components/reports/global-report-filters';
+import { ReportCustomDateFields } from '@/components/reports/report-custom-date-fields';
+import { useActiveSemesterWindow } from '@/lib/academic/use-active-semester-window';
+import { useDeanBatches } from '@/lib/dean/queries';
+import type { DeanBatch } from '@/lib/dean/types';
 
 export interface FacultyReportFilterState {
   period: string;
+  from: string | null;
+  to: string | null;
   departmentId: string;
+  batchId: string;
+  sectionId: string;
   courseId: string;
   instructorId: string;
   studentLevel: string;
@@ -22,13 +27,19 @@ export interface FacultyReportFilterState {
 }
 
 export const defaultFacultyReportFilters: FacultyReportFilterState = {
-  period: '6m',
+  period: 'semester',
+  from: null,
+  to: null,
   departmentId: 'all',
+  batchId: 'all',
+  sectionId: 'all',
   courseId: 'all',
   instructorId: 'all',
   studentLevel: 'all',
-  status: 'all',
+  status: 'all'
 };
+
+const STORAGE_KEY = 'faculty-reports-filters:v2';
 
 interface FacultyReportsFiltersProps {
   filters: FacultyReportFilterState;
@@ -38,101 +49,227 @@ interface FacultyReportsFiltersProps {
   className?: string;
 }
 
+function isFacultyFilters(raw: unknown): raw is FacultyReportFilterState {
+  if (!raw || typeof raw !== 'object') return false;
+  const o = raw as Record<string, unknown>;
+  return typeof o.period === 'string' && typeof o.departmentId === 'string';
+}
+
+function parseBatches(raw: unknown): DeanBatch[] {
+  if (Array.isArray(raw)) return raw as DeanBatch[];
+  if (raw && typeof raw === 'object' && Array.isArray((raw as { batches?: DeanBatch[] }).batches)) {
+    return (raw as { batches: DeanBatch[] }).batches;
+  }
+  return [];
+}
+
 export function FacultyReportsFilters({
   filters,
   onChange,
   departments,
   sticky,
-  className,
+  className
 }: FacultyReportsFiltersProps) {
-  const set = (patch: Partial<FacultyReportFilterState>) =>
-    onChange({ ...filters, ...patch });
+  const [draft, setDraft] = useState(filters);
+  const { data: semesterWindow } = useActiveSemesterWindow();
+  const { data: batchesData } = useDeanBatches({ pageSize: '200' });
 
-  const handleReset = () => onChange(defaultFacultyReportFilters);
+  const allBatches = useMemo(() => parseBatches(batchesData), [batchesData]);
 
-  const handleSaveTemplate = () => {
-    try {
-      localStorage.setItem('faculty-reports-filters:v1', JSON.stringify(filters));
-      showToast('success', 'Filter template saved');
-    } catch {
-      showToast('error', 'Could not save filter template');
+  const batches = useMemo(() => {
+    let list = allBatches;
+    if (draft.departmentId !== 'all') {
+      const deptId = Number(draft.departmentId);
+      list = list.filter((b) => b.program?.department?.id === deptId);
     }
+    if (draft.studentLevel !== 'all') {
+      const level = draft.studentLevel.toUpperCase().replace(/\s+/g, '_');
+      list = list.filter(
+        (b) => String(b.program?.level ?? '').toUpperCase().replace(/\s+/g, '_') === level
+      );
+    }
+    return list;
+  }, [allBatches, draft.departmentId, draft.studentLevel]);
+
+  const sections = useMemo(() => {
+    if (draft.batchId === 'all') return [];
+    const batch = batches.find((b) => String(b.id) === draft.batchId);
+    return batch?.sections ?? [];
+  }, [batches, draft.batchId]);
+
+  const departmentOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All departments' },
+      ...departments.map((d) => ({ value: String(d.id), label: d.name }))
+    ],
+    [departments]
+  );
+  const batchOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All batches' },
+      ...batches.map((b) => ({ value: String(b.id), label: b.name }))
+    ],
+    [batches]
+  );
+  const sectionOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All sections' },
+      ...sections.map((s) => ({ value: String(s.id), label: s.name }))
+    ],
+    [sections]
+  );
+
+  useEffect(() => {
+    setDraft(filters);
+  }, [filters]);
+
+  const set = (patch: Partial<FacultyReportFilterState>) => {
+    setDraft((prev) => {
+      const next = { ...prev, ...patch };
+      if (patch.departmentId != null || patch.studentLevel != null) {
+        next.batchId = 'all';
+        next.sectionId = 'all';
+      }
+      if (patch.batchId != null) {
+        next.sectionId = 'all';
+      }
+      return next;
+    });
+  };
+
+  const handlePeriodChange = (v: string) => {
+    if (v === 'custom') {
+      set({
+        period: 'custom',
+        from: draft.from ?? semesterWindow?.minDate ?? null,
+        to: draft.to ?? semesterWindow?.maxDate ?? null
+      });
+      return;
+    }
+    set({ period: v, from: null, to: null });
   };
 
   return (
-    <div
-      className={cn(
-        'rounded-xl border bg-card/95 p-3 backdrop-blur supports-[backdrop-filter]:bg-card/80',
-        sticky && 'sticky top-0 z-20',
-        className
-      )}
+    <GlobalReportFilters
+      sticky={sticky}
+      className={className}
+      description='Uses the active university semester by default. Custom dates stay within that semester through today.'
+      storageKey={STORAGE_KEY}
+      getTemplate={() => draft}
+      onLoadTemplate={(raw) => {
+        if (isFacultyFilters(raw)) {
+          setDraft({
+            ...defaultFacultyReportFilters,
+            ...raw,
+            batchId: typeof raw.batchId === 'string' ? raw.batchId : 'all',
+            sectionId: typeof raw.sectionId === 'string' ? raw.sectionId : 'all',
+            from: typeof raw.from === 'string' ? raw.from : null,
+            to: typeof raw.to === 'string' ? raw.to : null
+          });
+        }
+      }}
+      onApply={() => onChange(draft)}
+      onReset={() => {
+        setDraft(defaultFacultyReportFilters);
+        onChange(defaultFacultyReportFilters);
+      }}
     >
-      <div className='mb-2 flex items-center gap-2 text-sm font-medium'>
-        <SlidersHorizontal className='text-muted-foreground size-4' />
-        Global filters
-      </div>
-      <div className='grid grid-cols-2 gap-2 md:grid-cols-3 xl:grid-cols-4'>
-        <Select value={filters.period} onValueChange={(v) => set({ period: v })}>
-          <SelectTrigger className='h-9 text-xs'>
-            <SelectValue placeholder='Period' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='3m'>Last 3 months</SelectItem>
-            <SelectItem value='6m'>Last 6 months</SelectItem>
-            <SelectItem value='12m'>Last 12 months</SelectItem>
-          </SelectContent>
-        </Select>
+      <GlobalFilterField label='Time range'>
+        <SearchSelect
+          options={[
+            { value: 'semester', label: 'Current semester' },
+            { value: 'custom', label: 'Custom dates' }
+          ]}
+          value={draft.period}
+          onValueChange={handlePeriodChange}
+          placeholder='Period'
+          searchPlaceholder='Search...'
+          className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+        />
+      </GlobalFilterField>
 
-        <Select value={filters.departmentId} onValueChange={(v) => set({ departmentId: v })}>
-          <SelectTrigger className='h-9 text-xs'>
-            <SelectValue placeholder='Department' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All departments</SelectItem>
-            {departments.map((d) => (
-              <SelectItem key={d.id} value={String(d.id)}>
-                {d.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+      {draft.period === 'custom' ? (
+        <ReportCustomDateFields
+          from={draft.from}
+          to={draft.to}
+          minDate={semesterWindow?.minDate ?? null}
+          maxDate={semesterWindow?.maxDate ?? null}
+          hint={
+            semesterWindow?.label
+              ? `Limited to ${semesterWindow.label} (from semester start through today).`
+              : 'Limited to the active semester start through today.'
+          }
+          onChange={(patch) => set(patch)}
+        />
+      ) : null}
 
-        <Select value={filters.studentLevel} onValueChange={(v) => set({ studentLevel: v })}>
-          <SelectTrigger className='h-9 text-xs'>
-            <SelectValue placeholder='Student level' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All levels</SelectItem>
-            <SelectItem value='UNDERGRADUATE'>Undergraduate</SelectItem>
-            <SelectItem value='POSTGRADUATE'>Postgraduate</SelectItem>
-          </SelectContent>
-        </Select>
+      <GlobalFilterField label='Department'>
+        <SearchSelect
+          options={departmentOptions}
+          value={draft.departmentId}
+          onValueChange={(v) => set({ departmentId: v })}
+          placeholder='Department'
+          searchPlaceholder='Search departments...'
+          emptyText='No departments found.'
+          className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+        />
+      </GlobalFilterField>
 
-        <Select value={filters.status} onValueChange={(v) => set({ status: v })}>
-          <SelectTrigger className='h-9 text-xs'>
-            <SelectValue placeholder='Status' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All statuses</SelectItem>
-            <SelectItem value='Good Standing'>Good Standing</SelectItem>
-            <SelectItem value='At Risk'>At Risk</SelectItem>
-            <SelectItem value='Probation'>Probation</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className='mt-2 flex flex-wrap gap-2'>
-        <Button size='sm' className='h-8'>
-          Apply filters
-        </Button>
-        <Button size='sm' variant='outline' className='h-8' onClick={handleReset}>
-          <RotateCcw className='mr-1 size-3.5' />
-          Reset
-        </Button>
-        <Button size='sm' variant='ghost' className='h-8' onClick={handleSaveTemplate}>
-          <Bookmark className='mr-1 size-3.5' />
-          Save template
-        </Button>
-      </div>
-    </div>
+      <GlobalFilterField label='Level'>
+        <SearchSelect
+          options={[
+            { value: 'all', label: 'All levels' },
+            { value: 'UNDERGRADUATE', label: 'Undergraduate' },
+            { value: 'POSTGRADUATE', label: 'Postgraduate' }
+          ]}
+          value={draft.studentLevel}
+          onValueChange={(v) => set({ studentLevel: v })}
+          placeholder='Student level'
+          searchPlaceholder='Search...'
+          className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+        />
+      </GlobalFilterField>
+
+      <GlobalFilterField label='Batch'>
+        <SearchSelect
+          options={batchOptions}
+          value={draft.batchId}
+          onValueChange={(v) => set({ batchId: v })}
+          placeholder='Batch'
+          searchPlaceholder='Search batches...'
+          emptyText='No batches found.'
+          className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+        />
+      </GlobalFilterField>
+
+      <GlobalFilterField label='Section'>
+        <SearchSelect
+          options={sectionOptions}
+          value={draft.sectionId}
+          onValueChange={(v) => set({ sectionId: v })}
+          disabled={draft.batchId === 'all'}
+          placeholder={draft.batchId === 'all' ? 'Pick batch first' : 'Section'}
+          searchPlaceholder='Search sections...'
+          emptyText='No sections found.'
+          className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+        />
+      </GlobalFilterField>
+
+      <GlobalFilterField label='Status'>
+        <SearchSelect
+          options={[
+            { value: 'all', label: 'All statuses' },
+            { value: 'Good Standing', label: 'Good Standing' },
+            { value: 'At Risk', label: 'At Risk' },
+            { value: 'Probation', label: 'Probation' }
+          ]}
+          value={draft.status}
+          onValueChange={(v) => set({ status: v })}
+          placeholder='Status'
+          searchPlaceholder='Search...'
+          className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+        />
+      </GlobalFilterField>
+    </GlobalReportFilters>
   );
 }

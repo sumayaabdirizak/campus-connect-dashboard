@@ -6,6 +6,7 @@ import {
   isUploadedOfflineQuiz,
   isUploadedQuizMissingPaper
 } from '@/lib/course-details/services/quiz-total-points';
+import { useCourseLiveNow } from '@/components/course-details/course-live-clock';
 import { getQuizWindowState } from './quiz-window-state';
 
 export function TeacherQuizCardHeader({
@@ -19,6 +20,7 @@ export function TeacherQuizCardHeader({
   anySelected: boolean;
   onToggleSelect: () => void;
 }) {
+  useCourseLiveNow();
   const windowState = getQuizWindowState(q);
   const questionCount = q.questions?.length ?? 0;
   const attemptsCount = q._count?.attempts ?? 0;

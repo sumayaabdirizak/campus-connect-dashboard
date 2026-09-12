@@ -2,7 +2,7 @@ import { prisma } from "../../../db/prisma.js";
 import { hasPermission } from "./bitHelpers.js";
 import { computeChannelPermissions } from "./computeChannelPermissions.js";
 import { computeServerPermissions } from "./computeServerPermissions.js";
-import { whereFromParam } from "../publicIdResolution.js";
+import { whereFromPublicId } from "../publicIdResolution.js";
 
 export function requireChannelPermission(permissionBit, paramName = "channelId") {
   const bit = BigInt(permissionBit);
@@ -11,7 +11,7 @@ export function requireChannelPermission(permissionBit, paramName = "channelId")
       const userId = Number(req.user?.id ?? req.user?.sub);
       if (!Number.isInteger(userId) || userId <= 0)
         return res.status(401).json({ error: "Unauthorized" });
-      const where = whereFromParam(req.params[paramName]);
+      const where = whereFromPublicId(req.params[paramName]);
       if (!where) {
         return res.status(400).json({ error: "Invalid channel id" });
       }
@@ -44,7 +44,7 @@ export function requireServerPermission(permissionBit, paramName = "serverId") {
       const userId = Number(req.user?.id ?? req.user?.sub);
       if (!Number.isInteger(userId) || userId <= 0)
         return res.status(401).json({ error: "Unauthorized" });
-      const where = whereFromParam(req.params[paramName]);
+      const where = whereFromPublicId(req.params[paramName]);
       if (!where) {
         return res.status(400).json({ error: "Invalid server id" });
       }

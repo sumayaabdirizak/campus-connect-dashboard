@@ -33,7 +33,7 @@ export const entityReportKeys = {
 function appendWindowParams(query: URLSearchParams, dateWindow: ReportWindowParams) {
   if (dateWindow.from) query.set('from', dateWindow.from);
   if (dateWindow.to) query.set('to', dateWindow.to);
-  if (dateWindow.status && dateWindow.status !== 'all') {
+  if (dateWindow.status) {
     query.set('status', dateWindow.status);
   }
 }

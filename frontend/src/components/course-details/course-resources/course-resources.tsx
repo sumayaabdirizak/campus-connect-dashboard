@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useModules, useResources } from '@/lib/course-details/queries/resources-queries';
 import { useAuthStore } from '@/lib/auth-store';
+import { useCourseLiveNow } from '@/components/course-details/course-live-clock';
 import { filterResources, visibleModulesForViewer } from './filter-resources';
 import type { ResourceTypeFilter } from './constants';
 import { ResourcesContent } from './resources-content';
@@ -20,6 +21,7 @@ export function CourseResources({
   courseId: string;
   isStudent?: boolean;
 }) {
+  useCourseLiveNow();
   const { user } = useAuthStore();
   const teacherId = typeof user?.id === 'number' ? user.id : Number(user?.id ?? 0);
 

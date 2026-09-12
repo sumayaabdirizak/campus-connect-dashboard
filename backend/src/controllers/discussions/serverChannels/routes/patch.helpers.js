@@ -1,7 +1,7 @@
 import { prisma } from "../../../../db/prisma.js";
 import { getIo } from "../../../../socket/hub.js";
 import { recordDiscussionAuditLog } from "../../../../services/discussions/auditLog.js";
-import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
+import { whereFromPublicId } from "../../../../services/discussions/publicIdResolution.js";
 
 export function normalizePatchTopic(topic) {
   if (topic === undefined || topic === null) return topic;
@@ -13,7 +13,7 @@ export function normalizePatchTopic(topic) {
 export async function resolvePatchCategory(categoryId, existing) {
   if (categoryId === undefined) return { categoryId: existing.categoryId };
   if (categoryId === null) return { categoryId: null };
-  const where = whereFromParam(categoryId);
+  const where = whereFromPublicId(categoryId);
   if (!where) return { error: "categoryId does not belong to this server" };
   const cat = await prisma.discussionChannelCategory.findFirst({
     where,

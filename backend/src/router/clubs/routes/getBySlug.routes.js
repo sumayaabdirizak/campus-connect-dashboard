@@ -40,7 +40,8 @@ router.get('/:slug', async (req, res, next) => {
       });
     }
 
-    const [formatted] = await attachViewerJoinState([formatClubForApi(club)], uid);
+    const [withStatus] = await attachViewerJoinState([club], uid);
+    const formatted = formatClubForApi(withStatus);
 
     const ownerId = club.ownerId == null ? null : Number(club.ownerId);
     res.json({

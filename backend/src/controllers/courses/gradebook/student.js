@@ -4,7 +4,7 @@ export async function getStudentGrades(req, res) {
   const offering = req.courseOffering;
   const studentId = Number(req.user.sub);
 
-  const [assignments, quizzes, courseMaxMarks] = await Promise.all([
+  const [assignments, quizzes, catalogMaxMarks] = await Promise.all([
     prisma.assignment.findMany({
       where: { courseOfferingId: offering.id, lifecycle: { publishStatus: 'PUBLISHED' } },
       select: { id: true, title: true, maxMarks: true, due_date: true },
@@ -59,7 +59,7 @@ export async function getStudentGrades(req, res) {
 
   for (const a of assignments) {
     const sub = subByAssignment.get(a.id);
-    const maxMarks = a.maxMarks || 100;
+    const maxMarks = a.maxMarks || 10;
     const rawGrade = sub?.gradeRow?.score ?? null;
     const pct = rawGrade != null ? (rawGrade / maxMarks) * 100 : null;
     if (rawGrade != null) {
@@ -105,6 +105,9 @@ export async function getStudentGrades(req, res) {
     });
   }
 
+  const overallMax =
+    items.reduce((s, it) => s + (it.maxMarks || 0), 0) || catalogMaxMarks;
+  const courseMaxMarks = overallMax;
   const overallPct =
     courseMaxMarks > 0 ? (earned / courseMaxMarks) * 100 : null;
 

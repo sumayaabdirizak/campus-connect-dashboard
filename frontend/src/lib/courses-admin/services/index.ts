@@ -19,7 +19,15 @@ export interface AdminCoursesResponse {
   courses: AdminCourse[];
 }
 
-export const fetchAdminCourses = (params?: { departmentId?: string }) => {
-  const query = params?.departmentId ? `?departmentId=${params.departmentId}` : '';
-  return apiClient<AdminCoursesResponse>(`/courses${query}`, { method: 'GET' });
+export const fetchAdminCourses = (params?: {
+  departmentId?: string;
+  facultyId?: string;
+}) => {
+  const qs = new URLSearchParams();
+  if (params?.departmentId) qs.set('departmentId', params.departmentId);
+  if (params?.facultyId) qs.set('facultyId', params.facultyId);
+  const query = qs.toString();
+  return apiClient<AdminCoursesResponse>(`/courses${query ? `?${query}` : ''}`, {
+    method: 'GET'
+  });
 };

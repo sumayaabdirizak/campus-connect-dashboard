@@ -1,5 +1,9 @@
 import type { PlatformAnalytics } from '@/lib/admin/services';
 import { kpisRow, sectionHtml, tableHtml } from '@/lib/reports/services/report-print-helpers';
+import {
+  adminReportId,
+  buildReportInvoiceHeader
+} from '@/lib/reports/services/report-print-invoice-header';
 import { escapeHtml, printHtmlDocument } from '@/lib/reports/services/report-print-shell';
 
 function formatScopeSummary(scope: PlatformAnalytics['scope']): string {
@@ -19,7 +23,7 @@ export interface ReportCatalogItem {
 }
 
 export function buildReportCatalog(data?: PlatformAnalytics): ReportCatalogItem[] {
-  const period = data?.scope.periodLabel ?? 'Last 6 months';
+  const period = data?.scope.periodLabel ?? 'Current semester';
   return [
     {
       id: 'academic-performance',
@@ -90,12 +94,16 @@ export function buildPlatformAnalyticsPrintHtml(
   const c = data.charts;
   const scope = formatScopeSummary(data.scope);
 
-  const header = `
-    <div class="inv-title-row">
-      <h1>Reports &amp; Analytics</h1>
-      <p class="inv-sub">${escapeHtml(scope)} · Generated ${escapeHtml(new Date().toLocaleString())}</p>
-    </div>
-  `;
+  const header = buildReportInvoiceHeader({
+    documentTitle: 'Reports & Analytics',
+    documentSubtitle: 'Platform analytics export',
+    reportId: adminReportId('overview'),
+    generatedAt: new Date().toLocaleString(),
+    periodLabel: data.scope.periodLabel,
+    fromLines: [],
+    toTitle: scope,
+    toLines: []
+  });
 
   const platform = sectionHtml(
     'Platform overview',
@@ -349,7 +357,6 @@ export function buildPlatformAnalyticsPrintHtml(
     insights,
     recentActivity,
     catalogSection,
-    `<div class="footer"><span><strong>Campus Connect</strong> — Platform analytics export</span><span>${escapeHtml(scope)}</span></div>`,
   ].join('');
 }
 

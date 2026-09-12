@@ -12,7 +12,7 @@ export function GradebookFooter({
   stickyCell: string;
 }) {
   const { columns, classAverages, courseMaxMarks } = data;
-  const overallMax = Math.min(courseMaxMarks, 100);
+  const overallMax = courseMaxMarks > 0 ? courseMaxMarks : 100;
   const classEarned = classAverages.overallEarned;
 
   return (

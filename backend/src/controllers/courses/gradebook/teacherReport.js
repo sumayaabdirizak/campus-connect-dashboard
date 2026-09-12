@@ -38,7 +38,7 @@ export async function getTeacherCourseReport(req, res) {
   const students = section?.studentRegistrations?.map((r) => r.student) ?? [];
   const assignmentIds = assignments.map((a) => a.id);
   const quizIds = quizzes.map((q) => q.id);
-  const maxMarksById = new Map(assignments.map((a) => [a.id, a.maxMarks || 100]));
+  const maxMarksById = new Map(assignments.map((a) => [a.id, a.maxMarks || 10]));
 
   const [submissions, attempts] = await Promise.all([
     assignmentIds.length
@@ -74,7 +74,7 @@ export async function getTeacherCourseReport(req, res) {
   for (const s of submissions) {
     const rawGrade = s.gradeRow?.score ?? null;
     if (rawGrade == null) continue;
-    const maxMarks = maxMarksById.get(s.assignmentId) || 100;
+    const maxMarks = maxMarksById.get(s.assignmentId) || 10;
     gradedSubmissions.push({ grade: (rawGrade / maxMarks) * 100 });
   }
   for (const a of attempts) {
@@ -112,7 +112,7 @@ export async function getTeacherCourseReport(req, res) {
   for (const s of submissions) {
     const rawGrade = s.gradeRow?.score ?? null;
     if (rawGrade == null) continue;
-    const maxMarks = maxMarksById.get(s.assignmentId) || 100;
+    const maxMarks = maxMarksById.get(s.assignmentId) || 10;
     const list = subByStudent.get(s.studentId) ?? [];
     list.push((rawGrade / maxMarks) * 100);
     subByStudent.set(s.studentId, list);

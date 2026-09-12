@@ -25,13 +25,17 @@ import {
 import { MarksTab } from './marks-tab';
 import { ScheduleTab } from './schedule-tab';
 import type { QuizSettingsDialogProps } from './types';
+import {
+  duplicateQuizTitleMessage,
+  isDuplicateCourseTitle
+} from '@/lib/course-details/validate-unique-title';
 
 export function QuizSettingsDialog({
   open,
   onOpenChange,
   editing,
   pending,
-  modules = [],
+  existingQuizzes = [],
   onSubmit
 }: QuizSettingsDialogProps) {
   const [form, setForm] = useState(BLANK);
@@ -56,9 +60,13 @@ export function QuizSettingsDialog({
       toast.error(err);
       return;
     }
+    if (isDuplicateCourseTitle(form.title, existingQuizzes, editing?.id)) {
+      toast.error(duplicateQuizTitleMessage(form.title));
+      return;
+    }
     const data = toPayload(form);
     if (editing) onSubmit({ mode: 'edit', quizId: editing.id, data });
-    else     onSubmit({ mode: 'create', data });
+    else onSubmit({ mode: 'create', data });
   };
 
   return (
@@ -94,7 +102,7 @@ export function QuizSettingsDialog({
           </TabsList>
 
           <TabsContent value='basics'>
-            <BasicsTab form={form} setForm={setForm} modules={modules} />
+            <BasicsTab form={form} setForm={setForm} />
           </TabsContent>
           <TabsContent value='schedule'>
             <ScheduleTab form={form} setForm={setForm} />

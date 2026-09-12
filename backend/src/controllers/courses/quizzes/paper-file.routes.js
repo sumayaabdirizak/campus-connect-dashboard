@@ -13,7 +13,12 @@ export function register(router) {
     '/:quizId/paper-file',
     uploadRateLimit,
     requireQuizManage(),
-    quizPaperUpload.single('file'),
+    (req, res, next) => {
+      quizPaperUpload.single('file')(req, res, (err) => {
+        if (err) return res.status(400).json({ message: err.message || 'Upload failed' });
+        next();
+      });
+    },
     asyncHandler(async (req, res) => {
       const quiz = req.quiz;
       if (!isUploadedOfflineQuiz(quiz)) {

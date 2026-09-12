@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Icons } from '@/components/icons';
 import type { AcceptInviteResponse, ClubInvitePreview } from '@/lib/clubs/types';
-import { messagesClubHref, messagesServerHref } from '@/lib/inbox/services/messages-href';
+import { messagesClubHref } from '@/lib/inbox/services/messages-href';
 
 export interface InviteAcceptSuccessProps {
   club: ClubInvitePreview['club'];
@@ -38,14 +38,14 @@ export function InviteAcceptSuccess({ club, acceptResult }: InviteAcceptSuccessP
               View Club
             </Button>
           </Link>
-          {acceptResult.club?.serverId && (
-            <Link href={messagesServerHref(String(acceptResult.club.serverId))}>
+          {slug ? (
+            <Link href={messagesClubHref(slug)}>
               <Button size='sm' style={{ backgroundColor: themeColor }}>
                 <Icons.chat className='mr-1.5 h-3.5 w-3.5' />
                 Open Chat
               </Button>
             </Link>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

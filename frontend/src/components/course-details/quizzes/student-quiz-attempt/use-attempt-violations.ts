@@ -5,6 +5,21 @@ import { toast } from 'sonner';
 import { useReportViolation, useSubmitQuiz } from '@/lib/course-details/queries/quizzes-queries';
 import type { QuizAttempt, QuizAttemptAnswer } from '@/lib/course-details/services/quizzes-types';
 
+function isScreenshotShortcut(e: KeyboardEvent): boolean {
+  const key = e.key;
+  const code = e.code;
+  if (key === 'PrintScreen' || code === 'PrintScreen') return true;
+  // macOS screenshot shortcuts
+  if (e.metaKey && e.shiftKey && (key === '3' || key === '4' || key === '5')) {
+    return true;
+  }
+  // Win+Shift+S (Snipping Tool) — Win is metaKey in Chromium on Windows
+  if (e.metaKey && e.shiftKey && (key === 's' || key === 'S')) return true;
+  // Common overlay / extension shortcuts
+  if (e.ctrlKey && e.shiftKey && (key === 's' || key === 'S')) return true;
+  return false;
+}
+
 export function useAttemptViolations(opts: {
   attemptId: number;
   quizId: number;
@@ -79,13 +94,41 @@ export function useAttemptViolations(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [autoClosed]);
 
+  // Tab switch / leave quiz window (visibility + focus loss to another app)
   useEffect(() => {
     if (previewMode) return;
+    let blurTimer: ReturnType<typeof setTimeout> | null = null;
+
     const onVis = () => {
       if (document.hidden) reportViolation('visibility');
     };
+
+    const onBlur = () => {
+      if (blurTimer) clearTimeout(blurTimer);
+      blurTimer = setTimeout(() => {
+        // Visibility already covers hidden tabs; blur catches Alt-Tab / other apps.
+        if (!document.hasFocus()) {
+          reportViolation('visibility');
+        }
+      }, 200);
+    };
+
+    const onFocus = () => {
+      if (blurTimer) {
+        clearTimeout(blurTimer);
+        blurTimer = null;
+      }
+    };
+
     document.addEventListener('visibilitychange', onVis);
-    return () => document.removeEventListener('visibilitychange', onVis);
+    window.addEventListener('blur', onBlur);
+    window.addEventListener('focus', onFocus);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('blur', onBlur);
+      window.removeEventListener('focus', onFocus);
+      if (blurTimer) clearTimeout(blurTimer);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewMode, autoClosed, submitPending]);
 
@@ -102,22 +145,32 @@ export function useAttemptViolations(opts: {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewMode, autoClosed, submitPending]);
 
+  // Screenshot shortcuts (PrintScreen fires on keyup on many Windows browsers)
   useEffect(() => {
     if (previewMode) return;
     const onScreenshotKey = (e: KeyboardEvent) => {
-      const isPrintScreen = e.key === 'PrintScreen';
-      const isMacFullScreen = e.metaKey && e.shiftKey && e.key === '3';
-      const isMacSelection = e.metaKey && e.shiftKey && e.key === '4';
-      const isMacToolbar = e.metaKey && e.shiftKey && e.key === '5';
-      if (isPrintScreen || isMacFullScreen || isMacSelection || isMacToolbar) {
-        e.preventDefault();
-        reportViolation('screenshot');
-      }
+      if (!isScreenshotShortcut(e)) return;
+      e.preventDefault();
+      reportViolation('screenshot');
     };
-    window.addEventListener('keydown', onScreenshotKey);
-    return () => window.removeEventListener('keydown', onScreenshotKey);
+    window.addEventListener('keydown', onScreenshotKey, true);
+    window.addEventListener('keyup', onScreenshotKey, true);
+    return () => {
+      window.removeEventListener('keydown', onScreenshotKey, true);
+      window.removeEventListener('keyup', onScreenshotKey, true);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [previewMode, autoClosed, submitPending]);
+
+  // Soften screenshot / save-as via context menu during the attempt
+  useEffect(() => {
+    if (previewMode) return;
+    const onContextMenu = (e: MouseEvent) => {
+      e.preventDefault();
+    };
+    document.addEventListener('contextmenu', onContextMenu);
+    return () => document.removeEventListener('contextmenu', onContextMenu);
+  }, [previewMode]);
 
   useEffect(() => {
     if (!activeWarning) return;

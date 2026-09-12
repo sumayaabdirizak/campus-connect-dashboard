@@ -1,7 +1,7 @@
 import { app } from "./app.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import { assertEnv, env, getSocketCorsAllowlist } from "./config/env.js";
+import { assertEnv, env, getSocketCorsAllowlist, isOriginAllowed } from "./config/env.js";
 import { prisma } from "./db/prisma.js";
 import { setIo } from "./socket/hub.js";
 import { createChatHandlers } from "./socket/handlers/chat.js";
@@ -30,8 +30,7 @@ const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
     origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      if (socketAllowedOrigins.includes(origin)) return callback(null, true);
+      if (isOriginAllowed(origin, socketAllowedOrigins)) return callback(null, true);
       return callback(new Error(`Socket CORS blocked for origin: ${origin}`));
     },
     methods: ["GET", "POST"],

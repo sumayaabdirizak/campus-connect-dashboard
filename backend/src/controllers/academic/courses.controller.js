@@ -3,8 +3,12 @@ import { respondInternalError } from "../../utils/httpError.js";
 
 export const getAllCourses = async (req, res) => {
   try {
-    const { departmentId } = req.query;
-    const where = departmentId ? { departmentId: Number(departmentId) } : {};
+    const { departmentId, facultyId } = req.query;
+    const where = departmentId
+      ? { departmentId: Number(departmentId) }
+      : facultyId
+        ? { department: { facultyId: Number(facultyId) } }
+        : {};
     const courses = await prisma.course.findMany({
       where,
       include: {

@@ -55,7 +55,7 @@ export function ChatFileCard({
   const shell = cn(
     'block w-full max-w-[280px] overflow-hidden rounded-lg border text-left transition-colors',
     isOwn
-      ? 'border-white/25 bg-white text-[#101828] shadow-sm hover:bg-white/95'
+      ? 'border-white/25 bg-white text-[#101828] shadow-sm hover:bg-white/95 dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted/40'
       : 'border-[#E5E7EB] bg-white text-[#101828] hover:bg-[#F9FAFB] dark:border-border dark:bg-card dark:text-foreground dark:hover:bg-muted/40'
   );
 

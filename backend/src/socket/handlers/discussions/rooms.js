@@ -7,6 +7,7 @@ const DISCUSSION_GROUP_DM_ROOM_PREFIX = "groupdm:";
  */
 export function createDiscussionRoomHelpers(io) {
   const userDiscussionRooms = new Map();
+  const userChannelRooms = new Map();
   const userGroupDmRooms = new Map();
 
   function discussionRoom(groupId) {
@@ -38,6 +39,25 @@ export function createDiscussionRoomHelpers(io) {
 
   function getRememberedDiscussionRooms(userId) {
     return Array.from(userDiscussionRooms.get(Number(userId)) ?? []);
+  }
+
+  function rememberChannelRoom(userId, channelId) {
+    const key = Number(userId);
+    const set = userChannelRooms.get(key) ?? new Set();
+    set.add(Number(channelId));
+    userChannelRooms.set(key, set);
+  }
+
+  function forgetChannelRoom(userId, channelId) {
+    const key = Number(userId);
+    const set = userChannelRooms.get(key);
+    if (!set) return;
+    set.delete(Number(channelId));
+    if (set.size === 0) userChannelRooms.delete(key);
+  }
+
+  function getRememberedChannelRooms(userId) {
+    return Array.from(userChannelRooms.get(Number(userId)) ?? []);
   }
 
   function rememberGroupDmRoom(userId, groupDmId) {
@@ -92,6 +112,9 @@ export function createDiscussionRoomHelpers(io) {
     rememberDiscussionRoom,
     forgetDiscussionRoom,
     getRememberedDiscussionRooms,
+    rememberChannelRoom,
+    forgetChannelRoom,
+    getRememberedChannelRooms,
     rememberGroupDmRoom,
     forgetGroupDmRoom,
     getRememberedGroupDmRooms,

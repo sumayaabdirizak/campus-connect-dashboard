@@ -9,6 +9,7 @@ import { ListSkeleton } from '../../_shared/list-skeleton';
 import { useQueryClient } from '@/lib/async-query';
 import { getAttemptReview } from '@/lib/course-details/services/quizzes-service';
 import { quizKeys, useAvailableQuizzes, useStartQuiz } from '@/lib/course-details/queries/quizzes-queries';
+import { useCourseLiveNow } from '@/components/course-details/course-live-clock';
 import { toast } from 'sonner';
 import type { QuizAttempt, QuizStartResponse } from '@/lib/course-details/services/quizzes-types';
 import { StudentQuizList } from './student-quiz-list';
@@ -18,6 +19,7 @@ import { CourseTabHeader } from '../../_shared/course-tab-header';
 import { CourseTabPage } from '../../_shared/course-tab-page';
 
 export function StudentView({ courseId }: { courseId: string }) {
+  useCourseLiveNow();
   const { data: quizzes = [], isLoading } = useAvailableQuizzes(courseId, { live: true });
   const queryClient = useQueryClient();
   const startMutation = useStartQuiz();

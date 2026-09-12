@@ -1,5 +1,6 @@
 'use client';
 
+import { courseOfferingPath } from '@/lib/course-offering-href';
 import { FileText, ClipboardCheck, Megaphone } from 'lucide-react';
 import { format, isToday, isTomorrow } from 'date-fns';
 
@@ -28,8 +29,10 @@ export const ACTION_BY_AUDIENCE: Record<'student' | 'teacher', Record<DeadlineKi
 
 export function timelineHrefFor(d: TimelineItem): string {
   if (d.kind === 'announcement' || d.kind === 'event') return '/dashboard/calendar';
-  const tab = d.kind === 'quiz' ? 'quizzes' : 'assignments';
-  return d.courseOfferingId ? `/dashboard/courses/${d.courseOfferingId}?tab=${tab}` : '/dashboard/calendar';
+  if (!d.courseOfferingId) return '/dashboard/calendar';
+  return courseOfferingPath(d.courseOfferingId, {
+    tab: d.kind === 'quiz' ? 'quizzes' : 'assignments',
+  });
 }
 
 export function timelineDayHeading(d: Date): string {

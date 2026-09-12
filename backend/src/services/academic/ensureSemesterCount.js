@@ -1,5 +1,6 @@
 import { prisma } from "../../db/prisma.js";
 import {
+  buildAcademicYearBounds,
   buildDefaultSemesterRows,
   getCurrentAcademicYearBounds,
 } from "./academicCalendar.js";
@@ -13,7 +14,7 @@ import { getNextSemesterSequence } from "./semesterSequence.js";
 export const ACTIVE_ACADEMIC_YEAR_WINDOW = 6;
 
 async function ensureYearWithTwoSemesters(startYear) {
-  const bounds = getCurrentAcademicYearBounds(new Date(startYear, 8, 1));
+  const bounds = buildAcademicYearBounds(startYear);
   let year = await prisma.academicYear.findUnique({ where: { name: bounds.name } });
   let createdYear = false;
 

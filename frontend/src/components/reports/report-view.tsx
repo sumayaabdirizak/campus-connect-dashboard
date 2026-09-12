@@ -45,7 +45,7 @@ import { TITLE_LG } from './report-theme';
 function parsePeriod(raw: string | null | undefined): string {
   if (raw === 'custom') return 'custom';
   if (raw && REPORT_PERIODS.some((p) => p.id === raw)) return raw;
-  return 'all';
+  return 'semester';
 }
 
 function filtersFromParams(
@@ -61,7 +61,7 @@ function filtersFromParams(
     periodPreset,
     dateRange:
       periodPreset === 'custom' ? dateRange : presetToDateRange(periodPreset),
-    status: sp.get('status') ?? 'all'
+    status: sp.get('status') ?? (scope === 'batch' ? 'ACTIVE' : 'all')
   };
 }
 
@@ -103,7 +103,7 @@ export function ReportView() {
       changed = true;
     }
     if (!params.get('period')) {
-      params.set('period', 'all');
+      params.set('period', 'semester');
       changed = true;
     }
     const next = params.toString();
@@ -315,11 +315,24 @@ export function ReportView() {
     });
   };
 
+  const handleResetFilters = () => {
+    const next: ReportFilterValues = {
+      scope: appliedFilters.scope,
+      periodPreset: 'semester',
+      dateRange: presetToDateRange('semester'),
+      status: appliedFilters.scope === 'batch' ? 'ACTIVE' : 'all'
+    };
+    setPendingFilters(next);
+    setAppliedFilters(next);
+    applyFilters(next);
+  };
+
   const filtersPanel = (
     <ReportFiltersPanel
       values={pendingFilters}
       onChange={handleFilterChange}
       onGenerate={handleGenerate}
+      onReset={handleResetFilters}
       isGenerating={listQuery.isFetching && !subjectId}
     />
   );

@@ -1,102 +1,74 @@
 'use client';
 
 import { format } from 'date-fns';
-import { useMySubmission } from '@/lib/course-details/queries/assignments-queries';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
+import { useCourseLiveNow } from '@/components/course-details/course-live-clock';
+import { cn } from '@/lib/utils';
 import {
   getAssignmentDisplayStatus,
-  resolveAssignmentCardTiming,
+  resolveAssignmentCardTiming
 } from './assignment-card-state';
-import { CardDetailsPanel } from './card-details-panel';
-import { CardSummaryRow } from './card-summary-row';
+import {
+  AssignmentCardBody,
+  AssignmentCardFooter,
+  AssignmentCardHeader
+} from './card-summary-row';
 
 export function StudentAssignmentCard({
   assignment: a,
-  expanded,
-  onExpandedChange,
-  submitMode,
-  onSubmitModeChange,
-  submitUrl,
-  onSubmitUrlChange,
-  pendingFile,
-  onPendingFileChange,
-  fileInputRef,
-  isSubmitting,
-  onSubmit,
+  onOpen
 }: {
   assignment: Assignment;
-  expanded: boolean;
-  onExpandedChange: (open: boolean) => void;
-  submitMode: 'link' | 'file';
-  onSubmitModeChange: (mode: 'link' | 'file') => void;
-  submitUrl: string;
-  onSubmitUrlChange: (v: string) => void;
-  pendingFile: File | null;
-  onPendingFileChange: (f: File | null) => void;
-  fileInputRef: React.MutableRefObject<HTMLInputElement | null>;
-  isSubmitting: boolean;
-  onSubmit: () => void;
+  onOpen: () => void;
 }) {
+  useCourseLiveNow();
+
   const listSub = a.submissions?.[0];
-  const { data: rawMySubmission } = useMySubmission(expanded ? a.id : null, { live: true });
-
-  const extension =
-    rawMySubmission?._extension ?? a._extension ?? null;
-  const mySubmission =
-    rawMySubmission && !('_noSubmission' in rawMySubmission) ? rawMySubmission : null;
-  const groupInfo = rawMySubmission?._groupInfo ?? null;
-
-  const timing = resolveAssignmentCardTiming(a, mySubmission, groupInfo, extension);
-  const grade = mySubmission?.grade ?? listSub?.grade ?? null;
-  const isLate = mySubmission?.is_late ?? false;
+  const timing = resolveAssignmentCardTiming(a, null, null, a._extension ?? null);
   const status = getAssignmentDisplayStatus(timing, {
-    grade,
-    isLate,
-    maxMarks: a.maxMarks ?? 100,
+    grade: listSub?.grade ?? null,
+    isLate: listSub?.is_late ?? false,
+    maxMarks: a.maxMarks ?? 100
   });
 
-  return (
-    <article className='min-w-0 rounded-xl border bg-card p-5 text-foreground'>
-      <CardSummaryRow
-        title={a.title}
-        description={a.description}
-        dueShort={format(timing.due, 'MMM d')}
-        dueLine={
-          timing.hasExtension
-            ? `Extended to ${format(timing.due, 'MMM d, h:mm a')}`
-            : `Due ${format(timing.due, 'MMM d, h:mm a')}`
-        }
-        maxMarks={a.maxMarks ?? 100}
-        attachmentCount={a.attachments?.length ?? 0}
-        status={status}
-        expanded={expanded}
-        onToggle={() => onExpandedChange(!expanded)}
-      />
+  const dueShort = format(timing.due, 'MMM d');
+  const dueLine = timing.hasExtension
+    ? `Extended to ${format(timing.due, 'MMM d, h:mm a')}`
+    : `Due ${format(timing.due, 'MMM d, h:mm a')}`;
 
-      {expanded ? (
-        <div
-          id={`assignment-details-${a.id}`}
-          className='mt-4 border-t border-border/70 pt-4'
-        >
-          <CardDetailsPanel
-            assignment={a}
-            timing={timing}
-            mySubmission={mySubmission}
-            groupInfo={groupInfo}
-            submitProps={{
-              submitMode,
-              onSubmitModeChange,
-              submitUrl,
-              onSubmitUrlChange,
-              pendingFile,
-              onPendingFileChange,
-              fileInputRef,
-              isSubmitting,
-              onSubmit,
-            }}
-          />
-        </div>
-      ) : null}
+  return (
+    <article
+      role='button'
+      tabIndex={0}
+      aria-label={`Open assignment ${a.title}`}
+      onClick={onOpen}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onOpen();
+        }
+      }}
+      className={cn(
+        'flex h-full min-h-[15.5rem] min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border bg-card text-foreground outline-none transition-colors',
+        'hover:border-border hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring'
+      )}
+    >
+      <div className='shrink-0 border-b border-border/60 bg-card px-5 pt-5 pb-3'>
+        <AssignmentCardHeader
+          dueShort={dueShort}
+          maxMarks={a.maxMarks ?? 100}
+          attachmentCount={a.attachments?.length ?? 0}
+          status={status}
+        />
+      </div>
+
+      <div className='min-h-0 flex-1 px-5 py-3'>
+        <AssignmentCardBody title={a.title} description={a.description} />
+      </div>
+
+      <div className='shrink-0 border-t border-border/60 bg-card px-5 pt-3 pb-5'>
+        <AssignmentCardFooter dueLine={dueLine} onOpen={onOpen} />
+      </div>
     </article>
   );
 }

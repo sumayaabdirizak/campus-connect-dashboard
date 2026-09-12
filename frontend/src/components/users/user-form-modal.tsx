@@ -25,9 +25,30 @@ type Props = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   user?: EditUser;
+  defaultRole?: string;
+  /** When true, role cannot be changed in the create form (page already chose Student/Lecturer/Dean). */
+  lockRole?: boolean;
 };
 
-export function UserFormModal({ open, onOpenChange, user }: Props) {
+const CREATE_TITLES: Record<string, string> = {
+  STUDENT: 'Add Student',
+  TEACHER: 'Add Lecturer',
+  DEAN: 'Add Dean'
+};
+
+const CREATE_SUBMIT: Record<string, string> = {
+  STUDENT: 'Create Student',
+  TEACHER: 'Create Lecturer',
+  DEAN: 'Create Dean'
+};
+
+const ROLE_NOUN: Record<string, string> = {
+  STUDENT: 'Student',
+  TEACHER: 'Lecturer',
+  DEAN: 'Dean'
+};
+
+export function UserFormModal({ open, onOpenChange, user, defaultRole, lockRole = false }: Props) {
   const isEdit = Boolean(user);
   const [form, setForm] = useState<UserFormState>(EMPTY_USER_FORM);
   const createMutation = useRegisterUser();
@@ -60,9 +81,9 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
       full_name: user?.full_name || '',
       email: user?.email || '',
       number: user?.number || '',
-      role: user?.role || 'STUDENT'
+      role: user?.role || defaultRole || 'STUDENT'
     });
-  }, [open, user]);
+  }, [open, user, defaultRole]);
 
   const patch = (next: Partial<UserFormState>) => setForm((f) => ({ ...f, ...next }));
   const onInput = (e: React.ChangeEvent<HTMLInputElement>) =>
@@ -104,7 +125,9 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
         const id = created?.user?.number;
         showToast(
           'success',
-          id ? `User created — University ID: ${id}` : 'User created'
+          id
+            ? `${ROLE_NOUN[form.role] ?? 'User'} created — University ID: ${id}`
+            : `${ROLE_NOUN[form.role] ?? 'User'} created`
         );
         onOpenChange(false);
         setForm(EMPTY_USER_FORM);
@@ -114,14 +137,16 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
   }
 
   const submitDisabled = isUserFormSubmitDisabled(form, isEdit);
+  const createTitle = CREATE_TITLES[form.role] ?? 'Add User';
+  const createSubmit = CREATE_SUBMIT[form.role] ?? 'Create User';
 
   return (
     <PosFormModal
       open={open}
       onOpenChange={onOpenChange}
-      title={isEdit ? 'Edit User' : 'Add User'}
+      title={isEdit ? 'Edit User' : createTitle}
       formId={FORM_ID}
-      submitLabel={isEdit ? 'Save Changes' : 'Create User'}
+      submitLabel={isEdit ? 'Save Changes' : createSubmit}
       submitIcon={isEdit ? 'check' : 'add'}
       submitting={isPending}
       submitDisabled={submitDisabled}
@@ -131,10 +156,10 @@ export function UserFormModal({ open, onOpenChange, user }: Props) {
         <UserFormIdentityFields
           form={form}
           isEdit={isEdit}
+          lockRole={lockRole}
           departmentOptions={departmentOptions}
           departmentsLoading={departmentsLoading}
           batchNamePreview={batchNamePreview}
-          faculties={faculties}
           onChange={patch}
           onInput={onInput}
         />

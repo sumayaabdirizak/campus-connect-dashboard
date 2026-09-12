@@ -8,7 +8,47 @@
  */
 import { expandFacultyAnnouncementTree } from './expandFacultyAnnouncementTree.js';
 
+// The announcements page fires list/unread-count/drafts-count requests in
+// parallel, and each independently needs this scope — without sharing, three
+// concurrent requests do three copies of the same deep-join lookup. A short
+// TTL plus in-flight de-duplication collapses those into one DB round trip
+// without risking stale enrollment data for more than a moment.
+// Kept short: this only needs to survive the handful of milliseconds between
+// the announcements page's parallel list/unread/drafts requests, not minutes.
+// invalidateUserAnnouncementScope() covers the known mutation path (section
+// assignment); a short TTL bounds staleness everywhere else that isn't wired up yet.
+const SCOPE_CACHE_TTL_MS = 8_000;
+const scopeCache = new Map(); // userId -> { value, expiresAt }
+const scopeInFlight = new Map(); // userId -> Promise
+
+/** Call after any admin action that changes a user's role/faculty/department/batch/section,
+ * so the next scope lookup doesn't serve a stale pre-change value for up to SCOPE_CACHE_TTL_MS. */
+export function invalidateUserAnnouncementScope(userId) {
+  scopeCache.delete(userId);
+  scopeInFlight.delete(userId);
+}
+
 export async function loadUserAnnouncementScope(prisma, userId) {
+  const cached = scopeCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const inFlight = scopeInFlight.get(userId);
+  if (inFlight) return inFlight;
+
+  const promise = loadUserAnnouncementScopeUncached(prisma, userId)
+    .then((value) => {
+      scopeCache.set(userId, { value, expiresAt: Date.now() + SCOPE_CACHE_TTL_MS });
+      return value;
+    })
+    .finally(() => {
+      scopeInFlight.delete(userId);
+    });
+
+  scopeInFlight.set(userId, promise);
+  return promise;
+}
+
+async function loadUserAnnouncementScopeUncached(prisma, userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {

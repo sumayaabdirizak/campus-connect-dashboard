@@ -7,6 +7,7 @@ import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import { cn } from '@/lib/utils';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import { serverNowDate } from '@/lib/server-clock';
+import { useCourseLiveNow } from '@/components/course-details/course-live-clock';
 import { assignmentMarksLabel } from './assignments-table-utils';
 import { AssignmentRowActions } from './assignment-row-actions';
 
@@ -33,6 +34,7 @@ export function AssignmentListRow({
   onEdit,
   onDelete
 }: AssignmentListRowProps) {
+  useCourseLiveNow();
   const attCount = a.attachments?.length ?? 0;
   const dueAt = new Date(a.due_date);
   const isOverdue = !a.is_draft && dueAt < serverNowDate();

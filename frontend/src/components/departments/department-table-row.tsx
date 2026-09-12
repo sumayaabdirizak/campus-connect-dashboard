@@ -1,8 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import type { Department } from '@/lib/departments/types';
 import { programLevels } from '@/lib/departments/services/departments-table-utils';
+import { academicScopeHref } from '@/lib/academic-scope/scope-href';
 import { DepartmentRowActions } from './department-row-actions';
 
 export function DepartmentTableRow({
@@ -13,6 +15,10 @@ export function DepartmentTableRow({
   col: (id: string) => boolean;
 }) {
   const levels = programLevels(department);
+  const programsHref = academicScopeHref('/dashboard/programs', {
+    facultyId: department.facultyId,
+    departmentId: department.id
+  });
 
   return (
     <PosTableRow>
@@ -23,7 +29,10 @@ export function DepartmentTableRow({
       ) : null}
       {col('name') ? (
         <PosTableCell>
-          <p className='text-sm font-medium'>{department.name}</p>
+          <Link href={programsHref} className='text-sm font-medium text-primary hover:underline'>
+            {department.name}
+          </Link>
+          <p className='mt-0.5 text-xs text-muted-foreground'>Next: programs</p>
         </PosTableCell>
       ) : null}
       {col('code') ? (

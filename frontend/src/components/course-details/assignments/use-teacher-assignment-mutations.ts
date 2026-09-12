@@ -14,6 +14,10 @@ import {
 import { markBudgetKeys } from '@/lib/course-details/queries/mark-budget-queries';
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import type { AssignmentFormValues } from './create-assignment-form';
+import {
+  duplicateAssignmentTitleMessage,
+  isDuplicateCourseTitle
+} from '@/lib/course-details/validate-unique-title';
 
 type MutateSetters = {
   courseId: string;
@@ -110,6 +114,12 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
 
   const handleEditAssignment = async (values: AssignmentFormValues) => {
     if (!s.editTarget) return;
+    const existing =
+      queryClient.getQueryData<Assignment[]>(assignmentKeys.list(s.courseId)) ?? [];
+    if (isDuplicateCourseTitle(values.title, existing, s.editTarget.id)) {
+      toast.error(duplicateAssignmentTitleMessage(values.title));
+      return;
+    }
     try {
       const updated = await updateAssignmentMutation.mutateAsync({
         id: s.editTarget.id,
@@ -120,7 +130,7 @@ export function useTeacherAssignmentMutations(s: MutateSetters) {
           due_date: new Date(values.due_date).toISOString(),
           workMode: values.workMode,
           gradingScope: values.gradingScope,
-          lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0,
+          lateWindowMinutes: values.allowLate ? -1 : 0,
           maxMarks: values.maxMarks
         }
       });

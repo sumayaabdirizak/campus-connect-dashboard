@@ -71,7 +71,7 @@ export const getCourseOfferings = async (req, res) => {
 export const createCourseOffering = async (req, res) => {
   try {
     const { facultyId } = req;
-    const { courseId, sectionId, semesterId, academicYearId } = req.body;
+    const { courseId, sectionId, semesterId, academicYearId, teacherId } = req.body;
 
     if (!courseId || !sectionId || !semesterId || !academicYearId) {
       return res
@@ -94,8 +94,40 @@ export const createCourseOffering = async (req, res) => {
       return res.status(403).json({ message: "Section does not belong to your faculty." });
     }
 
-    const teacherCount = await prisma.teacherAssigning.count({ where: { courseId: Number(courseId) } });
-    if (teacherCount === 0) {
+    let resolvedTeacherId =
+      teacherId != null && teacherId !== "" ? Number(teacherId) : null;
+
+    if (resolvedTeacherId) {
+      const teacher = await prisma.user.findFirst({
+        where: {
+          id: resolvedTeacherId,
+          lecturerProfile: { faculties: { some: { facultyId } } },
+        },
+        select: { id: true },
+      });
+      if (!teacher) {
+        return res.status(403).json({ message: "Teacher is not affiliated with your faculty." });
+      }
+      await prisma.teacherAssigning.upsert({
+        where: {
+          teacherId_courseId: {
+            teacherId: resolvedTeacherId,
+            courseId: Number(courseId),
+          },
+        },
+        create: { teacherId: resolvedTeacherId, courseId: Number(courseId) },
+        update: {},
+      });
+    } else {
+      const existing = await prisma.teacherAssigning.findFirst({
+        where: { courseId: Number(courseId) },
+        select: { teacherId: true },
+        orderBy: { assigned_at: "asc" },
+      });
+      resolvedTeacherId = existing?.teacherId ?? null;
+    }
+
+    if (!resolvedTeacherId) {
       return res.status(400).json({
         message: "Assign at least one teacher to this course before creating an offering.",
       });
@@ -107,6 +139,7 @@ export const createCourseOffering = async (req, res) => {
         sectionId: Number(sectionId),
         semesterId: Number(semesterId),
         academicYearId: Number(academicYearId),
+        teacherId: resolvedTeacherId,
       },
       include: {
         course: {
@@ -120,6 +153,7 @@ export const createCourseOffering = async (req, res) => {
         section: { include: { batch: { include: { program: true } } } },
         semester: true,
         academicYear: true,
+        teacher: { select: { id: true, full_name: true } },
       },
     });
 

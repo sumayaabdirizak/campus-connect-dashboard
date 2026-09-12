@@ -139,6 +139,10 @@ export function setFetchError(serialized: string, err: Error) {
   lastFetchedAt.set(serialized, Date.now());
 }
 
+export function clearCachedError(serialized: string) {
+  errorCache.delete(serialized);
+}
+
 export function getInFlightFetch<T>(serialized: string): Promise<T> | undefined {
   return inFlightFetches.get(serialized) as Promise<T> | undefined;
 }

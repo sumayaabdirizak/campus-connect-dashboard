@@ -49,6 +49,17 @@ export type RefreshOutcome =
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+/** Requests hang instead of failing fast if the backend (or something it calls
+ *  out to, like the university API) never responds. Cap every fetch so a
+ *  stuck request surfaces as an error instead of an endless spinner. */
+const DEFAULT_TIMEOUT_MS = 20_000;
+
+/** Combines the timeout with a caller-supplied signal, if any. */
+function withTimeout(signal?: AbortSignal | null, timeoutMs = DEFAULT_TIMEOUT_MS): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+}
+
 async function requestRefresh(): Promise<{
   outcome: RefreshOutcome;
   /** Worth an immediate second attempt? */
@@ -58,10 +69,11 @@ async function requestRefresh(): Promise<{
   try {
     response = await fetch(`${API_BASE_URL}/auth/refresh`, {
       method: 'POST',
-      credentials: 'include'
+      credentials: 'include',
+      signal: withTimeout()
     });
   } catch {
-    // Offline, DNS failure, server not listening — nothing said about the session.
+    // Offline, DNS failure, server not listening, or timed out — nothing said about the session.
     return { outcome: 'unavailable', retryable: true };
   }
 
@@ -109,10 +121,16 @@ export async function tryRefreshAccessToken(): Promise<RefreshOutcome> {
 /** Exported for multipart uploads (XHR) that cannot use `apiClient`. */
 export async function ensureCsrfToken(): Promise<string | null> {
   if (csrfTokenInMemory) return csrfTokenInMemory;
-  const csrfResponse = await fetch(`${API_BASE_URL}/auth/csrf`, {
-    method: 'GET',
-    credentials: 'include'
-  });
+  let csrfResponse: Response;
+  try {
+    csrfResponse = await fetch(`${API_BASE_URL}/auth/csrf`, {
+      method: 'GET',
+      credentials: 'include',
+      signal: withTimeout()
+    });
+  } catch {
+    return null;
+  }
   if (!csrfResponse.ok) return null;
   syncServerTimeFromResponse(csrfResponse);
   const data = (await csrfResponse.json().catch(() => ({}))) as { csrfToken?: string };
@@ -145,11 +163,23 @@ export async function apiClient<T>(
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include'
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+      signal: withTimeout(options.signal)
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new ApiError('The request timed out. Please try again.', 0);
+    }
+    throw new ApiError(
+      'Could not reach the API server. Is the backend running on port 4000?',
+      0
+    );
+  }
   syncServerTimeFromResponse(response);
 
   if (
@@ -163,11 +193,23 @@ export async function apiClient<T>(
       if (needsCsrf && csrfTokenInMemory) {
         headers.set('X-CSRF-Token', csrfTokenInMemory);
       }
-      const retryResponse = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include'
-      });
+      let retryResponse: Response;
+      try {
+        retryResponse = await fetch(url, {
+          ...options,
+          headers,
+          credentials: 'include',
+          signal: withTimeout(options.signal)
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'TimeoutError') {
+          throw new ApiError('The request timed out. Please try again.', 0);
+        }
+        throw new ApiError(
+          'Could not reach the API server. Is the backend running on port 4000?',
+          0
+        );
+      }
       syncServerTimeFromResponse(retryResponse);
       if (retryResponse.ok) {
         return retryResponse.json();

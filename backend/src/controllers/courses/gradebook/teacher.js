@@ -1,13 +1,13 @@
 import { prisma } from '../../../db/prisma.js';
 
 /**
- * Course gradebook — every enrolled student × every published assignment/quiz,
- * with scores on the shared course mark budget (Course.maxMarks, default 100).
+ * Course gradebook — every enrolled student × every published assignment/quiz.
+ * Overall % / marks use total activity marks (assignments + quizzes), not Course.maxMarks.
  */
 export async function getTeacherGradebook(req, res) {
   const offering = req.courseOffering;
 
-  const [section, assignments, quizzes, courseMaxMarks] = await Promise.all([
+  const [section, assignments, quizzes, catalogMaxMarks] = await Promise.all([
     prisma.batchSection.findUnique({
       where: { id: offering.sectionId },
       include: {
@@ -33,6 +33,7 @@ export async function getTeacherGradebook(req, res) {
         title: true,
         maxMarks: true,
         marksPlan: true,
+        mode: true,
         created_at: true,
       },
       orderBy: { created_at: 'asc' },
@@ -64,11 +65,15 @@ export async function getTeacherGradebook(req, res) {
     assignments.reduce((s, a) => s + (a.maxMarks || 0), 0) +
     quizzes.reduce((s, q) => s + (quizMaxById.get(q.id) || 0), 0);
 
+  /** Denominator for overall: total published activity marks. */
+  const courseMaxMarks = allocatedMarks > 0 ? allocatedMarks : catalogMaxMarks;
+
   const [submissions, attempts] = await Promise.all([
     assignmentIds.length
       ? prisma.submission.findMany({
           where: { assignmentId: { in: assignmentIds } },
           select: {
+            id: true,
             assignmentId: true,
             studentId: true,
             lateState: true,
@@ -103,7 +108,7 @@ export async function getTeacherGradebook(req, res) {
     quizByKey.set(key, prev);
   }
 
-  const maxMarksById = new Map(assignments.map((a) => [a.id, a.maxMarks || 100]));
+  const maxMarksById = new Map(assignments.map((a) => [a.id, a.maxMarks || 10]));
 
   const rows = students.map((student) => {
     const assignmentCells = {};
@@ -116,10 +121,11 @@ export async function getTeacherGradebook(req, res) {
         assignmentCells[a.id] = null;
         continue;
       }
-      const maxMarks = maxMarksById.get(a.id) || 100;
+      const maxMarks = maxMarksById.get(a.id) || 10;
       const rawGrade = sub.gradeRow?.score ?? null;
       const pct = rawGrade != null ? (rawGrade / maxMarks) * 100 : null;
       assignmentCells[a.id] = {
+        submissionId: sub.id,
         grade: rawGrade,
         maxMarks,
         pct,
@@ -199,20 +205,21 @@ export async function getTeacherGradebook(req, res) {
   res.json({
     courseMaxMarks,
     markBudget: {
-      courseMax: courseMaxMarks,
+      courseMax: catalogMaxMarks,
       allocated: allocatedMarks,
-      remaining: Math.max(0, courseMaxMarks - allocatedMarks),
+      remaining: Math.max(0, catalogMaxMarks - allocatedMarks),
     },
     columns: {
       assignments: assignments.map((a) => ({
         id: a.id,
         title: a.title,
-        maxMarks: a.maxMarks || 100,
+        maxMarks: a.maxMarks || 10,
       })),
       quizzes: quizzes.map((q) => ({
         id: q.id,
         title: q.title,
         maxMarks: quizMaxById.get(q.id) || 0,
+        mode: q.mode === 'offline' ? 'offline' : 'online',
       })),
     },
     students: rows,

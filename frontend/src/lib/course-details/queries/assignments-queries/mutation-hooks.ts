@@ -7,6 +7,7 @@ import {
   gradeSubmission,
   grantExtension,
   grantExtensionBatch,
+  manualGradeAssignment,
   submitWork,
   suggestGradeWithAi,
   updateAssignment,
@@ -18,11 +19,13 @@ import type {
   GradeInput,
   GrantExtensionBatchInput,
   GrantExtensionInput,
+  ManualGradeInput,
   SubmitWorkInput,
   UpdateAssignmentInput
 } from '@/lib/course-details/services/assignments-types';
 import { assignmentKeys } from './keys';
 import { markBudgetKeys } from '../mark-budget-queries';
+import { invalidateCourseOutcomeQueries } from '../invalidate-course-outcomes';
 
 export function useCreateAssignment(courseOfferingId: string) {
   const queryClient = useQueryClient();
@@ -31,6 +34,7 @@ export function useCreateAssignment(courseOfferingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
       queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseOfferingId) });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -43,6 +47,7 @@ export function useUpdateAssignment(courseOfferingId: string) {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
       queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseOfferingId) });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -53,6 +58,7 @@ export function useDeleteAssignment(courseOfferingId: string) {
     mutationFn: (id: number) => deleteAssignment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -63,6 +69,7 @@ export function useDuplicateAssignment(courseOfferingId: string) {
     mutationFn: (id: number) => duplicateAssignment(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.list(courseOfferingId) });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -80,6 +87,25 @@ export function useGradeSubmission() {
     onSuccess: (_data, { assignmentId }) => {
       queryClient.invalidateQueries({ queryKey: assignmentKeys.submissions(assignmentId) });
       queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
+      invalidateCourseOutcomeQueries(queryClient);
+    }
+  });
+}
+
+export function useManualGradeAssignment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      assignmentId,
+      input
+    }: {
+      assignmentId: number;
+      input: ManualGradeInput;
+    }) => manualGradeAssignment(assignmentId, input),
+    onSuccess: (_data, { assignmentId }) => {
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.submissions(assignmentId) });
+      queryClient.invalidateQueries({ queryKey: assignmentKeys.all });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }

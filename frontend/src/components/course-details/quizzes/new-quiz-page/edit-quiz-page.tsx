@@ -12,7 +12,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
 import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget-utils';
@@ -37,13 +36,11 @@ import { useEditQuizPage } from './use-edit-quiz-page';
 export function EditQuizPage({
   courseId,
   quiz,
-  modules,
   onBack,
   onSaved
 }: {
   courseId: string;
   quiz: Quiz;
-  modules: CourseModule[];
   onBack: () => void;
   onSaved?: () => void;
 }) {
@@ -204,7 +201,7 @@ export function EditQuizPage({
                 </TabsList>
 
                 <TabsContent value='basics' className='mt-5'>
-                  <BasicsTab form={p.form} setForm={p.setForm} modules={modules} />
+                  <BasicsTab form={p.form} setForm={p.setForm} />
                 </TabsContent>
 
                 {!isOffline ? (

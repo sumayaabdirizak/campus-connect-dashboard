@@ -5,13 +5,13 @@ export type LiveQueryOptions = {
 };
 
 export const COURSE_LIVE_STALE_MS = 60_000;
-/** Socket / mutations invalidate; window-focus refetch catches stale tabs. */
-export const COURSE_LIVE_REFETCH_INTERVAL = false as const;
+/** Cross-user updates (grades, new posts) while a live tab is open. */
+export const COURSE_LIVE_REFETCH_INTERVAL_MS = 60_000;
 
 export function withCourseLiveRefresh(live = false) {
   return {
-    staleTime: live ? COURSE_LIVE_STALE_MS : COURSE_LIVE_STALE_MS,
+    staleTime: live ? 30_000 : COURSE_LIVE_STALE_MS,
     refetchOnWindowFocus: true as const,
-    refetchInterval: COURSE_LIVE_REFETCH_INTERVAL,
+    refetchInterval: live ? COURSE_LIVE_REFETCH_INTERVAL_MS : (false as const),
   };
 }

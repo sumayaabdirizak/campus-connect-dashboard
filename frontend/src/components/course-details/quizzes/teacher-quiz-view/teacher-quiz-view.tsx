@@ -6,7 +6,6 @@ import { NewQuizPage } from '../new-quiz-page/new-quiz-page';
 import { TeacherAttemptsPanel } from '../teacher-attempts-panel';
 import { useQuizzes } from '@/lib/course-details/queries/quizzes-queries';
 import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
-import { useModules } from '@/lib/course-details/queries/resources-queries';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { TeacherQuizBulkBar } from './teacher-quiz-bulk-bar';
 import { QuizListTable } from './quiz-list-table';
@@ -20,7 +19,6 @@ import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget
 export function TeacherView({ courseId }: { courseId: string }) {
   const { data: quizzes = [], isLoading } = useQuizzes(courseId, { live: true });
   const { data: markBudget } = useCourseMarkBudget(courseId);
-  const { data: modules = [] } = useModules(courseId, { live: true });
   const actions = useTeacherQuizActions(courseId);
 
   const [creatingQuiz, setCreatingQuiz] = useState(false);
@@ -43,7 +41,6 @@ export function TeacherView({ courseId }: { courseId: string }) {
     return (
       <NewQuizPage
         courseId={courseId}
-        modules={modules}
         onBack={() => setCreatingQuiz(false)}
         onCreated={() => {
           setCreatingQuiz(false);
@@ -57,7 +54,6 @@ export function TeacherView({ courseId }: { courseId: string }) {
       <EditQuizPage
         courseId={courseId}
         quiz={liveEditingQuiz}
-        modules={modules}
         onBack={() => setEditingQuiz(null)}
         onSaved={() => setEditingQuiz(null)}
       />

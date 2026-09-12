@@ -10,6 +10,19 @@ const ATTEMPT_INCLUDE = {
   answers: { include: { question: true } },
 };
 
+async function ensureEmptyAnswers(tx, attemptId, questions) {
+  if (questions.length === 0) return;
+  const existing = await tx.quizAnswer.count({ where: { attemptId } });
+  if (existing > 0) return;
+  await tx.quizAnswer.createMany({
+    data: questions.map((q) => ({
+      attemptId,
+      questionId: q.id,
+      question_type: q.question_type,
+    })),
+  });
+}
+
 /** @param {import('express').Router} router */
 export function register(router) {
   router.get('/:quizId/attempts', requireQuizManage(), asyncHandler(async (req, res) => {
@@ -25,12 +38,8 @@ export function register(router) {
   }));
 
   // Offline quizzes are printed handouts — students never start an in-app
-  // attempt, so there's normally no QuizAttempt row a teacher could grade.
-  // This records a paper score for a chosen student in one shot: total
-  // marks earned out of the quiz's point total, converted to the same
-  // percentage `score`/`grade` every other attempt uses, so it shows up in
-  // the gradebook identically. No per-question breakdown — a paper mark is
-  // a single number, not per-question detail.
+  // attempt. Upsert a paper result (marks / absent / cheat) so teachers can
+  // record and later correct scores from Attempts or the gradebook.
   router.post(
     '/:quizId/attempts/offline',
     requireQuizManage(),
@@ -52,15 +61,6 @@ export function register(router) {
         return res.status(400).json({ message: 'That student is not enrolled in this course.' });
       }
 
-      const existing = await prisma.quizAttempt.findFirst({
-        where: { quizId: quiz.id, studentId },
-      });
-      if (existing) {
-        return res.status(409).json({
-          message: 'This student already has an attempt on this quiz — open it to grade instead.',
-        });
-      }
-
       const questions = await prisma.quizQuestion.findMany({
         where: { quizId: quiz.id },
         select: { id: true, question_type: true, points: true },
@@ -72,71 +72,77 @@ export function register(router) {
         });
       }
 
-      const emptyAnswers =
-        questions.length > 0
-          ? {
-              create: questions.map((q) => ({
-                questionId: q.id,
-                question_type: q.question_type,
-              })),
-            }
-          : undefined;
-
-      // Absent: no score — row is recorded but gradebook ignores null scores.
+      let outcomeData;
       if (absent) {
-        const attempt = await prisma.quizAttempt.create({
-          data: {
-            quizId: quiz.id,
-            studentId,
-            submitted_at: new Date(),
-            is_graded: true,
-            closure_reason: 'absent',
-            answers: emptyAnswers,
-          },
-          include: ATTEMPT_INCLUDE,
-        });
-        return res.status(201).json(attempt);
-      }
-
-      // Cheat: zero marks with an explicit reason so teachers/students see it.
-      if (cheat) {
-        const attempt = await prisma.quizAttempt.create({
-          data: {
-            quizId: quiz.id,
-            studentId,
-            submitted_at: new Date(),
-            score: 0,
-            grade: 0,
-            is_graded: true,
-            closure_reason: 'cheat',
-            answers: emptyAnswers,
-          },
-          include: ATTEMPT_INCLUDE,
-        });
-        return res.status(201).json(attempt);
-      }
-
-      if (marksEarned > totalPoints) {
-        return res.status(400).json({
-          message: `Marks can't exceed the quiz total (${totalPoints}).`,
-        });
-      }
-      const score = totalPoints > 0 ? (marksEarned / totalPoints) * 100 : 0;
-
-      const attempt = await prisma.quizAttempt.create({
-        data: {
-          quizId: quiz.id,
-          studentId,
+        outcomeData = {
+          submitted_at: new Date(),
+          score: null,
+          grade: null,
+          is_graded: true,
+          closure_reason: 'absent',
+        };
+      } else if (cheat) {
+        outcomeData = {
+          submitted_at: new Date(),
+          score: 0,
+          grade: 0,
+          is_graded: true,
+          closure_reason: 'cheat',
+        };
+      } else {
+        if (marksEarned > totalPoints) {
+          return res.status(400).json({
+            message: `Marks can't exceed the quiz total (${totalPoints}).`,
+          });
+        }
+        const score = totalPoints > 0 ? (marksEarned / totalPoints) * 100 : 0;
+        outcomeData = {
           submitted_at: new Date(),
           score,
           grade: score,
           is_graded: true,
-          answers: emptyAnswers,
-        },
-        include: ATTEMPT_INCLUDE,
+          closure_reason: null,
+        };
+      }
+
+      const existing = await prisma.quizAttempt.findFirst({
+        where: { quizId: quiz.id, studentId },
+        select: { id: true },
       });
 
-      res.status(201).json(attempt);
+      const attempt = await prisma.$transaction(async (tx) => {
+        if (existing) {
+          const updated = await tx.quizAttempt.update({
+            where: { id: existing.id },
+            data: outcomeData,
+            include: ATTEMPT_INCLUDE,
+          });
+          await ensureEmptyAnswers(tx, updated.id, questions);
+          return updated;
+        }
+
+        const emptyAnswers =
+          questions.length > 0
+            ? {
+                create: questions.map((q) => ({
+                  questionId: q.id,
+                  question_type: q.question_type,
+                })),
+              }
+            : undefined;
+
+        return tx.quizAttempt.create({
+          data: {
+            quizId: quiz.id,
+            studentId,
+            ...outcomeData,
+            answers: emptyAnswers,
+          },
+          include: ATTEMPT_INCLUDE,
+        });
+      });
+
+      res.status(existing ? 200 : 201).json(attempt);
     })
   );
 }

@@ -145,8 +145,5 @@ export interface Report {
 }
 
 export const REPORT_PERIODS = [
-  { id: '3', label: 'Last 3 months' },
-  { id: '6', label: 'Last 6 months' },
-  { id: '12', label: 'Last 12 months' },
-  { id: 'all', label: 'All time' }
+  { id: 'semester', label: 'Current semester' }
 ] as const;

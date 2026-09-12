@@ -8,7 +8,7 @@ export interface FacultyReportCatalogItem {
 }
 
 export function buildFacultyReportCatalog(data?: DeanReports): FacultyReportCatalogItem[] {
-  const period = data?.scope.periodLabel ?? 'Last 6 months';
+  const period = data?.scope.periodLabel ?? 'Current semester';
   const faculty = data?.scope.facultyName ?? 'Faculty';
   return [
     {

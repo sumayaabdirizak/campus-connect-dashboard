@@ -8,7 +8,7 @@ import { facultyScopeForRestrictedAcademicRoles } from "../facultyScope.js";
 export const getAllDepartments = async (req, res) => {
   try {
     const scope = await facultyScopeForRestrictedAcademicRoles(req);
-    const { search } = req.query;
+    const { search, facultyId } = req.query;
     const { page, pageSize, skip } = parsePaginationQuery(req.query, {
       defaultPageSize: 50,
       maxPageSize: 200,
@@ -18,7 +18,9 @@ export const getAllDepartments = async (req, res) => {
         ? { facultyId: scope.facultyId }
         : scope.mode === "none"
           ? { facultyId: -1 }
-          : {};
+          : facultyId
+            ? { facultyId: Number(facultyId) }
+            : {};
     const where = {
       ...baseWhere,
       ...(search

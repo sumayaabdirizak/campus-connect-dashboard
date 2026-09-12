@@ -3,7 +3,6 @@
 import { MessageSquare, ImagePlus, ChevronUp, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/features/ui/components/button';
-import { NotificationToggle } from '@/components/notifications/notification-toggle';
 
 interface CourseHeaderActionsProps {
   compact: boolean;
@@ -57,14 +56,6 @@ export function CourseHeaderActions({
           </span>
         </Button>
       ) : null}
-      <div
-        className={cn(
-          'flex shrink-0 items-center justify-center rounded-lg border border-border bg-card',
-          compact ? 'h-8 px-1.5' : 'h-8 px-2'
-        )}
-      >
-        <NotificationToggle compact />
-      </div>
       {onToggleCollapse ? (
         <Button
           type='button'

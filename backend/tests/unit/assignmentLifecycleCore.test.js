@@ -15,6 +15,11 @@ describe('features/assignments/lifecycleCore', () => {
     expect(getCloseAtMs(due, 0)).toBe(due.getTime());
   });
 
+  it('getCloseAtMs treats negative window as unlimited late', () => {
+    expect(getCloseAtMs(due, -1)).toBe(Number.MAX_SAFE_INTEGER);
+    expect(resolveScheduleStatus(null, due, -1, due.getTime() + 86_400_000)).toBe('OPEN');
+  });
+
   it('pickEffectiveDue prefers later extension', () => {
     const ext = new Date('2026-07-22T12:00:00.000Z');
     expect(pickEffectiveDue(due, ext).getTime()).toBe(ext.getTime());

@@ -123,7 +123,13 @@ export const updateAnnouncementSchema = z
     departmentId: z.coerce.number().int().positive().optional(),
     batchId: z.coerce.number().int().positive().optional(),
     sectionId: z.coerce.number().int().positive().optional(),
-    targetRoles: z.array(z.string().trim().min(1)).min(1, "At least one target role is required").optional(),
+    targetRoles: z.preprocess(
+      (v) => (Array.isArray(v) && v.length === 0 ? undefined : v),
+      z
+        .array(z.string().trim().min(1))
+        .min(1, "At least one target role is required")
+        .optional(),
+    ),
     publishedAt: z.union([z.string(), z.null()]).optional(),
     expiresAt: z.union([z.string(), z.null()]).optional(),
     deadlineAt: z.union([z.string(), z.null()]).optional(),

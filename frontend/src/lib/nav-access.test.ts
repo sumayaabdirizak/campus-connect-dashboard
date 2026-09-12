@@ -52,4 +52,46 @@ describe('nav-access', () => {
     );
     expect(byPath.map((i) => i.url)).toEqual(['/dashboard', '/dashboard/courses']);
   });
+
+  it('filterNavItems keeps nested children recursively', () => {
+    const tree: NavItem = {
+      title: 'Faculties',
+      url: '/dashboard/faculties',
+      access: { roles: ['SUPER_ADMIN'] },
+      items: [
+        {
+          title: 'Departments',
+          url: '/dashboard/departments',
+          access: { roles: ['SUPER_ADMIN'] },
+          items: [
+            {
+              title: 'Programs',
+              url: '/dashboard/programs',
+              access: { roles: ['SUPER_ADMIN'] },
+              items: [
+                {
+                  title: 'Batches',
+                  url: '/dashboard/batches',
+                  access: { roles: ['SUPER_ADMIN'] }
+                },
+                {
+                  title: 'Courses',
+                  url: '/dashboard/courses',
+                  access: { roles: ['SUPER_ADMIN'] }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    };
+
+    const filtered = filterNavItems([tree], 'SUPER_ADMIN', null);
+    expect(filtered).toHaveLength(1);
+    expect(filtered[0].items?.[0].items?.[0].items?.map((i) => i.title)).toEqual([
+      'Batches',
+      'Courses'
+    ]);
+    expect(filterNavItems([tree], 'DEAN', null)).toEqual([]);
+  });
 });

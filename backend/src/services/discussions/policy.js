@@ -133,6 +133,14 @@ export const DISCUSSION_MODERATION_MATRIX = Object.freeze({
  */
 export function toDiscussionGroupKey(scopeType, scopeId) {
   const normalizedScopeType = String(scopeType || "").toUpperCase();
+  // Club servers use slug-based keys via club provision — not academic prefixes.
+  if (normalizedScopeType === "CLUB") {
+    const numericScopeId = Number(scopeId);
+    if (!Number.isInteger(numericScopeId) || numericScopeId <= 0) {
+      throw new Error(`Invalid scope id: ${scopeId}`);
+    }
+    return `club-scope:${numericScopeId}`;
+  }
   const prefix = DISCUSSION_GROUP_KEY_PREFIX[normalizedScopeType];
   const numericScopeId = Number(scopeId);
 
@@ -150,6 +158,14 @@ export function toDiscussionGroupKey(scopeType, scopeId) {
 export function getDefaultDiscussionPermissions({ scopeType, role }) {
   const normalizedScopeType = String(scopeType || "").toUpperCase();
   const normalizedRole = String(role || "").toUpperCase();
+  // Club membership is managed by club join flows, not academic sync matrices.
+  if (normalizedScopeType === "CLUB") {
+    return {
+      canRead: true,
+      canPost: true,
+      postingMode: "FULL",
+    };
+  }
   const matrix = DISCUSSION_POST_READ_MATRIX[normalizedScopeType];
 
   if (!matrix) throw new Error(`Unsupported scope type: ${scopeType}`);

@@ -9,6 +9,7 @@ import { useQuizAttempts, useQuizzes } from '@/lib/course-details/queries/quizze
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
 import type { Quiz, QuizAttempt } from '@/lib/course-details/services/quizzes-types';
 import { resolveQuizTotalPoints } from '@/lib/course-details/services/quiz-total-points';
+import { getQuizWindowState } from '../teacher-quiz-card/quiz-window-state';
 import { AttemptsTable } from './attempts-table';
 import { buildAttemptRows, needsGrading } from './helpers';
 
@@ -45,6 +46,7 @@ export function TeacherAttemptsPanel({
   const pendingCount = attempts.filter(needsGrading).length;
   const liveQuiz = quizzes.find((q) => q.id === quiz.id) ?? quiz;
   const totalPoints = resolveQuizTotalPoints(liveQuiz);
+  const quizClosed = getQuizWindowState(liveQuiz) === 'closed';
 
   return (
     <div className='space-y-4'>
@@ -78,6 +80,7 @@ export function TeacherAttemptsPanel({
         quizId={quiz.id}
         quizTitle={quiz.title}
         totalPoints={totalPoints}
+        quizClosed={quizClosed}
       />
     </div>
   );

@@ -74,13 +74,21 @@ export class UniversityApiClient {
         : accessToken;
     }
 
-    const init = { method, headers };
+    const init = { method, headers, signal: AbortSignal.timeout(15_000) };
     if (body != null) {
       headers['Content-Type'] = 'application/json';
       init.body = JSON.stringify(body);
     }
 
-    const res = await fetch(url, init);
+    let res;
+    try {
+      res = await fetch(url, init);
+    } catch (err) {
+      if (err?.name === 'TimeoutError') {
+        throw new UniversityApiError('University API request timed out');
+      }
+      throw new UniversityApiError(`University API request failed: ${err?.message || err}`);
+    }
     const text = await res.text();
     let json;
     try {

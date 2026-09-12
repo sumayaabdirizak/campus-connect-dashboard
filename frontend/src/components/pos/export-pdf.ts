@@ -1,3 +1,7 @@
+import {
+  buildReportInvoiceHeader,
+  entityReportId
+} from '@/lib/reports/services/report-print-invoice-header';
 import { escapeHtml, printHtmlDocument } from '@/lib/reports/services/report-print-shell';
 
 /** Generic table-to-PDF export (browser Print → Save as PDF), shared by every PosTableCard. */
@@ -9,13 +13,17 @@ export function exportTablePdf(title: string, header: string[], rows: (string | 
         .join('')
     : `<tr><td class="empty" colspan="${header.length}">No data</td></tr>`;
 
-  const bodyHtml = `
-    <div class="inv-title-row">
-      <h1>${escapeHtml(title)}</h1>
-      <p class="inv-sub">Generated ${escapeHtml(new Date().toLocaleString())} · ${rows.length} row${rows.length === 1 ? '' : 's'}</p>
-    </div>
-    <table><thead>${thead}</thead><tbody>${tbody}</tbody></table>
-  `;
+  const masthead = buildReportInvoiceHeader({
+    documentTitle: title,
+    reportId: entityReportId('list', 'list'),
+    generatedAt: new Date().toLocaleString(),
+    periodLabel: 'Current term',
+    fromLines: [],
+    toTitle: `${rows.length} row${rows.length === 1 ? '' : 's'}`,
+    toLines: []
+  });
+
+  const bodyHtml = `${masthead}<table><thead>${thead}</thead><tbody>${tbody}</tbody></table>`;
 
   printHtmlDocument(title, bodyHtml);
 }

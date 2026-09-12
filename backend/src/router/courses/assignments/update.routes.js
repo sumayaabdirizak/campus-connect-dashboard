@@ -20,6 +20,7 @@ import {
   publishStatusFromDraft,
   transitionPublish,
 } from '../../../services/assignments/lifecycleService.js';
+import { assertUniqueAssignmentTitle } from '../../../utils/assertUniqueCourseTitle.js';
 
 const router = Router();
 
@@ -48,6 +49,17 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
     },
   });
   if (!before) return res.status(404).json({ message: 'Assignment not found' });
+
+  let nextTitle = undefined;
+  if (title !== undefined) {
+    const titleCheck = await assertUniqueAssignmentTitle(prisma, {
+      courseOfferingId: before.courseOfferingId,
+      title,
+      excludeId: id,
+    });
+    if (!titleCheck.ok) return res.status(409).json({ message: titleCheck.message });
+    nextTitle = titleCheck.title;
+  }
 
   const nextOpen =
     open_at !== undefined ? (open_at ? new Date(open_at) : null) : before.open_at;
@@ -87,7 +99,7 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
     const updated = await tx.assignment.update({
       where: { id },
       data: {
-        ...(title && { title }),
+        ...(nextTitle !== undefined && { title: nextTitle }),
         ...(description !== undefined && { description }),
         ...(open_at !== undefined && { open_at: open_at ? new Date(open_at) : null }),
         ...(due_date && { due_date: new Date(due_date) }),
@@ -138,7 +150,7 @@ router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (re
   } else if (
     publicId &&
     !dto.is_draft &&
-    ((title && title !== before.title) ||
+    ((nextTitle !== undefined && nextTitle !== before.title) ||
       (due_date && new Date(due_date).getTime() !== before.due_date.getTime()))
   ) {
     notifyAssignmentUpdated(assignment, publicId);

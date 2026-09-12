@@ -28,6 +28,8 @@ export interface LiveAttemptTile {
   currentQuestionId: number | null;
   answeredCount: number;
   violationsCount: number;
+  /// Last violation kind from a live `violation` event (screenshot, visibility, …).
+  lastViolationKind?: string | null;
   /// Timestamp of the last event we saw — used to render "active 12s ago"
   /// and to highlight idle students.
   lastActivityAt: string;
@@ -143,6 +145,7 @@ export function useQuizLiveMonitor(quizId: number | null): UseQuizLiveMonitorRes
               currentQuestionId: null,
               answeredCount,
               violationsCount: a.violations_count ?? 0,
+              lastViolationKind: null,
               lastActivityAt: a.submitted_at ?? a.started_at,
               score: a.score ?? null,
             });
@@ -201,6 +204,7 @@ export function useQuizLiveMonitor(quizId: number | null): UseQuizLiveMonitorRes
             currentQuestionId: existing?.currentQuestionId ?? null,
             answeredCount: existing?.answeredCount ?? 0,
             violationsCount: e.violations_count ?? 0,
+            lastViolationKind: existing?.lastViolationKind ?? null,
             lastActivityAt: e.ts,
           });
         } else if (e.kind === 'answer' && existing) {
@@ -214,6 +218,7 @@ export function useQuizLiveMonitor(quizId: number | null): UseQuizLiveMonitorRes
           next.set(e.attemptId, {
             ...existing,
             violationsCount: e.violations_count,
+            lastViolationKind: e.violationKind ?? existing.lastViolationKind ?? null,
             lastActivityAt: e.ts,
             // auto_closed is followed by a `submitted` event with the
             // closure reason, so we don't flip status here.

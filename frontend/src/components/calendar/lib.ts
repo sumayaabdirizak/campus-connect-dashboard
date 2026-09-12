@@ -58,9 +58,18 @@ export function itemTint(item: CalendarItem, pct = 16): string {
   return `color-mix(in oklab, ${itemColor(item)} ${pct}%, transparent)`;
 }
 
-/** A short label combining course code + title (or just the title). */
+/** Short label: kind + course code + title (so Assignment vs Quiz is clear). */
 export function itemLabel(item: CalendarItem): string {
-  return item.courseCode ? `${item.courseCode} · ${item.title}` : item.title;
+  const kind =
+    item.kind === 'quiz'
+      ? 'Quiz'
+      : item.kind === 'assignment'
+        ? 'Assignment'
+        : item.kind === 'announcement'
+          ? 'Announcement'
+          : 'Event';
+  const name = item.courseCode ? `${item.courseCode} · ${item.title}` : item.title;
+  return `${kind}: ${name}`;
 }
 
 export function fmtTime(iso: string | null, allDay?: boolean): string {

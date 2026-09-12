@@ -5,6 +5,7 @@ import { PharmacyShell } from '@/features/layout/components/pharmacy/pharmacy-sh
 import { RoleGuard } from '@/components/auth/role-guard';
 import { usePathname } from 'next/navigation';
 import { useAnnouncementSocket } from '@/lib/announcements/queries/use-announcement-socket';
+import { useDiscussionRealtime } from '@/lib/discussions/queries/use-discussion-realtime';
 import { useProactiveSessionRefresh } from '@/lib/use-proactive-session-refresh';
 
 import { InfobarProvider } from '@/features/ui/components/infobar';
@@ -30,6 +31,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     isClubManageRoute;
 
   useAnnouncementSocket({ enabled: true, playSound: false });
+  useDiscussionRealtime(true);
   useProactiveSessionRefresh(true);
 
   return (

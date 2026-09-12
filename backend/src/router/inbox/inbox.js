@@ -34,12 +34,15 @@ router.get(
           group: {
             select: {
               id: true,
+              publicId: true,
               name: true,
               iconUrl: true,
               kind: true,
               scopeType: true,
               defaultChannelId: true,
               parentServerId: true,
+              defaultChannel: { select: { id: true, publicId: true } },
+              parentServer: { select: { id: true, publicId: true } },
             },
           },
         },
@@ -82,7 +85,13 @@ router.get(
       groupIds.length
         ? prisma.discussionChannel.findMany({
             where: { legacyGroupId: { in: groupIds } },
-            select: { id: true, legacyGroupId: true, serverId: true },
+            select: {
+              id: true,
+              publicId: true,
+              legacyGroupId: true,
+              serverId: true,
+              server: { select: { publicId: true } },
+            },
           })
         : Promise.resolve([]),
     ]);
@@ -90,7 +99,15 @@ router.get(
     const dms = dmRows.map((r) => r.groupDm).filter(Boolean);
     const dmIds = dms.map((d) => d.id);
     const legacyChannelByGroup = new Map(
-      legacyChannelRows.map((c) => [c.legacyGroupId, c])
+      legacyChannelRows.map((c) => [
+        c.legacyGroupId,
+        {
+          id: c.id,
+          publicId: c.publicId,
+          serverId: c.serverId,
+          serverPublicId: c.server?.publicId ?? null,
+        },
+      ]),
     );
 
     const [lastGroup, lastDm] = await Promise.all([

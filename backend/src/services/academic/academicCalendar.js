@@ -6,32 +6,51 @@ import {
   parseAcademicYearStartYear,
 } from "./academicCalendarDefaults.js";
 
-export function getCurrentAcademicYearBounds(forDate = new Date()) {
-  const year = forDate.getFullYear();
-  const month = forDate.getMonth() + 1;
-  const { yearStartMonth } = ACADEMIC_CALENDAR_DEFAULTS;
-  const startYear = month >= yearStartMonth ? year : year - 1;
+/** Bounds for a known academic-year start (e.g. 2025 → 2025/2026). */
+export function buildAcademicYearBounds(startYear) {
   const endYear = startYear + 1;
-
+  const { yearStartMonth, yearStartDay, semester2EndMonth, semester2EndDay } =
+    ACADEMIC_CALENDAR_DEFAULTS;
   return {
     name: buildAcademicYearName(startYear),
     startYear,
     endYear,
-    startDate: new Date(startYear, yearStartMonth - 1, ACADEMIC_CALENDAR_DEFAULTS.yearStartDay),
-    endDate: new Date(
-      endYear,
-      ACADEMIC_CALENDAR_DEFAULTS.semester2EndMonth - 1,
-      ACADEMIC_CALENDAR_DEFAULTS.semester2EndDay
-    ),
+    startDate: new Date(startYear, yearStartMonth - 1, yearStartDay),
+    endDate: new Date(endYear, semester2EndMonth - 1, semester2EndDay),
   };
 }
 
-/** Semester 1: Sep–Feb. Semester 2: Mar–Aug. */
+/**
+ * Academic year containing `forDate`.
+ * Year runs Nov 1 (startYear) → Oct 31 (startYear+1).
+ * Mar–Oct stays in the AY that started the previous November (Sem 2 through October).
+ */
+export function getCurrentAcademicYearBounds(forDate = new Date()) {
+  const year = forDate.getFullYear();
+  const month = forDate.getMonth() + 1;
+  const { semester2StartMonth, semester2EndMonth } = ACADEMIC_CALENDAR_DEFAULTS;
+
+  let startYear;
+  if (month >= semester2StartMonth && month <= semester2EndMonth) {
+    // Mar–Oct: Sem 2 of AY that started previous November
+    startYear = year - 1;
+  } else if (month >= 11) {
+    // Nov–Dec: Sem 1 of AY that started this November
+    startYear = year;
+  } else {
+    // Jan–Feb: Sem 1 of AY that started previous November
+    startYear = year - 1;
+  }
+
+  return buildAcademicYearBounds(startYear);
+}
+
+/** Semester 1: Nov–Feb. Semester 2: Mar–Oct. */
 export function getSemesterInYear(forDate = new Date()) {
   const month = forDate.getMonth() + 1;
-  const { yearStartMonth, semester2StartMonth } = ACADEMIC_CALENDAR_DEFAULTS;
-  if (month >= yearStartMonth || month < semester2StartMonth) return 1;
-  return 2;
+  const { semester2StartMonth, semester2EndMonth } = ACADEMIC_CALENDAR_DEFAULTS;
+  if (month >= semester2StartMonth && month <= semester2EndMonth) return 2;
+  return 1;
 }
 
 export function computeCohortSemester(cohortStartYear, forDate = new Date()) {

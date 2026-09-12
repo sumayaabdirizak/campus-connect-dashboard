@@ -179,18 +179,6 @@ export function CreateAssignmentForm({
             </form.AppField>
             <FormSwitchField name='allowLate' label='Allow late submissions' />
           </div>
-          <form.Subscribe selector={(s) => s.values.allowLate}>
-            {(allowLate) =>
-              allowLate ? (
-                <FormTextField
-                  name='lateWindow'
-                  label='Late window (minutes)'
-                  type='number'
-                  className={assignmentFormFieldClass}
-                />
-              ) : null
-            }
-          </form.Subscribe>
         </div>
         <DialogFooter className='flex-row items-center justify-between gap-2 border-t border-border px-5 py-4 sm:justify-between'>
           <Button type='button' variant='outline' onClick={onCancel}>

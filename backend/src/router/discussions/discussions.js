@@ -15,7 +15,7 @@ import discussionGroupMessagesRouter from "../../controllers/discussions/discuss
 import discussionGroupE2ERouter from "./discussionGroupE2E.routes.js";
 import discussionMaintenanceRouter from "./discussionMaintenance.routes.js";
 import groupDmsRouter from "../../controllers/discussions/groupDms.js";
-import serversRouter from "./servers.js";
+import { serversRouter } from "./servers.js";
 
 const router = express.Router();
 

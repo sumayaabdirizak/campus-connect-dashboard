@@ -40,7 +40,8 @@ export function AttemptsTable({
   isOffline,
   quizId,
   quizTitle,
-  totalPoints
+  totalPoints,
+  quizClosed = false
 }: {
   isLoading: boolean;
   allRows: AttemptRow[];
@@ -50,6 +51,7 @@ export function AttemptsTable({
   quizId: number;
   quizTitle: string;
   totalPoints: number;
+  quizClosed?: boolean;
 }) {
   const columnOpts = isOffline ? OFFLINE_ATTEMPT_COLUMN_OPTS : ONLINE_ATTEMPT_COLUMN_OPTS;
   const allCols = isOffline ? OFFLINE_ATTEMPT_ALL_COLS : ONLINE_ATTEMPT_ALL_COLS;
@@ -60,7 +62,8 @@ export function AttemptsTable({
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const col = (id: string) => visibleCols.includes(id);
-  const onlineCounts = statusCounts(allRows);
+  const statusOpts = { quizClosed };
+  const onlineCounts = statusCounts(allRows, statusOpts);
   const offlineCounts = offlineStatusCounts(allRows);
 
   useEffect(() => {
@@ -69,15 +72,16 @@ export function AttemptsTable({
 
   useEffect(() => {
     setStatusFilter('all');
-  }, [isOffline]);
+  }, [isOffline, quizClosed]);
 
   const filteredRows = useMemo(
     () =>
       sortAttemptRows(
-        filterAttemptRows(allRows, statusFilter, search, isOffline),
-        sortId
+        filterAttemptRows(allRows, statusFilter, search, isOffline, statusOpts),
+        sortId,
+        statusOpts
       ),
-    [allRows, statusFilter, search, sortId, isOffline]
+    [allRows, statusFilter, search, sortId, isOffline, quizClosed]
   );
 
   useEffect(() => {
@@ -116,7 +120,7 @@ export function AttemptsTable({
       sortId={sortId}
       onSortChange={setSortId}
       onExportExcel={() => {
-        downloadAttemptsCsv(quizTitle, allRows);
+        downloadAttemptsCsv(quizTitle, allRows, { quizClosed });
         showToast('success', 'Exported attempts CSV');
       }}
       toolbarEnd={
@@ -153,11 +157,17 @@ export function AttemptsTable({
                     label: 'In progress',
                     count: onlineCounts.in_progress
                   },
-                  {
-                    value: 'not_started',
-                    label: 'Not started',
-                    count: onlineCounts.not_started
-                  }
+                  quizClosed
+                    ? {
+                        value: 'missed',
+                        label: 'Missed',
+                        count: onlineCounts.missed
+                      }
+                    : {
+                        value: 'not_started',
+                        label: 'Not started',
+                        count: onlineCounts.not_started
+                      }
                 ]
           }
         />
@@ -227,6 +237,7 @@ export function AttemptsTable({
                 isOffline={isOffline}
                 quizId={quizId}
                 totalPoints={totalPoints}
+                quizClosed={quizClosed}
               />
             ))}
           </PosTableBody>

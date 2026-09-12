@@ -3,8 +3,8 @@
  * Always closes before retry so listeners do not stack on the same Server.
  */
 export function listenHttp(httpServer, port, onListening) {
-  const maxAttempts = 15;
-  const delayMs = 500;
+  const maxAttempts = 30;
+  const delayMs = 750;
   let attempt = 0;
   let settled = false;
 
@@ -16,7 +16,7 @@ export function listenHttp(httpServer, port, onListening) {
       if (err?.code === 'EADDRINUSE' && attempt + 1 < maxAttempts) {
         attempt += 1;
         console.warn(
-          `[server] port ${port} busy, retry ${attempt + 1}/${maxAttempts}…`
+          `[server] port ${port} busy, retry ${attempt}/${maxAttempts} in ${delayMs}ms…`
         );
         try {
           httpServer.close();

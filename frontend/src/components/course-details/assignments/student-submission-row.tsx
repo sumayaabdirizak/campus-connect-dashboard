@@ -21,7 +21,8 @@ export function StudentSubmissionRow({
   col,
   selected,
   onToggle,
-  onGrade
+  onGrade,
+  onExtendMissing
 }: {
   row: SubmissionRow;
   assignment: Assignment;
@@ -30,6 +31,7 @@ export function StudentSubmissionRow({
   selected: boolean;
   onToggle: (studentId: number, checked: boolean) => void;
   onGrade: (sub: Submission) => void;
+  onExtendMissing: (studentId: number) => void;
 }) {
   const { studentId, student, submission: sub } = row;
   const target = { studentId };
@@ -94,7 +96,14 @@ export function StudentSubmissionRow({
             {sub.is_reviewed && sub.grade != null ? 'Review' : 'Grade'}
           </Button>
         ) : (
-          <span className='text-xs text-muted-foreground'>No submission</span>
+          <Button
+            variant='outline'
+            size='sm'
+            className='h-8 gap-1'
+            onClick={() => onExtendMissing(studentId)}
+          >
+            Extend
+          </Button>
         )}
       </PosTableCell>
     </PosTableRow>

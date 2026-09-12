@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useMemo } from 'react';
 import RenderResults from './render-result';
 import useThemeSwitching from './use-theme-switching';
+import { flattenNavItems } from '@/lib/nav-access';
 import { useFilteredNavGroups } from '@/hooks/use-nav';
 
 export default function KBar({ children }: { children: React.ReactNode }) {
@@ -18,38 +19,19 @@ export default function KBar({ children }: { children: React.ReactNode }) {
       router.push(url);
     };
 
-    const allItems = filteredGroups.flatMap((group) => group.items);
+    const allItems = filteredGroups.flatMap((group) => flattenNavItems(group.items));
 
-    return allItems.flatMap((navItem) => {
-      // Only include base action if the navItem has a real URL and is not just a container
-      const baseAction =
-        navItem.url !== '#'
-          ? {
-              id: `${navItem.title.toLowerCase()}Action`,
-              name: navItem.title,
-              shortcut: navItem.shortcut,
-              keywords: navItem.title.toLowerCase(),
-              section: 'Navigation',
-              subtitle: `Go to ${navItem.title}`,
-              perform: () => navigateTo(navItem.url)
-            }
-          : null;
-
-      // Map child items into actions
-      const childActions =
-        navItem.items?.map((childItem) => ({
-          id: `${childItem.title.toLowerCase()}Action`,
-          name: childItem.title,
-          shortcut: childItem.shortcut,
-          keywords: childItem.title.toLowerCase(),
-          section: navItem.title,
-          subtitle: `Go to ${childItem.title}`,
-          perform: () => navigateTo(childItem.url)
-        })) ?? [];
-
-      // Return only valid actions (ignoring null base actions for containers)
-      return baseAction ? [baseAction, ...childActions] : childActions;
-    });
+    return allItems
+      .filter((navItem) => navItem.url !== '#')
+      .map((navItem) => ({
+        id: `${navItem.title.toLowerCase()}-${navItem.url}Action`,
+        name: navItem.title,
+        shortcut: navItem.shortcut,
+        keywords: navItem.title.toLowerCase(),
+        section: 'Navigation',
+        subtitle: `Go to ${navItem.title}`,
+        perform: () => navigateTo(navItem.url)
+      }));
   }, [router, filteredGroups]);
 
   return (

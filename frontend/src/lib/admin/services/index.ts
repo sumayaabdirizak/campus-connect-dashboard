@@ -20,6 +20,10 @@ export const adminApi = {
     if (filters.period) {
       params.set('period', filters.period);
     }
+    if (filters.period === 'custom') {
+      if (filters.from) params.set('from', filters.from);
+      if (filters.to) params.set('to', filters.to);
+    }
     const qs = params.toString();
     const result = await apiClient<PlatformAnalytics>(`${BASE}/analytics${qs ? `?${qs}` : ''}`);
     return normalizePlatformAnalytics(result)!;

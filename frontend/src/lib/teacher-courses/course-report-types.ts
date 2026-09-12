@@ -11,11 +11,40 @@ export interface CourseReportListRow {
   resources: number;
   failed: number;
   avgOverallPct: number | null;
+  avgOverallMarks?: number | null;
+  courseMaxMarks?: number;
+}
+
+export interface CourseReportFilterOptions {
+  departments: string[];
+  courses: {
+    id: string;
+    label: string;
+    department: string | null;
+    section: string;
+    batch: string | null;
+  }[];
 }
 
 export interface CourseReportListResponse {
   generatedAt: string;
   rows: CourseReportListRow[];
+  page?: number;
+  pageSize?: number;
+  total?: number;
+  totalCount?: number;
+  filterOptions?: CourseReportFilterOptions;
+}
+
+export interface CourseReportListParams {
+  from?: string | null;
+  to?: string | null;
+  page?: number;
+  pageSize?: number;
+  q?: string;
+  department?: string;
+  courseId?: string;
+  sort?: string;
 }
 
 export interface CourseReportContentItem {
@@ -30,7 +59,8 @@ export interface CourseReportStudentRow {
   name: string;
   number: string | null;
   overallPct: number | null;
-  status: 'Failed' | 'Passed' | 'No grades';
+  overallMarks: number | null;
+  status: 'Failed' | 'Passed' | 'No grade' | 'Missing' | 'Not submitted';
 }
 
 export interface CourseReportDetail {
@@ -54,15 +84,21 @@ export interface CourseReportDetail {
   classSummary: {
     studentCount: number;
     avgOverallPct: number | null;
+    avgOverallMarks?: number | null;
+    courseMaxMarks?: number;
     passedCount: number;
     failedCount: number;
     ungradedCount: number;
+    noGradeCount?: number;
+    missingCount?: number;
+    notSubmittedCount?: number;
   };
   failedStudents: {
     studentId: number;
     name: string;
     number: string | null;
     overallPct: number;
+    overallMarks?: number;
   }[];
   students: CourseReportStudentRow[];
 }

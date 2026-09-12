@@ -65,7 +65,9 @@ export async function resolveAssignmentMaxMarks(
   return { data: reserved.data };
 }
 
-/** Coerce late window to int minutes; omit when undefined/null. */
+/** Coerce late window to int minutes; omit when undefined/null.
+ *  0 = no late submissions. -1 = late allowed with no time limit.
+ *  Positive = legacy timed grace window (minutes after due). */
 export function normaliseLateWindow(lateWindowMinutes) {
   if (lateWindowMinutes === undefined || lateWindowMinutes === null) {
     return { data: {} };
@@ -75,8 +77,8 @@ export function normaliseLateWindow(lateWindowMinutes) {
     return { error: 'lateWindowMinutes must be a number' };
   }
   const minutes = Math.trunc(n);
-  if (minutes < 0 || minutes > 10080) {
-    return { error: 'lateWindowMinutes must be between 0 and 10080' };
+  if (minutes < -1 || minutes > 10080) {
+    return { error: 'lateWindowMinutes must be -1 (unlimited) or between 0 and 10080' };
   }
   return { data: { lateWindowMinutes: minutes } };
 }

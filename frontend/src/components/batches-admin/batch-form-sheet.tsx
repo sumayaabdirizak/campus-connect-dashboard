@@ -82,6 +82,7 @@ export function BatchFormModal({ open, onOpenChange }: Props) {
     mutationFn: createAdminBatch,
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminBatchesQueryKey });
+      void queryClient.invalidateQueries({ queryKey: ['dean', 'batches'] });
       showToast('success', 'Batch created successfully');
       onOpenChange(false);
     },

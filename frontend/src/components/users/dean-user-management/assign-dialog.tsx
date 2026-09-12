@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { Button } from '@/features/ui/components/button';
 import {
   Dialog,
@@ -10,13 +11,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/features/ui/components/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/features/ui/components/select';
+import { SearchSelect } from '@/features/ui/components/search-select';
 import { useAssignStudent } from './use-assign-student';
 
 export function AssignDialog({
@@ -37,6 +32,15 @@ export function AssignDialog({
     isPending,
   } = useAssignStudent(student);
 
+  const batchOptions = useMemo(
+    () => batches.map((b) => ({ value: b.id.toString(), label: b.name })),
+    [batches]
+  );
+  const sectionOptions = useMemo(
+    () => sections.map((s) => ({ value: s.id.toString(), label: s.name })),
+    [sections]
+  );
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -53,42 +57,30 @@ export function AssignDialog({
         </DialogHeader>
         <div className='space-y-4 py-4'>
           <div className='space-y-2'>
-            <label htmlFor='assign-batch' className='text-sm font-medium'>
-              Academic Batch
-            </label>
-            <Select onValueChange={setBatchId} value={batchId}>
-              <SelectTrigger id='assign-batch'>
-                <SelectValue placeholder='Select a batch' />
-              </SelectTrigger>
-              <SelectContent>
-                {batches.map((b) => (
-                  <SelectItem key={b.id} value={b.id.toString()}>
-                    {b.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <label className='text-sm font-medium'>Academic Batch</label>
+            <SearchSelect
+              options={batchOptions}
+              value={batchId}
+              onValueChange={(v) => {
+                setBatchId(v);
+                setSectionId('');
+              }}
+              placeholder='Select a batch'
+              searchPlaceholder='Search batches...'
+              emptyText='No batches found.'
+            />
           </div>
           <div className='space-y-2'>
-            <label htmlFor='assign-section' className='text-sm font-medium'>
-              Batch Section
-            </label>
-            <Select
-              onValueChange={setSectionId}
+            <label className='text-sm font-medium'>Batch Section</label>
+            <SearchSelect
+              options={sectionOptions}
               value={sectionId}
+              onValueChange={setSectionId}
               disabled={!batchId}
-            >
-              <SelectTrigger id='assign-section'>
-                <SelectValue placeholder='Select a section' />
-              </SelectTrigger>
-              <SelectContent>
-                {sections.map((s) => (
-                  <SelectItem key={s.id} value={s.id.toString()}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              placeholder={batchId ? 'Select a section' : 'Pick a batch first'}
+              searchPlaceholder='Search sections...'
+              emptyText='No sections found.'
+            />
           </div>
         </div>
         <DialogFooter>

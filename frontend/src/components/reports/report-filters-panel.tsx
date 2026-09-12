@@ -1,8 +1,5 @@
 'use client';
 
-import { Filter, RefreshCw } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -13,22 +10,20 @@ import {
 import { cn } from '@/lib/utils';
 import {
   clampIsoDate,
-  defaultCustomDateRange,
   REPORT_PERIOD_OPTIONS,
-  todayIsoDate,
   validateReportDateRange,
   type ReportDateRange
 } from '@/lib/reports/period-utils';
 import type { ReportScope } from '@/lib/reports/types';
-import { CARD, LABEL_SM } from './report-theme';
-
-const fieldLabel =
-  'text-[11px] font-semibold uppercase tracking-wide text-muted-foreground';
+import { useActiveSemesterWindow } from '@/lib/academic/use-active-semester-window';
+import {
+  GlobalFilterField,
+  GlobalReportFilters,
+  GLOBAL_FILTER_CONTROL
+} from './global-report-filters';
+import { ReportCustomDateFields } from './report-custom-date-fields';
 
 const fieldError = 'text-xs text-destructive';
-
-const fieldControl =
-  'h-10 border-border bg-background';
 
 export type ReportFilterValues = {
   scope: ReportScope;
@@ -37,22 +32,33 @@ export type ReportFilterValues = {
   status: string;
 };
 
+const STORAGE_KEY = 'entity-reports-filters:v1';
+
 export function ReportFiltersPanel({
   values,
   onChange,
   onGenerate,
+  onReset,
   isGenerating = false
 }: {
   values: ReportFilterValues;
   onChange: (patch: Partial<ReportFilterValues>) => void;
   onGenerate: () => void;
+  onReset: () => void;
   isGenerating?: boolean;
 }) {
   const { scope, periodPreset, dateRange, status } = values;
-  const today = todayIsoDate();
+  const { data: semesterWindow } = useActiveSemesterWindow();
   const isCustom = periodPreset === 'custom';
+  const minDate = semesterWindow?.minDate ?? null;
+  const maxDate = semesterWindow?.maxDate ?? null;
+
   const dateErrors = isCustom
-    ? validateReportDateRange(dateRange, { requireAny: true })
+    ? validateReportDateRange(dateRange, {
+        requireAny: true,
+        minDate,
+        maxDate
+      })
     : null;
 
   const periodOptions = [
@@ -60,137 +66,130 @@ export function ReportFiltersPanel({
     { id: 'custom', label: 'Custom dates' }
   ];
 
-  const fromMax = dateRange.to && dateRange.to <= today ? dateRange.to : today;
-  const toMin = dateRange.from ?? undefined;
-
-  const setFrom = (raw: string) => {
-    const from = clampIsoDate(raw || null, null, fromMax);
-    onChange({
-      periodPreset: 'custom',
-      dateRange: { ...dateRange, from }
-    });
-  };
-
-  const setTo = (raw: string) => {
-    const to = clampIsoDate(raw || null, toMin, today);
-    onChange({
-      periodPreset: 'custom',
-      dateRange: { ...dateRange, to }
-    });
-  };
-
   const handlePeriodChange = (id: string) => {
     if (id === 'custom') {
       const hasAny = Boolean(dateRange.from || dateRange.to);
       onChange({
         periodPreset: 'custom',
-        dateRange: hasAny ? dateRange : defaultCustomDateRange()
+        dateRange: hasAny
+          ? dateRange
+          : {
+              from: minDate,
+              to: maxDate
+            }
       });
       return;
     }
-    onChange({ periodPreset: id });
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    onGenerate();
+    onChange({
+      periodPreset: id,
+      dateRange: { from: null, to: null }
+    });
   };
 
   return (
-    <div className={cn(CARD, 'p-4')}>
-      <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
-        <div className='flex flex-col gap-3 lg:flex-row lg:items-end'>
-          <div className='min-w-0 flex-1 space-y-1.5'>
-            <span className={fieldLabel}>Period</span>
-            <Select value={periodPreset} onValueChange={handlePeriodChange}>
-              <SelectTrigger className={cn('w-full', fieldControl)}>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {periodOptions.map((p) => (
-                  <SelectItem key={p.id} value={p.id}>
-                    {p.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+    <GlobalReportFilters
+      description='Default is the active university semester. Custom dates stay within that semester through today.'
+      storageKey={STORAGE_KEY}
+      getTemplate={() => values}
+      onLoadTemplate={(raw) => {
+        if (!raw || typeof raw !== 'object') return;
+        const o = raw as Partial<ReportFilterValues>;
+        onChange({
+          periodPreset: typeof o.periodPreset === 'string' ? o.periodPreset : values.periodPreset,
+          dateRange:
+            o.dateRange && typeof o.dateRange === 'object'
+              ? {
+                  from: (o.dateRange as ReportDateRange).from ?? null,
+                  to: (o.dateRange as ReportDateRange).to ?? null
+                }
+              : values.dateRange,
+          status: typeof o.status === 'string' ? o.status : values.status
+        });
+      }}
+      applyLabel={isGenerating ? 'Generating…' : 'Apply filters'}
+      applyDisabled={isGenerating}
+      onApply={onGenerate}
+      onReset={onReset}
+    >
+      <GlobalFilterField label='Time range'>
+        <Select value={periodPreset} onValueChange={handlePeriodChange}>
+          <SelectTrigger className={cn('w-full', GLOBAL_FILTER_CONTROL)}>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {periodOptions.map((p) => (
+              <SelectItem key={p.id} value={p.id}>
+                {p.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </GlobalFilterField>
 
-          <div className='grid min-w-0 flex-1 grid-cols-2 gap-3 sm:max-w-md'>
-            <div className='space-y-1.5'>
-              <span className={fieldLabel}>From</span>
-              <Input
-                type='date'
-                value={dateRange.from ?? ''}
-                min={undefined}
-                max={fromMax}
-                onChange={(e) => setFrom(e.target.value)}
-                className={cn(
-                  fieldControl,
-                  isCustom && dateErrors?.from && 'border-destructive'
-                )}
-                aria-invalid={isCustom && dateErrors?.from ? true : undefined}
-              />
-              {isCustom && dateErrors?.from ? (
-                <p className={fieldError}>{dateErrors.from}</p>
-              ) : null}
-            </div>
-            <div className='space-y-1.5'>
-              <span className={fieldLabel}>To</span>
-              <Input
-                type='date'
-                value={dateRange.to ?? ''}
-                min={toMin}
-                max={today}
-                onChange={(e) => setTo(e.target.value)}
-                className={cn(
-                  fieldControl,
-                  isCustom && dateErrors?.to && 'border-destructive'
-                )}
-                aria-invalid={isCustom && dateErrors?.to ? true : undefined}
-              />
-              {isCustom && dateErrors?.to ? (
-                <p className={fieldError}>{dateErrors.to}</p>
-              ) : null}
-            </div>
-          </div>
+      {isCustom ? (
+        <ReportCustomDateFields
+          from={dateRange.from}
+          to={dateRange.to}
+          minDate={minDate}
+          maxDate={maxDate}
+          hint={
+            semesterWindow?.label
+              ? `Limited to ${semesterWindow.label} (from semester start through today).`
+              : 'Limited to the active semester start through today.'
+          }
+          onChange={(patch) => {
+            onChange({
+              periodPreset: 'custom',
+              dateRange: {
+                from:
+                  patch.from !== undefined
+                    ? clampIsoDate(
+                        patch.from,
+                        minDate,
+                        dateRange.to && maxDate && dateRange.to < maxDate
+                          ? dateRange.to
+                          : maxDate
+                      )
+                    : dateRange.from,
+                to:
+                  patch.to !== undefined
+                    ? clampIsoDate(patch.to, dateRange.from ?? minDate, maxDate)
+                    : dateRange.to
+              }
+            });
+          }}
+        />
+      ) : null}
 
-          <Button
-            type='submit'
-            className='h-10 shrink-0 gap-2 bg-primary px-5 hover:bg-primary/90'
-          >
-            <RefreshCw className={cn('size-4', isGenerating && 'animate-spin')} aria-hidden />
-            Generate Report
-          </Button>
-        </div>
+      {scope === 'batch' ? (
+        <GlobalFilterField label='Status'>
+          <Select value={status} onValueChange={(v) => onChange({ status: v })}>
+            <SelectTrigger
+              className={cn('w-full', GLOBAL_FILTER_CONTROL)}
+              aria-label='Batch status'
+            >
+              <SelectValue placeholder='All statuses' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>All statuses</SelectItem>
+              <SelectItem value='ACTIVE'>Active</SelectItem>
+              <SelectItem value='INACTIVE'>Inactive</SelectItem>
+            </SelectContent>
+          </Select>
+        </GlobalFilterField>
+      ) : null}
 
-        {isCustom && dateErrors?.general ? (
-          <p className={fieldError}>{dateErrors.general}</p>
-        ) : null}
-
-        {scope === 'batch' ? (
-          <div className='flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center'>
-            <div className='flex shrink-0 items-center gap-2'>
-              <Filter className='size-4 text-muted-foreground' aria-hidden />
-              <span className={LABEL_SM}>Filters</span>
-            </div>
-
-            <Select value={status} onValueChange={(v) => onChange({ status: v })}>
-              <SelectTrigger
-                className={cn('w-full min-w-[10rem] sm:w-44', fieldControl)}
-                aria-label='Batch status'
-              >
-                <SelectValue placeholder='All status' />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value='all'>All status</SelectItem>
-                <SelectItem value='ACTIVE'>Active</SelectItem>
-                <SelectItem value='INACTIVE'>Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        ) : null}
-      </form>
-    </div>
+      {isCustom && dateErrors?.general ? (
+        <p className={cn(fieldError, 'sm:col-span-2 xl:col-span-4')}>
+          {dateErrors.general}
+        </p>
+      ) : null}
+      {isCustom && dateErrors?.from ? (
+        <p className={cn(fieldError, 'sm:col-span-2 xl:col-span-4')}>{dateErrors.from}</p>
+      ) : null}
+      {isCustom && dateErrors?.to ? (
+        <p className={cn(fieldError, 'sm:col-span-2 xl:col-span-4')}>{dateErrors.to}</p>
+      ) : null}
+    </GlobalReportFilters>
   );
 }

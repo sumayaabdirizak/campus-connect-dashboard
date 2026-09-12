@@ -26,10 +26,6 @@ function reportPeriodLabel(report: Report): string {
   return report.period.months === 0 ? 'All time' : `Last ${report.period.months} months`;
 }
 
-function reportFooter(generatedAt: string): string {
-  return `<div class="footer"><span><strong>${escapeHtml(AUTH_BRAND.productName)}</strong> · Official activity report</span><span>Generated ${escapeHtml(generatedAt)}</span></div>`;
-}
-
 /**
  * One CSV per report: the headline numbers first, then each domain's table
  * beneath its own heading. A single file keeps the whole picture together —
@@ -105,8 +101,7 @@ export function exportReportPdf(report: Report) {
   const body =
     header +
     (kpiItems.length ? kpisRow(kpiItems) : '') +
-    sectionsHtml +
-    reportFooter(generatedAt);
+    sectionsHtml;
 
   printHtmlDocument(`${meta.title} — ${report.subject.name}`, body);
 }
@@ -198,6 +193,6 @@ export function exportReportListPdf({
 
   printHtmlDocument(
     `${meta.plural} report`,
-    header + table + reportFooter(generatedAt)
+    header + table
   );
 }

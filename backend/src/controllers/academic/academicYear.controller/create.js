@@ -1,8 +1,8 @@
 import { prisma } from "../../../db/prisma.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import {
+  buildAcademicYearBounds,
   buildDefaultSemesterRows,
-  getCurrentAcademicYearBounds,
 } from "../../../services/academic/academicCalendar.js";
 import { parseAcademicYearStartYear } from "../../../services/academic/academicCalendarDefaults.js";
 import { getNextSemesterSequence } from "../../../services/academic/semesterSequence.js";
@@ -21,7 +21,7 @@ export const createAcademicYear = async (req, res) => {
     // Always auto-assign next global semester pair (#N, #N+1).
     const startYear = parseAcademicYearStartYear(name) ?? new Date(start_date).getFullYear();
     const bounds = {
-      ...getCurrentAcademicYearBounds(new Date(startYear, 8, 1)),
+      ...buildAcademicYearBounds(startYear),
       name,
       startDate: new Date(start_date),
       endDate: new Date(end_date),

@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { format } from 'date-fns';
 import { Button } from '@/features/ui/components/button';
 import {
@@ -20,6 +19,7 @@ export function TimelineItemRow({
   const Icon = TIMELINE_ICON[item.kind];
   const when = item.deadlineAt ? new Date(item.deadlineAt) : null;
   const action = ACTION_BY_AUDIENCE[audience];
+  const href = timelineHrefFor(item);
 
   return (
     <li className='flex items-center gap-3 px-4 py-3'>
@@ -30,18 +30,18 @@ export function TimelineItemRow({
         <p className='text-xs text-muted-foreground'>
           {when ? format(when, 'h:mm a') : ''}
         </p>
-        <Link
-          href={timelineHrefFor(item)}
+        <a
+          href={href}
           className='block truncate text-sm font-medium text-primary hover:underline'
         >
           {item.title}
-        </Link>
+        </a>
         <p className='truncate text-xs text-muted-foreground'>
           {item.courseCode ?? ''}
         </p>
       </div>
       <Button asChild variant='outline' size='sm' className='shrink-0'>
-        <Link href={timelineHrefFor(item)}>{action[item.kind]}</Link>
+        <a href={href}>{action[item.kind]}</a>
       </Button>
     </li>
   );

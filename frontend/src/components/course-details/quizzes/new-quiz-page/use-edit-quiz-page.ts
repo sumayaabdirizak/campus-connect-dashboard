@@ -27,6 +27,10 @@ import {
   deleteQuizPaperFile,
   uploadQuizPaperFile
 } from '@/lib/course-details/services/quizzes-service';
+import {
+  duplicateQuizTitleMessage,
+  isDuplicateCourseTitle
+} from '@/lib/course-details/validate-unique-title';
 
 /// Full-page edit flow: quiz configuration (Basics / Timing / Marking) lives in
 /// local form state while questions are persisted immediately via the same
@@ -138,6 +142,12 @@ export function useEditQuizPage(
     const err = validateForm(form, quiz);
     if (err) {
       toast.error(err);
+      return;
+    }
+    const existing =
+      queryClient.getQueryData<Quiz[]>(quizKeys.list(courseId)) ?? [];
+    if (isDuplicateCourseTitle(form.title, existing, quiz.id)) {
+      toast.error(duplicateQuizTitleMessage(form.title));
       return;
     }
     if (!form.is_draft) {

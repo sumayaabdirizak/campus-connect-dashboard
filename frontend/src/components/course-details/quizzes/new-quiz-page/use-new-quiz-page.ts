@@ -23,6 +23,11 @@ import {
 import { draftToPayload, emptyDraft, validateDraft } from '../quiz-builder/draft-empty';
 import type { DraftQuestion, OptionInput, QuizQuestionType } from '../quiz-builder/types';
 import { BLANK, toPayload, validateForm, isUploadedOfflineForm } from '../quiz-settings-form/form-state';
+import { quizKeys } from '@/lib/course-details/queries/quizzes-queries/keys';
+import {
+  duplicateQuizTitleMessage,
+  isDuplicateCourseTitle
+} from '@/lib/course-details/validate-unique-title';
 
 /// Drives the single-page "Add new quiz" flow: configure the quiz AND
 /// stage its questions locally, then create everything in one request when
@@ -176,6 +181,13 @@ export function useNewQuizPage(courseId: string, onCreated: (quiz: Quiz) => void
     const err = validateForm(form, null);
     if (err) {
       toast.error(err);
+      createInFlightRef.current = false;
+      return;
+    }
+    const existing =
+      queryClient.getQueryData<Quiz[]>(quizKeys.list(courseId)) ?? [];
+    if (isDuplicateCourseTitle(form.title, existing)) {
+      toast.error(duplicateQuizTitleMessage(form.title));
       createInFlightRef.current = false;
       return;
     }

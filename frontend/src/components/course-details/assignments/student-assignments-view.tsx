@@ -7,34 +7,35 @@ import { toast } from 'sonner';
 import { useAssignments, useSubmitWork, useUploadSubmissionFile } from '@/lib/course-details/queries/assignments-queries';
 
 import type { Assignment } from '@/lib/course-details/services/assignments-types';
-import {
-  resolveAssignmentCardTiming,
-  shouldAutoExpandAssignment,
-  getAssignmentDisplayStatus,
-} from './student-assignment-card/assignment-card-state';
+import { useCourseLiveNow } from '@/components/course-details/course-live-clock';
 import { CourseTabHeader } from '../_shared/course-tab-header';
 import { CourseTabPage } from '../_shared/course-tab-page';
 import { StudentAssignmentCard } from './student-assignment-card';
+import { StudentAssignmentDetailPage } from './student-assignment-card/student-assignment-detail-page';
 import { AssignmentsLoadingState, AssignmentsEmptyState } from './shared';
 
-function pickAutoExpandId(assignments: Assignment[]): number | null {
-  for (const a of assignments) {
-    const listSub = a.submissions?.[0];
-    const timing = resolveAssignmentCardTiming(a, null, null, a._extension ?? null);
-    const status = getAssignmentDisplayStatus(timing, {
-      grade: listSub?.grade ?? null,
-      maxMarks: a.maxMarks ?? 100,
-    });
-    if (shouldAutoExpandAssignment(status, timing)) return a.id;
-  }
-  return null;
+function readAssignmentIdFromUrl(): number | null {
+  if (typeof window === 'undefined') return null;
+  const raw = new URL(window.location.href).searchParams.get('assignmentId');
+  if (!raw) return null;
+  const id = Number(raw);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+function writeAssignmentIdToUrl(id: number | null) {
+  if (typeof window === 'undefined') return;
+  const url = new URL(window.location.href);
+  url.searchParams.set('tab', 'assignments');
+  if (id == null) url.searchParams.delete('assignmentId');
+  else url.searchParams.set('assignmentId', String(id));
+  window.history.replaceState({}, '', url.toString());
 }
 
 export function StudentAssignmentsView({ courseId }: { courseId: string }) {
+  useCourseLiveNow();
   const { data: assignments = [], isLoading } = useAssignments(courseId, { live: true });
 
-  const [expandedId, setExpandedId] = useState<number | null>(null);
-  const didAutoExpand = useRef(false);
+  const [selectedId, setSelectedId] = useState<number | null>(() => readAssignmentIdFromUrl());
 
   const [submitModes, setSubmitModes] = useState<Record<number, 'link' | 'file'>>({});
   const [submitUrls, setSubmitUrls] = useState<Record<number, string>>({});
@@ -45,15 +46,29 @@ export function StudentAssignmentsView({ courseId }: { courseId: string }) {
   const [submittingFor, setSubmittingFor] = useState<number | null>(null);
 
   const publishedAssignments = assignments.filter((a) => !a.is_draft);
+  const selectedAssignment =
+    selectedId == null
+      ? null
+      : publishedAssignments.find((a) => a.id === selectedId) ?? null;
 
   useEffect(() => {
-    if (didAutoExpand.current || publishedAssignments.length === 0) return;
-    const id = pickAutoExpandId(publishedAssignments);
-    if (id != null) {
-      setExpandedId(id);
-      didAutoExpand.current = true;
+    if (selectedId == null || isLoading) return;
+    const stillExists = assignments.some((a) => a.id === selectedId && !a.is_draft);
+    if (!stillExists) {
+      setSelectedId(null);
+      writeAssignmentIdToUrl(null);
     }
-  }, [publishedAssignments]);
+  }, [selectedId, isLoading, assignments]);
+
+  const openAssignment = (id: number) => {
+    setSelectedId(id);
+    writeAssignmentIdToUrl(id);
+  };
+
+  const closeAssignment = () => {
+    setSelectedId(null);
+    writeAssignmentIdToUrl(null);
+  };
 
   const submitModeFor = (assignmentId: number) => submitModes[assignmentId] ?? 'link';
   const submitUrlFor = (assignmentId: number) => submitUrls[assignmentId] ?? '';
@@ -101,6 +116,33 @@ export function StudentAssignmentsView({ courseId }: { courseId: string }) {
     }
   };
 
+  if (selectedAssignment) {
+    return (
+      <StudentAssignmentDetailPage
+        assignment={selectedAssignment}
+        onBack={closeAssignment}
+        submitMode={submitModeFor(selectedAssignment.id)}
+        onSubmitModeChange={(mode) =>
+          setSubmitModes((prev) => ({ ...prev, [selectedAssignment.id]: mode }))
+        }
+        submitUrl={submitUrlFor(selectedAssignment.id)}
+        onSubmitUrlChange={(value) =>
+          setSubmitUrls((prev) => ({ ...prev, [selectedAssignment.id]: value }))
+        }
+        pendingFile={pendingSubmissionFileFor(selectedAssignment.id)}
+        onPendingFileChange={(file) =>
+          setPendingSubmissionFiles((prev) => ({
+            ...prev,
+            [selectedAssignment.id]: file
+          }))
+        }
+        fileInputRef={submissionFileInputRef}
+        isSubmitting={submittingFor === selectedAssignment.id}
+        onSubmit={() => handleStudentSubmit(selectedAssignment)}
+      />
+    );
+  }
+
   return (
     <CourseTabPage>
       <CourseTabHeader
@@ -112,28 +154,12 @@ export function StudentAssignmentsView({ courseId }: { courseId: string }) {
         <AssignmentsEmptyState isStudent hasItems={assignments.length > 0} />
       )}
       {!isLoading && publishedAssignments.length > 0 ? (
-        <div className='grid grid-cols-1 items-start gap-4 md:grid-cols-2'>
+        <div className='grid grid-cols-1 items-stretch gap-4 md:grid-cols-2'>
           {publishedAssignments.map((a) => (
             <StudentAssignmentCard
               key={a.id}
               assignment={a}
-              expanded={expandedId === a.id}
-              onExpandedChange={(open) => setExpandedId(open ? a.id : null)}
-              submitMode={submitModeFor(a.id)}
-              onSubmitModeChange={(mode) =>
-                setSubmitModes((prev) => ({ ...prev, [a.id]: mode }))
-              }
-              submitUrl={submitUrlFor(a.id)}
-              onSubmitUrlChange={(value) =>
-                setSubmitUrls((prev) => ({ ...prev, [a.id]: value }))
-              }
-              pendingFile={pendingSubmissionFileFor(a.id)}
-              onPendingFileChange={(file) =>
-                setPendingSubmissionFiles((prev) => ({ ...prev, [a.id]: file }))
-              }
-              fileInputRef={submissionFileInputRef}
-              isSubmitting={submittingFor === a.id}
-              onSubmit={() => handleStudentSubmit(a)}
+              onOpen={() => openAssignment(a.id)}
             />
           ))}
         </div>

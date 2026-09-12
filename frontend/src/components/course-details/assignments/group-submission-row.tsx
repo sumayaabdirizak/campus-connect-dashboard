@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
-import { AlertTriangle, CalendarClock, Check, Users, X as XIcon } from 'lucide-react';
+import { AlertTriangle, CalendarClock, Check, Clock, Users, X as XIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { Assignment, Submission, SubmissionExtension } from '@/lib/course-details/services/assignments-types';
@@ -17,7 +17,8 @@ export function GroupSubmissionRow({
   col,
   selected,
   onToggle,
-  onGrade
+  onGrade,
+  onExtendMissing
 }: {
   row: GroupRow;
   assignment: Assignment;
@@ -26,6 +27,7 @@ export function GroupSubmissionRow({
   selected: boolean;
   onToggle: (groupId: number, checked: boolean) => void;
   onGrade: (sub: Submission) => void;
+  onExtendMissing: (groupId: number) => void;
 }) {
   const { groupId, groupName, members, submission: sub } = row;
   const status = statusOf(assignment, sub ?? undefined, extensions, { groupId });
@@ -96,7 +98,14 @@ export function GroupSubmissionRow({
             {sub.is_reviewed && sub.grade != null ? 'Review' : 'Grade'}
           </Button>
         ) : (
-          <span className='text-xs text-muted-foreground'>No submission</span>
+          <Button
+            variant='outline'
+            size='sm'
+            className='h-8 gap-1'
+            onClick={() => onExtendMissing(groupId)}
+          >
+            Extend
+          </Button>
         )}
       </PosTableCell>
     </PosTableRow>
@@ -104,24 +113,38 @@ export function GroupSubmissionRow({
 }
 
 function StatusBadge({ status }: { status: SubmissionStatus }) {
+  const label =
+    status === 'pending'
+      ? 'Not submitted'
+      : status === 'extended'
+        ? 'Extended'
+        : status === 'missing'
+          ? 'Missing'
+          : status === 'late'
+            ? 'Late'
+            : 'Submitted';
+
   return (
     <Badge
       variant='outline'
-      className={`gap-1 capitalize ${
+      className={`gap-1 ${
         status === 'submitted'
           ? 'text-success border-success'
           : status === 'late'
             ? 'text-warning border-warning'
             : status === 'extended'
               ? 'text-primary border-primary/40'
-              : 'text-destructive border-destructive/40'
+              : status === 'pending'
+                ? 'text-muted-foreground border-border'
+                : 'text-destructive border-destructive/40'
       }`}
     >
       {status === 'submitted' ? <Check className='size-3' /> : null}
       {status === 'late' ? <AlertTriangle className='size-3' /> : null}
       {status === 'extended' ? <CalendarClock className='size-3' /> : null}
+      {status === 'pending' ? <Clock className='size-3' /> : null}
       {status === 'missing' ? <XIcon className='size-3' /> : null}
-      {status}
+      {label}
     </Badge>
   );
 }

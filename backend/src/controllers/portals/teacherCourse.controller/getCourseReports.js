@@ -1,20 +1,56 @@
 import { prisma } from '../../../db/prisma.js';
 import { respondInternalError } from '../../../utils/httpError.js';
+import { parsePaginationQuery } from '../../../utils/pagination.js';
 import {
   findTeacherOfferings,
   findTeacherOfferingByPublicId,
-  overallPctByStudent,
+  overallMarksByStudent,
   summarizeStudentOutcomes,
+  totalActivityMarks,
+  computeActivityFlagsByStudent,
+  resolveStudentReportStatus,
 } from './courseReportShared.js';
 
-const LIST_INCLUDE = {
+function quizWeight(q) {
+  const planTotal = q.marksPlan?.totalMarks;
+  if (q.maxMarks > 0) return q.maxMarks;
+  if (Number.isInteger(planTotal) && planTotal > 0) return planTotal;
+  return 0;
+}
+
+/** Lightweight list scan — no student rows (grades loaded only for the page). */
+const META_INCLUDE = {
   course: {
     select: {
       code: true,
       name: true,
+      maxMarks: true,
       department: { select: { name: true } },
     },
   },
+  section: {
+    select: {
+      name: true,
+      batch: { select: { name: true } },
+      _count: { select: { studentRegistrations: true } },
+    },
+  },
+  assignments: {
+    where: { lifecycle: { publishStatus: 'PUBLISHED' } },
+    select: { id: true, maxMarks: true, due_date: true },
+  },
+  quizzes: {
+    where: { is_draft: false },
+    select: { id: true, maxMarks: true, marksPlan: true, close_at: true },
+  },
+  resources: {
+    where: { is_draft: false, status: 'APPROVED' },
+    select: { id: true },
+  },
+};
+
+const PAGE_INCLUDE = {
+  ...META_INCLUDE,
   section: {
     select: {
       name: true,
@@ -25,21 +61,6 @@ const LIST_INCLUDE = {
       },
     },
   },
-  assignments: {
-    where: { lifecycle: { publishStatus: 'PUBLISHED' } },
-    select: {
-      id: true,
-      maxMarks: true,
-    },
-  },
-  quizzes: {
-    where: { is_draft: false },
-    select: { id: true },
-  },
-  resources: {
-    where: { is_draft: false, status: 'APPROVED' },
-    select: { id: true },
-  },
 };
 
 const DETAIL_INCLUDE = {
@@ -47,6 +68,7 @@ const DETAIL_INCLUDE = {
     select: {
       code: true,
       name: true,
+      maxMarks: true,
       department: { select: { name: true } },
     },
   },
@@ -76,6 +98,8 @@ const DETAIL_INCLUDE = {
       id: true,
       title: true,
       close_at: true,
+      maxMarks: true,
+      marksPlan: true,
     },
   },
   resources: {
@@ -89,20 +113,69 @@ const DETAIL_INCLUDE = {
   },
 };
 
-async function loadGradesForOfferings(offerings) {
+const GRADE_SORT_KEYS = new Set(['failed', 'avgOverallPct', 'avgOverallMarks']);
+
+function parseSort(raw) {
+  const s = typeof raw === 'string' && raw ? raw : 'courseCode-asc';
+  const [key, dir] = s.split('-');
+  return { key: key || 'courseCode', dir: dir === 'desc' ? 'desc' : 'asc' };
+}
+
+function sortRows(rows, { key, dir }) {
+  const mult = dir === 'desc' ? -1 : 1;
+  return [...rows].sort((a, b) => {
+    const av = a[key];
+    const bv = b[key];
+    if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * mult;
+    return String(av ?? '').localeCompare(String(bv ?? '')) * mult;
+  });
+}
+
+function matchesCourseSearch(row, q) {
+  if (!q) return true;
+  const hay = [row.courseCode, row.courseName, row.section, row.batch, row.department]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
+  return hay.includes(q.toLowerCase());
+}
+
+function metaRow(o) {
+  return {
+    _dbId: o.id,
+    id: o.publicId,
+    courseCode: o.course.code,
+    courseName: o.course.name,
+    department: o.course.department?.name ?? null,
+    section: o.section.name,
+    batch: o.section.batch?.name ?? null,
+    students: o.section._count?.studentRegistrations ?? 0,
+    quizzes: o.quizzes.length,
+    assignments: o.assignments.length,
+    resources: o.resources.length,
+    failed: 0,
+    avgOverallPct: null,
+    avgOverallMarks: null,
+    courseMaxMarks: o.course?.maxMarks ?? 100,
+  };
+}
+
+async function loadGradesForOfferings(offerings, { from = null, to = null } = {}) {
   const assignmentIds = offerings.flatMap((o) => o.assignments.map((a) => a.id));
   const quizIds = offerings.flatMap((o) => o.quizzes.map((q) => q.id));
-  const maxMarksByAssignmentId = new Map();
-  for (const o of offerings) {
-    for (const a of o.assignments) {
-      maxMarksByAssignmentId.set(a.id, a.maxMarks || 100);
-    }
-  }
+
+  const submittedAt = {};
+  if (from) submittedAt.gte = new Date(`${from}T00:00:00.000Z`);
+  if (to) submittedAt.lte = new Date(`${to}T23:59:59.999Z`);
+  const hasDate = Object.keys(submittedAt).length > 0;
 
   const [submissions, attempts] = await Promise.all([
     assignmentIds.length
       ? prisma.submission.findMany({
-          where: { assignmentId: { in: assignmentIds }, gradeRow: { isNot: null } },
+          where: {
+            assignmentId: { in: assignmentIds },
+            ...(hasDate ? { submitted_at: submittedAt } : {}),
+          },
           select: {
             assignmentId: true,
             studentId: true,
@@ -114,8 +187,7 @@ async function loadGradesForOfferings(offerings) {
       ? prisma.quizAttempt.findMany({
           where: {
             quizId: { in: quizIds },
-            submitted_at: { not: null },
-            OR: [{ grade: { not: null } }, { score: { not: null } }],
+            submitted_at: { not: null, ...(hasDate ? submittedAt : {}) },
           },
           select: {
             quizId: true,
@@ -127,7 +199,6 @@ async function loadGradesForOfferings(offerings) {
       : Promise.resolve([]),
   ]);
 
-  // Group grades by offering via assignment/quiz ownership.
   const assignmentOffering = new Map();
   const quizOffering = new Map();
   for (const o of offerings) {
@@ -137,10 +208,23 @@ async function loadGradesForOfferings(offerings) {
 
   const byOffering = new Map();
   for (const o of offerings) {
-    byOffering.set(o.id, { submissions: [], attempts: [], maxMarksByAssignmentId: new Map() });
+    const quizWeightById = new Map(o.quizzes.map((q) => [q.id, quizWeight(q)]));
+    const maxMarksByAssignmentId = new Map();
     for (const a of o.assignments) {
-      byOffering.get(o.id).maxMarksByAssignmentId.set(a.id, a.maxMarks || 100);
+      maxMarksByAssignmentId.set(a.id, a.maxMarks || 10);
     }
+    const activityTotal = totalActivityMarks({
+      maxMarksByAssignmentId,
+      quizWeightById,
+    });
+    byOffering.set(o.id, {
+      submissions: [],
+      attempts: [],
+      maxMarksByAssignmentId,
+      quizWeightById,
+      courseMaxMarks:
+        activityTotal > 0 ? activityTotal : o.course?.maxMarks ?? 100,
+    });
   }
 
   for (const s of submissions) {
@@ -157,49 +241,170 @@ async function loadGradesForOfferings(offerings) {
   return byOffering;
 }
 
+function enrichWithOutcomes(offering, gradeBundle) {
+  const students = offering.section.studentRegistrations.map((r) => r.student);
+  const marksByStudent = overallMarksByStudent(gradeBundle);
+  const flagsLookup = computeActivityFlagsByStudent({
+    assignments: offering.assignments,
+    quizzes: offering.quizzes,
+    submissions: gradeBundle.submissions,
+    attempts: gradeBundle.attempts,
+  });
+  const outcomes = summarizeStudentOutcomes(
+    students,
+    marksByStudent,
+    gradeBundle.courseMaxMarks,
+    flagsLookup
+  );
+  return {
+    students: students.length,
+    failed: outcomes.failedCount,
+    avgOverallPct: outcomes.avgOverallPct,
+    avgOverallMarks: outcomes.avgOverallMarks,
+    courseMaxMarks: outcomes.courseMaxMarks,
+  };
+}
+
 /**
  * GET /api/lecturer-portal/course-reports
- * Table rows: content posted + failed student counts per course.
+ * Paginated table rows: content posted + failed student counts per course.
+ * Query: page, pageSize|limit, q, department, courseId, sort, from, to
  */
 export async function listCourseReports(req, res) {
   try {
     const userId = Number(req.user.sub);
     if (!userId) return res.status(401).json({ message: 'Invalid user context' });
 
-    const offerings = await findTeacherOfferings(userId, LIST_INCLUDE);
-    const gradesByOffering = await loadGradesForOfferings(offerings);
+    const from = typeof req.query.from === 'string' && req.query.from ? req.query.from : null;
+    const to = typeof req.query.to === 'string' && req.query.to ? req.query.to : null;
+    const q = typeof req.query.q === 'string' ? req.query.q.trim() : '';
+    const department =
+      typeof req.query.department === 'string' && req.query.department !== 'all'
+        ? req.query.department.trim()
+        : '';
+    const courseId =
+      typeof req.query.courseId === 'string' && req.query.courseId !== 'all'
+        ? req.query.courseId.trim()
+        : '';
+    const sort = parseSort(req.query.sort);
+    const { page, pageSize, skip } = parsePaginationQuery(req.query, {
+      defaultPageSize: 25,
+      maxPageSize: 1000,
+    });
 
-    const rows = offerings.map((o) => {
-      const students = o.section.studentRegistrations.map((r) => r.student);
+    const metaOfferings = await findTeacherOfferings(req.user, META_INCLUDE);
+    let rows = metaOfferings.map(metaRow);
+
+    const filterOptions = {
+      departments: [
+        ...new Set(rows.map((r) => r.department).filter(Boolean)),
+      ].sort((a, b) => a.localeCompare(b)),
+      courses: rows
+        .map((r) => ({
+          id: r.id,
+          label: `${r.courseCode} — ${r.courseName}`,
+          department: r.department,
+          section: r.section,
+          batch: r.batch,
+        }))
+        .sort((a, b) => a.label.localeCompare(b.label)),
+    };
+
+    rows = rows.filter((r) => {
+      if (department && (r.department ?? '').trim() !== department) return false;
+      if (courseId && r.id !== courseId) return false;
+      if (!matchesCourseSearch(r, q)) return false;
+      return true;
+    });
+
+    const needsGradeSort = GRADE_SORT_KEYS.has(sort.key);
+
+    if (needsGradeSort) {
+      const full = await findTeacherOfferings(req.user, PAGE_INCLUDE);
+      const byPublic = new Map(full.map((o) => [o.publicId, o]));
+      const filteredOfferings = rows
+        .map((r) => byPublic.get(r.id))
+        .filter(Boolean);
+      const gradesByOffering = await loadGradesForOfferings(filteredOfferings, { from, to });
+      rows = filteredOfferings.map((o) => {
+        const base = metaRow(o);
+        const gradeBundle = gradesByOffering.get(o.id) ?? {
+          submissions: [],
+          attempts: [],
+          maxMarksByAssignmentId: new Map(),
+          quizWeightById: new Map(),
+          courseMaxMarks: base.courseMaxMarks,
+        };
+        const outcomes = enrichWithOutcomes(o, gradeBundle);
+        const { _dbId: _omit, ...rest } = { ...base, ...outcomes };
+        return rest;
+      });
+      rows = sortRows(rows, sort);
+      const total = rows.length;
+      const pageRows = rows.slice(skip, skip + pageSize);
+      return res.json({
+        generatedAt: new Date().toISOString(),
+        rows: pageRows,
+        page,
+        pageSize,
+        total,
+        totalCount: total,
+        filterOptions,
+      });
+    }
+
+    rows = sortRows(rows, sort);
+    const total = rows.length;
+    const pageMeta = rows.slice(skip, skip + pageSize);
+    const pageDbIds = pageMeta.map((r) => r._dbId);
+
+    const pageOfferings =
+      pageDbIds.length > 0
+        ? await prisma.courseOffering.findMany({
+            where: { id: { in: pageDbIds } },
+            include: PAGE_INCLUDE,
+          })
+        : [];
+    const gradesByOffering = await loadGradesForOfferings(pageOfferings, { from, to });
+    const byId = new Map(pageOfferings.map((o) => [o.id, o]));
+
+    const pageRows = pageMeta.map((r) => {
+      const o = byId.get(r._dbId);
+      if (!o) {
+        const { _dbId, ...rest } = r;
+        return rest;
+      }
       const gradeBundle = gradesByOffering.get(o.id) ?? {
         submissions: [],
         attempts: [],
         maxMarksByAssignmentId: new Map(),
+        quizWeightById: new Map(),
+        courseMaxMarks: r.courseMaxMarks,
       };
-      const pctByStudent = overallPctByStudent(gradeBundle);
-      const outcomes = summarizeStudentOutcomes(students, pctByStudent);
-
+      const outcomes = enrichWithOutcomes(o, gradeBundle);
       return {
-        id: o.publicId,
-        courseCode: o.course.code,
-        courseName: o.course.name,
-        department: o.course.department?.name ?? null,
-        section: o.section.name,
-        batch: o.section.batch?.name ?? null,
-        students: students.length,
-        quizzes: o.quizzes.length,
-        assignments: o.assignments.length,
-        resources: o.resources.length,
-        failed: outcomes.failedCount,
-        avgOverallPct: outcomes.avgOverallPct,
+        id: r.id,
+        courseCode: r.courseCode,
+        courseName: r.courseName,
+        department: r.department,
+        section: r.section,
+        batch: r.batch,
+        quizzes: r.quizzes,
+        assignments: r.assignments,
+        resources: r.resources,
+        ...outcomes,
       };
     });
 
-    rows.sort((a, b) =>
-      `${a.courseCode} ${a.section}`.localeCompare(`${b.courseCode} ${b.section}`)
-    );
-
-    res.json({ generatedAt: new Date().toISOString(), rows });
+    res.json({
+      generatedAt: new Date().toISOString(),
+      rows: pageRows,
+      page,
+      pageSize,
+      total,
+      totalCount: total,
+      filterOptions,
+    });
   } catch (e) {
     console.error(e);
     respondInternalError(res, 'Failed to list course reports', e);
@@ -216,7 +421,7 @@ export async function getCourseReport(req, res) {
     if (!userId) return res.status(401).json({ message: 'Invalid user context' });
 
     const { offeringId } = req.params;
-    const offering = await findTeacherOfferingByPublicId(userId, offeringId, DETAIL_INCLUDE);
+    const offering = await findTeacherOfferingByPublicId(req.user, offeringId, DETAIL_INCLUDE);
     if (!offering) {
       return res.status(404).json({ message: 'Course offering not found' });
     }
@@ -226,28 +431,45 @@ export async function getCourseReport(req, res) {
       submissions: [],
       attempts: [],
       maxMarksByAssignmentId: new Map(),
+      quizWeightById: new Map(),
+      courseMaxMarks: 0,
     };
     const students = offering.section.studentRegistrations.map((r) => r.student);
-    const pctByStudent = overallPctByStudent(gradeBundle);
-    const outcomes = summarizeStudentOutcomes(students, pctByStudent);
+    const marksByStudent = overallMarksByStudent(gradeBundle);
+    const flagsLookup = computeActivityFlagsByStudent({
+      assignments: offering.assignments,
+      quizzes: offering.quizzes,
+      submissions: gradeBundle.submissions,
+      attempts: gradeBundle.attempts,
+    });
+    const outcomes = summarizeStudentOutcomes(
+      students,
+      marksByStudent,
+      gradeBundle.courseMaxMarks,
+      flagsLookup
+    );
 
     const studentRows = students
       .map((student) => {
-        const overallPct = pctByStudent.get(student.id);
+        const row = marksByStudent.get(student.id);
+        const overallPct = row?.pct ?? null;
+        const overallMarks = row?.earned ?? null;
         return {
           studentId: student.id,
           name: student.full_name,
           number: student.number ?? null,
           overallPct: overallPct == null ? null : Math.round(overallPct * 10) / 10,
-          status:
-            overallPct == null ? 'No grades' : overallPct < 60 ? 'Failed' : 'Passed',
+          overallMarks,
+          status: resolveStudentReportStatus(row, flagsLookup.forStudent(student.id)),
         };
       })
       .sort((a, b) => {
-        if (a.overallPct == null && b.overallPct == null) return a.name.localeCompare(b.name);
-        if (a.overallPct == null) return 1;
-        if (b.overallPct == null) return -1;
-        return a.overallPct - b.overallPct;
+        if (a.overallMarks == null && b.overallMarks == null) {
+          return a.name.localeCompare(b.name);
+        }
+        if (a.overallMarks == null) return 1;
+        if (b.overallMarks == null) return -1;
+        return a.overallMarks - b.overallMarks;
       });
 
     res.json({
@@ -283,9 +505,14 @@ export async function getCourseReport(req, res) {
       classSummary: {
         studentCount: students.length,
         avgOverallPct: outcomes.avgOverallPct,
+        avgOverallMarks: outcomes.avgOverallMarks,
+        courseMaxMarks: outcomes.courseMaxMarks,
         passedCount: outcomes.passedCount,
         failedCount: outcomes.failedCount,
         ungradedCount: outcomes.ungradedCount,
+        noGradeCount: outcomes.noGradeCount,
+        missingCount: outcomes.missingCount,
+        notSubmittedCount: outcomes.notSubmittedCount,
       },
       failedStudents: outcomes.failedStudents,
       students: studentRows,

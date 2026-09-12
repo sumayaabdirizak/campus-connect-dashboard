@@ -28,6 +28,7 @@ import type {
   UpdateQuizInput
 } from '@/lib/course-details/services/quizzes-types';
 import { markBudgetKeys } from '../mark-budget-queries';
+import { invalidateCourseOutcomeQueries } from '../invalidate-course-outcomes';
 import { quizKeys } from './keys';
 
 function invalidateOfferingQuizzes(
@@ -37,6 +38,7 @@ function invalidateOfferingQuizzes(
   queryClient.invalidateQueries({ queryKey: quizKeys.list(courseOfferingId) });
   queryClient.invalidateQueries({ queryKey: quizKeys.available(courseOfferingId) });
   queryClient.invalidateQueries({ queryKey: markBudgetKeys.offering(courseOfferingId) });
+  invalidateCourseOutcomeQueries(queryClient);
 }
 
 export function useCreateQuiz(courseOfferingId: string) {
@@ -123,6 +125,8 @@ export function useGradeAttempt(courseOfferingId: string, quizId: number) {
       queryClient.invalidateQueries({ queryKey: quizKeys.attempts(quizId) });
       queryClient.invalidateQueries({ queryKey: quizKeys.analytics(quizId) });
       queryClient.invalidateQueries({ queryKey: quizKeys.list(courseOfferingId) });
+      queryClient.invalidateQueries({ queryKey: quizKeys.available(courseOfferingId) });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }
@@ -139,6 +143,8 @@ export function useCreateOfflineAttempt(quizId: number) {
     }) => createOfflineAttempt(quizId, studentId, outcome),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: quizKeys.attempts(quizId) });
+      queryClient.invalidateQueries({ queryKey: quizKeys.all });
+      invalidateCourseOutcomeQueries(queryClient);
     }
   });
 }

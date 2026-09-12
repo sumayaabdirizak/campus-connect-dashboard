@@ -24,6 +24,8 @@ export function registerRoomEventHandlers(socket, ctx) {
     discussionGroupDmRoom,
     rememberDiscussionRoom,
     forgetDiscussionRoom,
+    rememberChannelRoom,
+    forgetChannelRoom,
     rememberGroupDmRoom,
     forgetGroupDmRoom,
     getDiscussionMembership,
@@ -129,6 +131,7 @@ export function registerRoomEventHandlers(socket, ctx) {
       socket.data.activeDiscussionChannelId = channelId;
       socket.data.activeDiscussionGroupId = channel.serverId;
       socket.data.activeDiscussionGroupDmId = null;
+      rememberChannelRoom(socketUser.id, channelId);
       await touchDiscussionSession(socket);
       return ackSuccess(ack, { channelId: channelRow.publicId, serverId: channel.server.publicId });
     } catch (error) {
@@ -148,6 +151,7 @@ export function registerRoomEventHandlers(socket, ctx) {
     if (Number(socket.data.activeDiscussionChannelId) === channelId) {
       socket.data.activeDiscussionChannelId = null;
     }
+    forgetChannelRoom(socketUser.id, channelId);
     return ackSuccess(ack, { channelId: channelRow.publicId });
   });
 

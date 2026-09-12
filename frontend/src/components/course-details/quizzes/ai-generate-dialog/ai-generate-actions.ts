@@ -145,9 +145,9 @@ export async function runGenerateBySections(opts: {
   const active = opts.sections
     .map((s) => ({
       ...s,
-      count: Math.min(s.count, Math.max(0, s.remainingMarks))
+      count: Math.min(25, Math.max(0, Math.floor(Number(s.count) || 0)))
     }))
-    .filter((s) => s.count > 0);
+    .filter((s) => s.count > 0 && s.remainingMarks > 0);
   if (active.length === 0) {
     toast.error('Set how many questions each section needs');
     return;
@@ -214,6 +214,12 @@ Rules:
         used.add(i);
         picked.push(pool[i]);
       }
+      // If the model mixed types, fill remaining slots from unused items of any type.
+      for (let i = 0; i < pool.length && picked.length < s.count; i += 1) {
+        if (used.has(i)) continue;
+        used.add(i);
+        picked.push({ ...pool[i], question_type: s.type });
+      }
       const points = splitMarksAcrossQuestions(s.remainingMarks, picked.length);
       for (let i = 0; i < picked.length; i += 1) {
         out.push({
@@ -227,6 +233,11 @@ Rules:
     if (out.length === 0) {
       toast.error('No questions returned — try a clearer source file');
       return;
+    }
+    if (out.length < totalCount) {
+      toast.warning(
+        `AI returned ${out.length} of ${totalCount} requested questions — review or generate again`
+      );
     }
     opts.onPreview(out);
   } catch (e) {

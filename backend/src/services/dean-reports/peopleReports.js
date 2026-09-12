@@ -57,23 +57,48 @@ export function buildStudentReports({
     .map(({ levelKey: _levelKey, ...row }) => row);
 }
 
-export function buildInstructorReports({ teachers, offerings, allQuizAttempts }) {
-  return teachers.map((t) => {
+export function buildInstructorReports({
+  teachers,
+  offerings,
+  allQuizAttempts,
+  quizzesByOffering = new Map(),
+  assignmentsByOffering = new Map(),
+}) {
+  const rows = teachers.map((t) => {
     const teacherOfferings = offerings.filter((o) => o.teacherId === t.id);
     const tIds = teacherOfferings.map((o) => o.id);
     const attempts = allQuizAttempts.filter((a) => tIds.includes(a.quiz?.courseOfferingId));
     const completion =
       attempts.length > 0
-        ? Math.min(100, Math.round((attempts.filter((a) => a.score != null).length / attempts.length) * 100))
+        ? Math.min(
+            100,
+            Math.round(
+              (attempts.filter((a) => a.score != null).length / attempts.length) * 100
+            )
+          )
         : 0;
+    let quizCount = 0;
+    let assignmentCount = 0;
+    for (const id of tIds) {
+      quizCount += quizzesByOffering.get(id) ?? 0;
+      assignmentCount += assignmentsByOffering.get(id) ?? 0;
+    }
+    const activityRaw = quizCount + assignmentCount;
+    // 10 published assessments ≈ full activity bar; more still caps at 100.
+    const activity = Math.min(100, activityRaw * 10);
     const rating = Math.min(5, Math.round((3.5 + completion / 100) * 10) / 10);
     return {
       id: t.id,
       instructor: t.full_name,
       department: t.lecturerProfile?.department?.name ?? '—',
       courses: teacherOfferings.length,
+      quizzes: quizCount,
+      assignments: assignmentCount,
       rating,
       completion,
+      activity,
     };
   });
+
+  return rows.sort((a, b) => b.activity - a.activity || b.completion - a.completion);
 }

@@ -57,17 +57,17 @@ export function QuizSectionBlock({
   const targetReached = targetMarks > 0 && used >= targetMarks;
 
   return (
-    <div className='border rounded-xl p-4 space-y-3'>
-      <div className='flex items-center justify-between flex-wrap gap-2'>
+    <div className='space-y-3 rounded-xl border border-border bg-card p-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <div>
-          <h3 className='font-semibold text-sm'>
+          <h3 className='text-sm font-semibold text-primary'>
             Section: {TYPE_META[type]}
             {targetMarks > 0 && (
-              <span className='text-muted-foreground font-normal'> ({targetMarks} marks)</span>
+              <span className='font-normal text-foreground'> ({targetMarks} marks)</span>
             )}
           </h3>
           <p
-            className={`text-xs tabular-nums mt-0.5 ${
+            className={`mt-0.5 text-xs tabular-nums ${
               complete ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
             }`}
           >

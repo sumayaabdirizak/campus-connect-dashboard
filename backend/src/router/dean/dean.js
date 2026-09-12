@@ -13,6 +13,7 @@ import {
 } from '../../controllers/dean/teacherAssigning.controller.js';
 import {
   getFacultyCourses, getCourseById,
+  createCourse,
   getCourseOfferings,
   createCourseOffering,
   createCourseOfferingsBulk,
@@ -55,6 +56,7 @@ router.get('/teachers/:id', getFacultyTeacherById);
 
 // ── Courses ──────────────────────────────────────────────
 router.get('/courses', getFacultyCourses);
+router.post('/courses', createCourse);
 router.get('/courses/:id', getCourseById);
 router.post('/courses/:id/teachers', assignTeacherToCourse);
 router.delete('/courses/:id/teachers/:teacherId', removeTeacherFromCourse);

@@ -1,7 +1,10 @@
 'use client';
 
+import Link from 'next/link';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import type { Program } from '@/lib/programs/services';
+import { academicScopeHref } from '@/lib/academic-scope/scope-href';
+import { useAuthStore } from '@/lib/auth-store';
 import { ProgramRowActions } from './program-row-actions';
 
 export function ProgramTableRow({
@@ -11,7 +14,14 @@ export function ProgramTableRow({
   program: Program;
   col: (id: string) => boolean;
 }) {
+  const role = useAuthStore((state) => state.user?.role);
   const years = program.durationYears ?? 4;
+  const batchesPath = role === 'DEAN' ? '/dashboard/dean/batches' : '/dashboard/batches';
+  const batchesHref = academicScopeHref(batchesPath, {
+    facultyId: program.department?.faculty?.id,
+    departmentId: program.departmentId,
+    programId: program.id
+  });
 
   return (
     <PosTableRow>
@@ -22,7 +32,10 @@ export function ProgramTableRow({
       ) : null}
       {col('name') ? (
         <PosTableCell>
-          <p className='text-sm font-medium'>{program.name}</p>
+          <Link href={batchesHref} className='text-sm font-medium text-primary hover:underline'>
+            {program.name}
+          </Link>
+          <p className='mt-0.5 text-xs text-muted-foreground'>Next: batches</p>
         </PosTableCell>
       ) : null}
       {col('code') ? (

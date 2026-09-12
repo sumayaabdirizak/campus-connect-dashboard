@@ -25,6 +25,7 @@ import {
   csvEscape,
   buildQuizCsv,
 } from './helpers.js';
+import { nextCopyTitle } from '../../../utils/assertUniqueCourseTitle.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -41,12 +42,19 @@ export function register(router) {
       },
     });
     if (!source) return res.status(404).json({ message: 'Quiz not found' });
+
+    const copyTitle = await nextCopyTitle(
+      prisma,
+      'quiz',
+      source.courseOfferingId,
+      source.title
+    );
   
     // Clone in one transaction so any DB error rolls back partial writes.
     const created = await prisma.$transaction(async (tx) => {
       const newQuiz = await tx.quiz.create({
         data: {
-          title: `Copy of ${source.title}`,
+          title: copyTitle,
           description: source.description,
           duration_minutes: source.duration_minutes,
           courseOfferingId: source.courseOfferingId,

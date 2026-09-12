@@ -12,6 +12,7 @@ import {
 } from '../../../controllers/courses/assignments/shared.js';
 import { notifyAssignmentPublished } from '../../../controllers/courses/assignments/notifyStudents.js';
 import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
+import { assertUniqueAssignmentTitle } from '../../../utils/assertUniqueCourseTitle.js';
 
 const router = Router();
 
@@ -40,6 +41,11 @@ router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(as
   }
 
   const coId = req.courseOffering.id;
+  const titleCheck = await assertUniqueAssignmentTitle(prisma, {
+    courseOfferingId: coId,
+    title,
+  });
+  if (!titleCheck.ok) return res.status(409).json({ message: titleCheck.message });
   const offeringPublicId = req.courseOffering.publicId;
   const actorUserId = Number(req.user?.id ?? req.user?.sub) || null;
   const draft = Boolean(is_draft);
@@ -53,7 +59,7 @@ router.post('/:courseOfferingId', requireCourseOfferingManage(), asyncHandler(as
   const assignment = await prisma.$transaction(async (tx) => {
     const created = await tx.assignment.create({
       data: {
-        title,
+        title: titleCheck.title,
         description,
         open_at: openAtDate,
         due_date: dueDateObj,

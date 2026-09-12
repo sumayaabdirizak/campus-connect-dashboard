@@ -53,7 +53,7 @@ export function ResourceAnalyticsPanel({
 
         <div className='space-y-4 py-4'>
           {isLoading && <ListSkeleton variant='card' count={3} />}
-          {isError && (
+          {isError && !data && (
             <p className='text-sm text-destructive'>Failed to load analytics.</p>
           )}
 

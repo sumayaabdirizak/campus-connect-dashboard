@@ -172,7 +172,13 @@ export function createAnnouncementSocketHandlers(ctx: HandlerContext) {
   };
 
   const handleConnectError = (err: Error) => {
-    console.warn('Announcement socket connect_error:', err?.message || err);
+    const msg = err?.message || String(err);
+    // Auth recovery logs/handles Unauthorized separately; CORS/transport noise
+    // is expected briefly while the client falls back to polling.
+    if (/unauthor|forbidden|jwt|expired|auth/i.test(msg)) return;
+    if (process.env.NODE_ENV !== 'production') {
+      console.warn('Announcement socket connect_error:', msg);
+    }
   };
 
   const handleDeadlineReminder = (payload: AnnouncementDeadlineReminderPayload) => {

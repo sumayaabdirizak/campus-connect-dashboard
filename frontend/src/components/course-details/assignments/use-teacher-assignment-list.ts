@@ -52,8 +52,7 @@ export function useTeacherAssignmentList(courseId: string) {
       due_date: toLocal(editTarget.due_date),
       workMode: editTarget.workMode,
       gradingScope: editTarget.gradingScope,
-      allowLate: (editTarget.lateWindowMinutes ?? 0) > 0,
-      lateWindow: String(editTarget.lateWindowMinutes ?? 0),
+      allowLate: (editTarget.lateWindowMinutes ?? 0) !== 0,
       maxMarks: editTarget.maxMarks ?? 100
     };
   }, [editTarget]);

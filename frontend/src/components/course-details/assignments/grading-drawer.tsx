@@ -120,14 +120,21 @@ export function GradingDrawer(props: Props) {
                     {sub.student?.full_name ?? 'Student'}
                   </p>
                   <p className='text-xs text-muted-foreground'>{sub.student?.number ?? '—'}</p>
-                  <GradingDrawerStatusBadge sub={sub} cap={cap} />
+                  <GradingDrawerStatusBadge
+                    sub={sub}
+                    cap={cap}
+                    dueAt={props.assignment.due_date}
+                  />
                 </div>
               </div>
             </header>
 
             <div className='min-h-0 flex-1 overflow-y-auto px-4 py-4'>
               <div className='space-y-4'>
-                <GradingDrawerSubmission submission={sub} />
+                <GradingDrawerSubmission
+                  submission={sub}
+                  dueAt={props.assignment.due_date}
+                />
                 <GradingOutcomePanel
                   assignment={props.assignment}
                   submission={sub}

@@ -58,7 +58,7 @@ export async function fetchEngagementMetrics({ scopedFacultyId, offeringIds }) {
               .findMany({
                 where: {
                   assignment: { courseOfferingId: { in: offeringIds } },
-                  gradeRow: { isNot: null, score: { not: null } },
+                  gradeRow: { is: { score: { not: null } } },
                 },
                 select: { gradeRow: { select: { score: true } } },
               })

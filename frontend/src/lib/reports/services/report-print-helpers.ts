@@ -21,12 +21,15 @@ export function tableHtml(
   if (!rows.length) return `<p class="empty">${escapeHtml(empty)}</p>`;
   const head = headers.map((h) => `<th>${escapeHtml(h)}</th>`).join('');
   const body = rows
-    .map(
-      (r) =>
-        `<tr>${r
-          .map((c, i) => `<td class="${i > 0 ? 'num' : ''}">${escapeHtml(c)}</td>`)
-          .join('')}</tr>`
-    )
+    .map((r) => {
+      const cells = headers.map((_, i) => {
+        const c = r[i] ?? '';
+        const header = headers[i]?.toLowerCase() ?? '';
+        const isNum = header === 'marks' || header.includes('mark') || header === '%';
+        return `<td class="${isNum ? 'num' : ''}">${escapeHtml(c)}</td>`;
+      });
+      return `<tr>${cells.join('')}</tr>`;
+    })
     .join('');
   return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
 }

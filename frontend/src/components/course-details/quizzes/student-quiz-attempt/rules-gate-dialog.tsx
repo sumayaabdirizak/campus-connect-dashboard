@@ -37,7 +37,16 @@ export function RulesGateDialog({
                   <strong className='text-foreground'>
                     Don&apos;t leave this tab or window
                   </strong>{' '}
-                  — switching tabs or minimising earns a warning.
+                  — switching tabs, Alt-Tab, or leaving the window is logged and
+                  earns a warning.
+                </li>
+                <li>
+                  <strong className='text-foreground'>
+                    No screenshots
+                  </strong>{' '}
+                  — Print Screen, snipping tools, and similar shortcuts are
+                  detected and logged. Content is also watermarked with your
+                  name.
                 </li>
                 <li>
                   <strong className='text-foreground'>No copying or pasting</strong>{' '}
@@ -46,11 +55,6 @@ export function RulesGateDialog({
                 <li>
                   <strong className='text-foreground'>Questions are one-way</strong>{' '}
                   — once you move to the next question you cannot go back.
-                </li>
-                <li>
-                  <strong className='text-foreground'>Screenshots are traceable</strong>{' '}
-                  — quiz content is watermarked with your name and can be linked
-                  back to your account.
                 </li>
                 <li>
                   After{' '}

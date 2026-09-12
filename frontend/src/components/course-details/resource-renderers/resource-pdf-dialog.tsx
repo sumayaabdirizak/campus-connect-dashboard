@@ -1,12 +1,13 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Download, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resourceDownloadUrl } from '@/lib/course-details/services/resources-service';
 import type { Resource } from '@/lib/course-details/types';
 import { PdfViewer } from '../_shared/pdf-viewer-lazy';
+import { PdfViewerErrorBoundary } from '../_shared/pdf-viewer-error-boundary';
 import { isPdfUrl } from '../_shared/is-pdf-url';
 
 /// True when the resource is a PDF we can render in-app. Uploads are judged
@@ -35,8 +36,41 @@ export function ResourcePdfDialog({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
+  // Keep the portal mounted briefly after close so react-pdf can tear down
+  // Document/Page before we drop the tree — abrupt unmount was crashing the
+  // Resources tab via the dashboard error boundary.
+  const [portalMounted, setPortalMounted] = useState(open);
+  const [viewerActive, setViewerActive] = useState(open);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   useEffect(() => {
-    if (!open) return;
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+
+    if (open) {
+      setPortalMounted(true);
+      setViewerActive(true);
+      return;
+    }
+
+    setViewerActive(false);
+    closeTimerRef.current = setTimeout(() => {
+      setPortalMounted(false);
+      closeTimerRef.current = null;
+    }, 150);
+
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current);
+        closeTimerRef.current = null;
+      }
+    };
+  }, [open]);
+
+  useEffect(() => {
+    if (!portalMounted) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') onOpenChange(false);
     };
@@ -47,9 +81,9 @@ export function ResourcePdfDialog({
       document.body.style.overflow = prevOverflow;
       window.removeEventListener('keydown', onKey);
     };
-  }, [open, onOpenChange]);
+  }, [portalMounted, onOpenChange]);
 
-  if (!open || !resource) return null;
+  if (!portalMounted || !resource) return null;
 
   const downloadHref = resource.originalName
     ? resourceDownloadUrl(resource.id, { forceDownload: true })
@@ -61,6 +95,8 @@ export function ResourcePdfDialog({
       role='dialog'
       aria-modal='true'
       aria-label={resource.title}
+      // Hide immediately on close while the viewer finishes teardown.
+      style={viewerActive ? undefined : { pointerEvents: 'none', opacity: 0 }}
     >
       <header className='flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3'>
         <div className='min-w-0'>
@@ -93,7 +129,13 @@ export function ResourcePdfDialog({
       </header>
 
       <div className='flex min-h-0 flex-1 flex-col p-4'>
-        <PdfViewer url={resourcePdfUrl(resource)} fillHeight />
+        <PdfViewerErrorBoundary onError={() => onOpenChange(false)}>
+          <PdfViewer
+            url={resourcePdfUrl(resource)}
+            fillHeight
+            active={viewerActive}
+          />
+        </PdfViewerErrorBoundary>
       </div>
     </div>,
     document.body

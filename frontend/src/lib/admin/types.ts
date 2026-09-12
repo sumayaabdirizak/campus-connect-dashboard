@@ -1,8 +1,10 @@
-export type AdminReportPeriod = '3m' | '6m' | '12m';
+export type AdminReportPeriod = 'semester' | 'custom';
 
 export interface AdminAnalyticsFilters {
   facultyId?: number | null;
   period?: AdminReportPeriod;
+  from?: string | null;
+  to?: string | null;
 }
 
 export interface PlatformAnalytics {

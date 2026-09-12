@@ -140,3 +140,25 @@ export function buildQuizCsv(questions) {
   }
   return lines.join("\n") + "\n";
 }
+
+/**
+ * Persist a calendar-usable close_at for fixed-mode quizzes:
+ * open_at + duration_minutes. Prefer an explicit close_at when provided.
+ */
+export function resolveQuizCloseAt({
+  timing_mode,
+  open_at,
+  close_at,
+  duration_minutes,
+}) {
+  const mode = timing_mode || 'flexible';
+  if (mode !== 'fixed' && close_at) {
+    return close_at instanceof Date ? close_at : new Date(close_at);
+  }
+  if (mode !== 'fixed' || !open_at) return null;
+  const open = open_at instanceof Date ? open_at : new Date(open_at);
+  if (Number.isNaN(open.getTime())) return null;
+  const mins = Number(duration_minutes) || 0;
+  if (mins < 1) return null;
+  return new Date(open.getTime() + mins * 60_000);
+}

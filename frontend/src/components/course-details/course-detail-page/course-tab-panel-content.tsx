@@ -3,6 +3,7 @@
 import { CourseOverview } from '@/components/teacher-courses/course-overview';
 import type { CourseTabId } from '@/lib/course-details/queries/types';
 import type { OverviewData } from '@/components/teacher-courses/course-overview/types';
+import { StudentCourseReport } from '@/components/course-details/student-course-report';
 import {
   CourseAssignments,
   CourseChat,
@@ -68,7 +69,12 @@ export function CourseTabPanelContent({
 
       {activeTab === 'roster' && !isStudent && <CourseRoster courseId={offeringId} />}
 
-      {activeTab === 'grades' && !isStudent && <CourseGradebook courseId={offeringId} />}
+      {activeTab === 'grades' &&
+        (isStudent ? (
+          <StudentCourseReport courseId={offeringId} />
+        ) : (
+          <CourseGradebook courseId={offeringId} />
+        ))}
     </>
   );
 }

@@ -83,7 +83,7 @@ const courseColumns: ColumnDef<RecentCourseRow>[] = [
     header: '',
     cell: () => (
       <Button variant='ghost' size='icon' className='size-8' asChild>
-        <Link href='/dashboard/admin/report'>
+        <Link href='/dashboard/reports/course-reports'>
           <Eye className='size-4' />
         </Link>
       </Button>

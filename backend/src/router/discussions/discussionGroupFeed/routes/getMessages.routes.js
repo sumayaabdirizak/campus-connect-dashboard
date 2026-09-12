@@ -10,7 +10,7 @@ import {
 import { requireActiveDiscussionMembership } from "../../../../services/discussions/discussionMembership.js";
 import { toDiscussionAttachmentDto } from "../../../../services/discussions/discussionAttachments.js";
 import { buildGroupThreadPreviewMap } from "../../../../controllers/discussions/discussionGroupFeed/shared.js";
-import { whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
+import { whereFromPublicId, whereFromParam } from "../../../../services/discussions/publicIdResolution.js";
 import { buildMessagePublicIdMap, toMessageDto } from "../../../../controllers/discussions/messageShared.js";
 
 const router = express.Router();
@@ -26,7 +26,7 @@ router.get("/groups/:groupId/messages", async (req, res) => {
     if (hasCursor && !cursor) {
       return res.status(400).json(apiErrorBody("Invalid or unreadable cursor", null));
     }
-    const groupWhere = whereFromParam(req.params.groupId);
+    const groupWhere = whereFromPublicId(req.params.groupId);
     if (!groupWhere) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }

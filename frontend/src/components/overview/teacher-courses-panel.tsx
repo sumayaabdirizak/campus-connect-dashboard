@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import { Search, LayoutGrid, List as ListIcon, ChevronRight, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card';
 import { Input } from '@/features/ui/components/input';
@@ -8,6 +7,7 @@ import { Skeleton } from '@/features/ui/components/skeleton';
 import { cn } from '@/lib/utils';
 import type { Course } from '@/lib/teacher-courses/types';
 import { courseColor } from '@/lib/student-courses/services/course-color';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 import { TeacherCourseTile } from './teacher-course-tile';
 
 type CourseFilter = 'all' | 'active' | 'completed';
@@ -119,8 +119,8 @@ export function TeacherCoursesPanel({
               const color = courseColor(c.courseCode);
               return (
                 <li key={c.id}>
-                  <Link
-                    href={`/dashboard/courses/${c.id}`}
+                  <a
+                    href={courseOfferingPath(c.id)}
                     className='group flex items-center gap-3 py-3 transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
                   >
                     <span
@@ -143,7 +143,7 @@ export function TeacherCoursesPanel({
                       {c.totalStudents}
                     </span>
                     <ChevronRight className='size-4 shrink-0 text-muted-foreground' />
-                  </Link>
+                  </a>
                 </li>
               );
             })}

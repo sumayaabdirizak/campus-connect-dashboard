@@ -1,13 +1,7 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/features/ui/components/select';
+import { SearchSelect } from '@/features/ui/components/search-select';
 import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
@@ -16,6 +10,7 @@ import {
   FormFieldError,
   createFormField
 } from '@/features/ui/components/form-context';
+import { cn } from '@/lib/utils';
 
 type Option = { value: string; label: string };
 
@@ -26,6 +21,9 @@ interface SelectFieldProps {
   options: Option[];
   placeholder?: string;
   triggerClassName?: string;
+  searchPlaceholder?: string;
+  emptyText?: string;
+  disabled?: boolean;
 }
 
 export function SelectField({
@@ -34,12 +32,16 @@ export function SelectField({
   required,
   options,
   placeholder = 'Select an option',
-  triggerClassName
+  triggerClassName,
+  searchPlaceholder = 'Search...',
+  emptyText = 'No results found.',
+  disabled
 }: SelectFieldProps) {
   const field = useFieldContext();
   const isTouched = useStore(field.store, (s) => s.meta.isTouched);
   const isValid = useStore(field.store, (s) => s.meta.isValid);
   const value = useStore(field.store, (s) => s.value) as string;
+  const invalid = isTouched && !isValid;
 
   return (
     <FormFieldSet>
@@ -48,28 +50,19 @@ export function SelectField({
           {label}
           {required && ' *'}
         </FieldLabel>
-        <Select
-          value={value}
-          onValueChange={field.handleChange}
-          onOpenChange={(open) => {
-            if (!open) field.handleBlur();
+        <SearchSelect
+          options={options}
+          value={value ?? ''}
+          onValueChange={(next) => {
+            field.handleChange(next);
+            field.handleBlur();
           }}
-        >
-          <SelectTrigger
-            id={field.name}
-            aria-invalid={isTouched && !isValid}
-            className={triggerClassName}
-          >
-            <SelectValue placeholder={placeholder} />
-          </SelectTrigger>
-          <SelectContent>
-            {options.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value}>
-                {opt.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          placeholder={placeholder}
+          searchPlaceholder={searchPlaceholder}
+          emptyText={emptyText}
+          disabled={disabled}
+          className={cn(triggerClassName, invalid && 'border-destructive')}
+        />
         {description && <FieldDescription>{description}</FieldDescription>}
       </FormField>
       <FormFieldError />

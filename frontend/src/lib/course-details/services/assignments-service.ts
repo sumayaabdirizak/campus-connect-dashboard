@@ -9,6 +9,7 @@ import type {
   GradeInput,
   GrantExtensionBatchInput,
   GrantExtensionInput,
+  ManualGradeInput,
   StudentAssignmentSummary,
   Submission,
   SubmissionExtension,
@@ -74,6 +75,17 @@ export async function gradeSubmission(
       })
     }
   );
+}
+
+/** Enter or update a mark without requiring a student file submission. */
+export async function manualGradeAssignment(
+  assignmentId: number,
+  input: ManualGradeInput
+): Promise<Submission> {
+  return apiClient<Submission>(`/course-offerings/${assignmentId}/manual-grade`, {
+    method: 'POST',
+    body: JSON.stringify(input)
+  });
 }
 
 export async function submitWork(

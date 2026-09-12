@@ -110,6 +110,9 @@ export const getMyCourses = async (req, res) => {
       }
     }
 
+    const curriculumSemester = registration.batchSection.batch.semester_number;
+    const programDepartmentId = registration.batchSection.batch.program.departmentId;
+
     if (!isGraduated) {
       const facultyId = registration.batchSection.batch.program.department.facultyId;
       const deptRows = await prisma.department.findMany({
@@ -122,9 +125,9 @@ export const getMyCourses = async (req, res) => {
         sectionId: registration.batchSectionId,
         academicYearId: termAcademicYearId,
         semesterId: termSemesterId,
-        curriculumSemester: registration.batchSection.batch.semester_number,
+        curriculumSemester,
         departmentIds,
-        programDepartmentId: registration.batchSection.batch.program.departmentId,
+        programDepartmentId,
       });
     }
 
@@ -133,6 +136,13 @@ export const getMyCourses = async (req, res) => {
         sectionId: registration.batchSectionId,
         semesterId: termSemesterId,
         academicYearId: termAcademicYearId,
+        course: {
+          departmentId: programDepartmentId,
+          OR: [
+            { semesterNumber: Number(curriculumSemester) },
+            { semesterNumber: null },
+          ],
+        },
       },
       include: {
         course: {

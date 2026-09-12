@@ -18,6 +18,7 @@ import {
 import { rejoinAllRooms, unwrapMessage } from '@/lib/discussions/queries/socket-connection';
 import { inboxKeys } from '@/lib/inbox/queries';
 import { notificationKeys } from '@/lib/notifications/queries';
+import { clubKeys } from '@/lib/clubs/queries';
 
 export function bindGlobalListeners(s: Socket) {
   if (isListenersBound()) return;
@@ -30,6 +31,9 @@ export function bindGlobalListeners(s: Socket) {
       invalidateQueries({ queryKey: discussionKeys.unreadCount() });
       invalidateQueries({ queryKey: notificationKeys.unreadCount() });
       invalidateQueries({ queryKey: notificationKeys.list() });
+      invalidateQueries({ queryKey: inboxKeys.all });
+      invalidateQueries({ queryKey: ['announcements'] });
+      invalidateQueries({ queryKey: ['clubs'] });
     }
     setHasConnectedOnce(true);
   });
@@ -49,6 +53,7 @@ function bindMessageListeners(s: Socket) {
     const groupId = msg.groupId ?? msg.serverId;
     if (groupId && !msg.channelId && !msg.groupDmId) {
       invalidateQueries({ queryKey: ['clubs', 'feed', String(groupId)] });
+      invalidateQueries({ queryKey: clubKeys.all });
     }
     // Keep Chats sidebar preview/order in sync without waiting for poll.
     if (msg.channelId || msg.groupDmId) {
@@ -144,6 +149,7 @@ function bindMetadataListeners(s: Socket) {
     } else {
       invalidateQueries({ queryKey: discussionKeys.unreadCount() });
     }
+    invalidateQueries({ queryKey: inboxKeys.all });
   });
 
   s.on('notification:new', () => {

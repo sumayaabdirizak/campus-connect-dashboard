@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -19,12 +19,15 @@ export function OfflineResultPicker({
   studentId,
   studentName,
   totalPoints,
+  initialMarks,
   disabled
 }: {
   quizId: number;
   studentId: number;
   studentName: string;
   totalPoints: number;
+  /** Prefill when correcting an already-recorded score. */
+  initialMarks?: number | null;
   disabled?: boolean;
 }) {
   const [marks, setMarks] = useState('');
@@ -33,6 +36,15 @@ export function OfflineResultPicker({
   const busy = disabled || recordMutation.isPending;
   const canSaveMarks = marks !== '' && !Number.isNaN(Number(marks));
   const marksCap = totalPoints > 0 ? totalPoints : 100;
+  const isEdit = initialMarks != null;
+
+  useEffect(() => {
+    if (initialMarks != null && !Number.isNaN(initialMarks)) {
+      setMarks(String(initialMarks));
+    } else {
+      setMarks('');
+    }
+  }, [initialMarks, studentId]);
 
   const recordMarks = () => {
     if (totalPoints <= 0) {
@@ -44,8 +56,11 @@ export function OfflineResultPicker({
       { studentId, outcome: { marksEarned: value } },
       {
         onSuccess: () => {
-          toast.success(`Recorded ${value}/${totalPoints} for ${studentName}`);
-          setMarks('');
+          toast.success(
+            isEdit
+              ? `Updated to ${value}/${totalPoints} for ${studentName}`
+              : `Recorded ${value}/${totalPoints} for ${studentName}`
+          );
         },
         onError: (e: Error) => toast.error(e.message)
       }
@@ -138,7 +153,7 @@ export function OfflineResultPicker({
           aria-label={`Save score for ${studentName}`}
         >
           {busy ? <Loader2 className='size-3.5 animate-spin' /> : null}
-          Save
+          {isEdit ? 'Update' : 'Save'}
         </Button>
       </div>
 

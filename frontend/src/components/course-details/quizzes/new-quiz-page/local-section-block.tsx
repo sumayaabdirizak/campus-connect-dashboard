@@ -59,22 +59,22 @@ export function LocalSectionBlock({
   const isAdding = inlineDraft != null && editingIndex == null;
 
   return (
-    <div className='border rounded-xl p-4 space-y-3'>
-      <div className='flex items-center justify-between flex-wrap gap-2'>
+    <div className='space-y-3 rounded-xl border border-border bg-card p-4'>
+      <div className='flex flex-wrap items-center justify-between gap-2'>
         <div>
-          <h3 className='text-base font-semibold'>
+          <h3 className='text-base font-semibold text-primary'>
             Section: {TYPE_META[type]}
             {targetMarks > 0 && (
-              <span className='text-foreground font-normal'> ({targetMarks} marks)</span>
+              <span className='font-normal text-foreground'> ({targetMarks} marks)</span>
             )}
           </h3>
           <p
             className={`mt-0.5 text-sm tabular-nums ${
               over
-                ? 'text-destructive font-medium'
+                ? 'font-medium text-destructive'
                 : complete
                   ? 'text-emerald-600 dark:text-emerald-400'
-                  : 'text-foreground'
+                  : 'text-muted-foreground'
             }`}
           >
             {used}

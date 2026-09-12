@@ -19,7 +19,7 @@ export const QUIZ_COLUMN_OPTS = [
   { id: 'title', label: 'Title' },
   { id: 'marks', label: 'Marks' },
   { id: 'questions', label: 'Questions' },
-  { id: 'length', label: 'Length' },
+  { id: 'date', label: 'Date' },
   { id: 'attempts', label: 'Attempts' }
 ] as const;
 
@@ -34,10 +34,14 @@ export const QUIZ_SORT_OPTS = [
 
 export const QUIZ_ALL_COLS = QUIZ_COLUMN_OPTS.map((c) => c.id);
 
-/** Migrate legacy `chapter` column id after HMR or saved column prefs. */
+/** Migrate legacy column ids after HMR or saved column prefs. */
 export function normalizeQuizVisibleCols(ids: string[]): string[] {
   const valid = new Set<string>(QUIZ_ALL_COLS);
-  const migrated = ids.map((id) => (id === 'chapter' ? 'marks' : id));
+  const migrated = ids.map((id) => {
+    if (id === 'chapter') return 'marks';
+    if (id === 'length') return 'date';
+    return id;
+  });
   const unique = [...new Set(migrated.filter((id) => valid.has(id)))];
   return unique.length > 0 ? unique : [...QUIZ_ALL_COLS];
 }
@@ -47,14 +51,13 @@ export const quizAttemptCount = (q: Quiz) => q._count?.attempts ?? 0;
 
 export const DEFAULT_COURSE_MAX_MARKS = 100;
 
-/** Course marks weight vs course total (from API `courseMax` when available). */
-export function quizMarksLabel(q: Quiz, courseMax = DEFAULT_COURSE_MAX_MARKS): string {
-  const cap = courseMax > 0 ? courseMax : DEFAULT_COURSE_MAX_MARKS;
+/** Course marks weight for this quiz (absolute points, not x/100). */
+export function quizMarksLabel(q: Quiz, _courseMax = DEFAULT_COURSE_MAX_MARKS): string {
   const courseMarks = q.maxMarks ?? 0;
-  if (courseMarks > 0) return `${courseMarks}/${cap}`;
+  if (courseMarks > 0) return String(courseMarks);
 
   const planMarks = q.marksPlan?.totalMarks ?? 0;
-  if (planMarks > 0) return `${planMarks}/${cap}`;
+  if (planMarks > 0) return String(planMarks);
 
   const questionPts = quizTotalMarks(q.questions);
   if (questionPts > 0) return `${questionPts} pt`;
@@ -108,7 +111,7 @@ const EXPORT_HEADER = [
   'Question points',
   'Mode',
   'Questions',
-  'Length (min)',
+  'Date',
   'Attempts',
   'Draft'
 ];
@@ -120,7 +123,7 @@ function exportRows(rows: Quiz[]) {
     quizTotalMarks(q.questions),
     q.mode === 'offline' ? 'Printed' : 'On device',
     quizQuestionCount(q),
-    q.duration_minutes,
+    q.created_at ? new Date(q.created_at).toLocaleString() : '',
     quizAttemptCount(q),
     q.is_draft ? 'Yes' : 'No'
   ]);

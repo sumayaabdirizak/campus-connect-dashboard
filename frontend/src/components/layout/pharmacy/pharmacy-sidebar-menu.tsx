@@ -16,23 +16,31 @@ function pathOf(url: string): string {
   return url.split('?')[0];
 }
 
-function scopeOf(url: string): string | null {
+function queryParamOf(url: string, key: string): string | null {
   const q = url.split('?')[1];
   if (!q) return null;
-  return new URLSearchParams(q).get('scope');
+  return new URLSearchParams(q).get(key);
 }
 
 function isItemActive(
   pathname: string,
   url: string,
-  currentScope: string | null
+  currentScope: string | null,
+  currentRole: string | null
 ): boolean {
   const path = pathOf(url);
   if (path === '/dashboard') return pathname === path;
   if (pathname !== path && !pathname.startsWith(`${path}/`)) return false;
 
-  const itemScope = scopeOf(url);
+  const itemScope = queryParamOf(url, 'scope');
   if (itemScope) return currentScope === itemScope;
+
+  const itemRole = queryParamOf(url, 'role');
+  if (itemRole) return (currentRole ?? '').toUpperCase() === itemRole.toUpperCase();
+
+  // Plain /dashboard/users should not stay active when a role filter is selected
+  if (path === '/dashboard/users' && currentRole) return false;
+
   return true;
 }
 
@@ -56,6 +64,7 @@ function SidebarNavLink({
   unreadCount,
   pathname,
   currentScope,
+  currentRole,
   nested = false
 }: {
   item: NavItem;
@@ -63,10 +72,11 @@ function SidebarNavLink({
   unreadCount: number;
   pathname: string;
   currentScope: string | null;
+  currentRole: string | null;
   nested?: boolean;
 }) {
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-  const active = isItemActive(pathname, item.url, currentScope);
+  const active = isItemActive(pathname, item.url, currentScope, currentRole);
 
   return (
     <Link
@@ -91,21 +101,36 @@ function SidebarNavLink({
   );
 }
 
+function pathSubtreeActive(
+  item: NavItem,
+  pathname: string,
+  currentScope: string | null,
+  currentRole: string | null
+): boolean {
+  if (isItemActive(pathname, item.url, currentScope, currentRole)) return true;
+  return (item.items ?? []).some((c) =>
+    pathSubtreeActive(c, pathname, currentScope, currentRole)
+  );
+}
+
 function SidebarNavParent({
   item,
   mini,
   pathname,
-  currentScope
+  currentScope,
+  currentRole,
+  nested = false
 }: {
   item: NavItem;
   mini: boolean;
   pathname: string;
   currentScope: string | null;
+  currentRole: string | null;
+  nested?: boolean;
 }) {
   const children = item.items ?? [];
   const Icon = item.icon ? Icons[item.icon] : Icons.logo;
-  const childActive = children.some((c) => isItemActive(pathname, c.url, currentScope));
-  const parentActive = isItemActive(pathname, item.url, currentScope) || childActive;
+  const parentActive = pathSubtreeActive(item, pathname, currentScope, currentRole);
   const reportsSection =
     pathname.startsWith('/dashboard/reports') ||
     pathname === '/dashboard/admin/report' ||
@@ -142,10 +167,11 @@ function SidebarNavParent({
             'group flex w-full items-center gap-2 rounded-xl border border-transparent p-2 text-sm font-medium text-sidebar-foreground transition-colors',
             'hover:border-sidebar-border hover:bg-sidebar-accent',
             open && 'border-primary/30',
-            parentActive && 'border-primary/30 bg-sidebar-accent'
+            parentActive && 'border-primary/30 bg-sidebar-accent',
+            nested && 'py-1.5 pl-2 text-[13px] font-normal'
           )}
         >
-          <MenuIcon icon={Icon} active={parentActive} />
+          {!nested ? <MenuIcon icon={Icon} active={parentActive} /> : null}
           <span className='truncate'>{item.title}</span>
           <ChevronDown
             className={cn(
@@ -157,19 +183,39 @@ function SidebarNavParent({
         </button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <ul className='m-0 mt-1 list-none border-l border-primary/40 py-0.5 pl-2 ml-5 space-y-0.5'>
-          {children.map((child) => (
-            <li key={child.url}>
-              <SidebarNavLink
-                item={child}
-                mini={mini}
-                unreadCount={0}
-                pathname={pathname}
-                currentScope={currentScope}
-                nested
-              />
-            </li>
-          ))}
+        <ul
+          className={cn(
+            'm-0 mt-1 list-none border-l border-primary/40 py-0.5 pl-2 space-y-0.5',
+            nested ? 'ml-3' : 'ml-5'
+          )}
+        >
+          {children.map((child) => {
+            const hasChildren = (child.items?.length ?? 0) > 0;
+            return (
+              <li key={`${child.title}-${child.url}`}>
+                {hasChildren ? (
+                  <SidebarNavParent
+                    item={child}
+                    mini={mini}
+                    pathname={pathname}
+                    currentScope={currentScope}
+                    currentRole={currentRole}
+                    nested
+                  />
+                ) : (
+                  <SidebarNavLink
+                    item={child}
+                    mini={mini}
+                    unreadCount={0}
+                    pathname={pathname}
+                    currentScope={currentScope}
+                    currentRole={currentRole}
+                    nested
+                  />
+                )}
+              </li>
+            );
+          })}
         </ul>
       </CollapsibleContent>
     </Collapsible>
@@ -186,6 +232,7 @@ export function PharmacySidebarMenu({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentScope = searchParams?.get('scope') ?? null;
+  const currentRole = searchParams?.get('role') ?? null;
   const groups = useFilteredNavGroups(navGroups);
 
   return (
@@ -213,6 +260,7 @@ export function PharmacySidebarMenu({
                     mini={mini}
                     pathname={pathname}
                     currentScope={currentScope}
+                    currentRole={currentRole}
                   />
                 ) : (
                   <SidebarNavLink
@@ -221,6 +269,7 @@ export function PharmacySidebarMenu({
                     unreadCount={unreadCount}
                     pathname={pathname}
                     currentScope={currentScope}
+                    currentRole={currentRole}
                   />
                 )}
               </li>

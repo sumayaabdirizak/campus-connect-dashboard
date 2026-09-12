@@ -71,4 +71,4 @@ export function useFilteredNavGroups(groups: NavGroup[]) {
   }, [groups, user?.role, allowedPaths]);
 }
 
-export { roleAllows, pathAllowed, filterNavItems };
+export { roleAllows, pathAllowed, filterNavItems, flattenNavItems };

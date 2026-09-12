@@ -82,10 +82,18 @@ export function effectiveDue(
   return latest;
 }
 
-export type SubmissionStatus = 'submitted' | 'late' | 'missing' | 'extended';
+export type SubmissionStatus =
+  | 'submitted'
+  | 'late'
+  | 'missing'
+  | 'extended'
+  | 'pending';
 
 function submissionCloseAt(a: Assignment, due: Date): Date {
-  return new Date(due.getTime() + (a.lateWindowMinutes ?? 0) * 60_000);
+  const minutes = a.lateWindowMinutes ?? 0;
+  // -1 (or any negative) = late allowed with no cutoff.
+  if (minutes < 0) return new Date(8.64e15); // far future
+  return new Date(due.getTime() + minutes * 60_000);
 }
 
 export function statusOf(
@@ -98,8 +106,11 @@ export function statusOf(
   if (!sub) {
     const now = serverNowDate();
     const closeAt = submissionCloseAt(a, due);
-    const hasExtension = due.getTime() > new Date(a.due_date).getTime();
-    if (hasExtension && now <= closeAt) return 'extended';
+    // Still within the submit window (due + late grace).
+    if (now <= closeAt) {
+      const hasExtension = due.getTime() > new Date(a.due_date).getTime();
+      return hasExtension ? 'extended' : 'pending';
+    }
     return 'missing';
   }
   return new Date(sub.submitted_at) > due ? 'late' : 'submitted';

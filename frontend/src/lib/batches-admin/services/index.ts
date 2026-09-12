@@ -20,6 +20,17 @@ export type AdminBatch = {
     name: string;
     code: string;
     durationYears?: number;
+    department?: {
+      id?: number;
+      code: string;
+      name?: string;
+      faculty?: {
+        id: number;
+        name?: string;
+        code: string;
+        defaultDurationYears?: number;
+      };
+    };
   };
   academicYear?: { id: number; name: string };
   graduationAcademicYear?: { id: number; name: string } | null;
@@ -74,8 +85,53 @@ export type AcademicYearOption = {
   semesters?: SemesterOption[];
 };
 
-export const fetchAdminBatches = () =>
-  apiClient<{ batches: AdminBatch[] }>('/batches');
+export const fetchAdminBatches = (params?: {
+  programId?: string;
+  departmentId?: string;
+  facultyId?: string;
+}) => {
+  const qs = new URLSearchParams();
+  if (params?.programId) qs.set('programId', params.programId);
+  if (params?.departmentId) qs.set('departmentId', params.departmentId);
+  if (params?.facultyId) qs.set('facultyId', params.facultyId);
+  const query = qs.toString();
+  return apiClient<{ batches: AdminBatch[] }>(query ? `/batches?${query}` : '/batches');
+};
+
+export type BatchOverviewStudent = {
+  id: number;
+  full_name: string;
+  email: string;
+  number?: string | null;
+  registrationId: number;
+  sectionId: number | null;
+  sectionName: string | null;
+};
+
+export type BatchOverviewCourse = {
+  offeringId: number;
+  publicId: string;
+  courseId: number;
+  code: string;
+  name: string;
+  credits: number;
+  teacherName: string | null;
+  sectionId: number;
+  sectionName: string;
+  semesterName: string | null;
+  academicYearName: string | null;
+};
+
+export type BatchOverviewResponse = {
+  message: string;
+  batch: AdminBatch;
+  sections: { id: number; name: string }[];
+  students: BatchOverviewStudent[];
+  courses: BatchOverviewCourse[];
+};
+
+export const fetchBatchOverview = (batchId: number) =>
+  apiClient<BatchOverviewResponse>(`/batches/${batchId}/overview`);
 
 export const fetchAdminBatchSections = async () => {
   const data = await apiClient<{ results?: BatchSection[]; sections?: BatchSection[] }>(

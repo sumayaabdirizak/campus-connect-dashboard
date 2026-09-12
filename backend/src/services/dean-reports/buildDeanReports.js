@@ -14,12 +14,36 @@ import {
 import { loadReportScope } from './loadScope.js';
 import { buildInstructorReports, buildStudentReports } from './peopleReports.js';
 import { buildRiskSections } from './risks.js';
+import { getCachedDeanReports, setCachedDeanReports } from './cache.js';
 
 /**
- * @param {{ facultyId: number; periodMonths?: number; filters?: Record<string, string | number | null> }} opts
+ * @param {{ facultyId: number; periodMonths?: number | string; period?: string; filters?: Record<string, string | number | null> }} opts
  */
-export async function buildDeanReports({ facultyId, periodMonths = 6, filters = {} } = {}) {
-  const scope = await loadReportScope({ facultyId, periodMonths, filters });
+export async function buildDeanReports(args = {}) {
+  const cached = getCachedDeanReports(args);
+  if (cached) return cached;
+
+  const result = await buildDeanReportsUncached(args);
+  setCachedDeanReports(args, result);
+  return result;
+}
+
+async function buildDeanReportsUncached({
+  facultyId,
+  periodMonths = 6,
+  period,
+  from = null,
+  to = null,
+  filters = {},
+} = {}) {
+  const scope = await loadReportScope({
+    facultyId,
+    periodMonths,
+    period,
+    from,
+    to,
+    filters,
+  });
   const {
     monthsCount,
     faculty,
@@ -30,6 +54,7 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     since,
     months,
     prevSince,
+    periodLabel,
   } = scope;
 
   const scopedDepartments = departments.filter((d) => scope.deptIds.includes(d.id));
@@ -56,6 +81,8 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     recentSubmissions,
     resourceCount,
     resourceViews,
+    quizzesByOffering,
+    assignmentsByOffering,
   } = collections;
 
   const kpis = computeKpis({
@@ -103,7 +130,13 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
     filters: scope.filters ?? filters,
   });
 
-  const instructorReports = buildInstructorReports({ teachers, offerings, allQuizAttempts });
+  const instructorReports = buildInstructorReports({
+    teachers,
+    offerings,
+    allQuizAttempts,
+    quizzesByOffering,
+    assignmentsByOffering,
+  });
 
   const { dailyEngagement, monthlyEngagement, departmentEngagement } = buildEngagementCharts({
     recentSubmissions,
@@ -142,6 +175,7 @@ export async function buildDeanReports({ facultyId, periodMonths = 6, filters = 
   return assembleDeanReport({
     facultyId,
     monthsCount,
+    periodLabel,
     faculty,
     departments,
     counts,

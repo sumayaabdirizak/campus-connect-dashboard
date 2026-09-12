@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { Badge } from '@/features/ui/components/badge';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import type { AdminBatch } from '@/lib/batches-admin/services';
@@ -23,7 +24,15 @@ export function BatchTableRow({
       ) : null}
       {col('name') ? (
         <PosTableCell>
-          <p className='text-sm font-medium'>{batch.name}</p>
+          <Link
+            href={`/dashboard/batches/${batch.id}`}
+            className='text-sm font-medium text-primary hover:underline'
+          >
+            {batch.name}
+          </Link>
+          <p className='mt-0.5 text-xs text-muted-foreground'>
+            Next: students &amp; offerings
+          </p>
         </PosTableCell>
       ) : null}
       {col('program') ? (

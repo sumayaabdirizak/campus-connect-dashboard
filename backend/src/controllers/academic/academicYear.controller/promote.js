@@ -1,9 +1,9 @@
 import { prisma } from "../../../db/prisma.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import {
+  buildAcademicYearBounds,
   buildDefaultSemesterRows,
   enrichBatchWithCohortSemester,
-  getCurrentAcademicYearBounds,
 } from "../../../services/academic/academicCalendar.js";
 import { parseAcademicYearStartYear } from "../../../services/academic/academicCalendarDefaults.js";
 import { getNextSemesterSequence } from "../../../services/academic/semesterSequence.js";
@@ -22,7 +22,7 @@ export const promoteAcademicYear = async (req, res) => {
       return res.status(400).json({ message: "Academic year name format must be 'YYYY/YYYY'." });
     }
     const nextStart = thisStart + 1;
-    const bounds = getCurrentAcademicYearBounds(new Date(nextStart, 8, 1));
+    const bounds = buildAcademicYearBounds(nextStart);
 
     const already = await prisma.academicYear.findUnique({ where: { name: bounds.name } });
     if (already) {

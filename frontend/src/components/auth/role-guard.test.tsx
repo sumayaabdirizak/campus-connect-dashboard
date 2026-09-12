@@ -107,4 +107,17 @@ describe('RoleGuard', () => {
     await waitFor(() => expect(screen.getByText('protected content')).not.toBeNull());
     expect(push).not.toHaveBeenCalled();
   });
+
+  it('allows DEAN into a course detail URL (not blocked by /dashboard/courses nav split)', async () => {
+    useAuthStore.setState({
+      user: { id: 1, email: 'dean@example.edu', role: 'DEAN' },
+      isAuthenticated: true,
+      validateSession: vi.fn().mockResolvedValue(true)
+    });
+
+    renderGuardAt('/dashboard/courses/761a3f20-77b2-4247-b0e8-f0f9cb702411');
+
+    await waitFor(() => expect(screen.getByText('protected content')).not.toBeNull());
+    expect(push).not.toHaveBeenCalled();
+  });
 });

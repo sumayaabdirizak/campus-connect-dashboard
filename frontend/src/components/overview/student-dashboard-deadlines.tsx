@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 
 import Link from 'next/link'
 import { CalendarClock } from 'lucide-react'
@@ -55,7 +55,7 @@ export function StudentDashboardDeadlines({
           <ul className='divide-y divide-border'>
             {upcoming.map((item, i) => (
               <InsightListItem key={`${item.kind}-${item.id}`} index={i}>
-                <Link
+                <a
                   href={timelineHrefFor(item)}
                   className='flex items-start justify-between gap-2 py-2.5 hover:bg-muted/40'
                 >
@@ -71,7 +71,7 @@ export function StudentDashboardDeadlines({
                   <span className='shrink-0 text-xs text-muted-foreground'>
                     {formatDue(item.deadlineAt)}
                   </span>
-                </Link>
+                </a>
               </InsightListItem>
             ))}
           </ul>

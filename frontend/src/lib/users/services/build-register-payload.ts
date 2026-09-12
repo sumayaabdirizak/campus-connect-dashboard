@@ -16,10 +16,6 @@ export function buildRegisterPayload(form: UserFormState) {
     payload.departmentCode = form.departmentCode;
   }
 
-  if (form.role === 'TEACHER' && form.secondaryFacultyId) {
-    payload.secondaryFacultyId = Number(form.secondaryFacultyId);
-  }
-
   if (form.programId) payload.programId = Number(form.programId);
   if (form.batchSectionId) payload.batchSectionId = Number(form.batchSectionId);
   if (form.academicYearId) payload.academicYearId = Number(form.academicYearId);

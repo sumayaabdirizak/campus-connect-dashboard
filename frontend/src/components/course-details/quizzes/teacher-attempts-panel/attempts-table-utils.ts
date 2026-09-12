@@ -31,16 +31,21 @@ export const OFFLINE_ATTEMPT_ALL_COLS = OFFLINE_ATTEMPT_COLUMN_OPTS.map((c) => c
 
 export const headerBlack = '!text-[#101828]';
 
-function statusRank(row: AttemptRow) {
-  const status = rowStatus(row);
+function statusRank(row: AttemptRow, quizClosed?: boolean) {
+  const status = rowStatus(row, { quizClosed });
   if (row.attempt?.closure_reason === 'cheat') return -1;
   if (row.attempt?.closure_reason === 'absent') return -0.5;
   if (status === 'in_progress') return 0;
   if (status === 'submitted') return 1;
-  return 2;
+  if (status === 'missed') return 2;
+  return 3;
 }
 
-export function sortAttemptRows(rows: AttemptRow[], sortId: string) {
+export function sortAttemptRows(
+  rows: AttemptRow[],
+  sortId: string,
+  opts?: { quizClosed?: boolean }
+) {
   const copy = [...rows];
   copy.sort((a, b) => {
     if (sortId === 'name-desc') {
@@ -68,7 +73,7 @@ export function sortAttemptRows(rows: AttemptRow[], sortId: string) {
       return as - bs;
     }
     if (sortId === 'status-asc') {
-      return statusRank(a) - statusRank(b);
+      return statusRank(a, opts?.quizClosed) - statusRank(b, opts?.quizClosed);
     }
     return a.student.full_name.localeCompare(b.student.full_name);
   });

@@ -1,11 +1,26 @@
 import { format } from 'date-fns';
-import type { Assignment, Submission, SubmissionExtension } from '@/lib/course-details/services/assignments-types';
-import { statusOf, type SubmissionRow } from './shared';
+import type { Assignment, SubmissionExtension } from '@/lib/course-details/services/assignments-types';
+import { statusOf, type SubmissionRow, type SubmissionStatus } from './shared';
 
 function csvSafe(value: unknown) {
   let s = String(value ?? '');
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   return `"${s.replace(/"/g, '""')}"`;
+}
+
+function statusLabel(status: SubmissionStatus): string {
+  switch (status) {
+    case 'pending':
+      return 'Not submitted';
+    case 'extended':
+      return 'Extended';
+    case 'missing':
+      return 'Missing';
+    case 'late':
+      return 'Late';
+    case 'submitted':
+      return 'Submitted';
+  }
 }
 
 export function downloadGradeCsv(args: {
@@ -24,7 +39,7 @@ export function downloadGradeCsv(args: {
       student.number,
       student.email,
       sub?.submitted_at ? format(new Date(sub.submitted_at), 'yyyy-MM-dd HH:mm') : '',
-      status,
+      statusLabel(status),
       sub?.grade != null ? String(sub.grade) : '',
       sub?.feedback ?? '',
     ];

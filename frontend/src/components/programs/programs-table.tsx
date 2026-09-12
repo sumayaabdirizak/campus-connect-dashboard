@@ -19,15 +19,25 @@ import {
   exportProgramsPdf,
   sortPrograms
 } from '@/lib/programs/services';
+import { AcademicScopeFilters } from '@/components/academic/academic-scope-filters';
 import { ProgramTableRow } from './program-table-row';
 
-export function ProgramsTable() {
+export function ProgramsTable({
+  facultyId,
+  departmentId
+}: {
+  facultyId?: string;
+  departmentId?: string;
+} = {}) {
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('name-asc');
   const [visibleCols, setVisibleCols] = useState<string[]>([...PROGRAM_ALL_COLS]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const { data, isLoading, error } = usePrograms();
+  const { data, isLoading, error } = usePrograms({
+    facultyId,
+    departmentId
+  });
   const programs = data?.programs || [];
   const col = (id: string) => visibleCols.includes(id);
 
@@ -74,6 +84,7 @@ export function ProgramsTable() {
     <PosTableCard
       search={search}
       onSearchChange={setSearch}
+      toolbarStart={<AcademicScopeFilters showProgram={false} />}
       columns={[...PROGRAM_COLUMN_OPTS]}
       visibleColumnIds={visibleCols}
       onVisibleColumnsChange={setVisibleCols}

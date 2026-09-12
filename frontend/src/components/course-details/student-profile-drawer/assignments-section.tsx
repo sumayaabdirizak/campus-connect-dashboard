@@ -12,11 +12,14 @@ import {
   fmtScoreFromPct,
   MAX_COURSE_MARK
 } from '../course-gradebook/gradebook-math';
+import { formatLateBy } from '../assignments/student-assignment-card/helpers';
 import { WorkTable, WorkTableCell, WorkTableRow } from './work-table';
 
 function assignmentCloseAtMs(a: StudentWorkAssignment): number {
   const due = new Date(a.due_date).getTime();
-  return due + (a.lateWindowMinutes ?? 0) * 60_000;
+  const minutes = a.lateWindowMinutes ?? 0;
+  if (minutes < 0) return Number.MAX_SAFE_INTEGER;
+  return due + minutes * 60_000;
 }
 
 function assignmentStatus(
@@ -25,7 +28,11 @@ function assignmentStatus(
 ): { label: string; className: string } {
   if (submission) {
     if (submission.is_late) {
-      return { label: 'Late', className: 'font-medium text-amber-700 dark:text-amber-400' };
+      const lateBy = formatLateBy(submission.submitted_at, assignment.due_date);
+      return {
+        label: lateBy ?? 'Late',
+        className: 'font-medium text-amber-700 dark:text-amber-400'
+      };
     }
     return { label: 'Submitted', className: 'text-foreground' };
   }

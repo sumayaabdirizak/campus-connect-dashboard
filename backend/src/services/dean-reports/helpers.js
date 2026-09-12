@@ -30,7 +30,8 @@ export function periodStart(months) {
 export async function safe(fn, fallback) {
   try {
     return await fn();
-  } catch {
+  } catch (err) {
+    console.warn('[dean-reports] query failed:', err?.message ?? err);
     return fallback;
   }
 }
@@ -62,6 +63,18 @@ export function offeringWhere(facultyId, filters = {}) {
   const base = { section: { batch: { program: { department: { facultyId } } } } };
   if (filters.departmentId) {
     base.section.batch.program.departmentId = Number(filters.departmentId);
+  }
+  if (filters.studentLevel) {
+    const level = String(filters.studentLevel).toUpperCase().replace(/\s+/g, '_');
+    if (level === 'UNDERGRADUATE' || level === 'POSTGRADUATE') {
+      base.section.batch.program.level = level;
+    }
+  }
+  if (filters.batchId) {
+    base.section.batchId = Number(filters.batchId);
+  }
+  if (filters.sectionId) {
+    base.sectionId = Number(filters.sectionId);
   }
   if (filters.academicYearId) base.academicYearId = Number(filters.academicYearId);
   if (filters.semesterId) base.semesterId = Number(filters.semesterId);

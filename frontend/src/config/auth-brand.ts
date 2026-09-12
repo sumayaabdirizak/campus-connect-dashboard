@@ -7,5 +7,9 @@ export const AUTH_BRAND = {
   productName: 'Campus Connect',
   organization: 'Jazeera University',
   welcomeTitle: 'Hi, Welcome Back!',
-  welcomeSubtitle: 'Please enter your credentials to sign in!'
+  welcomeSubtitle: 'Please enter your credentials to sign in!',
+  /** Printed on the footer of every exported report — replace with the real details. */
+  address: 'Km5, Mogadishu, Somalia',
+  phone: '+252 61 000 0000',
+  email: 'info@jazeerauniversity.edu.so'
 } as const;

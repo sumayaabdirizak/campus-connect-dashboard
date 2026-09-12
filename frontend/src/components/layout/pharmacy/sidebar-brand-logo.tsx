@@ -19,7 +19,14 @@ export function SidebarBrandLogo({ mini = false, className }: SidebarBrandLogoPr
       className={cn('block w-full bg-transparent', className)}
       aria-label='Campus Connect home'
     >
-      <span className={cn('relative block w-full bg-transparent', mini ? 'h-12' : 'h-14')}>
+      <span
+        className={cn(
+          'relative block w-full',
+          mini
+            ? 'h-12 rounded-md bg-transparent dark:bg-white/90'
+            : 'h-14 rounded-md bg-transparent px-2 dark:bg-white/90'
+        )}
+      >
         <Image
           src={src}
           alt='Campus Connect — Jazeera University'

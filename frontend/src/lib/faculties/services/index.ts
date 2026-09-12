@@ -5,7 +5,10 @@ import type { FacultyOption, FacultiesResponse, FacultyFormValues } from '../typ
 const API_BASE = '/faculties';
 
 // Normalize faculties list response
-export function normalizeFacultiesList(data: FacultiesResponse | FacultyOption[]): FacultyOption[] {
+export function normalizeFacultiesList(
+  data: FacultiesResponse | FacultyOption[] | null | undefined
+): FacultyOption[] {
+  if (!data) return [];
   if (Array.isArray(data)) return data;
   if (Array.isArray(data.faculties)) return data.faculties;
   if (Array.isArray(data.results)) return data.results;

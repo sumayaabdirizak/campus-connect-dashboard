@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Clock, Eye } from 'lucide-react';
+import { AlertTriangle, Clock, Eye, Shield } from 'lucide-react';
 import { formatSeconds } from '../course-quizzes-utils';
 import { getSaveStatus } from './save-status';
 
@@ -12,6 +12,31 @@ export function PreviewBanner() {
         <strong>Preview mode</strong> — answers and timer don&apos;t persist. This
         is exactly what students see.
       </span>
+    </div>
+  );
+}
+
+/** Compact strip so proctoring is visible during a live demo. */
+export function ProctoringBanner({
+  warnings,
+  maxWarnings
+}: {
+  warnings: number;
+  maxWarnings: number;
+}) {
+  return (
+    <div className='rounded-lg border border-border bg-muted/40 px-3 py-2 text-sm flex items-start gap-2'>
+      <Shield className='w-4 h-4 shrink-0 mt-0.5 text-muted-foreground' />
+      <div className='min-w-0'>
+        <p className='font-medium text-foreground'>Proctoring active</p>
+        <p className='text-xs text-muted-foreground'>
+          Tab switches and screenshot attempts are detected and logged
+          {warnings > 0
+            ? ` · ${warnings} of ${maxWarnings} warnings`
+            : ''}
+          .
+        </p>
+      </div>
     </div>
   );
 }

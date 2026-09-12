@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/notifications';
 import type { Gradebook, GradebookRow } from '@/lib/course-details/services/gradebook-types';
 import { exportGradebookCsv } from './export-csv';
+import type { GradebookEditTarget } from './gradebook-edit-dialog';
 import { GradebookTable } from './gradebook-table';
 import { type GradeFilter, rowNeedsGrading } from './gradebook-math';
 import { GRADEBOOK_SORT_OPTS, sortGradebookRows } from './gradebook-table-utils';
@@ -14,9 +15,10 @@ import { GRADEBOOK_SORT_OPTS, sortGradebookRows } from './gradebook-table-utils'
 interface GradebookListTableProps {
   data: Gradebook;
   onRowClick: (row: GradebookRow) => void;
+  onEditGrade?: (target: GradebookEditTarget) => void;
 }
 
-export function GradebookListTable({ data, onRowClick }: GradebookListTableProps) {
+export function GradebookListTable({ data, onRowClick, onEditGrade }: GradebookListTableProps) {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<GradeFilter>('all');
   const [sortId, setSortId] = useState('name-asc');
@@ -129,6 +131,7 @@ export function GradebookListTable({ data, onRowClick }: GradebookListTableProps
           search={search}
           filterLabel={filterLabel}
           onRowClick={onRowClick}
+          onEditGrade={onEditGrade}
         />
       )}
     </PosTableCard>

@@ -2,7 +2,16 @@ import { prisma } from '../../db/prisma.js';
 import { safe } from './helpers.js';
 
 export async function fetchAcademicCollections({ offeringIds, since }) {
-  const [allQuizAttempts, gradedSubmissions, courseAccessRows, recentSubmissions, resourceRows, resourceViews] =
+  const [
+    allQuizAttempts,
+    gradedSubmissions,
+    courseAccessRows,
+    recentSubmissions,
+    resourceRows,
+    resourceViews,
+    quizCounts,
+    assignmentCounts,
+  ] =
     await Promise.all([
       safe(
         () =>
@@ -11,7 +20,7 @@ export async function fetchAcademicCollections({ offeringIds, since }) {
                 where: { quiz: { courseOfferingId: { in: offeringIds } } },
                 select: {
                   score: true,
-                  created_at: true,
+                  started_at: true,
                   quiz: { select: { passing_score: true, courseOfferingId: true } },
                 },
               })
@@ -25,7 +34,7 @@ export async function fetchAcademicCollections({ offeringIds, since }) {
                 .findMany({
                   where: {
                     assignment: { courseOfferingId: { in: offeringIds } },
-                    gradeRow: { isNot: null, score: { not: null } },
+                    gradeRow: { is: { score: { not: null } } },
                   },
                   select: {
                     studentId: true,
@@ -115,7 +124,36 @@ export async function fetchAcademicCollections({ offeringIds, since }) {
             : [],
         []
       ),
+      safe(
+        () =>
+          offeringIds.length
+            ? prisma.quiz.groupBy({
+                by: ['courseOfferingId'],
+                where: { courseOfferingId: { in: offeringIds }, is_draft: false },
+                _count: { _all: true },
+              })
+            : [],
+        []
+      ),
+      safe(
+        () =>
+          offeringIds.length
+            ? prisma.assignment.groupBy({
+                by: ['courseOfferingId'],
+                where: { courseOfferingId: { in: offeringIds } },
+                _count: { _all: true },
+              })
+            : [],
+        []
+      ),
     ]);
+
+  const quizzesByOffering = new Map(
+    quizCounts.map((r) => [r.courseOfferingId, r._count._all])
+  );
+  const assignmentsByOffering = new Map(
+    assignmentCounts.map((r) => [r.courseOfferingId, r._count._all])
+  );
 
   return {
     allQuizAttempts,
@@ -124,5 +162,7 @@ export async function fetchAcademicCollections({ offeringIds, since }) {
     recentSubmissions,
     resourceCount: resourceRows.length,
     resourceViews,
+    quizzesByOffering,
+    assignmentsByOffering,
   };
 }

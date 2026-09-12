@@ -1,6 +1,7 @@
 'use client';
 
 import { useAuthStore } from '@/lib/auth-store';
+import { flattenNavItems } from '@/lib/nav-access';
 import { scheduleRouterPush } from '@/lib/safe-router-navigation';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -71,10 +72,27 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
       // `/dashboard/*` is still enforced below.
       if (pathname === '/dashboard') {
         setIsAuthorized(true);
+      } else if (/^\/dashboard\/courses\/[^/]+$/.test(pathname)) {
+        // Course detail is shared by teachers, students, and faculty staff
+        // (dean opens offerings from reports). Nav entries for `/dashboard/courses`
+        // are role-split and would otherwise deny DEAN incorrectly.
+        const allowed =
+          !!user &&
+          (user.role === 'TEACHER' ||
+            user.role === 'STUDENT' ||
+            user.role === 'DEAN' ||
+            user.role === 'SUPER_ADMIN');
+        if (!allowed) {
+          console.warn(`Access denied for role ${user?.role} at ${pathname}`);
+          setIsAuthorized(false);
+          scheduleRouterPush(router, '/dashboard');
+          return;
+        }
+        setIsAuthorized(true);
       } else {
-        // Find matches in navGroups
+        // Find matches in navGroups (including deeply nested children)
         const allNavItems = navGroups.flatMap((group) =>
-          group.items.flatMap((item) => [item, ...(item.items || [])])
+          flattenNavItems(group.items)
         );
 
         // Check if any nav item matches the current pathname exactly or as a parent

@@ -1,7 +1,9 @@
 'use client';
 
+import Link from 'next/link';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import type { FacultyRow } from '@/lib/faculties/services/faculties-table-utils';
+import { academicScopeHref } from '@/lib/academic-scope/scope-href';
 import { FacultyRowActions } from './faculty-row-actions';
 
 export function FacultyTableRow({
@@ -20,7 +22,13 @@ export function FacultyTableRow({
       ) : null}
       {col('name') ? (
         <PosTableCell>
-          <p className='text-sm font-medium'>{faculty.name}</p>
+          <Link
+            href={academicScopeHref('/dashboard/departments', { facultyId: faculty.id })}
+            className='text-sm font-medium text-primary hover:underline'
+          >
+            {faculty.name}
+          </Link>
+          <p className='mt-0.5 text-xs text-muted-foreground'>Next: departments</p>
         </PosTableCell>
       ) : null}
       {col('code') ? (
@@ -32,7 +40,14 @@ export function FacultyTableRow({
         <PosTableCell>{faculty.defaultDurationYears ?? 4} yrs</PosTableCell>
       ) : null}
       {col('departments') ? (
-        <PosTableCell>{faculty.departments?.length ?? 0}</PosTableCell>
+        <PosTableCell>
+          <Link
+            href={`/dashboard/departments?facultyId=${faculty.id}`}
+            className='text-sm font-medium text-primary hover:underline'
+          >
+            {faculty.departments?.length ?? 0}
+          </Link>
+        </PosTableCell>
       ) : null}
       {col('created') ? (
         <PosTableCell>

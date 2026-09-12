@@ -149,7 +149,8 @@ export async function computeChannelPermissionsForServer({
 
     if (c.scopeType != null && c.scopeId != null) {
       const inScope = scopeAccessByCh.get(c.id) ?? false;
-      if (!inScope) p &= ~SCOPE_DENIED_MASK;
+      const memberGrantsView = !!mo && (mo.allowMask & B.VIEW_CHANNEL) !== 0n;
+      if (!inScope && !memberGrantsView) p &= ~SCOPE_DENIED_MASK;
     }
 
     perms.set(c.id, p);

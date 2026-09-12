@@ -4,6 +4,7 @@ import { getSocketRef, roomRefCounts, setSocket, type RoomKey } from '@/lib/disc
 import { bindGlobalListeners } from '@/lib/discussions/queries/socket-listeners';
 import { bindClubSocketListeners } from '@/lib/clubs/queries/club-socket-listeners';
 import { attachSocketAuthRecovery } from '@/lib/socket-auth-recovery';
+import { emitJoinForRoom } from '@/lib/discussions/queries/socket-join';
 
 export function ensureSocket(): Socket {
   const existing = getSocketRef();
@@ -12,6 +13,9 @@ export function ensureSocket(): Socket {
     transports: ['websocket'],
     withCredentials: true,
     reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 500,
+    reconnectionDelayMax: 5000
   });
   setSocket(s);
   bindGlobalListeners(s);
@@ -19,29 +23,18 @@ export function ensureSocket(): Socket {
   attachSocketAuthRecovery(s);
   // Rooms live on the server per-connection, so a reconnect (including one
   // recovered from an expired token) starts with none — re-join what's open.
-  s.on('connect', rejoinAllRooms);
+  s.on('connect', () => {
+    rejoinAllRooms();
+  });
   return s;
 }
 
 export function rejoinAllRooms() {
   const s = getSocketRef();
-  if (!s) return;
+  if (!s?.connected) return;
   for (const [room, count] of roomRefCounts) {
     if (count <= 0) continue;
-    emitJoinForRoom(s, room);
-  }
-}
-
-function emitJoinForRoom(s: Socket, room: RoomKey) {
-  if (room.startsWith('channel:')) {
-    const channelId = room.split(':')[1];
-    s.emit('channel:join', { channelId }, () => undefined);
-  } else if (room.startsWith('groupdm:')) {
-    const groupDmId = room.split(':')[1];
-    s.emit('groupdm:join', { groupDmId }, () => undefined);
-  } else if (room.startsWith('discussion:')) {
-    const groupId = room.split(':')[1];
-    s.emit('join:group', { groupId, deviceId: 'web-default', fromVersion: 0 }, () => undefined);
+    emitJoinForRoom(s, room as RoomKey);
   }
 }
 

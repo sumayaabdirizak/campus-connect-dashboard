@@ -104,7 +104,22 @@ export function AnnouncementCardBase({
     >
       <div
         ref={cardRef}
-        className='w-full rounded-xl border border-border bg-muted/50 p-4 shadow-sm transition-shadow duration-200 hover:shadow-md'
+        className={cn(
+          // Matches the club card (`discovery-club-card.tsx`): a solid bordered
+          // surface, flat at rest, with a soft lift only on hover. These were
+          // `bg-muted/50` on the panel's white — a tint of roughly #fcfdfe,
+          // near enough to white that the cards read as one undifferentiated
+          // column.
+          'w-full rounded-xl border border-border bg-card p-4',
+          'transition-all duration-200 hover:shadow-[0_2px_8px_rgba(16,24,40,0.08)]',
+          // Unread earns weight. `data-read` was already on this element but
+          // nothing styled it, so read and unread were indistinguishable and
+          // the only unread cue was text for screen readers.
+          !isRead &&
+            (showPriority
+              ? 'border-l-4 border-l-destructive'
+              : 'border-l-4 border-l-primary')
+        )}
       >
         <div className='mb-2.5 flex items-start justify-between gap-2'>
           <AnnouncementHeader announcement={announcement} />

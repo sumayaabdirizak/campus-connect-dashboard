@@ -30,7 +30,8 @@ export function audienceFlagsFromRoles(
 export function targetRolesFromFlags(students: boolean, teachers: boolean): string[] {
   const out: string[] = [];
   if (students) out.push('STUDENT');
-  if (teachers) out.push('LECTURER');
+  // Backend stores TEACHER (LECTURER is normalized the same way).
+  if (teachers) out.push('TEACHER');
   return out;
 }
 

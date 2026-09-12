@@ -6,6 +6,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 import type { LiveAttemptTile } from '@/lib/course-details/queries/use-quiz-live-monitor';
+import { violationKindShort } from '../student-quiz-attempt/violation-label';
 
 export function LiveTile({ tile }: { tile: LiveAttemptTile }) {
   const minLeft =
@@ -98,6 +99,9 @@ export function LiveTile({ tile }: { tile: LiveAttemptTile }) {
             <span className='inline-flex items-center gap-0.5 text-destructive'>
               <ShieldAlert className='w-3 h-3' />
               {tile.violationsCount} viol.
+              {tile.lastViolationKind
+                ? ` · ${violationKindShort(tile.lastViolationKind)}`
+                : ''}
             </span>
           </>
         )}

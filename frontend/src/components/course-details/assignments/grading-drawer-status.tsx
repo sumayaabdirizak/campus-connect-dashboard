@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import type { Submission } from '@/lib/course-details/services/assignments-types';
 import { isSubmissionGraded } from './shared';
+import { formatLateBy } from './student-assignment-card/helpers';
 import { cn } from '@/lib/utils';
 import { gradingBlue } from './grading-drawer-blue';
 
@@ -17,7 +18,8 @@ export type DrawerStatusTone = 'success' | 'warning' | 'info' | 'muted' | 'destr
 
 export function getDrawerStatus(
   sub: Submission,
-  cap: number
+  cap: number,
+  dueAt?: Date | string | null
 ): { label: string; tone: DrawerStatusTone } {
   const graded = isSubmissionGraded(sub);
   if (graded) {
@@ -27,9 +29,14 @@ export function getDrawerStatus(
     };
   }
   if (sub.content_url) {
-    return sub.is_late
-      ? { label: 'Submitted late · needs grading', tone: 'warning' }
-      : { label: 'Submitted · needs grading', tone: 'info' };
+    if (sub.is_late) {
+      const lateBy = dueAt ? formatLateBy(sub.submitted_at, dueAt) : null;
+      return {
+        label: `${lateBy ?? 'Submitted late'} · needs grading`,
+        tone: 'warning'
+      };
+    }
+    return { label: 'Submitted · needs grading', tone: 'info' };
   }
   if (sub.is_reviewed) {
     return { label: 'Reviewed · no grade', tone: 'muted' };
@@ -65,12 +72,14 @@ const toneStyles: Record<
 
 export function GradingDrawerStatusBadge({
   sub,
-  cap
+  cap,
+  dueAt
 }: {
   sub: Submission;
   cap: number;
+  dueAt?: Date | string | null;
 }) {
-  const status = getDrawerStatus(sub, cap);
+  const status = getDrawerStatus(sub, cap, dueAt);
   const style = toneStyles[status.tone];
   const Icon = style.icon;
 

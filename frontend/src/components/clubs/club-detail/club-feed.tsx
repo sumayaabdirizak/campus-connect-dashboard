@@ -102,7 +102,7 @@ function CommentThread({
   themeColor,
 }: {
   messageId: string
-  serverId?: number | null
+  serverId?: string | null
   themeColor: string
 }) {
   const { data, isLoading } = useClubComments(serverId, messageId, true)
@@ -215,7 +215,7 @@ function FeedMessage({
 }: {
   message: DiscussionMessage
   themeColor: string
-  serverId?: number | null
+  serverId?: string | null
   /** Lets a non-author delete this post (owners/admins). Editing stays author-only. */
   canModerate?: boolean
 }) {
@@ -514,7 +514,7 @@ export function ClubFeed({
   canPost,
   canModerate = false,
 }: {
-  serverId?: number | null
+  serverId?: string | null
   themeColor: string
   canPost: boolean
   /** Owners/admins can delete any post, not just their own. */
@@ -527,7 +527,7 @@ export function ClubFeed({
   const [uploading, setUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
   useDiscussionServerRoom(serverId)
-  const { data, isLoading, error } = useClubFeed(serverId)
+  const { data, isLoading, isError, error } = useClubFeed(serverId)
   const postMutation = usePostClubMessage(serverId)
   const user = useAuthStore((s) => s.user)
 
@@ -563,7 +563,7 @@ export function ClubFeed({
           file,
           // A club posts to its server, not a channel — without this the
           // upload route rejects with "groupId, channelId, or groupDmId is required".
-          groupId: serverId as number,
+          groupId: serverId,
           keyVersion: 1,
           requireE2eeMetadata: false,
         })
@@ -731,7 +731,7 @@ export function ClubFeed({
           <Skeleton className='h-20 rounded-xl' />
           <Skeleton className='h-20 rounded-xl' />
         </>
-      ) : error ? (
+      ) : isError ? (
         // Don't render a failed load as "no posts" — the usual cause is that the
         // viewer has no active membership on the club's server.
         <div className='rounded-xl border border-dashed bg-card px-4 py-8 text-center'>

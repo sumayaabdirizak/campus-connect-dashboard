@@ -3,24 +3,30 @@
 import { Download, ExternalLink, FileText, MessageSquareText } from 'lucide-react';
 import { format } from 'date-fns';
 import type { Submission } from '@/lib/course-details/services/assignments-types';
-import { parseSubmissionContent } from './helpers';
+import { formatLateBy, parseSubmissionContent } from './helpers';
 
 export function SubmissionSummary({
   submission,
   isGroupAssignment,
   isGraded,
   maxMarks,
+  dueAt,
 }: {
   submission: Submission;
   isGroupAssignment: boolean;
   isGraded: boolean;
   maxMarks: number;
+  dueAt?: Date | string | null;
 }) {
   const content = submission.content_url
     ? parseSubmissionContent(submission.content_url)
     : null;
   const teacherFeedback = submission.feedback?.trim() ?? '';
   const showFeedback = submission.is_reviewed && teacherFeedback.length > 0;
+  const lateBy =
+    submission.is_late && dueAt
+      ? formatLateBy(submission.submitted_at, dueAt)
+      : null;
 
   return (
     <div className='space-y-2'>
@@ -30,7 +36,9 @@ export function SubmissionSummary({
           {format(new Date(submission.submitted_at), 'MMM d, h:mm a')}
         </span>
         {submission.is_late ? (
-          <span className='ml-2 text-warning'>Late</span>
+          <span className='ml-2 text-warning'>
+            {lateBy ?? 'Late'}
+          </span>
         ) : null}
       </p>
 

@@ -17,9 +17,16 @@ export function handleServiceError(err, res) {
 }
 
 export function formatClubForApi(club) {
-  const { interests, _count, ...rest } = club;
+  const { interests, _count, server, ...rest } = club;
+  // Expose discussion-group publicId as serverId so clients never call
+  // /discussions/groups/:id with a guessable sequential integer.
+  const serverPublicId =
+    typeof server?.publicId === 'string' && server.publicId
+      ? server.publicId
+      : null;
   return {
     ...rest,
+    serverId: serverPublicId,
     interests: interests?.map((ci) => ci.tag) ?? [],
     pendingRequestCount: _count?.requests ?? undefined,
   };

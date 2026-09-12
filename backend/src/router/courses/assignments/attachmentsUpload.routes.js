@@ -13,7 +13,12 @@ router.post(
   '/:assignmentId/attachments',
   uploadRateLimit,
   requireAssignmentManage(),
-  assignmentUpload.array('files', 10),
+  (req, res, next) => {
+    assignmentUpload.array('files', 10)(req, res, (err) => {
+      if (err) return res.status(400).json({ message: err.message || 'Upload failed' });
+      next();
+    });
+  },
   asyncHandler(async (req, res) => {
     const assignmentId = parseInt(req.params.assignmentId, 10);
     const files = req.files ?? [];

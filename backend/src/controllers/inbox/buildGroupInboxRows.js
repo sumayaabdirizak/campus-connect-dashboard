@@ -28,8 +28,15 @@ export function buildGroupInboxRows({
     const isClub =
       Boolean(clubMeta) || g.kind === 'USER_SERVER' || g.scopeType === 'CLUB'
     const legacyCh = legacyChannelByGroup.get(g.id)
-    const channelId = g.defaultChannelId ?? legacyCh?.id ?? null
-    const serverId = g.parentServerId ?? legacyCh?.serverId ?? g.id
+    // Always expose publicIds in hrefs — socket payloads use publicId, and the
+    // open channel pane filters live messages with strict id equality.
+    const channelId =
+      g.defaultChannel?.publicId ?? legacyCh?.publicId ?? null
+    const serverId =
+      g.parentServer?.publicId ??
+      legacyCh?.serverPublicId ??
+      g.publicId ??
+      null
     const first = last?.sender?.full_name?.split(/\s+/)[0]
 
     const clubHref =
@@ -39,8 +46,8 @@ export function buildGroupInboxRows({
 
     return {
       type: isClub ? 'club' : 'group',
-      key: `${isClub ? 'club' : 'group'}-${g.id}`,
-      id: g.id,
+      key: `${isClub ? 'club' : 'group'}-${g.publicId ?? g.id}`,
+      id: g.publicId ?? g.id,
       title: clubMeta?.name || g.name,
       subtitle: isClub ? 'Club' : scopeLabel(g.scopeType),
       avatarUrl: clubMeta?.iconUrl || g.iconUrl || null,
@@ -48,7 +55,7 @@ export function buildGroupInboxRows({
         ? `${first ? `${first}: ` : ''}${previewText(last.content)}`
         : '',
       timestamp: last?.createdAt ?? null,
-      unreadCount: unreadByGroup.get(g.id) ?? 0,
+      unreadCount: unreadByGroup.get(g.publicId) ?? unreadByGroup.get(g.id) ?? 0,
       channelId,
       serverId,
       clubSlug: clubMeta?.slug ?? null,

@@ -18,10 +18,15 @@ import { useChannelSocketSync } from './use-channel-socket-sync'
 
 export function useChannelMessages(
   channelId: string | number | null | undefined,
-  options: { limit?: number } = {}
+  options: {
+    limit?: number
+    /** publicId (or other alias) once channel metadata loads — for live socket matching */
+    canonicalChannelId?: string | number | null
+  } = {}
 ) {
   const limit = options.limit ?? DEFAULT_LIMIT
   const validId = asDiscussionId(channelId)
+  const canonicalId = asDiscussionId(options.canonicalChannelId)
 
   useChannelRoom(validId)
   const reconnectGen = useReconnectGeneration()
@@ -65,7 +70,15 @@ export function useChannelMessages(
     }
   }, [validId, limit, reconnectGen])
 
-  useChannelSocketSync(validId, setState)
+  useChannelSocketSync(
+    validId,
+    setState,
+    [
+      canonicalId,
+      // Messages from the API already carry the public channel id.
+      state.messages.find((m) => m.channelId != null)?.channelId ?? null,
+    ]
+  )
   const optimistic = useChannelOptimistic(setState)
 
   const loadOlder = useCallback(async () => {

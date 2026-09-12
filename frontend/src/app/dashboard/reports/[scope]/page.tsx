@@ -1,18 +1,19 @@
 import { redirect } from 'next/navigation';
-import { REPORT_SCOPES, type ReportScope } from '@/lib/reports/types';
 
+const SCOPE_TO_REPORT: Record<string, string> = {
+  course: '/dashboard/reports/course-reports',
+  student: '/dashboard/reports/student-reports',
+  teacher: '/dashboard/reports/lecturer-reports',
+  batch: '/dashboard/reports/batch-reports',
+  section: '/dashboard/reports/course-reports'
+};
+
+/** Legacy LMS scope URLs → Dean-style academic reports. */
 export default async function ReportScopeRedirectPage({
-  params,
-  searchParams
+  params
 }: {
   params: Promise<{ scope: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
   const { scope } = await params;
-  const sp = await searchParams;
-  const valid = REPORT_SCOPES.includes(scope as ReportScope) ? scope : 'course';
-  const q = new URLSearchParams();
-  q.set('scope', valid);
-  if (sp.id && typeof sp.id === 'string') q.set('id', sp.id);
-  redirect(`/dashboard/reports?${q.toString()}`);
+  redirect(SCOPE_TO_REPORT[scope] ?? '/dashboard/reports/course-reports');
 }

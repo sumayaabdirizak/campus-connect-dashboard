@@ -94,14 +94,17 @@ export function PosTableRow({
 export function PosTableCell({
   children,
   className,
-  align = 'left'
+  align = 'left',
+  colSpan
 }: {
   children?: ReactNode;
   className?: string;
   align?: 'left' | 'right' | 'center';
+  colSpan?: number;
 }) {
   return (
     <td
+      colSpan={colSpan}
       className={cn(
         'px-3 py-3 align-middle text-sm whitespace-nowrap sm:px-4',
         align === 'right' && 'text-right',

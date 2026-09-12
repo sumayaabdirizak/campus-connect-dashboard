@@ -66,6 +66,7 @@ export function CardDetailsPanel({
           isGroupAssignment={timing.isGroupAssignment}
           isGraded={timing.isGraded}
           maxMarks={a.maxMarks ?? 100}
+          dueAt={timing.due}
         />
       ) : null}
 
@@ -75,7 +76,7 @@ export function CardDetailsPanel({
         <p className='text-sm text-muted-foreground'>
           Graded — resubmissions are closed.
         </p>
-      ) : hasSubmitted ? null : timing.notOpenYet ? (
+      ) : timing.notOpenYet ? (
         <p className='text-sm text-muted-foreground'>
           Opens {timing.openAt ? format(timing.openAt, 'MMM d, h:mm a') : 'soon'}
         </p>

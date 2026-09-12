@@ -2,6 +2,7 @@ export async function runAnalyticsPhaseC(ctx) {
   const {
     scopedFacultyId,
     monthsCount,
+    periodLabel,
     facultyMeta,
     activeStudents,
     totalSubmissions,
@@ -103,7 +104,7 @@ export async function runAnalyticsPhaseC(ctx) {
       facultyName: facultyMeta?.name ?? null,
       facultyCode: facultyMeta?.code ?? null,
       periodMonths: monthsCount,
-      periodLabel: `Last ${monthsCount} months`,
+      periodLabel: periodLabel ?? `Last ${monthsCount} months`,
       userSegmentLabel: userSegment.label,
     },
     platform: {

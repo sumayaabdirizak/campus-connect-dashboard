@@ -9,6 +9,13 @@ import {
   PosTableHead,
   PosTableHeaderCell
 } from '@/features/pos/components/pos-table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select';
 import { useQuery } from '@/lib/async-query';
 import { showToast } from '@/lib/notifications';
 import { facultiesQueryOptions } from '@/lib/faculties/queries';
@@ -25,6 +32,7 @@ import { FacultyTableRow } from './faculty-table-row';
 
 export function FacultyTable() {
   const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('all');
   const [sortId, setSortId] = useState('name-asc');
   const [visibleCols, setVisibleCols] = useState<string[]>([...FACULTY_ALL_COLS]);
   const [page, setPage] = useState(1);
@@ -41,17 +49,21 @@ export function FacultyTable() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    const matched = !q
-      ? faculties
-      : faculties.filter((f) =>
-          [f.name, f.code, String(f.defaultDurationYears ?? 4)].join(' ').toLowerCase().includes(q)
-        );
+    const matched = faculties.filter((f) => {
+      const raw = String(f.status ?? 'active').toLowerCase();
+      if (status !== 'all' && raw !== status) return false;
+      if (!q) return true;
+      return [f.name, f.code, String(f.defaultDurationYears ?? 4)]
+        .join(' ')
+        .toLowerCase()
+        .includes(q);
+    });
     return sortFaculties(matched, sortId);
-  }, [faculties, search, sortId]);
+  }, [faculties, search, sortId, status]);
 
   useEffect(() => {
     setPage(1);
-  }, [search, sortId]);
+  }, [search, sortId, status]);
 
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -78,6 +90,18 @@ export function FacultyTable() {
     <PosTableCard
       search={search}
       onSearchChange={setSearch}
+      toolbarStart={
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className='h-9 w-auto min-w-[8rem] text-xs'>
+            <SelectValue placeholder='Status' />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='all'>All statuses</SelectItem>
+            <SelectItem value='active'>Active</SelectItem>
+            <SelectItem value='inactive'>Inactive</SelectItem>
+          </SelectContent>
+        </Select>
+      }
       columns={[...FACULTY_COLUMN_OPTS]}
       visibleColumnIds={visibleCols}
       onVisibleColumnsChange={setVisibleCols}

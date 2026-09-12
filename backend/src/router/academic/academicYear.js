@@ -8,7 +8,8 @@ import {
   promoteAcademicYear,
   getNextSemesterNumbers,
   ensureSixAcademicYears,
-  resetSemestersCatalog
+  resetSemestersCatalog,
+  getActiveSemesterWindow
 } from "../../controllers/academic/academicYear.controller/index.js";
 import {
   createSemester,
@@ -21,6 +22,7 @@ import { requireRole } from "../../middleware/requireRole.js";
 const router = Router();
 
 router.get("/", getAllAcademicYears);
+router.get("/active-semester-window", getActiveSemesterWindow);
 router.get("/semesters", getAllSemesters);
 router.get("/semesters/next", getNextSemesterNumbers);
 router.post("/ensure-active-years", requireRole("SUPER_ADMIN"), ensureSixAcademicYears);

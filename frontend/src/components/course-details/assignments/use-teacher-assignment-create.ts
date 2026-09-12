@@ -13,7 +13,17 @@ import {
   isMarkBudgetExhausted,
   MARK_BUDGET_FULL_MESSAGE
 } from '@/lib/course-details/services/mark-budget-utils';
+import {
+  ASSIGNMENT_ATTACHMENT_EXTENSIONS,
+  validateDocumentName
+} from '@/lib/course-details/validate-document-name';
+import {
+  duplicateAssignmentTitleMessage,
+  isDuplicateCourseTitle
+} from '@/lib/course-details/validate-unique-title';
 import { useGroups } from '@/lib/course-details/queries/groups-queries';
+import { assignmentKeys } from '@/lib/course-details/queries/assignments-queries';
+import type { Assignment } from '@/lib/course-details/services/assignments-types';
 import type { AssignmentFormValues } from './create-assignment-form';
 
 type CreateSetters = {
@@ -32,10 +42,18 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
 
   const addPendingFiles = (files: File[]) => {
     if (files.length === 0) return;
-    const oversized = files.find((f) => f.size > 25 * 1024 * 1024);
-    if (oversized) {
-      toast.error(`"${oversized.name}" exceeds the 25 MB limit`);
-      return;
+    for (const file of files) {
+      const nameCheck = validateDocumentName(file.name, {
+        allowedExtensions: ASSIGNMENT_ATTACHMENT_EXTENSIONS
+      });
+      if (!nameCheck.ok) {
+        toast.error(`"${file.name}" — ${nameCheck.message}`);
+        return;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        toast.error(`"${file.name}" exceeds the 25 MB limit`);
+        return;
+      }
     }
     s.setPendingFiles((prev) => [...prev, ...files].slice(0, 10));
   };
@@ -56,6 +74,12 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
       );
       return;
     }
+    const existing =
+      queryClient.getQueryData<Assignment[]>(assignmentKeys.list(s.courseId)) ?? [];
+    if (isDuplicateCourseTitle(values.title, existing)) {
+      toast.error(duplicateAssignmentTitleMessage(values.title));
+      return;
+    }
     const budget = queryClient.getQueryData<CourseMarkBudget>(
       markBudgetKeys.offering(s.courseId)
     );
@@ -73,13 +97,13 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
         due_date: new Date(values.due_date).toISOString(),
         workMode: values.workMode,
         gradingScope: values.gradingScope,
-        lateWindowMinutes: values.allowLate ? Number(values.lateWindow) || 0 : 0,
+        lateWindowMinutes: values.allowLate ? -1 : 0,
         maxMarks,
-        is_draft: true
+        is_draft: false
       });
       const notice = (created as { markBudgetNotice?: string }).markBudgetNotice;
       if (notice) toast.info(notice);
-      if (s.pendingFiles.length === 0) toast.success('Assignment created as draft');
+      if (s.pendingFiles.length === 0) toast.success('Assignment published');
       else {
         try {
           const { count } = await uploadMutation.mutateAsync({
@@ -87,11 +111,11 @@ export function useTeacherAssignmentCreate(s: CreateSetters) {
             files: s.pendingFiles
           });
           toast.success(
-            `Assignment created · ${count} file${count === 1 ? '' : 's'} attached`
+            `Assignment published · ${count} file${count === 1 ? '' : 's'} attached`
           );
         } catch (e) {
           toast.error(
-            `Assignment saved, but file upload failed: ${e instanceof Error ? e.message : ''}`
+            `Assignment published, but file upload failed: ${e instanceof Error ? e.message : ''}`
           );
         }
       }

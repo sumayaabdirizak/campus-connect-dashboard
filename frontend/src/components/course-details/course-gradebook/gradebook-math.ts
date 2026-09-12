@@ -18,7 +18,7 @@ export function fmtPct(pct: number | null): string {
 /** Render a percentage as earned/max points (e.g. 90% of 20 → "18/20"). */
 export function fmtScoreFromPct(pct: number | null, max: number = MAX_COURSE_MARK): string {
   if (pct == null) return '—';
-  const scaleMax = Math.min(max, MAX_COURSE_MARK);
+  const scaleMax = max > 0 ? max : MAX_COURSE_MARK;
   const earned = Math.min(scaleMax, Math.max(0, (pct / 100) * scaleMax));
   return fmtPoints(earned, scaleMax);
 }
@@ -65,13 +65,8 @@ export function computeCourseEarned(row: GradebookRow, columns: GradebookColumns
 }
 
 export function fmtPoints(earned: number, max: number): string {
-  let displayMax = max;
-  let displayEarned = earned;
-  if (max > MAX_COURSE_MARK) {
-    displayMax = MAX_COURSE_MARK;
-    displayEarned = max > 0 ? (earned / max) * MAX_COURSE_MARK : 0;
-  }
-  displayEarned = Math.min(displayMax, Math.max(0, displayEarned));
+  const displayMax = max > 0 ? max : MAX_COURSE_MARK;
+  const displayEarned = Math.min(displayMax, Math.max(0, earned));
   const format = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
   return `${format(displayEarned)}/${format(displayMax)}`;
 }

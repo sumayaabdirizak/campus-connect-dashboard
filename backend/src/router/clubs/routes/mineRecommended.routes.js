@@ -68,10 +68,10 @@ router.get('/recommended', async (req, res, next) => {
 
     scored.sort((a, b) => b.score - a.score);
     const top = scored.slice(0, take).map((s) => s.club);
-    const formatted = top.map(formatClubForApi);
-    const withStatus = await attachViewerJoinState(formatted, uid);
+    const withStatus = await attachViewerJoinState(top, uid);
+    const formatted = withStatus.map(formatClubForApi);
 
-    res.json({ clubs: withStatus });
+    res.json({ clubs: formatted });
   } catch (err) {
     next(err);
   }

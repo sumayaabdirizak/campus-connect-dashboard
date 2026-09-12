@@ -1,7 +1,19 @@
 /** Shared date-window parsing for list + detail report routes. */
 
+import {
+  isSemesterPeriod,
+  resolveActiveSemesterWindow,
+} from '../academic/resolveActiveSemesterWindow.js';
+
 export function parseMonths(period) {
-  if (period === 'all' || period === undefined || period === 'custom') return 0;
+  if (
+    period === 'all' ||
+    period === undefined ||
+    period === 'custom' ||
+    isSemesterPeriod(period)
+  ) {
+    return 0;
+  }
   return Number.isFinite(Number(period)) ? Number(period) : 0;
 }
 
@@ -23,25 +35,31 @@ function monthsAgo(months) {
 }
 
 /**
- * Preset `period` (all / 3 / 6 / 12) or explicit `from` / `to` query params.
+ * Preset `period` (all / 3 / 6 / 12 / semester) or explicit `from` / `to`.
  * Custom dates win when either is present.
  */
-export function parseReportWindow(query = {}) {
+export async function parseReportWindow(query = {}) {
   const fromRaw = query.from ? String(query.from).trim() : '';
   const toRaw = query.to ? String(query.to).trim() : '';
 
   if (fromRaw || toRaw) {
-    const since = fromRaw ? startOfDay(fromRaw) : null;
-    const until = toRaw ? endOfDay(toRaw) : null;
-    const todayEnd = endOfDay(new Date().toISOString().slice(0, 10));
+    const win = await resolveActiveSemesterWindow();
+    const minSince = win.since;
+    const maxUntil = win.untilClamped;
+    const since = fromRaw ? startOfDay(fromRaw) : minSince;
+    const until = toRaw ? endOfDay(toRaw) : maxUntil;
 
-    if (since && todayEnd && since > todayEnd) {
-      const err = new Error('From date cannot be in the future.');
+    if (since && since < minSince) {
+      const err = new Error(
+        'Reports only cover the current semester. From date cannot be before the current semester start.'
+      );
       err.status = 400;
       throw err;
     }
-    if (until && todayEnd && until > todayEnd) {
-      const err = new Error('To date cannot be in the future.');
+    if (until && until > maxUntil) {
+      const err = new Error(
+        'Reports only cover the current semester. To date cannot be after the current semester window.'
+      );
       err.status = 400;
       throw err;
     }
@@ -50,11 +68,27 @@ export function parseReportWindow(query = {}) {
       err.status = 400;
       throw err;
     }
+    if (since && since > maxUntil) {
+      const err = new Error('From date cannot be after the current semester window.');
+      err.status = 400;
+      throw err;
+    }
 
     return {
       since,
       until,
       months: 0,
+      periodLabel: null,
+    };
+  }
+
+  if (isSemesterPeriod(query.period)) {
+    const win = await resolveActiveSemesterWindow();
+    return {
+      since: win.since,
+      until: win.untilClamped,
+      months: win.monthsCount,
+      periodLabel: win.label,
     };
   }
 
@@ -63,6 +97,7 @@ export function parseReportWindow(query = {}) {
     since: monthsAgo(months),
     until: null,
     months,
+    periodLabel: months > 0 ? `Last ${months} months` : 'All time',
   };
 }
 

@@ -3,12 +3,13 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireQuizManage } from '../../../middleware/courseOfferingRbac.js';
 import { patchQuizBodySchema } from '../../../validation/quizSchemas.js';
-import { resolveModuleIdForOffering, assertMarksPlanAllowedForMode, normalizeOfflineDelivery } from './helpers.js';
+import { resolveModuleIdForOffering, assertMarksPlanAllowedForMode, normalizeOfflineDelivery, resolveQuizCloseAt } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
 import {
   reserveCourseMarkWeight,
   resolveQuizCourseMarks,
 } from '../../../services/courses/courseMarkBudget.service.js';
+import { assertUniqueQuizTitle } from '../../../utils/assertUniqueCourseTitle.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -44,6 +45,17 @@ export function register(router) {
     });
     if (!existing) return res.status(404).json({ message: 'Quiz not found' });
 
+    let nextTitle = undefined;
+    if (title !== undefined) {
+      const titleCheck = await assertUniqueQuizTitle(prisma, {
+        courseOfferingId: existing.courseOfferingId,
+        title,
+        excludeId: qid,
+      });
+      if (!titleCheck.ok) return res.status(409).json({ message: titleCheck.message });
+      nextTitle = titleCheck.title;
+    }
+
     const nextMode = mode ?? existing.mode ?? 'online';
     const nextDelivery =
       offline_delivery !== undefined
@@ -78,10 +90,20 @@ export function register(router) {
       open_at !== undefined
         ? (open_at ? new Date(open_at) : null)
         : existing.open_at;
-    const nextCloseAt =
+    const nextDuration =
+      duration_minutes !== undefined
+        ? duration_minutes
+        : existing.duration_minutes;
+    const explicitClose =
       close_at !== undefined
         ? (close_at ? new Date(close_at) : null)
         : existing.close_at;
+    const nextCloseAt = resolveQuizCloseAt({
+      timing_mode: nextTimingMode,
+      open_at: nextOpenAt,
+      close_at: explicitClose && nextTimingMode !== 'fixed' ? explicitClose : null,
+      duration_minutes: nextDuration,
+    }) ?? (nextTimingMode === 'fixed' ? null : explicitClose);
     if (nextTimingMode === 'fixed' && !nextOpenAt) {
       return res.status(400).json({ message: 'Fixed mode requires an open time' });
     }
@@ -187,7 +209,7 @@ export function register(router) {
     const quiz = await prisma.quiz.update({
       where: { id: qid },
       data: {
-        ...(title && { title }),
+        ...(nextTitle !== undefined && { title: nextTitle }),
         ...(description !== undefined && { description }),
         ...(duration_minutes && { duration_minutes }),
         ...(draftWrite !== undefined && { is_draft: draftWrite }),
@@ -195,7 +217,7 @@ export function register(router) {
           ? { auto_publish_at_open: nextAutoPublish }
           : {}),
         ...(open_at !== undefined && { open_at: open_at ? new Date(open_at) : null }),
-        ...(close_at !== undefined && { close_at: close_at ? new Date(close_at) : null }),
+        close_at: nextCloseAt,
         ...(shuffle_questions !== undefined && { shuffle_questions }),
         ...(shuffle_answers !== undefined && { shuffle_answers }),
         ...(max_attempts && { max_attempts }),

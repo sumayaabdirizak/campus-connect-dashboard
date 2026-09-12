@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { Users, Clock } from 'lucide-react';
 import type { Course } from '@/lib/teacher-courses/types';
 import { courseColor } from '@/lib/student-courses/services/course-color';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 
 /**
  * Moodle-style course card for the teacher dashboard. Same look as the student
@@ -14,8 +14,8 @@ import { courseColor } from '@/lib/student-courses/services/course-color';
 export function TeacherCourseTile({ course }: { course: Course }) {
   const color = courseColor(course.courseCode);
   return (
-    <Link
-      href={`/dashboard/courses/${course.id}`}
+    <a
+      href={courseOfferingPath(course.id)}
       className='group flex flex-col overflow-hidden rounded-lg border bg-card transition-shadow hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
     >
       <div
@@ -57,6 +57,6 @@ export function TeacherCourseTile({ course }: { course: Course }) {
           </span>
         )}
       </div>
-    </Link>
+    </a>
   );
 }

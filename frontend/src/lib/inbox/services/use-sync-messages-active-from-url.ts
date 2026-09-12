@@ -9,6 +9,7 @@ import {
   messagesDiscoverHref,
   messagesDmHref,
 } from '@/lib/inbox/services/messages-href'
+import { isLegacyNumericDiscussionId } from '@/lib/inbox/services/is-legacy-numeric-discussion-id'
 import {
   clubPathForServerId,
   slugFromClubHref,
@@ -72,10 +73,22 @@ export function useSyncMessagesActiveFromUrl({
       return
     }
     if (dm) {
+      if (isLegacyNumericDiscussionId(dm)) {
+        replace('/dashboard/messages')
+        setActive(null)
+        return
+      }
       setActive({ kind: 'dm', id: dm, href: messagesDmHref(dm) })
       return
     }
-    if (server) {
+    if (server && isLegacyNumericDiscussionId(server) && !channel) {
+      replace('/dashboard/messages')
+      setActive(null)
+      return
+    }
+    // Only redirect faculty/server → club when there is no explicit channel
+    // (channel deep-links must not be stolen by a club with the same server id).
+    if (server && !channel) {
       const clubPath = clubPathForServerId(server, clubs)
       const slug = clubPath ? slugFromClubHref(clubPath) : null
       if (slug) {
@@ -84,6 +97,15 @@ export function useSyncMessagesActiveFromUrl({
       }
     }
     if (channel) {
+      if (
+        isLegacyNumericDiscussionId(channel) ||
+        isLegacyNumericDiscussionId(server)
+      ) {
+        // Numeric ids are rejected by the API — force re-open from inbox (UUID hrefs).
+        replace('/dashboard/messages')
+        setActive(null)
+        return
+      }
       setActive({
         kind: 'channel',
         id: channel,

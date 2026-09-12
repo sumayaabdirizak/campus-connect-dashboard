@@ -8,6 +8,7 @@ export async function getClubBySlug(slug, { includePending = false, viewerUserId
       faculty: true,
       owner: { select: { id: true, full_name: true } },
       interests: { include: { tag: true } },
+      server: { select: { id: true, publicId: true } },
       _count: { select: { requests: { where: { status: 'PENDING' } } } },
     },
   });
@@ -25,6 +26,7 @@ const MODERATOR_MEMBERSHIP_ROLES = new Set(['ADMIN', 'DEAN']);
 const clubCardInclude = {
   faculty: { select: { id: true, name: true } },
   interests: { include: { tag: { select: { slug: true, label: true } } } },
+  server: { select: { id: true, publicId: true } },
   _count: { select: { requests: { where: { status: 'PENDING' } } } },
 };
 
@@ -50,6 +52,8 @@ export async function listClubsForUser(userId) {
         ...clubCardInclude,
         server: {
           select: {
+            id: true,
+            publicId: true,
             memberships: {
               where: { userId, leftAt: null, isActive: true },
               select: { role: true },
@@ -61,9 +65,12 @@ export async function listClubsForUser(userId) {
     }),
   ]);
 
-  // `server` is only fetched to read the viewer's role — drop it from the payload.
+  // Keep server.publicId for formatClubForApi; drop membership rows from the wire payload.
   const memberOf = memberships.map(({ server, ...club }) => ({
     ...club,
+    server: server
+      ? { id: server.id, publicId: server.publicId }
+      : null,
     membershipRole: server?.memberships?.[0]?.role || 'MEMBER',
   }));
 

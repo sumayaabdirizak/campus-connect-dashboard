@@ -201,7 +201,11 @@ export function StepAudience(props: Props) {
           <label className='flex cursor-pointer items-center gap-3 text-sm font-medium text-foreground'>
             <Checkbox
               checked={includeStudents}
-              onCheckedChange={(v) => setIncludeStudents(v === true)}
+              onCheckedChange={(v) => {
+                const next = v === true;
+                if (!next && !includeTeachers) return;
+                setIncludeStudents(next);
+              }}
               aria-label='Include students'
             />
             <span>Students</span>
@@ -209,7 +213,11 @@ export function StepAudience(props: Props) {
           <label className='flex cursor-pointer items-center gap-3 text-sm font-medium text-foreground'>
             <Checkbox
               checked={includeTeachers}
-              onCheckedChange={(v) => setIncludeTeachers(v === true)}
+              onCheckedChange={(v) => {
+                const next = v === true;
+                if (!next && !includeStudents) return;
+                setIncludeTeachers(next);
+              }}
               aria-label='Include teachers'
             />
             <span>Teachers</span>

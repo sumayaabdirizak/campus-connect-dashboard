@@ -1,9 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import Image from 'next/image'
 import { ArrowUpRight, BookOpen, Calendar, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { courseOfferingPath } from '@/lib/course-offering-href'
 
 export interface TeacherCourseCardData {
   id: string
@@ -27,7 +27,7 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
   const isActive = course.status === 'active'
 
   return (
-    <Link href={`/dashboard/courses/${course.id}`} className='group block'>
+    <a href={courseOfferingPath(course.id)} className='group block'>
       <div className='overflow-hidden rounded-xl border border-border bg-card transition-colors hover:border-border hover:bg-muted'>
         <div className='relative h-40 overflow-hidden bg-primary/10'>
           {cover ? (
@@ -91,6 +91,6 @@ export function CourseCard({ course }: { course: TeacherCourseCardData }) {
           </div>
         </div>
       </div>
-    </Link>
+    </a>
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, type Dispatch, type SetStateAction } from 'react'
+import { useEffect, useRef, type Dispatch, type SetStateAction } from 'react'
 import { getDiscussionSocket } from '@/lib/discussions/queries/socket'
 import type { MessageReaction } from '@/lib/discussions/queries/types'
 import {
@@ -11,19 +11,45 @@ import {
   type ChannelMessagesState,
 } from '../use-channel-messages/message-list-helpers'
 
+function matchesOpenChannel(
+  msgChannelId: string | number | null | undefined,
+  openIds: Array<string | null>
+) {
+  return openIds.some((id) => id != null && discussionIdsEqual(msgChannelId, id))
+}
+
 export function useChannelSocketSync(
   validId: string | null,
-  setState: Dispatch<SetStateAction<ChannelMessagesState>>
+  setState: Dispatch<SetStateAction<ChannelMessagesState>>,
+  /** Extra ids that identify the same channel (e.g. publicId when URL still has legacy int). */
+  alternateChannelIds: Array<string | null | undefined> = []
 ) {
+  // Keep alternates in a ref so the effect dependency list stays a fixed length
+  // (React Compiler / Fast Refresh warn if deps array size changes).
+  const alternatesRef = useRef<string[]>([])
+  alternatesRef.current = alternateChannelIds
+    .filter((id): id is string | number => id != null && String(id).trim() !== '')
+    .map((id) => String(id))
+
   useEffect(() => {
     if (validId == null) return
     const socket = getDiscussionSocket()
 
+    const openIds = (): Array<string | null> => [validId, ...alternatesRef.current]
+
     const onNew = (raw: unknown) => {
       const msg = unwrap(raw)
-      if (!msg || !discussionIdsEqual(msg.channelId, validId)) return
+      if (!msg || !matchesOpenChannel(msg.channelId, openIds())) return
       if (isMainThreadMessage(msg)) {
-        setState((s) => ({ ...s, messages: mergeMessages(s.messages, [msg]) }))
+        setState((s) => {
+          const withoutTemps = s.messages.filter((m) => {
+            if (!String(m.id).startsWith('temp-')) return true
+            if (msg.senderId == null || m.senderId == null) return true
+            if (Number(m.senderId) !== Number(msg.senderId)) return true
+            return (m.content ?? '') !== (msg.content ?? '')
+          })
+          return { ...s, messages: mergeMessages(withoutTemps, [msg]) }
+        })
         return
       }
       const parentId = msg.parentMessageId
@@ -63,7 +89,7 @@ export function useChannelSocketSync(
 
     const onEdit = (raw: unknown) => {
       const msg = unwrap(raw)
-      if (!msg || !discussionIdsEqual(msg.channelId, validId)) return
+      if (!msg || !matchesOpenChannel(msg.channelId, openIds())) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === msg.id)
         if (idx < 0) return s
@@ -77,7 +103,7 @@ export function useChannelSocketSync(
       const messageId = payload?.messageId
       if (!messageId) return
       const channelId = payload?.channelId ? String(payload.channelId) : null
-      if (channelId != null && !discussionIdsEqual(channelId, validId)) return
+      if (channelId != null && !matchesOpenChannel(channelId, openIds())) return
       setState((s) => {
         const idx = s.messages.findIndex((x) => x.id === messageId)
         if (idx < 0) return s

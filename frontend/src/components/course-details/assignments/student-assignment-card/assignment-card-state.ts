@@ -56,7 +56,11 @@ export function resolveAssignmentCardTiming(
     extensionDue && extensionDue.getTime() > baseDue.getTime() ? extensionDue : baseDue;
   const hasExtension = extensionDue != null && extensionDue.getTime() > baseDue.getTime();
   const notOpenYet = openAt != null && now < openAt;
-  const closed = now > new Date(due.getTime() + (a.lateWindowMinutes ?? 0) * 60_000);
+  const lateMinutes = a.lateWindowMinutes ?? 0;
+  const closed =
+    lateMinutes < 0
+      ? false
+      : now > new Date(due.getTime() + lateMinutes * 60_000);
   const msUntilDue = due.getTime() - now.getTime();
   const dueSoon = !closed && msUntilDue > 0 && msUntilDue < 48 * 60 * 60 * 1000;
   const dueSoonText = dueSoonLabel(msUntilDue);
@@ -71,6 +75,13 @@ export function resolveAssignmentCardTiming(
   const passed = isGraded && (grade ?? 0) >= maxMarks * 0.5;
   const isGroupAssignment = a.workMode === 'GROUP';
   const isLeader = groupInfo?.isLeader === true;
+  // Window open + not graded → submit or resubmit (backend upserts). Extensions
+  // reopen `closed` via the effective due date above.
+  const canSubmit =
+    !notOpenYet &&
+    !closed &&
+    !isGraded &&
+    (!isGroupAssignment || isLeader);
 
   return {
     openAt,
@@ -85,12 +96,7 @@ export function resolveAssignmentCardTiming(
     hasSubmitted,
     isGraded,
     passed,
-    canSubmit:
-      !notOpenYet &&
-      !closed &&
-      !hasSubmitted &&
-      !isGraded &&
-      (!isGroupAssignment || isLeader),
+    canSubmit,
     isGroupAssignment,
     isLeader,
   };
@@ -108,6 +114,11 @@ export function getAssignmentDisplayStatus(
       ? { key: 'graded_pass', label: `Marked · ${marksLabel}`, tone: 'emerald' }
       : { key: 'graded_fail', label: `Marked · ${marksLabel}`, tone: 'rose' };
   }
+  // Extension / open window wins over a prior "late" stamp so the student
+  // sees they can act again.
+  if (timing.hasSubmitted && timing.canSubmit) {
+    return { key: 'submitted', label: 'Resubmit open', tone: 'sky' };
+  }
   if (timing.hasSubmitted && isLate) {
     return { key: 'late', label: 'Late', tone: 'amber' };
   }
@@ -119,6 +130,9 @@ export function getAssignmentDisplayStatus(
   }
   if (timing.closed) {
     return { key: 'missed', label: 'Missed', tone: 'rose' };
+  }
+  if (timing.hasExtension && timing.canSubmit) {
+    return { key: 'not_submitted', label: 'Extended', tone: 'sky' };
   }
   if (timing.dueSoon && timing.dueSoonText) {
     return { key: 'due_soon', label: `Due ${timing.dueSoonText}`, tone: 'amber' };
@@ -139,6 +153,7 @@ export function shouldAutoExpandAssignment(
   timing: AssignmentCardTiming
 ): boolean {
   if (status.key === 'due_soon') return true;
+  if (timing.canSubmit && timing.hasExtension) return true;
   if (status.key === 'not_submitted' && timing.canSubmit) return true;
   return false;
 }

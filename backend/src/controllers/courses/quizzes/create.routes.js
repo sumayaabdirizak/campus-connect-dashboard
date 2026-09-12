@@ -3,7 +3,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { validateBody } from '../../../middleware/validateRequest.js';
 import { requireCourseOfferingManage } from '../../../middleware/courseOfferingRbac.js';
 import { createQuizBodySchema } from '../../../validation/quizSchemas.js';
-import { resolveModuleIdForOffering, assertQuestionsAllowedForMode, assertMarksPlanAllowedForMode, normalizeOfflineDelivery } from './helpers.js';
+import { resolveModuleIdForOffering, assertQuestionsAllowedForMode, assertMarksPlanAllowedForMode, normalizeOfflineDelivery, resolveQuizCloseAt } from './helpers.js';
 import { notifyQuizPublished } from './notifyStudents.js';
 import {
   getCourseMarkBudget,
@@ -11,6 +11,7 @@ import {
   reserveCourseMarkWeight,
   resolveQuizCourseMarks,
 } from '../../../services/courses/courseMarkBudget.service.js';
+import { assertUniqueQuizTitle } from '../../../utils/assertUniqueCourseTitle.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -24,6 +25,12 @@ export function register(router) {
       maxMarks,
       offline_delivery,
     } = req.body;
+
+    const titleCheck = await assertUniqueQuizTitle(prisma, {
+      courseOfferingId: cid,
+      title,
+    });
+    if (!titleCheck.ok) return res.status(409).json({ message: titleCheck.message });
 
     const schedulePublish = !!auto_publish_at_open;
     const draft = schedulePublish ? true : (is_draft || false);
@@ -114,22 +121,32 @@ export function register(router) {
       if (reserved.data.clamped) markBudgetNotice = reserved.data.clampMessage;
     }
 
+    const openAtDate = open_at ? new Date(open_at) : null;
+    const durationMins = duration_minutes || 30;
+    const timingMode = timing_mode || 'flexible';
+    const closeAtDate = resolveQuizCloseAt({
+      timing_mode: timingMode,
+      open_at: openAtDate,
+      close_at: close_at ? new Date(close_at) : null,
+      duration_minutes: durationMins,
+    });
+
     const quiz = await prisma.quiz.create({
       data: {
-        title,
+        title: titleCheck.title,
         description,
-        duration_minutes: duration_minutes || 30,
+        duration_minutes: durationMins,
         courseOfferingId: cid,
         is_draft: draft,
         auto_publish_at_open: schedulePublish,
         maxMarks: finalCourseWeight,
-        open_at: open_at ? new Date(open_at) : null,
-        close_at: close_at ? new Date(close_at) : null,
+        open_at: openAtDate,
+        close_at: closeAtDate,
         shuffle_questions: shuffle_questions || false,
         shuffle_answers: shuffle_answers || false,
         max_attempts: max_attempts || 1,
         passing_score: passing_score || 50,
-        timing_mode: timing_mode || 'flexible',
+        timing_mode: timingMode,
         mode: quizModeResolved,
         offline_delivery: delivery,
         marksPlan: isUploaded ? null : (marksPlan ?? undefined),

@@ -1,8 +1,8 @@
 'use client';
 
 import { format } from 'date-fns';
-import { useRouter } from 'next/navigation';
 import { courseColor } from '@/lib/student-courses/services/course-color';
+import { navigateToCourseOffering } from '@/lib/course-offering-href';
 import { cn } from '@/lib/utils';
 import type { DeadlineKind, DeadlineRow } from './types';
 
@@ -45,16 +45,16 @@ export function MonthCalendarDayList({
   items: DeadlineRow[];
   featured?: boolean;
 }) {
-  const router = useRouter();
-
   const openDeadline = (d: DeadlineRow) => {
-    if (d.kind === 'announcement') router.push('/dashboard/calendar');
-    else if (d.courseOfferingId)
-      router.push(
-        d.kind === 'quiz'
-          ? `/dashboard/courses/${d.courseOfferingId}?tab=quizzes&quiz=${d.id}`
-          : `/dashboard/courses/${d.courseOfferingId}?tab=assignments`
-      );
+    if (d.kind === 'announcement') {
+      window.location.assign('/dashboard/calendar');
+      return;
+    }
+    if (!d.courseOfferingId) return;
+    navigateToCourseOffering(d.courseOfferingId, {
+      tab: d.kind === 'quiz' ? 'quizzes' : 'assignments',
+      quiz: d.kind === 'quiz' ? d.id : undefined,
+    });
   };
 
   return (

@@ -1,16 +1,10 @@
 'use client';
 
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { useMemo } from 'react';
+import { SearchSelect } from '@/features/ui/components/search-select';
 import { useDepartments } from '@/lib/departments/queries';
 import { useDeanBatches, useBatchSections } from '@/lib/dean/queries';
 import type { DeanBatch } from '@/lib/dean/types';
-import { useMemo } from 'react';
 
 export interface DeanStudentFilterState {
   departmentId: string;
@@ -21,7 +15,7 @@ export interface DeanStudentFilterState {
 export const defaultDeanStudentFilters: DeanStudentFilterState = {
   departmentId: 'all',
   batchId: 'all',
-  batchSectionId: 'all',
+  batchSectionId: 'all'
 };
 
 function parseBatches(raw: unknown): DeanBatch[] {
@@ -32,18 +26,24 @@ function parseBatches(raw: unknown): DeanBatch[] {
   return [];
 }
 
+const filterClass = 'h-9 w-auto min-w-[10rem] text-xs';
+
 export function DeanStudentsFilters({
   filters,
   onChange,
+  showBatch = true,
+  showSection = true
 }: {
   filters: DeanStudentFilterState;
   onChange: (next: DeanStudentFilterState) => void;
+  showBatch?: boolean;
+  showSection?: boolean;
 }) {
   const { data: departmentsData } = useDepartments();
   const { data: batchesData } = useDeanBatches();
 
   const departments =
-    departmentsData?.departments?.map((d) => ({ id: d.id, name: d.name })) ?? [];
+    departmentsData?.departments?.map((d) => ({ id: d.id, name: d.name, code: d.code })) ?? [];
 
   const allBatches = useMemo(() => parseBatches(batchesData), [batchesData]);
 
@@ -61,6 +61,34 @@ export function DeanStudentsFilters({
     return raw?.sections ?? [];
   }, [sectionsData]);
 
+  const departmentOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All departments' },
+      ...departments.map((d) => ({ value: String(d.id), label: d.name, sub: d.code }))
+    ],
+    [departments]
+  );
+
+  const batchOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All batches' },
+      ...batches.map((b) => ({
+        value: String(b.id),
+        label: b.name,
+        sub: b.program?.name
+      }))
+    ],
+    [batches]
+  );
+
+  const sectionOptions = useMemo(
+    () => [
+      { value: 'all', label: 'All sections' },
+      ...sections.map((s) => ({ value: String(s.id), label: s.name }))
+    ],
+    [sections]
+  );
+
   const set = (patch: Partial<DeanStudentFilterState>) => {
     const next = { ...filters, ...patch };
     if (patch.departmentId) {
@@ -75,57 +103,37 @@ export function DeanStudentsFilters({
 
   return (
     <div className='flex shrink-0 flex-row flex-wrap items-center gap-2'>
-      <div className='shrink-0'>
-        <Select value={filters.departmentId} onValueChange={(v) => set({ departmentId: v })}>
-          <SelectTrigger className='h-9 w-auto min-w-[10rem] text-xs'>
-            <SelectValue placeholder='Department' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All departments</SelectItem>
-            {departments.map((d) => (
-              <SelectItem key={d.id} value={String(d.id)}>
-                {d.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <SearchSelect
+        options={departmentOptions}
+        value={filters.departmentId}
+        onValueChange={(v) => set({ departmentId: v })}
+        placeholder='Department'
+        searchPlaceholder='Search departments...'
+        className={filterClass}
+      />
 
-      <div className='shrink-0'>
-        <Select value={filters.batchId} onValueChange={(v) => set({ batchId: v })}>
-          <SelectTrigger className='h-9 w-auto min-w-[8rem] text-xs'>
-            <SelectValue placeholder='Batch' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All batches</SelectItem>
-            {batches.map((b) => (
-              <SelectItem key={b.id} value={String(b.id)}>
-                {b.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      {showBatch ? (
+        <SearchSelect
+          options={batchOptions}
+          value={filters.batchId}
+          onValueChange={(v) => set({ batchId: v })}
+          placeholder='Batch'
+          searchPlaceholder='Search batches...'
+          className={filterClass}
+        />
+      ) : null}
 
-      <div className='shrink-0'>
-        <Select
+      {showSection ? (
+        <SearchSelect
+          options={sectionOptions}
           value={filters.batchSectionId}
           onValueChange={(v) => set({ batchSectionId: v })}
+          placeholder='Section'
+          searchPlaceholder='Search sections...'
           disabled={filters.batchId === 'all'}
-        >
-          <SelectTrigger className='h-9 w-auto min-w-[8rem] text-xs'>
-            <SelectValue placeholder='Section' />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value='all'>All sections</SelectItem>
-            {sections.map((s) => (
-              <SelectItem key={s.id} value={String(s.id)}>
-                {s.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          className={filterClass}
+        />
+      ) : null}
     </div>
   );
 }

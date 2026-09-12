@@ -19,15 +19,18 @@ import {
   exportDepartmentsPdf,
   sortDepartments
 } from '@/lib/departments/services/departments-table-utils';
+import { AcademicScopeFilters } from '@/components/academic/academic-scope-filters';
 import { DepartmentTableRow } from './department-table-row';
 
-export function DepartmentTable() {
+export function DepartmentTable({ facultyId }: { facultyId?: string } = {}) {
   const [search, setSearch] = useState('');
   const [sortId, setSortId] = useState('name-asc');
   const [visibleCols, setVisibleCols] = useState<string[]>([...DEPT_ALL_COLS]);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const { data, isLoading, error } = useDepartments();
+  const { data, isLoading, error } = useDepartments(
+    facultyId ? { facultyId } : undefined
+  );
   const departments = data?.departments || [];
   const col = (id: string) => visibleCols.includes(id);
 
@@ -70,6 +73,9 @@ export function DepartmentTable() {
     <PosTableCard
       search={search}
       onSearchChange={setSearch}
+      toolbarStart={
+        <AcademicScopeFilters showDepartment={false} showProgram={false} />
+      }
       columns={[...DEPT_COLUMN_OPTS]}
       visibleColumnIds={visibleCols}
       onVisibleColumnsChange={setVisibleCols}

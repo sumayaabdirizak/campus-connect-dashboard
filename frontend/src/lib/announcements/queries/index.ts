@@ -60,7 +60,7 @@ export const useAnnouncements = (opts?: {
     queryFn: () => getAnnouncements(opts),
     enabled: opts?.enabled ?? true,
     staleTime: ANNOUNCEMENT_STALE_MS,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 };
@@ -75,7 +75,7 @@ export const useRecentAnnouncements = (
     queryFn: () => getRecentAnnouncements(limit),
     enabled: opts?.enabled ?? true,
     staleTime: ANNOUNCEMENT_STALE_MS,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 
@@ -85,7 +85,7 @@ export const useAnnouncementPublishedTotal = (opts?: { enabled?: boolean }) =>
     queryFn: getAnnouncementPublishedTotal,
     enabled: opts?.enabled ?? true,
     staleTime: ANNOUNCEMENT_STALE_MS,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 
@@ -95,7 +95,7 @@ export const useAnnouncementDraftsCount = (opts?: { enabled?: boolean }) => {
     queryFn: getAnnouncementDraftsCount,
     enabled: Boolean(opts?.enabled),
     staleTime: ANNOUNCEMENT_STALE_MS,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true,
     refetchInterval: ANNOUNCEMENT_REFETCH_INTERVAL,
   });
 };

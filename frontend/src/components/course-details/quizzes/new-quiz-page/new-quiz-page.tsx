@@ -11,7 +11,6 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import type { CourseModule } from '@/lib/course-details/services/resources-types';
 import type { Quiz } from '@/lib/course-details/services/quizzes-types';
 import { useCourseMarkBudget } from '@/lib/course-details/queries/mark-budget-queries';
 import { isMarkBudgetExhausted } from '@/lib/course-details/services/mark-budget-utils';
@@ -42,12 +41,10 @@ import { useNewQuizPage } from './use-new-quiz-page';
 
 export function NewQuizPage({
   courseId,
-  modules,
   onBack,
   onCreated
 }: {
   courseId: string;
-  modules: CourseModule[];
   onBack: () => void;
   onCreated: (quiz: Quiz) => void;
 }) {
@@ -203,7 +200,7 @@ export function NewQuizPage({
           </TabsList>
 
           <TabsContent value='basics' className='mt-5'>
-            <BasicsTab form={p.form} setForm={p.setForm} modules={modules} />
+            <BasicsTab form={p.form} setForm={p.setForm} />
           </TabsContent>
 
           {!isOffline ? (

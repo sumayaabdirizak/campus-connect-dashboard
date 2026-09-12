@@ -37,7 +37,13 @@ export interface DeanBatch {
   maxSemesters?: number;
   currentAcademicYearName?: string;
   currentSemesterInYear?: number;
-  program: { id: number; name: string; code: string; department: { id: number; name: string } };
+  program: {
+    id: number;
+    name: string;
+    code: string;
+    level?: 'UNDERGRADUATE' | 'POSTGRADUATE' | string;
+    department: { id: number; name: string };
+  };
   academicYear: { id: number; name: string };
   sections: DeanSection[];
   _count?: { sections: number };
@@ -138,7 +144,15 @@ export interface DeanReports {
       monthly: { month: string; rate: number }[];
       byDepartment: { department: string; rate: number }[];
     };
-    instructorPerformance: { name: string; feedback: number; completion: number; engagement: number; turnaround: number }[];
+    instructorPerformance: {
+      name: string;
+      feedback: number;
+      completion: number;
+      activity: number;
+      quizzes?: number;
+      assignments?: number;
+      turnaround: number;
+    }[];
   };
   tables: {
     academic: {
@@ -185,6 +199,9 @@ export interface DeanInstructorReportRow {
   courses: number;
   rating: number;
   completion: number;
+  activity?: number;
+  quizzes?: number;
+  assignments?: number;
 }
 
 export interface DeanCourseReportRow {

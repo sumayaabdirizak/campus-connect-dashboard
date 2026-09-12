@@ -9,13 +9,10 @@ export type ReportDateRangeErrors = {
   general?: string;
 };
 
-export const REPORT_PERIOD_OPTIONS = [
-  { id: 'all', label: 'All Time' },
-  ...REPORT_PERIODS.filter((p) => p.id !== 'all').map((p) => ({
-    id: p.id,
-    label: p.label
-  }))
-];
+export const REPORT_PERIOD_OPTIONS = REPORT_PERIODS.map((p) => ({
+  id: p.id,
+  label: p.id === 'all' ? 'All Time' : p.label
+}));
 
 function toIsoDate(d: Date): string {
   const y = d.getFullYear();
@@ -49,9 +46,11 @@ export function clampIsoDate(
  */
 export function validateReportDateRange(
   range: ReportDateRange,
-  opts?: { requireAny?: boolean }
+  opts?: { requireAny?: boolean; minDate?: string | null; maxDate?: string | null }
 ): ReportDateRangeErrors | null {
   const today = todayIsoDate();
+  const maxAllowed = opts?.maxDate && opts.maxDate < today ? opts.maxDate : today;
+  const minAllowed = opts?.minDate ?? null;
   const errors: ReportDateRangeErrors = {};
   const from = range.from?.slice(0, 10) ?? null;
   const to = range.to?.slice(0, 10) ?? null;
@@ -60,11 +59,17 @@ export function validateReportDateRange(
     return { general: 'Pick at least one date for a custom period.' };
   }
 
-  if (from && from > today) {
+  if (from && from > maxAllowed) {
     errors.from = 'From date cannot be in the future.';
   }
-  if (to && to > today) {
+  if (to && to > maxAllowed) {
     errors.to = 'To date cannot be in the future.';
+  }
+  if (minAllowed && from && from < minAllowed) {
+    errors.from = 'From date cannot be before the semester start.';
+  }
+  if (minAllowed && to && to < minAllowed) {
+    errors.to = 'To date cannot be before the semester start.';
   }
   if (from && to && from > to) {
     if (!errors.from) errors.from = 'From must be on or before To.';
@@ -80,7 +85,12 @@ export function reportDateRangeErrorMessage(errors: ReportDateRangeErrors): stri
 
 /** Map a preset id to default from/to (to = today). */
 export function presetToDateRange(presetId: string): ReportDateRange {
-  if (presetId === 'all' || presetId === 'custom') {
+  // Semester / all / custom: let the API resolve the window (no from/to).
+  if (
+    presetId === 'all' ||
+    presetId === 'custom' ||
+    presetId === 'semester'
+  ) {
     return { from: null, to: null };
   }
   const months = Number(presetId);
@@ -135,7 +145,7 @@ export function inferPresetFromRange(range: ReportDateRange, periodParam: string
   if (range.from || range.to) return 'custom';
   if (periodParam === 'custom') return 'custom';
   if (REPORT_PERIOD_OPTIONS.some((p) => p.id === periodParam)) return periodParam;
-  return 'all';
+  return 'semester';
 }
 
 export function readDateRangeFromParams(params: URLSearchParams): ReportDateRange {

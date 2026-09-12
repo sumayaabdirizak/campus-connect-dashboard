@@ -1,8 +1,5 @@
 import { prisma } from '../../db/prisma.js';
-import {
-  buildPlatformAnalytics,
-  parsePeriodMonths,
-} from '../../services/platformAnalytics.service.js';
+import { buildPlatformAnalytics } from '../../services/platformAnalytics.service.js';
 import {
   listUserLoginLogs,
   listTeacherActivity,
@@ -83,8 +80,16 @@ export async function getAdminAnalytics(req, res, next) {
       if (!exists) return res.status(404).json({ message: 'Faculty not found' });
     }
 
-    const periodMonths = parsePeriodMonths(req.query?.period);
-    const data = await buildPlatformAnalytics({ facultyId, periodMonths });
+    const rawPeriod = String(req.query?.period ?? 'semester').trim();
+    const from = req.query?.from ? String(req.query.from).slice(0, 10) : null;
+    const to = req.query?.to ? String(req.query.to).slice(0, 10) : null;
+    const data = await buildPlatformAnalytics({
+      facultyId,
+      period: rawPeriod,
+      periodMonths: rawPeriod,
+      from,
+      to,
+    });
     res.json(data);
   } catch (e) {
     next(e);

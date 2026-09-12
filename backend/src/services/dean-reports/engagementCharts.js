@@ -47,13 +47,23 @@ export function buildEngagementCharts({ recentSubmissions, months, offerings }) 
 }
 
 export function buildInstructorPerformanceChart(instructorReports) {
-  return instructorReports
-    .slice(0, 8)
-    .map((i) => ({
-      name: i.instructor.split(' ')[0] ?? i.instructor,
+  return instructorReports.slice(0, 8).map((i) => {
+    const parts = String(i.instructor ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const name =
+      parts.length <= 1
+        ? parts[0] || '—'
+        : `${parts[0]} ${parts[parts.length - 1]}`;
+    return {
+      name,
       feedback: i.rating,
       completion: i.completion,
-      engagement: Math.min(100, i.completion + 10),
+      activity: i.activity ?? 0,
+      quizzes: i.quizzes ?? 0,
+      assignments: i.assignments ?? 0,
       turnaround: Math.max(1, Math.round(5 - i.rating)),
-    }));
+    };
+  });
 }

@@ -11,9 +11,9 @@ export function useInbox() {
   return useQuery({
     queryKey: inboxKeys.all,
     queryFn: () => apiClient<InboxResponse>('/inbox'),
-    staleTime: 60_000,
+    staleTime: 30_000,
     refetchOnWindowFocus: true,
-    refetchInterval: false,
+    refetchInterval: 30_000,
   });
 }
 

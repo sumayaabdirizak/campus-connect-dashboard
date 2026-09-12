@@ -4,6 +4,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
 import { ensureLifecycle, enrichAssignmentDto } from '../../../services/assignments/lifecycleService.js';
 import { reserveCourseMarkWeight } from '../../../services/courses/courseMarkBudget.service.js';
+import { nextCopyTitle } from '../../../utils/assertUniqueCourseTitle.js';
 
 const router = Router();
 
@@ -27,10 +28,17 @@ router.post(
     );
     if (reserved.error) return res.status(400).json({ message: reserved.error });
 
+    const copyTitle = await nextCopyTitle(
+      prisma,
+      'assignment',
+      source.courseOfferingId,
+      source.title
+    );
+
     const created = await prisma.$transaction(async (tx) => {
       const fresh = await tx.assignment.create({
         data: {
-          title: `Copy of ${source.title}`,
+          title: copyTitle,
           description: source.description,
           open_at: source.open_at,
           due_date: source.due_date,

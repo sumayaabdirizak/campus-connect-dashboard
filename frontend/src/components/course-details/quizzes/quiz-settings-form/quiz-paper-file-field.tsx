@@ -2,9 +2,14 @@
 
 import { useRef, useState } from 'react';
 import { CloudUpload, FileText, Loader2, X } from 'lucide-react';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import type { QuizPaperFile } from '@/lib/course-details/services/quizzes-types';
 import { quizPaperFileUrl } from '@/lib/course-details/services/quizzes-service';
+import {
+  QUIZ_PAPER_EXTENSIONS,
+  validateDocumentName
+} from '@/lib/course-details/validate-document-name';
 import { formatFileSize } from '../../assignments/student-assignment-card/helpers';
 
 const ACCEPT = '.pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
@@ -32,7 +37,15 @@ export function QuizPaperFileField({
   const pick = (files: FileList | File[]) => {
     const file = Array.from(files)[0];
     if (!file) return;
+    const nameCheck = validateDocumentName(file.name, {
+      allowedExtensions: QUIZ_PAPER_EXTENSIONS
+    });
+    if (!nameCheck.ok) {
+      toast.error(`"${file.name}" — ${nameCheck.message}`);
+      return;
+    }
     if (file.size > 25 * 1024 * 1024) {
+      toast.error(`"${file.name}" exceeds the 25 MB limit`);
       return;
     }
     onPendingFile(file);
@@ -126,7 +139,9 @@ export function QuizPaperFileField({
             <CloudUpload className='size-5' aria-hidden />
           </span>
           <p className='text-sm text-foreground'>Upload PDF or Word document</p>
-          <p className='mt-0.5 text-xs text-muted-foreground'>Max 25 MB</p>
+          <p className='mt-0.5 text-xs text-muted-foreground'>
+            Max 25 MB · clear file name (letters/numbers, no special symbols)
+          </p>
         </div>
       )}
     </div>

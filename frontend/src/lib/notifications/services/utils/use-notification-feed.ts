@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useCallback, useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@/lib/async-query';
@@ -8,6 +8,7 @@ import {
   useMarkNotificationsRead,
 } from '@/lib/discussions/queries';
 import { useCalendarDeadlines } from '@/lib/calendar/queries';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 import {
   fetchCourseActivityNotifications,
   markCourseActivityRead,
@@ -125,9 +126,10 @@ export function useNotificationFeed(options?: {
           body: d.kind === 'quiz' ? 'Quiz due' : 'Assignment due',
           at: d.deadlineAt!,
           href: d.courseOfferingId
-            ? d.kind === 'quiz'
-              ? `/dashboard/courses/${d.courseOfferingId}?tab=quizzes&quiz=${d.id}`
-              : `/dashboard/courses/${d.courseOfferingId}?tab=assignments`
+            ? courseOfferingPath(d.courseOfferingId, {
+                tab: d.kind === 'quiz' ? 'quizzes' : 'assignments',
+                quiz: d.kind === 'quiz' ? d.id : undefined,
+              })
             : '/dashboard/calendar',
           read: isRead(key),
         };

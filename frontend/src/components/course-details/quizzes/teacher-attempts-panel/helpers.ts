@@ -2,7 +2,7 @@ import { format } from 'date-fns';
 import type { QuizAttempt } from '@/lib/course-details/services/quizzes-types';
 import type { RosterStudent } from '@/lib/course-details/services/roster-types';
 
-export type StatusFilter = 'all' | 'submitted' | 'in_progress' | 'not_started';
+export type StatusFilter = 'all' | 'submitted' | 'in_progress' | 'not_started' | 'missed';
 
 /** Offline paper-quiz filters (outcome-based). */
 export type OfflineStatusFilter =
@@ -17,6 +17,12 @@ export type AttemptRow = {
   student: { id: number; full_name: string; number?: string; email?: string };
   attempt: QuizAttempt | null;
 };
+
+export type OnlineAttemptStatus =
+  | 'submitted'
+  | 'in_progress'
+  | 'not_started'
+  | 'missed';
 
 export function offlineOutcome(
   attempt: QuizAttempt | null
@@ -56,10 +62,17 @@ export function buildAttemptRows(
   }));
 }
 
+/**
+ * Attempt presence only — when the quiz window is closed and there is no
+ * attempt, surface `missed` (same idea as the student "Missing" card).
+ */
 export function rowStatus(
-  row: AttemptRow
-): 'submitted' | 'in_progress' | 'not_started' {
-  if (!row.attempt) return 'not_started';
+  row: AttemptRow,
+  opts?: { quizClosed?: boolean }
+): OnlineAttemptStatus {
+  if (!row.attempt) {
+    return opts?.quizClosed ? 'missed' : 'not_started';
+  }
   return row.attempt.submitted_at ? 'submitted' : 'in_progress';
 }
 
@@ -67,7 +80,8 @@ export function filterAttemptRows(
   rows: AttemptRow[],
   statusFilter: StatusFilter | OfflineStatusFilter,
   search: string,
-  isOffline = false
+  isOffline = false,
+  opts?: { quizClosed?: boolean }
 ): AttemptRow[] {
   const needle = search.trim().toLowerCase();
   return rows
@@ -76,7 +90,7 @@ export function filterAttemptRows(
       if (isOffline) {
         return offlineOutcome(r.attempt) === statusFilter;
       }
-      return rowStatus(r) === statusFilter;
+      return rowStatus(r, opts) === statusFilter;
     })
     .filter((r) => {
       if (!needle) return true;
@@ -88,12 +102,13 @@ export function filterAttemptRows(
     });
 }
 
-export function statusCounts(rows: AttemptRow[]) {
+export function statusCounts(rows: AttemptRow[], opts?: { quizClosed?: boolean }) {
   return {
     all: rows.length,
-    submitted: rows.filter((r) => rowStatus(r) === 'submitted').length,
-    in_progress: rows.filter((r) => rowStatus(r) === 'in_progress').length,
-    not_started: rows.filter((r) => rowStatus(r) === 'not_started').length,
+    submitted: rows.filter((r) => rowStatus(r, opts) === 'submitted').length,
+    in_progress: rows.filter((r) => rowStatus(r, opts) === 'in_progress').length,
+    not_started: rows.filter((r) => rowStatus(r, opts) === 'not_started').length,
+    missed: rows.filter((r) => rowStatus(r, opts) === 'missed').length,
   };
 }
 
@@ -113,7 +128,11 @@ function csvSafe(value: unknown) {
   return `"${s.replace(/"/g, '""')}"`;
 }
 
-export function downloadAttemptsCsv(quizTitle: string, allRows: AttemptRow[]) {
+export function downloadAttemptsCsv(
+  quizTitle: string,
+  allRows: AttemptRow[],
+  opts?: { quizClosed?: boolean }
+) {
   const header = [
     'Student',
     'Student ID',
@@ -125,16 +144,9 @@ export function downloadAttemptsCsv(quizTitle: string, allRows: AttemptRow[]) {
     'Violations',
     'Closure Reason',
   ];
-  const rows = allRows.map(({ student, attempt }) => {
-    const status = !attempt
-      ? 'not_started'
-      : attempt.closure_reason === 'absent'
-        ? 'absent'
-        : attempt.closure_reason === 'cheat'
-          ? 'cheat'
-          : attempt.submitted_at
-            ? 'submitted'
-            : 'in_progress';
+  const rows = allRows.map((row) => {
+    const status = rowStatus(row, opts);
+    const { student, attempt } = row;
     return [
       student.full_name,
       student.number ?? '',

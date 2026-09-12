@@ -74,6 +74,7 @@ router.get('/', async (req, res, next) => {
       include: {
         faculty: { select: { id: true, name: true } },
         interests: { include: { tag: { select: { slug: true, label: true } } } },
+        server: { select: { id: true, publicId: true } },
         _count: { select: { requests: { where: { status: 'PENDING' } } } },
       },
     };
@@ -88,11 +89,12 @@ router.get('/', async (req, res, next) => {
 
     const nextCursor = hasMore ? clubs[clubs.length - 1]?.id : null;
     const uid = Number(req.user?.id ?? req.user?.sub);
-    const formatted = clubs.map(formatClubForApi);
-    const withStatus = await attachViewerJoinState(formatted, uid);
+    // Join state needs internal numeric serverId; formatClubForApi rewrites to UUID after.
+    const withStatus = await attachViewerJoinState(clubs, uid);
+    const formatted = withStatus.map(formatClubForApi);
 
     res.json({
-      clubs: withStatus,
+      clubs: formatted,
       nextCursor,
       hasMore,
     });

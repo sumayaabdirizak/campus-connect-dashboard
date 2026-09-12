@@ -102,7 +102,16 @@ export async function computeChannelPermissions({ userId, channelId, prismaClien
       scopeId: channel.scopeId,
       prismaClient,
     });
-    if (!inScope) perms &= ~SCOPE_DENIED_MASK;
+    // Hybrid faculty servers: legacy group membership is translated into
+    // MEMBER overwrites (VIEW/SEND/…). Those must win over the academic
+    // enrollment/teaching scope filter, or inbox links to batch/section
+    // channels 403 for members who were synced via DiscussionGroupMembership.
+    const memberAllow = memberOverwrites.reduce(
+      (mask, row) => mask | BigInt(row.allow ?? 0),
+      0n
+    );
+    const memberGrantsView = (memberAllow & B.VIEW_CHANNEL) !== 0n;
+    if (!inScope && !memberGrantsView) perms &= ~SCOPE_DENIED_MASK;
   }
 
   return perms;

@@ -35,6 +35,7 @@ export function PdfScrollPages({
   onVisiblePageChange: (page: number) => void;
 }) {
   const slotRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const aliveRef = useRef(true);
   const [rendered, setRendered] = useState<Set<number>>(() => new Set([1]));
   // Height of page 1, reused to size slots that haven't rendered yet so the
   // scrollbar is roughly right from the start instead of growing as you go.
@@ -44,12 +45,20 @@ export function PdfScrollPages({
   const [slotHeight, setSlotHeight] = useState<number | null>(null);
   const placeholderHeight = slotHeight ?? 700;
 
+  useEffect(() => {
+    aliveRef.current = true;
+    return () => {
+      aliveRef.current = false;
+    };
+  }, []);
+
   /// `reportPage` separates the two jobs this does. Layout-driven measures
   /// only decide what to render; reporting the visible page from them would
   /// overwrite an explicit jump with wherever the scroll still happens to be,
   /// snapping the page box back the moment you type into it.
   const measure = useCallback(
     (reportPage: boolean) => {
+    if (!aliveRef.current) return;
     const root = scrollRef.current;
     if (!root) return;
     const rootRect = root.getBoundingClientRect();
@@ -88,7 +97,7 @@ export function PdfScrollPages({
       for (const n of next) merged.add(n);
       return merged;
     });
-    if (reportPage) onVisiblePageChange(current);
+    if (reportPage && aliveRef.current) onVisiblePageChange(current);
     },
     [scrollRef, onVisiblePageChange]
   );
@@ -154,7 +163,9 @@ export function PdfScrollPages({
               scale={scale}
               onLoadSuccess={
                 n === 1
-                  ? ({ height }: { height: number }) => setSlotHeight(height)
+                  ? ({ height }: { height: number }) => {
+                      if (aliveRef.current) setSlotHeight(height);
+                    }
                   : undefined
               }
             />

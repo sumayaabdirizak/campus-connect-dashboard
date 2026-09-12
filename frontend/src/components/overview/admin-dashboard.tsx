@@ -28,7 +28,7 @@ export function AdminDashboard({ user }: { user: { full_name?: string; role?: st
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false)
 
   const { data: reportsData, isLoading: reportsLoading, refetch, isFetching } = useDeanReports({
-    period: '6m'
+    period: 'semester'
   })
   const { data: recentAnnouncements, isLoading: announcementsLoading, refetch: refetchAnnouncements } = useRecentAnnouncements(5)
   const { data: publishedTotal } = useAnnouncementPublishedTotal()

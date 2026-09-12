@@ -1,6 +1,6 @@
 /** Soft elevated surfaces — white, light border, gentle shadow (create-quiz). */
 const softSurface =
-  'border border-gray-200/90 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.07)]';
+  'border border-gray-200/90 bg-white shadow-[0_2px_10px_rgba(15,23,42,0.07)] dark:border-white/10 dark:bg-card dark:shadow-none';
 
 /** Create-quiz controls using theme primary (`--primary` / Campus Connect blue). */
 export const quizFormFieldClass =
@@ -35,7 +35,7 @@ export const quizFormRowClass =
   `rounded-full ${softSurface} px-4 py-2.5 text-sm text-foreground`;
 
 export const quizFormCheckboxClass =
-  'size-[18px] rounded-[5px] border border-gray-300 bg-white shadow-sm data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground';
+  'size-[18px] rounded-[5px] border border-gray-300 bg-white shadow-sm data-[state=checked]:border-primary data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground dark:border-white/15 dark:bg-card';
 
 export const quizFormSwitchClass =
-  'h-5 w-9 border border-gray-300 shadow-sm data-[state=unchecked]:border-gray-300 data-[state=unchecked]:bg-gray-100 data-[state=checked]:border-primary data-[state=checked]:bg-primary';
+  'h-5 w-9 border border-gray-300 shadow-sm data-[state=unchecked]:border-gray-300 data-[state=unchecked]:bg-gray-100 data-[state=checked]:border-primary data-[state=checked]:bg-primary dark:border-white/15 dark:data-[state=unchecked]:border-white/15 dark:data-[state=unchecked]:bg-white/10';

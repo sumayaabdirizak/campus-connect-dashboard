@@ -125,8 +125,8 @@ export function QuizListTable({
               {col('questions') ? (
                 <PosTableHeaderCell className='!text-foreground'>Questions</PosTableHeaderCell>
               ) : null}
-              {col('length') ? (
-                <PosTableHeaderCell className='!text-foreground'>Length</PosTableHeaderCell>
+              {col('date') ? (
+                <PosTableHeaderCell className='!text-foreground'>Date</PosTableHeaderCell>
               ) : null}
               {col('attempts') ? (
                 <PosTableHeaderCell align='right' className='!text-foreground'>

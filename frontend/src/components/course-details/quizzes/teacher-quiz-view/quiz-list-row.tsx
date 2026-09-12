@@ -1,5 +1,6 @@
 'use client';
 
+import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
@@ -139,10 +140,10 @@ export function QuizListRow({
         </PosTableCell>
       ) : null}
 
-      {col('length') ? (
+      {col('date') ? (
         <PosTableCell>
           <span className='text-sm text-muted-foreground tabular-nums'>
-            {q.duration_minutes} min
+            {format(new Date(q.created_at), 'MMM d, yyyy')}
           </span>
         </PosTableCell>
       ) : null}

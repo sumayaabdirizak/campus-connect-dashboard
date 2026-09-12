@@ -5,7 +5,7 @@ import Link from 'next/link';
 
 export default function SignUpViewPage() {
   return (
-    <div className='flex min-h-screen bg-muted font-sans text-slate-900'>
+    <div className='flex min-h-screen bg-muted font-sans text-slate-900 dark:text-slate-100'>
       {/* LEFT SIDE: Visual/Branding */}
       <div className='relative hidden w-1/2 flex-col justify-between overflow-hidden lg:flex'>
         {/* Background Image with Blur */}
@@ -18,7 +18,7 @@ export default function SignUpViewPage() {
         />
 
         {/* Soft Light Overlay */}
-        <div className='absolute inset-0 bg-white/40 backdrop-blur-[2px]' />
+        <div className='absolute inset-0 bg-white/40 backdrop-blur-[2px] dark:bg-black/50' />
 
         {/* Content */}
         <div className='relative z-10 p-12'>
@@ -38,25 +38,25 @@ export default function SignUpViewPage() {
                 <path d='M6 12v5c3.33 3 8.67 3 12 0v-5' />
               </svg>
             </div>
-            <span className='text-2xl font-bold tracking-tight text-slate-800'>Campus Connect</span>
+            <span className='text-2xl font-bold tracking-tight text-slate-800 dark:text-slate-100'>Campus Connect</span>
           </div>
         </div>
 
         <div className='relative z-10 p-12'>
-          <h2 className='mb-4 text-5xl font-extrabold leading-tight tracking-tight text-slate-900'>
+          <h2 className='mb-4 text-5xl font-extrabold leading-tight tracking-tight text-slate-900 dark:text-slate-100'>
             Join the
             <br />
             Modern
             <br />
             Academic Hub.
           </h2>
-          <p className='max-w-md text-lg font-medium text-slate-700'>
+          <p className='max-w-md text-lg font-medium text-slate-700 dark:text-slate-300'>
             Empowering students and faculty through seamless digital coordination.
           </p>
         </div>
 
         {/* Footer Credit */}
-        <div className='relative z-10 p-12 text-sm font-medium text-slate-600'>
+        <div className='relative z-10 p-12 text-sm font-medium text-slate-600 dark:text-slate-400'>
           © 2026 Campus Connect Inc. All rights reserved.
         </div>
       </div>
@@ -86,15 +86,15 @@ export default function SignUpViewPage() {
 
           {/* Header */}
           <div className='mb-8'>
-            <h1 className='text-3xl font-bold tracking-tight text-slate-900'>Create account</h1>
-            <p className='mt-2 text-slate-500'>
+            <h1 className='text-3xl font-bold tracking-tight text-slate-900 dark:text-slate-100'>Create account</h1>
+            <p className='mt-2 text-slate-500 dark:text-slate-400'>
               Registration is currently restricted to campus administrators.
             </p>
           </div>
 
           {/* Info Box */}
           <div className='rounded-xl border border-border bg-card p-8 text-center'>
-            <div className='mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-[#2563eb]'>
+            <div className='mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-slate-50 text-[#2563eb] dark:bg-slate-800 dark:text-blue-400'>
               <svg
                 xmlns='http://www.w3.org/2000/svg'
                 width='32'
@@ -112,7 +112,7 @@ export default function SignUpViewPage() {
               </svg>
             </div>
 
-            <p className='mb-8 text-slate-600 leading-relaxed'>
+            <p className='mb-8 text-slate-600 leading-relaxed dark:text-slate-400'>
               To maintain the integrity of our academic records, new user registration must be
               authorized by your faculty administration.
             </p>
@@ -125,7 +125,7 @@ export default function SignUpViewPage() {
             </Button>
           </div>
 
-          <p className='mt-8 text-center text-sm text-slate-500'>
+          <p className='mt-8 text-center text-sm text-slate-500 dark:text-slate-400'>
             Need immediate help?{' '}
             <a
               href='mailto:itsupport@jazeerauniversity.edu'

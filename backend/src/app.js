@@ -10,7 +10,7 @@ import { errorHandler } from './middleware/errorHandler.js';
 import { auth } from './middleware/auth.js';
 import { csrfProtection } from './middleware/csrf.js';
 import { requireUploadAuth } from './middleware/requireUploadAuth.js';
-import { configureTrustProxy, getCorsAllowlist } from './config/env.js';
+import { configureTrustProxy, getCorsAllowlist, isOriginAllowed } from './config/env.js';
 import {
   announcementLinkRedirectLimiter,
   announcementLinkRedirectHandler,
@@ -65,8 +65,7 @@ app.use('/uploads', requireUploadAuth, (req, res, next) => {
 const corsAllowlist = getCorsAllowlist();
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // same-origin / server-side fetches
-    if (corsAllowlist.includes(origin)) return callback(null, true);
+    if (isOriginAllowed(origin, corsAllowlist)) return callback(null, true);
     return callback(new Error(`CORS blocked for origin: ${origin}`));
   },
   credentials: true,

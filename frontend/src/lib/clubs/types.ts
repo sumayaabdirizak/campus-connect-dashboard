@@ -58,7 +58,7 @@ export type Club = {
   faculty?: ClubFaculty | null
   ownerId?: number | null
   owner?: ClubOwner | null
-  serverId?: number | null
+  serverId?: string | null
   isOfficial?: boolean
   memberCountCache: number
   lastActivityAt?: string | null
@@ -162,8 +162,8 @@ export type ClubJoinRequestsResponse = {
 
 export type ClubCreateResponse = {
   club: Club
-  serverId?: number
-  defaultChannelId?: number
+  serverId?: string
+  defaultChannelId?: string
 }
 
 export type InterestTagsResponse = {
@@ -223,6 +223,6 @@ export type AcceptInviteResponse = {
     id: number
     slug: string
     name: string
-    serverId?: number | null
+    serverId?: string | null
   }
 }

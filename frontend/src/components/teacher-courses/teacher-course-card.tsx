@@ -6,11 +6,11 @@ import { Button } from '@/features/ui/components/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/features/ui/components/tooltip';
 import { Clock, FileText, MoreVertical, Calendar } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 
 interface TeacherCourseCardProps {
   offering: {
-    id: number;
+    id: number | string;
     courseCode: string;
     courseName: string;
     department: string;
@@ -30,7 +30,7 @@ const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function TeacherCourseCard({ offering }: TeacherCourseCardProps) {
   return (
-    <Link href={`/dashboard/courses/${offering.id}`}>
+    <a href={courseOfferingPath(offering.id)}>
       <Card className='overflow-hidden group hover:shadow-xl hover:-translate-y-1 transition-all duration-300 border border-border bg-card rounded-xl flex flex-col h-full'>
         <div className='relative h-48 w-full overflow-hidden shrink-0'>
           {offering.thumbnail?.trim() ? (
@@ -106,6 +106,6 @@ export function TeacherCourseCard({ offering }: TeacherCourseCardProps) {
           )}
         </CardContent>
       </Card>
-    </Link>
+    </a>
   );
 }

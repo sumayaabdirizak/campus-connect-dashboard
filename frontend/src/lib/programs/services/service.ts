@@ -26,8 +26,19 @@ export interface ProgramsResponse {
   results?: Program[];
 }
 
-export const fetchPrograms = async () => {
-  const response = await apiClient<ProgramsResponse>('/programs');
+export const fetchPrograms = async (params?: {
+  departmentId?: string;
+  facultyId?: string;
+  search?: string;
+}) => {
+  const qs = new URLSearchParams();
+  if (params?.departmentId) qs.set('departmentId', params.departmentId);
+  if (params?.facultyId) qs.set('facultyId', params.facultyId);
+  if (params?.search) qs.set('search', params.search);
+  const query = qs.toString();
+  const response = await apiClient<ProgramsResponse>(
+    query ? `/programs?${query}` : '/programs'
+  );
   if (Array.isArray(response.programs)) return response;
   return {
     ...response,

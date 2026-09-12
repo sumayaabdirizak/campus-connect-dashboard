@@ -122,6 +122,12 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
           })
         }
         onGrade={gradeActions.openGrading}
+        onExtendMissing={(targetId) => {
+          s.setSelectedRows(new Set([targetId]));
+          s.setBulkDate('');
+          s.setBulkReason('');
+          s.setBulkOpen(true);
+        }}
         filteredGroupSubs={d.filteredGroupSubs}
         filteredSubs={d.filteredSubs}
         groupsEmpty={d.groups.length === 0}

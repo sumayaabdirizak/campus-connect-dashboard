@@ -44,6 +44,7 @@ export const STUDENT_COURSE_TABS: CourseTabDef[] = [
   { id: 'assignments', label: 'Assignments', visible: true },
   { id: 'quizzes', label: 'Quizzes', visible: true },
   { id: 'resources', label: 'Resources', visible: true },
+  { id: 'grades', label: 'My report', visible: true },
   { id: 'feed', label: 'Feed', visible: true },
   { id: 'groups', label: 'Groups', visible: true },
   { id: 'chat', label: 'Chat', visible: false },

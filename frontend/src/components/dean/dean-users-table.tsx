@@ -65,6 +65,9 @@ function buildUserQueryParams(
     if (filters.batchId !== 'all') params.batchId = filters.batchId;
     if (filters.batchSectionId !== 'all') params.batchSectionId = filters.batchSectionId;
   }
+  if (role === 'TEACHER' && filters && filters.departmentId !== 'all') {
+    params.departmentId = filters.departmentId;
+  }
   return params;
 }
 
@@ -79,7 +82,12 @@ export function DeanUsersTable({ role }: { role: 'STUDENT' | 'TEACHER' }) {
   const deferredSearch = useDeferredValue(search.trim());
 
   const queryParams = useMemo(
-    () => buildUserQueryParams(role, deferredSearch, role === 'STUDENT' ? studentFilters : undefined),
+    () =>
+      buildUserQueryParams(
+        role,
+        deferredSearch,
+        role === 'STUDENT' || role === 'TEACHER' ? studentFilters : undefined
+      ),
     [role, deferredSearch, studentFilters]
   );
 
@@ -127,7 +135,14 @@ export function DeanUsersTable({ role }: { role: 'STUDENT' | 'TEACHER' }) {
       toolbarStart={
         role === 'STUDENT' ? (
           <DeanStudentsFilters filters={studentFilters} onChange={setStudentFilters} />
-        ) : undefined
+        ) : (
+          <DeanStudentsFilters
+            filters={studentFilters}
+            onChange={setStudentFilters}
+            showBatch={false}
+            showSection={false}
+          />
+        )
       }
       footer={
         users.length > 0 ? (

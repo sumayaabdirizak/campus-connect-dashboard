@@ -39,12 +39,17 @@ export function NotificationItem({
 }) {
   const isClub = item.source === 'discussion' && item.type.startsWith('CLUB');
   const Icon = isClub ? Users : SOURCE_ICON[item.source];
+  const hardNav = item.href.startsWith('/dashboard/courses/');
   return (
     <Link
       href={item.href}
-      onClick={() => {
+      onClick={(e) => {
         onRead?.();
         onNavigate?.();
+        if (hardNav) {
+          e.preventDefault();
+          window.location.assign(item.href);
+        }
       }}
       className={cn(
         'group relative flex items-start gap-3 px-4 py-3 transition-colors hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none',

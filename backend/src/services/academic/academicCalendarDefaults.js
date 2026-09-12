@@ -1,10 +1,10 @@
-/** University academic calendar policy (Sept–Aug year, 2 semesters). */
+/** University academic calendar policy (Sept–Oct year, 2 semesters). */
 export const ACADEMIC_CALENDAR_DEFAULTS = {
-  yearStartMonth: 9, // September
+  yearStartMonth: 11, // November — Semester 1 start
   yearStartDay: 1,
   semester1EndMonth: 2, // February
   semester2StartMonth: 3, // March
-  semester2EndMonth: 8, // August
+  semester2EndMonth: 10, // October
   semester2EndDay: 31,
   semestersPerYear: 2,
   /** Fallback when faculty/program has no duration set. */

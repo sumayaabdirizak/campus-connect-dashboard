@@ -65,8 +65,10 @@ export function useDraftAutosave(args: Args) {
 
       try {
         let remoteId = getRemoteDraftId();
+        // Create and update both require a valid draft payload — otherwise PATCH
+        // sends e.g. targetRoles: [] and the API returns "Validation failed".
+        if (!canPersistDraftCreate()) return;
         if (!remoteId) {
-          if (!canPersistDraftCreate()) return;
           const created = images.some((img) => Boolean(img.file))
             ? await createAnnouncement(buildDraftForm())
             : await createAnnouncement(buildDraftJson());

@@ -35,7 +35,7 @@ import type { AnalyticsPeriod } from './main-dashboard-period'
 export function MainDashboard() {
   const user = useAuthStore((s) => s.user)
   const firstName = user?.full_name?.split(' ')[0] || user?.name?.split(' ')[0]
-  const [period, setPeriod] = useState<AnalyticsPeriod>('6m')
+  const [period, setPeriod] = useState<AnalyticsPeriod>('semester')
   const [welcomeCollapsed, setWelcomeCollapsed] = useState(false)
 
   const {
@@ -43,7 +43,7 @@ export function MainDashboard() {
     isLoading: analyticsLoading,
     isFetching,
     refetch,
-    error,
+    isError,
   } = useAdminAnalytics({ period })
   const { data: clubStats } = useDeanClubStats()
   const {
@@ -109,7 +109,7 @@ export function MainDashboard() {
         </div>
       </div>
 
-      {error ? (
+      {isError ? (
         <QueryErrorState
           title='Could not load dashboard analytics'
           message='Try refreshing the page.'

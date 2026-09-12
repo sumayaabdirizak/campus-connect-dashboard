@@ -6,6 +6,7 @@ import {
   AttemptHeader,
   MultiTabBanner,
   PreviewBanner,
+  ProctoringBanner,
   ProgressBlock
 } from './attempt-chrome';
 import { AttemptDialogs } from './attempt-dialogs';
@@ -29,9 +30,12 @@ export function StudentAttempt({
         questionCount={data.questions.length}
         remaining={c.remaining}
       />
-      {/* The integrity rules live in RulesGateDialog, which blocks the quiz
-          until acknowledged and covers strictly more than the old banner did.
-          Repeating them above every question only intimidated. */}
+      {!previewMode ? (
+        <ProctoringBanner
+          warnings={c.violations.warnings}
+          maxWarnings={c.violations.maxWarnings}
+        />
+      ) : null}
       {c.multiTabConflict ? <MultiTabBanner /> : null}
       <ProgressBlock
         currentIdx={c.currentIdx}

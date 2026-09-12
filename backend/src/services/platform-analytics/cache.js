@@ -2,7 +2,10 @@ const CACHE_TTL_MS = Number(process.env.PLATFORM_ANALYTICS_CACHE_TTL_MS || 120_0
 const cache = new Map();
 
 function cacheKey(args = {}) {
-  return `${args.facultyId ?? 'all'}:${args.periodMonths ?? 6}`;
+  const period = args.period ?? args.periodMonths ?? 6;
+  const from = args.from ?? '';
+  const to = args.to ?? '';
+  return `${args.facultyId ?? 'all'}:${period}:${from}:${to}`;
 }
 
 export function getCachedPlatformAnalytics(args) {

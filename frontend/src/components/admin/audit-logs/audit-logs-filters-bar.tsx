@@ -15,6 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/features/ui/components/select';
+import { SearchSelect } from '@/features/ui/components/search-select';
 import type { AuditLogFilterState } from './audit-filters';
 import {
   ACTION_OPTIONS,
@@ -58,25 +59,21 @@ export function AuditLogsFiltersBar({
             className='h-9'
           />
         </FilterField>
-        <FilterField label='User' className='w-[150px]'>
-          <Select
+        <FilterField label='User' className='w-[180px]'>
+          <SearchSelect
+            options={[
+              { value: 'all', label: 'All users' },
+              ...actors.map((u) => ({ value: String(u.id), label: u.fullName }))
+            ]}
             value={draft.actorId != null ? String(draft.actorId) : 'all'}
             onValueChange={(v) =>
               setDraft({ ...draft, actorId: v === 'all' ? null : Number(v) })
             }
-          >
-            <SelectTrigger className='h-9'>
-              <SelectValue placeholder='All users' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>All users</SelectItem>
-              {actors.map((u) => (
-                <SelectItem key={u.id} value={String(u.id)}>
-                  {u.fullName}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            placeholder='All users'
+            searchPlaceholder='Search users...'
+            emptyText='No users found.'
+            className='h-9'
+          />
         </FilterField>
         <FilterField label='Action' className='w-[130px]'>
           <SimpleFilterSelect

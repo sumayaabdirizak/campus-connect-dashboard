@@ -11,26 +11,31 @@ import { UserFormUniversityIdField } from './user-form-university-id-field';
 import { CREATE_ROLES, type UserFormState } from '@/lib/users/services/user-form-state';
 
 type DeptOption = { value: string; label: string; sub?: string };
-type FacultyOption = { id: number; name: string; code: string };
 
 type Props = {
   form: UserFormState;
   isEdit: boolean;
+  lockRole?: boolean;
   departmentOptions: DeptOption[];
   departmentsLoading?: boolean;
   batchNamePreview?: string;
-  faculties?: FacultyOption[];
   onChange: (patch: Partial<UserFormState>) => void;
   onInput: (e: React.ChangeEvent<HTMLInputElement>) => void;
+};
+
+const ROLE_LABELS: Record<string, string> = {
+  STUDENT: 'Student',
+  TEACHER: 'Lecturer',
+  DEAN: 'Dean'
 };
 
 export function UserFormIdentityFields({
   form,
   isEdit,
+  lockRole = false,
   departmentOptions,
   departmentsLoading,
   batchNamePreview,
-  faculties = [],
   onChange,
   onInput
 }: Props) {
@@ -43,14 +48,6 @@ export function UserFormIdentityFields({
   const primaryFacultyName = useMemo(
     () => departmentOptions.find((d) => d.value === form.departmentCode)?.sub,
     [departmentOptions, form.departmentCode]
-  );
-
-  const secondaryFacultyOptions = useMemo(
-    () =>
-      faculties
-        .filter((f) => f.name !== primaryFacultyName)
-        .map((f) => ({ value: String(f.id), label: f.name })),
-    [faculties, primaryFacultyName]
   );
 
   return (
@@ -112,7 +109,16 @@ export function UserFormIdentityFields({
       ) : null}
 
       {!isEdit ? (
-        <UserFormRoleSelect role={form.role} roleOptions={roleOptions} onChange={onChange} />
+        lockRole ? (
+          <div className='space-y-1.5'>
+            <Label>Role</Label>
+            <div className='flex h-9 items-center rounded-md border border-border bg-muted px-3 text-sm text-foreground'>
+              {ROLE_LABELS[form.role] ?? form.role.replaceAll('_', ' ')}
+            </div>
+          </div>
+        ) : (
+          <UserFormRoleSelect role={form.role} roleOptions={roleOptions} onChange={onChange} />
+        )
       ) : null}
 
       {!isEdit && form.role === 'DEAN' ? (
@@ -140,23 +146,10 @@ export function UserFormIdentityFields({
       ) : null}
 
       {!isEdit && needsDepartment ? (
-        <div className='grid grid-cols-2 gap-3'>
-          <div className='space-y-1.5'>
-            <Label>Primary faculty</Label>
-            <div className='flex h-9 items-center rounded-md border border-border bg-muted px-3 text-sm text-foreground'>
-              {primaryFacultyName ?? '—'}
-            </div>
-          </div>
-          <div className='space-y-1.5'>
-            <Label>Secondary faculty (optional)</Label>
-            <SearchSelect
-              options={secondaryFacultyOptions}
-              value={form.secondaryFacultyId}
-              onValueChange={(secondaryFacultyId) => onChange({ secondaryFacultyId })}
-              placeholder='None'
-              searchPlaceholder='Search faculty...'
-              emptyText='No other faculties found.'
-            />
+        <div className='space-y-1.5'>
+          <Label>Primary faculty</Label>
+          <div className='flex h-9 items-center rounded-md border border-border bg-muted px-3 text-sm text-foreground'>
+            {primaryFacultyName ?? '—'}
           </div>
         </div>
       ) : null}

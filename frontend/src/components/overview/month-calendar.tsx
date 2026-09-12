@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { useMemo, useState } from 'react'
-import Link from 'next/link'
+import { useMemo, useState } from 'react';
+import Link from 'next/link';
 import {
   addMonths,
   subMonths,
@@ -10,66 +10,65 @@ import {
   startOfWeek,
   endOfWeek,
   eachDayOfInterval,
-  format,
-} from 'date-fns'
-import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useCalendarDeadlines } from '@/lib/calendar/queries'
-import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card'
-import { Button } from '@/features/ui/components/button'
-import { cn } from '@/lib/utils'
-import { MonthCalendarGrid } from './month-calendar/month-calendar-grid'
-import { MonthCalendarDayList } from './month-calendar/month-calendar-day-list'
-import type { DeadlineRow } from './month-calendar/types'
+  format
+} from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useCalendarDeadlines } from '@/lib/calendar/queries';
+import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card';
+import { Button } from '@/features/ui/components/button';
+import { cn } from '@/lib/utils';
+import { MonthCalendarGrid } from './month-calendar/month-calendar-grid';
+import { MonthCalendarDayList } from './month-calendar/month-calendar-day-list';
+import type { DeadlineRow } from './month-calendar/types';
 
 type Props = {
-  /** `featured` = dashboard hero calendar (wide grid + side day list). */
-  variant?: 'compact' | 'featured'
-  className?: string
-}
+  /** `featured` = dashboard month grid with event chips (like full calendar). */
+  variant?: 'compact' | 'featured';
+  className?: string;
+};
 
 /**
- * Month calendar block: grid with deadline dots, prev/next/today, selected-day list.
+ * Month calendar: featured = chip grid; compact = day dots + selected list.
  */
 export function MonthCalendar({ variant = 'compact', className }: Props) {
-  const featured = variant === 'featured'
-  const [viewMonth, setViewMonth] = useState(() => new Date())
-  const [selected, setSelected] = useState(() => new Date())
+  const featured = variant === 'featured';
+  const weekStartsOn = 0;
+  const [viewMonth, setViewMonth] = useState(() => new Date());
+  const [selected, setSelected] = useState(() => new Date());
 
-  const gridStart = startOfWeek(startOfMonth(viewMonth), { weekStartsOn: 1 })
-  const gridEnd = endOfWeek(endOfMonth(viewMonth), { weekStartsOn: 1 })
+  const gridStart = startOfWeek(startOfMonth(viewMonth), { weekStartsOn });
+  const gridEnd = endOfWeek(endOfMonth(viewMonth), { weekStartsOn });
   const days = useMemo(
     () => eachDayOfInterval({ start: gridStart, end: gridEnd }),
-    [gridStart, gridEnd]
-  )
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [viewMonth.getFullYear(), viewMonth.getMonth()]
+  );
 
-  const { data } = useCalendarDeadlines(
-    gridStart.toISOString(),
-    gridEnd.toISOString()
-  )
+  const { data } = useCalendarDeadlines(gridStart.toISOString(), gridEnd.toISOString());
 
   const byDay = useMemo(() => {
-    const m = new Map<string, DeadlineRow[]>()
+    const m = new Map<string, DeadlineRow[]>();
     for (const d of data?.results ?? []) {
-      if (!d.deadlineAt) continue
-      const k = format(new Date(d.deadlineAt), 'yyyy-MM-dd')
-      ;(m.get(k) ?? m.set(k, []).get(k)!).push(d)
+      if (!d.deadlineAt) continue;
+      const k = format(new Date(d.deadlineAt), 'yyyy-MM-dd');
+      (m.get(k) ?? m.set(k, []).get(k)!).push(d);
     }
-    return m
-  }, [data])
+    return m;
+  }, [data]);
 
-  const selectedItems = byDay.get(format(selected, 'yyyy-MM-dd')) ?? []
+  const selectedItems = byDay.get(format(selected, 'yyyy-MM-dd')) ?? [];
 
   return (
     <Card
       className={cn(
-        'rounded-lg border-border',
-        featured && 'h-full w-full',
+        'rounded-xl border-border',
+        featured && 'h-full w-full overflow-hidden',
         className
       )}
     >
-      <CardHeader className='flex flex-row items-center justify-between gap-2 border-b py-2.5'>
+      <CardHeader className='flex flex-row items-center justify-between gap-2 border-b border-border py-3'>
         <div className='min-w-0'>
-          <CardTitle className='text-base font-semibold'>
+          <CardTitle className='text-base font-semibold text-foreground'>
             {format(viewMonth, 'MMMM yyyy')}
           </CardTitle>
           <Link href='/dashboard/calendar' className='text-xs text-primary hover:underline'>
@@ -91,8 +90,8 @@ export function MonthCalendar({ variant = 'compact', className }: Props) {
             size='sm'
             className='h-7 px-2 text-xs'
             onClick={() => {
-              setViewMonth(new Date())
-              setSelected(new Date())
+              setViewMonth(new Date());
+              setSelected(new Date());
             }}
           >
             Today
@@ -108,27 +107,23 @@ export function MonthCalendar({ variant = 'compact', className }: Props) {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className='p-3'>
-        <div
-          className={cn(
-            featured && 'sm:grid sm:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] sm:items-start sm:gap-3'
-          )}
-        >
-          <MonthCalendarGrid
-            days={days}
-            viewMonth={viewMonth}
-            selected={selected}
-            byDay={byDay}
-            onSelectDay={setSelected}
-            size={featured ? 'lg' : 'sm'}
-          />
-          <MonthCalendarDayList
-            selected={selected}
-            items={selectedItems}
-            featured={featured}
-          />
-        </div>
+      <CardContent className={cn(featured ? 'p-0 sm:p-3' : 'p-3')}>
+        <MonthCalendarGrid
+          days={days}
+          viewMonth={viewMonth}
+          selected={selected}
+          byDay={byDay}
+          onSelectDay={setSelected}
+          size={featured ? 'lg' : 'sm'}
+        />
+        {!featured ? (
+          <MonthCalendarDayList selected={selected} items={selectedItems} featured={false} />
+        ) : (
+          <div className='border-t border-border px-3 pb-3 pt-2 sm:px-0 sm:pb-0 sm:pt-3'>
+            <MonthCalendarDayList selected={selected} items={selectedItems} featured={false} />
+          </div>
+        )}
       </CardContent>
     </Card>
-  )
+  );
 }

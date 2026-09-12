@@ -1,6 +1,11 @@
 import type { Socket } from 'socket.io-client';
 import { ensureSocket } from '@/lib/discussions/queries/socket-connection';
-import { getSocketRef, roomRefCounts, type RoomKey } from '@/lib/discussions/queries/socket-state';
+import {
+  getSocketRef,
+  roomRefCounts,
+  type RoomKey
+} from '@/lib/discussions/queries/socket-state';
+import { clearJoinRetry, emitJoinForRoom } from '@/lib/discussions/queries/socket-join';
 
 export function getDiscussionSocket(): Socket {
   return ensureSocket();
@@ -11,20 +16,11 @@ export function joinRoom(room: RoomKey): void {
   const next = (roomRefCounts.get(room) ?? 0) + 1;
   roomRefCounts.set(room, next);
   if (next !== 1) return;
-
-  if (room.startsWith('channel:')) {
-    const channelId = room.split(':')[1];
-    s.emit('channel:join', { channelId }, () => undefined);
-  } else if (room.startsWith('groupdm:')) {
-    const groupDmId = room.split(':')[1];
-    s.emit('groupdm:join', { groupDmId }, () => undefined);
-  } else if (room.startsWith('discussion:')) {
-    const groupId = room.split(':')[1];
-    s.emit('join:group', { groupId, deviceId: 'web-default', fromVersion: 0 }, () => undefined);
-  }
+  emitJoinForRoom(s, room);
 }
 
 export function leaveRoom(room: RoomKey): void {
+  clearJoinRetry(room);
   const s = getSocketRef();
   const next = (roomRefCounts.get(room) ?? 0) - 1;
   if (next <= 0) {

@@ -12,21 +12,31 @@ import { apiClient } from '@/lib/api-client';
 import type { DiscussionMessage } from '@/lib/discussions/queries/types';
 import { CLUB_REFETCH_INTERVAL, CLUB_STALE_MS } from './club-query-config';
 
+/** Discussion group publicId (UUID) — never a sequential int. */
+export type ClubServerId = string;
+
+function hasClubServerId(serverId?: ClubServerId | number | null): serverId is ClubServerId {
+  if (serverId == null) return false;
+  const s = String(serverId).trim();
+  if (!s || /^\d+$/.test(s)) return false;
+  return true;
+}
+
 export type ClubFeedResponse = {
   results: DiscussionMessage[];
   meta: { nextCursor: string | null; hasMore: boolean };
 };
 
-export const clubFeedKey = (serverId: number | string) =>
+export const clubFeedKey = (serverId: ClubServerId | number | string) =>
   ['clubs', 'feed', String(serverId)] as const;
 
-export const listClubFeed = (serverId: number | string, limit = 30) =>
+export const listClubFeed = (serverId: ClubServerId | number | string, limit = 30) =>
   apiClient<ClubFeedResponse>(
     `/discussions/groups/${encodeURIComponent(String(serverId))}/messages?limit=${limit}`
   );
 
 export const postClubMessage = (
-  serverId: number | string,
+  serverId: ClubServerId | number | string,
   content: string,
   attachmentIds?: string[]
 ) =>
@@ -35,37 +45,37 @@ export const postClubMessage = (
     { method: 'POST', body: JSON.stringify({ content, attachmentIds: attachmentIds ?? [] }) }
   );
 
-/** Feed for a club. Disabled until the club has a provisioned server. */
-export function useClubFeed(serverId?: number | null) {
+/** Feed for a club. Disabled until the club has a provisioned server (UUID). */
+export function useClubFeed(serverId?: ClubServerId | number | null) {
   return useQuery({
-    queryKey: clubFeedKey(serverId ?? 0),
-    queryFn: () => listClubFeed(serverId as number),
-    enabled: Number.isFinite(serverId) && Number(serverId) > 0,
+    queryKey: clubFeedKey(serverId ?? ''),
+    queryFn: () => listClubFeed(serverId as ClubServerId),
+    enabled: hasClubServerId(serverId),
     staleTime: CLUB_STALE_MS,
     refetchOnWindowFocus: true,
     refetchInterval: CLUB_REFETCH_INTERVAL,
   });
 }
 
-export function usePostClubMessage(serverId?: number | null) {
+export function usePostClubMessage(serverId?: ClubServerId | number | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { content: string; attachmentIds?: string[] }) =>
-      postClubMessage(serverId as number, args.content, args.attachmentIds),
+      postClubMessage(serverId as ClubServerId, args.content, args.attachmentIds),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? '') });
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to post'),
   });
 }
 
-const reactionPath = (serverId: number | string, messageId: string) =>
+const reactionPath = (serverId: ClubServerId | number | string, messageId: string) =>
   `/discussions/groups/${encodeURIComponent(String(serverId))}/messages/${encodeURIComponent(
     messageId
   )}/reactions`;
 
 export const addClubReaction = (
-  serverId: number | string,
+  serverId: ClubServerId | number | string,
   messageId: string,
   emoji: string
 ) =>
@@ -75,7 +85,7 @@ export const addClubReaction = (
   });
 
 export const removeClubReaction = (
-  serverId: number | string,
+  serverId: ClubServerId | number | string,
   messageId: string,
   emoji: string
 ) =>
@@ -89,15 +99,15 @@ export const removeClubReaction = (
  * reacted with it, which decides add vs remove — the endpoint has no toggle
  * verb of its own.
  */
-export function useToggleClubReaction(serverId?: number | null) {
+export function useToggleClubReaction(serverId?: ClubServerId | number | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { messageId: string; emoji: string; mine: boolean }) =>
       args.mine
-        ? removeClubReaction(serverId as number, args.messageId, args.emoji)
-        : addClubReaction(serverId as number, args.messageId, args.emoji),
+        ? removeClubReaction(serverId as ClubServerId, args.messageId, args.emoji)
+        : addClubReaction(serverId as ClubServerId, args.messageId, args.emoji),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? '') });
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to react'),
   });
@@ -109,10 +119,10 @@ export function useToggleClubReaction(serverId?: number | null) {
 // set, and GET ?parentId= scopes the list to one post's thread.
 // ────────────────────────────────────────────────────────────────────────────
 
-export const clubCommentsKey = (serverId: number | string, messageId: string) =>
+export const clubCommentsKey = (serverId: ClubServerId | number | string, messageId: string) =>
   ['clubs', 'feed', String(serverId), 'comments', messageId] as const;
 
-export const listClubComments = (serverId: number | string, messageId: string) =>
+export const listClubComments = (serverId: ClubServerId | number | string, messageId: string) =>
   apiClient<ClubFeedResponse>(
     `/discussions/groups/${encodeURIComponent(String(serverId))}/messages?parentId=${encodeURIComponent(
       messageId
@@ -120,7 +130,7 @@ export const listClubComments = (serverId: number | string, messageId: string) =
   );
 
 export const postClubComment = (
-  serverId: number | string,
+  serverId: ClubServerId | number | string,
   messageId: string,
   content: string
 ) =>
@@ -131,14 +141,14 @@ export const postClubComment = (
 
 /** Comment thread for one post. Only fetched once the thread is opened. */
 export function useClubComments(
-  serverId: number | null | undefined,
+  serverId: ClubServerId | number | null | undefined,
   messageId: string,
   enabled: boolean
 ) {
   return useQuery({
-    queryKey: clubCommentsKey(serverId ?? 0, messageId),
-    queryFn: () => listClubComments(serverId as number, messageId),
-    enabled: enabled && Number.isFinite(serverId) && Number(serverId) > 0,
+    queryKey: clubCommentsKey(serverId ?? '', messageId),
+    queryFn: () => listClubComments(serverId as ClubServerId, messageId),
+    enabled: enabled && hasClubServerId(serverId),
   });
 }
 
@@ -148,7 +158,7 @@ export function useClubComments(
 // ────────────────────────────────────────────────────────────────────────────
 
 export const editClubMessage = (
-  serverId: number | string,
+  serverId: ClubServerId | number | string,
   messageId: string,
   content: string
 ) =>
@@ -159,7 +169,7 @@ export const editClubMessage = (
     { method: 'PATCH', body: JSON.stringify({ content }) }
   );
 
-export const deleteClubMessage = (serverId: number | string, messageId: string) =>
+export const deleteClubMessage = (serverId: ClubServerId | number | string, messageId: string) =>
   apiClient(
     `/discussions/groups/${encodeURIComponent(String(serverId))}/messages/${encodeURIComponent(
       messageId
@@ -167,40 +177,41 @@ export const deleteClubMessage = (serverId: number | string, messageId: string) 
     { method: 'DELETE' }
   );
 
-export function useEditClubMessage(serverId?: number | null) {
+export function useEditClubMessage(serverId?: ClubServerId | number | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { messageId: string; content: string }) =>
-      editClubMessage(serverId as number, args.messageId, args.content),
+      editClubMessage(serverId as ClubServerId, args.messageId, args.content),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? '') });
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to save changes'),
   });
 }
 
-export function useDeleteClubMessage(serverId?: number | null) {
+export function useDeleteClubMessage(serverId?: ClubServerId | number | null) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (messageId: string) => deleteClubMessage(serverId as number, messageId),
+    mutationFn: (messageId: string) => deleteClubMessage(serverId as ClubServerId, messageId),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? '') });
       toast.success('Post deleted');
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to delete post'),
   });
 }
 
-export function usePostClubComment(serverId?: number | null) {
+export function usePostClubComment(serverId?: ClubServerId | number | null) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (args: { messageId: string; content: string }) =>
-      postClubComment(serverId as number, args.messageId, args.content),
+      postClubComment(serverId as ClubServerId, args.messageId, args.content),
     onSuccess: (_data, variables) => {
-      qc.invalidateQueries({ queryKey: clubCommentsKey(serverId ?? 0, variables.messageId) });
+      qc.invalidateQueries({ queryKey: clubCommentsKey(serverId ?? '', variables.messageId) });
       // Refreshes the post's threadPreview.replyCount shown in the collapsed state.
-      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? 0) });
+      qc.invalidateQueries({ queryKey: clubFeedKey(serverId ?? '') });
     },
     onError: (err: Error) => toast.error(err.message || 'Failed to comment'),
   });
 }
+

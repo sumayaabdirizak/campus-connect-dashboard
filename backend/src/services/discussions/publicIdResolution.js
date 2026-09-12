@@ -7,12 +7,19 @@ export function isUuidShaped(value) {
 }
 
 /**
- * Every messaging model (GroupDm, DiscussionGroup, DiscussionChannel,
- * DiscussionChannelCategory, DiscussionMessage, DiscussionAttachment) has
- * the same `{ id: Int, publicId: Uuid }` shape — this resolves a route
- * param or socket payload value to a Prisma `where` clause, accepting
- * either the new UUID `publicId` or a legacy numeric `id` (mirrors
- * `courseOfferingWhereFromParam` in utils/courseOfferingAccess.js).
+ * Public channel / server / category identifiers — UUID only.
+ * Rejects guessable sequential ints so `?channel=2` cannot probe resources.
+ * @param {unknown} identifier
+ * @returns {{ publicId: string } | null}
+ */
+export function whereFromPublicId(identifier) {
+  if (!isUuidShaped(identifier)) return null;
+  return { publicId: String(identifier) };
+}
+
+/**
+ * Message / attachment identifiers — prefers UUID; still accepts legacy
+ * numeric ids for older clients during migration.
  * @param {unknown} identifier
  */
 export function whereFromParam(identifier) {

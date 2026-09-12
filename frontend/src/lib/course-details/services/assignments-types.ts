@@ -114,6 +114,13 @@ export interface GradeInput {
   is_reviewed?: boolean;
 }
 
+/** Teacher grade from gradebook when there may be no student submission yet. */
+export interface ManualGradeInput {
+  studentId: number;
+  grade: number;
+  feedback?: string;
+}
+
 export interface GrantExtensionInput {
   studentId?: number;
   groupId?: number;

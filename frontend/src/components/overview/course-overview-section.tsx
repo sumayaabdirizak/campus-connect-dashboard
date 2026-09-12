@@ -1,6 +1,5 @@
 'use client';
 
-import Link from 'next/link';
 import {
   Search,
   LayoutGrid,
@@ -12,6 +11,7 @@ import { Input } from '@/features/ui/components/input';
 import { Skeleton } from '@/features/ui/components/skeleton';
 import { cn } from '@/lib/utils';
 import { courseColor } from '@/lib/student-courses/services/course-color';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 import { MoodleCourseCard } from './moodle-course-card';
 import type { CourseFilter } from './use-student-dashboard-data';
 import type { StudentCourse } from '@/lib/student-courses/types';
@@ -139,8 +139,8 @@ export function CourseOverviewSection({
               const color = courseColor(c.courseCode);
               return (
                 <li key={c.id}>
-                  <Link
-                    href={`/dashboard/courses/${c.id}`}
+                  <a
+                    href={courseOfferingPath(c.id)}
                     className='group flex items-center gap-3 py-3 transition-colors hover:bg-muted/40 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none'
                   >
                     <span
@@ -169,7 +169,7 @@ export function CourseOverviewSection({
                       </span>
                     </div>
                     <ChevronRight className='size-4 shrink-0 text-muted-foreground' />
-                  </Link>
+                  </a>
                 </li>
               );
             })}

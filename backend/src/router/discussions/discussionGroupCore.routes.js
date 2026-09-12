@@ -4,7 +4,7 @@ import { apiErrorBody } from "../../utils/apiEnvelope.js";
 import { requireActiveDiscussionMembership } from "../../services/discussions/discussionMembership.js";
 import { computeMemberPresence } from "../../services/discussions/discussionPresence.js";
 import { isDiscussionQaChannelNameKey } from "../../services/discussions/discussionMessagePublic.js";
-import { whereFromParam } from "../../services/discussions/publicIdResolution.js";
+import { whereFromPublicId } from "../../services/discussions/publicIdResolution.js";
 import { resolveServerRow } from "../../controllers/discussions/serverShared.js";
 
 const router = express.Router();
@@ -12,7 +12,7 @@ const router = express.Router();
 router.get("/groups/:groupId", async (req, res) => {
   try {
     const userId = Number(req.user?.sub);
-    const groupWhere = whereFromParam(req.params.groupId);
+    const groupWhere = whereFromPublicId(req.params.groupId);
     if (!groupWhere) {
       return res.status(400).json(apiErrorBody("Invalid groupId", null));
     }

@@ -13,7 +13,9 @@ export const adminKeys = {
       'analytics',
       'v2',
       filters.facultyId ?? 'all',
-      filters.period ?? '6m',
+      filters.period ?? 'semester',
+      filters.from ?? '',
+      filters.to ?? '',
     ] as const,
   faculties: () => [...adminKeys.all, 'faculties'] as const,
   auditLogs: (filters: AdminAuditLogFilters) =>

@@ -11,6 +11,10 @@ import { StudentProfileDrawer } from '../student-profile-drawer';
 import { useGradebook } from '@/lib/course-details/queries/gradebook-queries';
 import type { RosterStudent } from '@/lib/course-details/services/roster-types';
 import { GradebookListTable } from './gradebook-list-table';
+import {
+  GradebookEditDialog,
+  type GradebookEditTarget
+} from './gradebook-edit-dialog';
 import { fmtScoreFromPct, rowNeedsGrading, toRosterStudent } from './gradebook-math';
 
 interface CourseGradebookProps {
@@ -18,27 +22,27 @@ interface CourseGradebookProps {
 }
 
 export function CourseGradebook({ courseId }: CourseGradebookProps) {
-  const { data, isLoading, isError, refetch } = useGradebook(courseId, true, { live: true });
+  const { data, isLoading, error, refetch } = useGradebook(courseId, true, { live: true });
   const [selectedStudent, setSelectedStudent] = useState<RosterStudent | null>(null);
+  const [editTarget, setEditTarget] = useState<GradebookEditTarget | null>(null);
 
   const needsGradingCount = useMemo(() => {
     if (!data) return 0;
     return data.students.filter((r) => rowNeedsGrading(r, data.columns)).length;
   }, [data]);
 
-  if (isLoading) {
-    return (
-      <CourseTabPage>
-        <CourseTabHeader
-          title='Gradebook'
-          description='Track assignment and quiz grades across the class.'
-        />
-        <ListSkeleton variant='row' count={8} />
-      </CourseTabPage>
-    );
-  }
-
-  if (isError || !data) {
+  if (!data) {
+    if (isLoading) {
+      return (
+        <CourseTabPage>
+          <CourseTabHeader
+            title='Gradebook'
+            description='Track assignment and quiz grades across the class.'
+          />
+          <ListSkeleton variant='row' count={8} />
+        </CourseTabPage>
+      );
+    }
     return (
       <CourseTabPage>
         <CourseTabHeader
@@ -47,7 +51,7 @@ export function CourseGradebook({ courseId }: CourseGradebookProps) {
         />
         <QueryErrorState
           title='Could not load grades'
-          message='Try reloading the page.'
+          message={error?.message || 'Try reloading the page.'}
           onRetry={() => void refetch()}
         />
       </CourseTabPage>
@@ -92,13 +96,16 @@ export function CourseGradebook({ courseId }: CourseGradebookProps) {
     <CourseTabPage>
       <CourseTabHeader
         title='Gradebook'
-        description={`${data.studentCount} students · ${data.markBudget.allocated}/${data.courseMaxMarks} marks allocated · ${fmtScoreFromPct(data.classAverages.overall, data.courseMaxMarks)} class average${needsGradingCount > 0 ? ` · ${needsGradingCount} to grade` : ''}`}
+        description={`${data.studentCount} students · ${data.markBudget.allocated}/${data.markBudget.courseMax} marks allocated · ${fmtScoreFromPct(data.classAverages.overall, data.courseMaxMarks)} class average${needsGradingCount > 0 ? ` · ${needsGradingCount} to grade` : ''}`}
       />
 
       <GradebookListTable
         data={data}
         onRowClick={(row) => setSelectedStudent(toRosterStudent(row))}
+        onEditGrade={setEditTarget}
       />
+
+      <GradebookEditDialog target={editTarget} onClose={() => setEditTarget(null)} />
 
       <StudentProfileDrawer
         courseId={courseId}

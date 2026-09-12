@@ -1,5 +1,6 @@
 import { prisma } from "../../db/prisma.js";
 import {
+  buildAcademicYearBounds,
   buildDefaultSemesterRows,
   getCurrentAcademicYearBounds,
 } from "./academicCalendar.js";
@@ -64,7 +65,7 @@ export async function resetToCleanTwelveSemesters() {
   const created = [];
 
   for (let y = firstStart; y <= currentStart; y += 1) {
-    const bounds = getCurrentAcademicYearBounds(new Date(y, 8, 1));
+    const bounds = buildAcademicYearBounds(y);
     let year = await prisma.academicYear.findUnique({ where: { name: bounds.name } });
     if (!year) {
       year = await prisma.academicYear.create({

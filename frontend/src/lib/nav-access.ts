@@ -17,7 +17,17 @@ export function pathAllowed(url: string, allowed: Set<string> | null): boolean {
   return allowed.has(url) || allowed.has(path);
 }
 
-/** Filter a flat nav item list by role + optional path allowlist. */
+/** Flatten nested nav items (parent + all descendants). */
+export function flattenNavItems(items: NavItem[]): NavItem[] {
+  const out: NavItem[] = [];
+  for (const item of items) {
+    out.push(item);
+    if (item.items?.length) out.push(...flattenNavItems(item.items));
+  }
+  return out;
+}
+
+/** Filter a nav item list by role + optional path allowlist (recursive). */
 export function filterNavItems(
   items: NavItem[],
   role: Role | undefined,
@@ -29,9 +39,7 @@ export function filterNavItems(
       if (item.items && item.items.length > 0) {
         return {
           ...item,
-          items: item.items.filter(
-            (child) => roleAllows(child, role) && pathAllowed(child.url, allowed)
-          )
+          items: filterNavItems(item.items, role, allowed)
         };
       }
       return item;

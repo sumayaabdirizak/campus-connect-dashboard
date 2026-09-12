@@ -44,8 +44,8 @@ export function ViolationWarningDialog({
               : `After ${maxWarnings} warnings the quiz will auto-submit with your current answers.`}
           </p>
           <p className='text-xs text-muted-foreground'>
-            Stay on this tab and avoid copying or pasting to finish without
-            interruption.
+            Stay on this tab, don&apos;t take screenshots, and avoid copying or
+            pasting. Each event is logged for your teacher.
           </p>
         </div>
         <DialogFooter>

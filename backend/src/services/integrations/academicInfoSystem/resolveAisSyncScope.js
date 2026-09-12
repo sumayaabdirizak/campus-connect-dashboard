@@ -5,9 +5,9 @@ import {
   parseAcademicYearStartYear,
 } from '../../academic/academicCalendarDefaults.js';
 import {
+  buildAcademicYearBounds,
   buildDefaultSemesterRows,
   computeCohortSemester,
-  getCurrentAcademicYearBounds,
   getSemesterInYear,
 } from '../../academic/academicCalendar.js';
 import { getNextSemesterSequence } from '../../academic/semesterSequence.js';
@@ -663,7 +663,7 @@ export async function ensureAcademicYearFromUniversityLabel(label) {
   if (!year) {
     const startYear = parseAcademicYearStartYear(raw.replace(/-/g, '/'));
     if (!startYear) throw new Error(`Cannot parse academic year label: ${raw}`);
-    const bounds = getCurrentAcademicYearBounds(new Date(startYear, 8, 1));
+    const bounds = buildAcademicYearBounds(startYear);
     year = await prisma.academicYear.create({
       data: {
         name: bounds.name,
@@ -680,8 +680,8 @@ export async function ensureAcademicYearFromUniversityLabel(label) {
 
   if (semCount < 2) {
     const startYear = parseAcademicYearStartYear(year.name);
-    const bounds = getCurrentAcademicYearBounds(
-      new Date(startYear ?? year.start_date.getFullYear(), 8, 1)
+    const bounds = buildAcademicYearBounds(
+      startYear ?? year.start_date.getFullYear()
     );
     const [startSequence] = await getNextSemesterSequence(2);
     const rows = buildDefaultSemesterRows(bounds, startSequence).map((row) => ({
