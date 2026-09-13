@@ -8,7 +8,7 @@
 import { createFormHook } from '@tanstack/react-form';
 import type { VariantProps } from 'class-variance-authority';
 import * as React from 'react';
-import { Button, type buttonVariants } from '@/components/ui/button';
+import { Button, type buttonVariants } from '@/features/ui/components/button';
 import {
   FieldContent,
   FieldDescription,
@@ -17,8 +17,8 @@ import {
   FieldLegend,
   FieldSeparator,
   FieldTitle
-} from '@/components/ui/field';
-import { InputGroup, InputGroupAddon, InputGroupInput } from '@/components/ui/input-group';
+} from '@/features/ui/components/field';
+import { InputGroup, InputGroupAddon, InputGroupInput } from '@/features/ui/components/input-group';
 import {
   TextField,
   TextareaField,
@@ -36,7 +36,7 @@ import {
   FormRadioGroupField,
   FormSliderField,
   FormFileUploadField
-} from '@/components/forms/fields';
+} from '@/features/forms/components/fields';
 import { cn } from '@/lib/utils';
 import {
   fieldContext,

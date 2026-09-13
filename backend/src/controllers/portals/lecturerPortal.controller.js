@@ -1,4 +1,5 @@
 import { prisma } from "../../db/prisma.js";
+import { respondInternalError } from "../../utils/httpError.js";
 
 /**
  * GET /api/lecturer-portal/my-assignments
@@ -11,13 +12,17 @@ export const getMyAssignments = async (req, res) => {
       return res.status(401).json({ message: 'Invalid user context' });
     }
 
-    // 1. Find courses assigned to this lecturer
-    const assignments = await prisma.teacherCourse.findMany({
+    // 1. Find courses assigned to this lecturer (TeacherAssigning is the
+    //    teacher ↔ course join table — was previously named TeacherCourse,
+    //    and this handler silently 500'd after the rename until the route
+    //    smoke suite caught it).
+    const assignments = await prisma.teacherAssigning.findMany({
       where: { teacherId: userId },
       include: {
         course: {
           include: {
             offerings: {
+              where: { teacherId: userId },
               include: {
                 section: { include: { batch: { include: { program: true } } } },
                 semester: true,
@@ -47,6 +52,6 @@ export const getMyAssignments = async (req, res) => {
       }))
     });
   } catch (e) {
-    res.status(500).json({ message: 'Failed to fetch lecturer assignments', error: e.message });
+    respondInternalError(res, 'Failed to fetch lecturer assignments', e);
   }
 };

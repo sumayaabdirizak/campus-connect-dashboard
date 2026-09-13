@@ -1,5 +1,6 @@
 /* Import individual theme files */
 @import './themes/campus-connect.css';
+@import './themes/pastel-campus.css';
 @import './themes/claude.css';
 @import './themes/neobrutualism.css';
 @import './themes/supabase.css';
@@ -16,9 +17,8 @@ body {
 }
 
 :root {
-  /* Matches the actual app header (`h-16` = 4rem) in layout/header.tsx. Used as
-   * the single source of truth for full-height scroll areas (e.g. PageContainer). */
-  --header-height: calc(var(--spacing, 0.25rem) * 16);
+  /* Matches the Pharmacy dashboard header (50px). */
+  --header-height: 3.125rem;
 
   /* ─── Semantic status tokens ──────────────────────────────────────────
    * Theme-independent fallbacks so `bg-warning`, `text-success`,
@@ -37,6 +37,7 @@ body {
   --info: oklch(0.6859 0.1454 230.66);              /* sky-500 */
   --info-foreground: oklch(0.2823 0.0588 246.79);   /* sky-950 */
   --info-muted: oklch(0.9772 0.0244 230.42);        /* sky-50 */
+  --content-area: #f5f7fa;
 }
 
 /* Dark-mode shifts: pull lightness up so foreground stays legible on dark

@@ -1,0 +1,131 @@
+'use client'
+
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { listChannelMessages } from '@/lib/discussions/queries/service'
+import { useChannelRoom } from '../use-discussion-room'
+import { useReconnectGeneration } from '../use-reconnect-generation'
+import {
+  compareByCreatedAt,
+  DEFAULT_LIMIT,
+  INITIAL_STATE,
+  isMainThreadMessage,
+  mergeMessages,
+  asDiscussionId,
+  type ChannelMessagesState,
+} from './message-list-helpers'
+import { useChannelOptimistic } from './use-channel-optimistic'
+import { useChannelSocketSync } from './use-channel-socket-sync'
+
+export function useChannelMessages(
+  channelId: string | number | null | undefined,
+  options: {
+    limit?: number
+    /** publicId (or other alias) once channel metadata loads — for live socket matching */
+    canonicalChannelId?: string | number | null
+  } = {}
+) {
+  const limit = options.limit ?? DEFAULT_LIMIT
+  const validId = asDiscussionId(channelId)
+  const canonicalId = asDiscussionId(options.canonicalChannelId)
+
+  useChannelRoom(validId)
+  const reconnectGen = useReconnectGeneration()
+
+  const [state, setState] = useState<ChannelMessagesState>(INITIAL_STATE)
+  const requestSeqRef = useRef(0)
+  const stateRef = useRef(state)
+  stateRef.current = state
+
+  useEffect(() => {
+    if (validId == null) {
+      setState(INITIAL_STATE)
+      return
+    }
+    const seq = ++requestSeqRef.current
+    setState((s) => ({ ...s, isLoading: true, error: null }))
+    let cancelled = false
+    void (async () => {
+      try {
+        const page = await listChannelMessages(validId, { limit })
+        if (cancelled || requestSeqRef.current !== seq) return
+        const main = (page.results ?? []).filter(isMainThreadMessage)
+        setState({
+          messages: main.toSorted(compareByCreatedAt),
+          nextCursor: page.nextCursor ?? null,
+          hasMore: Boolean(page.hasMore),
+          isLoading: false,
+          isLoadingOlder: false,
+          error: null,
+        })
+      } catch (e) {
+        if (cancelled || requestSeqRef.current !== seq) return
+        setState({
+          ...INITIAL_STATE,
+          error: e instanceof Error ? e : new Error(String(e)),
+        })
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [validId, limit, reconnectGen])
+
+  useChannelSocketSync(
+    validId,
+    setState,
+    [
+      canonicalId,
+      // Messages from the API already carry the public channel id.
+      state.messages.find((m) => m.channelId != null)?.channelId ?? null,
+    ]
+  )
+  const optimistic = useChannelOptimistic(setState)
+
+  const loadOlder = useCallback(async () => {
+    if (validId == null) return
+    let started = false
+    setState((s) => {
+      if (s.isLoadingOlder || !s.hasMore || !s.nextCursor) return s
+      started = true
+      return { ...s, isLoadingOlder: true }
+    })
+    if (!started) return
+
+    const seq = requestSeqRef.current
+    try {
+      const page = await listChannelMessages(validId, {
+        limit,
+        cursor: stateRef.current.nextCursor ?? undefined,
+      })
+      if (requestSeqRef.current !== seq) return
+      const main = (page.results ?? []).filter(isMainThreadMessage)
+      setState((s) => ({
+        ...s,
+        messages: mergeMessages(s.messages, main),
+        nextCursor: page.nextCursor ?? null,
+        hasMore: Boolean(page.hasMore),
+        isLoadingOlder: false,
+      }))
+    } catch (e) {
+      if (requestSeqRef.current !== seq) return
+      setState((s) => ({
+        ...s,
+        isLoadingOlder: false,
+        error: e instanceof Error ? e : new Error(String(e)),
+      }))
+    }
+  }, [validId, limit])
+
+  return {
+    messages: state.messages,
+    isLoading: state.isLoading,
+    isLoadingOlder: state.isLoadingOlder,
+    hasMore: state.hasMore,
+    nextCursor: state.nextCursor,
+    error: state.error,
+    loadOlder,
+    ...optimistic,
+  }
+}
+
+export type ChannelMessagesStore = ReturnType<typeof useChannelMessages>

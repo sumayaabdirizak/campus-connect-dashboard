@@ -1,0 +1,13 @@
+@use "../variables";
+@use "../utils/mixins";
+
+.badge-dot{
+    display: block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+.btn-icon{
+    width: 32px;
+    height: 32px;
+}

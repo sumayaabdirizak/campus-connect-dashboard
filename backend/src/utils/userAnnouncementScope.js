@@ -6,7 +6,49 @@
  * @param {number} userId
  * @returns {Promise<{ userId: number, full_name: string, role: string, status: string, facultyIds: number[], departmentIds: number[], batchIds: number[], sectionIds: number[] } | null>}
  */
+import { expandFacultyAnnouncementTree } from './expandFacultyAnnouncementTree.js';
+
+// The announcements page fires list/unread-count/drafts-count requests in
+// parallel, and each independently needs this scope — without sharing, three
+// concurrent requests do three copies of the same deep-join lookup. A short
+// TTL plus in-flight de-duplication collapses those into one DB round trip
+// without risking stale enrollment data for more than a moment.
+// Kept short: this only needs to survive the handful of milliseconds between
+// the announcements page's parallel list/unread/drafts requests, not minutes.
+// invalidateUserAnnouncementScope() covers the known mutation path (section
+// assignment); a short TTL bounds staleness everywhere else that isn't wired up yet.
+const SCOPE_CACHE_TTL_MS = 8_000;
+const scopeCache = new Map(); // userId -> { value, expiresAt }
+const scopeInFlight = new Map(); // userId -> Promise
+
+/** Call after any admin action that changes a user's role/faculty/department/batch/section,
+ * so the next scope lookup doesn't serve a stale pre-change value for up to SCOPE_CACHE_TTL_MS. */
+export function invalidateUserAnnouncementScope(userId) {
+  scopeCache.delete(userId);
+  scopeInFlight.delete(userId);
+}
+
 export async function loadUserAnnouncementScope(prisma, userId) {
+  const cached = scopeCache.get(userId);
+  if (cached && cached.expiresAt > Date.now()) return cached.value;
+
+  const inFlight = scopeInFlight.get(userId);
+  if (inFlight) return inFlight;
+
+  const promise = loadUserAnnouncementScopeUncached(prisma, userId)
+    .then((value) => {
+      scopeCache.set(userId, { value, expiresAt: Date.now() + SCOPE_CACHE_TTL_MS });
+      return value;
+    })
+    .finally(() => {
+      scopeInFlight.delete(userId);
+    });
+
+  scopeInFlight.set(userId, promise);
+  return promise;
+}
+
+async function loadUserAnnouncementScopeUncached(prisma, userId) {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     include: {
@@ -36,54 +78,23 @@ export async function loadUserAnnouncementScope(prisma, userId) {
 
   if (!user) return null;
 
-  const facultyIds = new Set();
-  const departmentIds = new Set();
-  const batchIds = new Set();
-  const sectionIds = new Set();
+  const roleName = String(user.role?.name || '').toUpperCase();
 
-  if (user.role.name === "DEAN" && user.deanProfile?.facultyId) {
-    const deanFacultyId = user.deanProfile.facultyId;
-    facultyIds.add(deanFacultyId);
-
-    const departments = await prisma.department.findMany({
-      where: { facultyId: deanFacultyId },
-      select: { id: true },
-    });
-    for (const department of departments) departmentIds.add(department.id);
-
-    const departmentIdList = departments.map((d) => d.id);
-    if (departmentIdList.length > 0) {
-      const batches = await prisma.batch.findMany({
-        where: {
-          program: {
-            departmentId: { in: departmentIdList },
-          },
-        },
-        select: { id: true },
-      });
-      for (const batch of batches) batchIds.add(batch.id);
-
-      const batchIdList = batches.map((b) => b.id);
-      if (batchIdList.length > 0) {
-        const sections = await prisma.batchSection.findMany({
-          where: { batchId: { in: batchIdList } },
-          select: { id: true },
-        });
-        for (const section of sections) sectionIds.add(section.id);
-      }
-    }
-
+  if (roleName === 'DEAN' && user.deanProfile?.facultyId) {
+    const tree = await expandFacultyAnnouncementTree(prisma, [user.deanProfile.facultyId]);
     return {
       userId: user.id,
       full_name: user.full_name,
       role: user.role.name,
       status: user.status,
-      facultyIds: Array.from(facultyIds),
-      departmentIds: Array.from(departmentIds),
-      batchIds: Array.from(batchIds),
-      sectionIds: Array.from(sectionIds),
+      ...tree,
     };
   }
+
+  const facultyIds = new Set();
+  const departmentIds = new Set();
+  const batchIds = new Set();
+  const sectionIds = new Set();
 
   if (user.studentProfile?.facultyId) facultyIds.add(user.studentProfile.facultyId);
   if (user.studentProfile?.departmentId) departmentIds.add(user.studentProfile.departmentId);

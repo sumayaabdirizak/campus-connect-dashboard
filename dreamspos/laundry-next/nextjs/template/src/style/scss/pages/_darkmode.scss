@@ -1,0 +1,205 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+html[data-bs-theme=light], body[data-bs-theme=light] {
+    background: $darkmode-bg;
+}
+html[data-bs-theme=dark], body[data-bs-theme=dark] {
+    background: $darkmode-bg;
+}
+
+[data-bs-theme="dark"] {
+
+    html[data-bs-theme=dark], body[data-bs-theme=dark] {
+        background: $darkmode-bg;
+    }
+    body {
+        background: $darkmode-bg;
+    }
+    .icon-moon::before {
+        content: "\e17c";
+    }
+    .page-wrapper {
+        .content {
+            background: linear-gradient(180deg, #000000 0%, #01060b 100%);
+        }
+    }
+    .navbar-header {
+        background: transparent;
+    }
+    .sidebar.sidebar {
+        .sidebar-nav {
+            .nav-link {
+                color: $gray-700;
+            }
+        }
+    } 
+    .dash-card {
+        .avatar {
+            i {
+                color: $darkmode-white;
+            }
+            &::before {
+                border: 1px solid $darkmode-white;
+            }
+        }
+    }
+    .customer-item {
+        .avatar-group-sm {
+            .border-white {
+                border: 1px solid $darkmode-white !important;
+            }
+        }
+        .text-decoration-underline {
+            color: $darkmode-white !important;
+        }
+    }
+    .table {
+        tbody {
+            .table-light {
+                background: $darkmode-bg !important;
+            }
+            td {
+                background: transparent !important; 
+            }
+        }
+    } 
+    .table>thead {
+        background: $darkmode-bg; 
+        th {
+            background: transparent !important; 
+        }
+    }
+    .offcanvas {
+        .btn-close.btn-close-modal {
+            background: transparent;
+            border: 1px solid $gray-800;
+            color: var(--gray-600);
+            filter: invert(1);
+            &:hover {
+                border: 1px solid $darkmode-white;
+                color: $darkmode-white;
+                filter: unset;
+            }
+        }
+    } 
+    .modal-header {
+        .btn-close.btn-close-modal {
+            background: transparent;
+            border: 1px solid $gray-800;
+            color: var(--gray-600);
+            filter: invert(1);
+            &:hover {
+                border: 1px solid $darkmode-white;
+                color: $darkmode-white;
+                filter: unset;
+            }
+        }
+    }   
+    .orders-tab {
+        ul {
+            li {
+                .nav-link {
+                    &:hover, &.active{
+                        background-color: $light-900;
+                        color: $darkmode-white;
+                        border-color:  $light-900;
+                    }
+                }
+            }
+        }
+    }
+    .nav-tabs.nav-solid-dark.nav-tabs-rounded li a.active {
+        background-color: $light-900;
+        color: $darkmode-white;
+        border-color:  $light-900;
+    }
+    .report-tabs {
+        .nav-item {
+
+            .nav-link {
+
+                &.active {
+                    span {
+                        color: $darkmode-white !important;
+                    }
+                    background-color: $light-900;
+                    border-color:  $light-900;
+                }
+                &:hover {
+                    span {
+                        color: $darkmode-white !important;
+                    }
+                    background-color: $light-900;
+                    border-color:  $light-900;
+                }
+            }
+        }
+    } 
+    .pos-design {
+        .pos-right {
+            .credit-item {
+                .credit-wrap {
+                    background: $light-900;
+                    .text-white {
+                        color: $darkmode-white !important;
+                    }
+                }
+            } 
+            .clean-item {
+
+                .action {
+
+                    .btn-icon {
+
+                        &:hover {
+                            color: $darkmode-bg !important;
+                        }
+                    }
+                } 
+            } 
+        }
+    } 
+    .avatar {
+        i {
+            color: $darkmode-white;
+        }
+    }
+    .invoice-logo {
+        .logo {
+            display: none;
+        }
+        .logo-white {
+            display: block !important;
+        }
+    }
+    .dropstart {
+        .dropdown-menu {
+            &::before {
+                border-color: transparent #00000000 #061d35 #041a30;
+            }
+        }
+    }
+    .select-order-item {
+        border: 1px solid $border-color;
+        border-radius: 6px;
+        background: $white;
+        padding: 0;
+    }
+    .settings-sidebar ul li .nav-link {
+        &.active {
+            background-color: $light-900;
+            color: $darkmode-white;
+            border-color:  $light-900;
+        }
+        &:hover {
+            background-color: $light-900;
+            color: $darkmode-white;
+            border-color:  $light-900;
+        }
+    }
+
+    .btn-check + .btn-light:hover {
+        background-color: $light;
+    }    
+}

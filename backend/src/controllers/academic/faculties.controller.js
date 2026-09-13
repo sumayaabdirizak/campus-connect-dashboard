@@ -1,23 +1,62 @@
-// src/controllers/faculty.controller.js
 import { prisma } from "../../db/prisma.js";
-import { archiveDiscussionGroupForScope } from "../../features/discussions/groupProvisioning.service.js";
-import { DISCUSSION_SCOPE_TYPES } from "../../features/discussions/policy.js";
+import { archiveDiscussionGroupForScope } from "../../services/discussions/groupProvisioning.service.js";
+import { DISCUSSION_SCOPE_TYPES } from "../../services/discussions/policy.js";
+import { respondInternalError } from "../../utils/httpError.js";
 import {
   refreshDiscussionMembershipsForScope,
   syncDiscussionMembershipsForUser,
-} from "../../features/discussions/membershipSync.service.js";
+} from "../../services/discussions/membershipSync.service.js";
+import { namedListSuccess, apiErrorBody } from "../../utils/apiEnvelope.js";
+import { parsePaginationQuery } from "../../utils/pagination.js";
 
 export const getAllFaculties = async (req, res) => {
   try {
-    const faculties = await prisma.faculty.findMany({
-      include: {
-        departments: true,
-        dean: { select: { id: true, full_name: true, email: true } }
-      }
+    const { search, withoutDean } = req.query;
+    const onlyWithoutDean = ["1", "true", "yes"].includes(
+      String(withoutDean ?? "").toLowerCase(),
+    );
+    const { page, pageSize, skip } = parsePaginationQuery(req.query, {
+      defaultPageSize: 50,
+      maxPageSize: 200,
     });
-    res.json({ message: "Faculties retrieved successfully", faculties });
+    const where = {
+      ...(onlyWithoutDean ? { deanProfile: { is: null } } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: String(search), mode: "insensitive" } },
+              { code: { contains: String(search), mode: "insensitive" } },
+            ],
+          }
+        : {}),
+    };
+
+    const [totalCount, faculties] = await Promise.all([
+      prisma.faculty.count({ where }),
+      prisma.faculty.findMany({
+        where,
+        include: {
+          departments: true,
+          dean: { select: { id: true, full_name: true, email: true } },
+        },
+        orderBy: { name: "asc" },
+        skip,
+        take: pageSize,
+      }),
+    ]);
+
+    res.json(
+      namedListSuccess({
+        message: "Faculties retrieved successfully",
+        name: "faculties",
+        items: faculties,
+        page,
+        pageSize,
+        totalCount,
+      })
+    );
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch faculties", detail: err.message });
+    res.status(500).json(apiErrorBody("Failed to fetch faculties", err.message));
   }
 };
 
@@ -40,12 +79,21 @@ export const getFacultyById = async (req, res) => {
 
 export const createFaculty = async (req, res) => {
   try {
-    const { name, code } = req.body;
+    const { name, code, defaultDurationYears } = req.body;
     if (!name || !code) return res.status(400).json({ message: "Name and code are required" });
     const existing = await prisma.faculty.findUnique({ where: { code } });
     if (existing) return res.status(400).json({ message: "Faculty code already in use" });
 
-    const faculty = await prisma.faculty.create({ data: { name, code } });
+    const duration = Number(defaultDurationYears);
+    const faculty = await prisma.faculty.create({
+      data: {
+        name,
+        code,
+        ...(Number.isFinite(duration) && duration > 0
+          ? { defaultDurationYears: duration }
+          : {}),
+      },
+    });
     try {
       await refreshDiscussionMembershipsForScope({
         scopeType: DISCUSSION_SCOPE_TYPES.FACULTY,
@@ -66,10 +114,17 @@ export const createFaculty = async (req, res) => {
 export const updateFaculty = async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, code } = req.body;
+    const { name, code, defaultDurationYears } = req.body;
+    const duration = Number(defaultDurationYears);
     const faculty = await prisma.faculty.update({
       where: { id: Number(id) },
-      data: { name, code }
+      data: {
+        ...(name !== undefined && { name }),
+        ...(code !== undefined && { code }),
+        ...(Number.isFinite(duration) && duration > 0
+          ? { defaultDurationYears: duration }
+          : {}),
+      },
     });
     try {
       await refreshDiscussionMembershipsForScope({
@@ -151,6 +206,6 @@ export const assignDean = async (req, res) => {
 
     res.json({ message: "Dean assigned to faculty", faculty: updatedFaculty });
   } catch (err) {
-    res.status(500).json({ message: "Dean assignment failed", error: err.message });
+    respondInternalError(res, "Dean assignment failed", err);
   }
 };

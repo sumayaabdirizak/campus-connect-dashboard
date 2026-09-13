@@ -3,13 +3,13 @@ import { prisma } from "../src/db/prisma.js";
 import {
   backfillMissingDiscussionGroups,
   ensureDiscussionGroupForScope,
-} from "../src/features/discussions/groupProvisioning.service.js";
-import { syncDiscussionMembershipsForUser } from "../src/features/discussions/membershipSync.service.js";
+} from "../src/services/discussions/groupProvisioning.service.js";
+import { syncDiscussionMembershipsForUser } from "../src/services/discussions/membershipSync.service.js";
 import {
   DISCUSSION_CONTEXT_ROLES,
   DISCUSSION_SCOPE_TYPES,
   getDefaultDiscussionPermissions,
-} from "../src/features/discussions/policy.js";
+} from "../src/services/discussions/policy.js";
 
 const ROLE_PRIORITY = {
   [DISCUSSION_CONTEXT_ROLES.DEAN]: 60,
@@ -102,7 +102,7 @@ async function runWithConcurrency(items, concurrency, worker) {
   const runners = Array.from({ length: Math.min(limit, queue.length) }, async () => {
     while (queue.length > 0) {
       const item = queue.shift();
-      // eslint-disable-next-line no-await-in-loop
+       
       await worker(item);
     }
   });
@@ -156,14 +156,6 @@ function deriveDesiredRolesForUser(user) {
   }
   for (const faculty of user.facultiesAsDean || []) {
     addDesiredRole(desired, DISCUSSION_SCOPE_TYPES.FACULTY, faculty.id, DISCUSSION_CONTEXT_ROLES.DEAN);
-  }
-  if (user.facultyAdminProfile?.faculty_id) {
-    addDesiredRole(
-      desired,
-      DISCUSSION_SCOPE_TYPES.FACULTY,
-      user.facultyAdminProfile.faculty_id,
-      DISCUSSION_CONTEXT_ROLES.ADMIN
-    );
   }
   if (user.lecturerProfile?.departmentId) {
     addDesiredRole(
@@ -237,7 +229,6 @@ async function loadUsersForMembershipBackfill(options) {
       status: true,
       deanProfile: { select: { facultyId: true } },
       facultiesAsDean: { select: { id: true } },
-      facultyAdminProfile: { select: { faculty_id: true } },
       lecturerProfile: { select: { departmentId: true } },
       studentProfile: { select: { departmentId: true } },
       studentRegistrations: {

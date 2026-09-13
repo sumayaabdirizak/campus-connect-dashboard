@@ -16,6 +16,24 @@ import Joi from "joi";
 
 const QUESTION_TYPES = ["MCQ", "TRUE_FALSE", "SHORT_ANSWER"];
 const TIMING_MODES = ["flexible", "fixed"];
+const QUIZ_MODES = ["online", "offline"];
+const OFFLINE_DELIVERY = ["built", "uploaded"];
+
+// Teacher's marks-distribution plan (Quiz Settings → Marks tab). Purely a
+// planning aid the question builder reads back to render section blocks —
+// never validated against actual question points server-side, so this stays
+// a loose shape rather than a strict sum-check.
+const marksPlanSchema = Joi.object({
+  totalMarks: Joi.number().integer().min(1).max(1000).required(),
+  allocations: Joi.object()
+    .pattern(
+      Joi.string().valid(...QUESTION_TYPES),
+      Joi.number().integer().min(0).max(1000)
+    )
+    .required(),
+})
+  .allow(null)
+  .optional();
 
 // Convenience: dates that can be cleared by passing null.
 const optionalDate = Joi.alternatives().try(
@@ -64,14 +82,23 @@ export const createQuizBodySchema = Joi.object({
   description: Joi.string().trim().allow("", null).max(5000).optional(),
   duration_minutes: Joi.number().integer().min(1).max(480).default(30),
   is_draft: Joi.boolean().default(false),
+  auto_publish_at_open: Joi.boolean().default(false),
   open_at: optionalDate,
   close_at: optionalDate,
   shuffle_questions: Joi.boolean().default(false),
   shuffle_answers: Joi.boolean().default(false),
   max_attempts: Joi.number().integer().min(1).max(100).default(1),
   passing_score: Joi.number().min(0).max(100).default(50),
+  maxMarks: Joi.number().integer().min(1).max(100).optional(),
   timing_mode: Joi.string().valid(...TIMING_MODES).default("flexible"),
   scheduled_duration: Joi.number().integer().min(1).max(480).allow(null).optional(),
+  // "online" (default) — students take it in-app. "offline" — printed/handed
+  // out on paper; informational only, doesn't change scoring or access.
+  mode: Joi.string().valid(...QUIZ_MODES).default("online"),
+  offline_delivery: Joi.string().valid(...OFFLINE_DELIVERY).allow(null).optional(),
+  // Marks-distribution plan sketched in Quiz Settings. Optional; null/omit
+  // means "no plan" and the question builder falls back to its flat list.
+  marksPlan: marksPlanSchema,
   // Optional chapter / module bucket. The route handler verifies the module
   // belongs to the same course offering before writing.
   moduleId: Joi.number().integer().positive().allow(null).optional(),
@@ -92,6 +119,25 @@ export const createQuizBodySchema = Joi.object({
     if (value.timing_mode === "fixed" && !value.open_at) {
       return helpers.error("any.custom", { message: "Fixed mode requires open_at" });
     }
+    if (value.auto_publish_at_open) {
+      if (!value.open_at) {
+        return helpers.error("any.custom", {
+          message: "Scheduled publish requires open_at",
+        });
+      }
+      if (value.is_draft === false) {
+        return helpers.error("any.custom", {
+          message: "Scheduled publish requires the quiz to stay as a draft until Opens",
+        });
+      }
+    }
+    const now = Date.now() - 60_000;
+    if (value.open_at && new Date(value.open_at).getTime() < now) {
+      return helpers.error("any.custom", { message: "open_at cannot be in the past" });
+    }
+    if (value.close_at && new Date(value.close_at).getTime() < now) {
+      return helpers.error("any.custom", { message: "close_at cannot be in the past" });
+    }
     return value;
   }, "open/close window order");
 
@@ -100,21 +146,33 @@ export const patchQuizBodySchema = Joi.object({
   description: Joi.string().trim().allow("", null).max(5000).optional(),
   duration_minutes: Joi.number().integer().min(1).max(480).optional(),
   is_draft: Joi.boolean().optional(),
+  auto_publish_at_open: Joi.boolean().optional(),
   open_at: optionalDate,
   close_at: optionalDate,
   shuffle_questions: Joi.boolean().optional(),
   shuffle_answers: Joi.boolean().optional(),
   max_attempts: Joi.number().integer().min(1).max(100).optional(),
   passing_score: Joi.number().min(0).max(100).optional(),
+  maxMarks: Joi.number().integer().min(1).max(100).optional(),
   timing_mode: Joi.string().valid(...TIMING_MODES).optional(),
   scheduled_duration: Joi.number().integer().min(1).max(480).allow(null).optional(),
+  mode: Joi.string().valid(...QUIZ_MODES).optional(),
+  offline_delivery: Joi.string().valid(...OFFLINE_DELIVERY).allow(null).optional(),
+  marksPlan: marksPlanSchema,
   moduleId: Joi.number().integer().positive().allow(null).optional(),
   confidence_scoring: Joi.boolean().optional(),
 })
   .min(1) // require at least one field
   .custom((value, helpers) => {
     if (value.timing_mode === "fixed" && value.open_at === null) {
-      return helpers.error("any.custom", { message: "Fixed mode requires open_at (cannot clear open time while in fixed mode)" });
+      return helpers.error("any.custom", {
+        message: "Fixed mode requires open_at (cannot clear open time while in fixed mode)",
+      });
+    }
+    if (value.auto_publish_at_open === true && value.open_at === null) {
+      return helpers.error("any.custom", {
+        message: "Scheduled publish requires open_at",
+      });
     }
     return value;
   }, "fixed mode schedule");
@@ -210,6 +268,15 @@ const gradedAnswerSchema = Joi.object({
 export const gradeAttemptBodySchema = Joi.object({
   answers: Joi.array().items(gradedAnswerSchema).min(1).max(1000).required(),
 });
+
+export const createOfflineAttemptBodySchema = Joi.object({
+  studentId: Joi.number().integer().positive().required(),
+  // Exactly one outcome: paper marks, absent (never sat), or cheat (zero).
+  marksEarned: Joi.number().min(0).max(100000),
+  absent: Joi.boolean().valid(true),
+  cheat: Joi.boolean().valid(true),
+})
+  .xor('marksEarned', 'absent', 'cheat');
 
 /// Body for the bulk question-reorder endpoint. `items` is the new order;
 /// `order_index` is what the row should be updated to. Same shape as the

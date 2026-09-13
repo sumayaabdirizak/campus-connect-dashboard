@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Bank Accounts | Pharmacy POS - Bootstrap 5 Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dreams POS is a powerful Bootstrap based Inventory Management Admin Template designed for businesses, offering seamless invoicing, project tracking, and estimates.">
+    <meta name="keywords"
+        content="inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system">
+    <meta name="author" content="Dreams Technologies">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.png">
+
+    <!-- Apple Icon -->
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/plugins/fontawesome/fontawesome.min.css">
+
+    <!-- Lucide Icon CSS -->
+    <link rel="stylesheet" href="assets/plugins/lucide/lucide.css">
+
+    <!-- Simplebar CSS -->
+    <link rel="stylesheet" href="assets/plugins/simplebar/simplebar.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="assets/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Rangeslider CSS -->
+    <link rel="stylesheet" href="assets/plugins/ion-rangeslider/css/ion.rangeSlider.min.css">
+
+    <!-- Datatable CSS -->
+    <link rel="stylesheet" href="assets/css/dataTables.bootstrap5.min.css">
+
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" href="assets/plugins/select2/css/select2.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Begin Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Topbar Start -->
+
+        <!-- Topbar End -->
+
+        <!-- Two Col Sidebar -->
+
+        <!-- End Two Col Sidebar -->
+
+        <!-- ========================
+			Start Page Content
+		========================= -->
+
+        <div class="page-wrapper">
+
+            <!-- Start Content -->
+            <div class="content">
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="index.html"> <span><i class="icon-house"></i></span>
+                                    Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Bank Accounts</li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex align-items-center justify-content-end gap-2">
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+                            data-bs-original-title="Refresh"><i class="icon-refresh-ccw"></i></a>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Maximize"
+                            data-bs-original-title="Maximize"><i class="icon-maximize"></i></a>
+                        <a href="#" class="btn btn-primary d-flex align-items-center gap-2" data-bs-toggle="modal"
+                            data-bs-target="#add_bank_account"> <i class="icon-plus"></i> Add New</a>
+                    </div>
+                </div>
+
+                <!-- start card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                            <div class="d-inline-flex align-items-center flex-wrap flex-sm-nowrap gap-2">
+                                <div class="table-search d-flex align-items-center mb-0">
+                                    <div class="search-input" id="tablefilter">
+                                        <a href="javascript:void(0);" class="btn-searchset"><i
+                                                class="icon-search"></i></a>
+                                    </div>
+                                </div>
+                                <div class="input-group position-relative w-fit">
+                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                        <i class="icon-calendar-fold"></i>
+                                    </span>
+                                    <input type="text" class="form-control date-range bookingrange rounded-end">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+
+                                <!-- Filter -->
+                                <a href="#" class="btn btn-white btn-icon" data-bs-toggle="offcanvas"
+                                    data-bs-target="#add_filter" aria-controls="add_filter"><i
+                                        class="icon-funnel"></i></a>
+                                <!-- column -->
+                                <div class="dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="column">
+                                        <i class="icon-columns-3"></i> Columns
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-start dropdown-menu-md">
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Bank Name</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Account Name</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Account Number</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Routing Number</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Branch</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Opening Balance</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Current Balance</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Account Type</span>
+                                                </label>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Created Date</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Status</span>
+                                                </label>
+                                            </li>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- sort by -->
+                                <div class="dropdown sortby-dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown">
+                                        <i class="icon-arrow-down-wide-narrow"></i> Sort by
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="list-unstyled mb-0">
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Category
+                                                    <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Category
+                                                    <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Date-Ascending
+                                                    <span>1-9</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Date-Descending
+                                                    <span>9-1</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- Export -->
+                                <div class="gap-3 d-flex align-items-center flex-wrap">
+                                    <div class="dropdown">
+                                        <a href="javascript:void(0);"
+                                            class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-arrow-up-to-line"></i>Export
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    PDF</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    Excel</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+
+                        <!-- start table -->
+                        <div class="table-responsive table-nowrap">
+                            <table class="table datatable mb-0 rounded">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Bank Name</th>
+                                        <th>Account Name</th>
+                                        <th>Account Number</th>
+                                        <th>Routing Number</th>
+                                        <th>Branch</th>
+                                        <th>Opening Balance</th>
+                                        <th>Current Balance</th>
+                                        <th>Account Type</th>
+                                        <th>Created Date</th>
+                                        <th class="no-sort">Status</th>
+                                        <th class="no-sort"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>JPMorgan Chase Bank <span
+                                                class="badge badge-soft-info d-inline-flex align-items-center">Default</span>
+                                        </td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****4821</td>
+                                        <td>021000021</td>
+                                        <td>New York</td>
+                                        <td>$25,000</td>
+                                        <td>$31,450</td>
+                                        <td><span
+                                                class="badge badge-soft-warning d-inline-flex align-items-center">Current</span>
+                                        </td>
+                                        <td>24 Apr 2026</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Bank of America</td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****7395</td>
+                                        <td>026009593</td>
+                                        <td>Los Angeles </td>
+                                        <td>$18,500</td>
+                                        <td>$17,920</td>
+                                        <td><span
+                                                class="badge badge-soft-warning d-inline-flex align-items-center">Current</span>
+                                        </td>
+                                        <td>20 Apr 2026</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Wells Fargo Bank</td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****5504</td>
+                                        <td>121000248</td>
+                                        <td>San Francisco</td>
+                                        <td>$20,000</td>
+                                        <td>$22,315</td>
+                                        <td><span
+                                                class="badge badge-soft-teal d-inline-flex align-items-center">Savings</span>
+                                        </td>
+                                        <td>10 Apr 2026</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Citibank</td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****2247</td>
+                                        <td>021000089</td>
+                                        <td>Chicago</td>
+                                        <td>$15,000</td>
+                                        <td>$14,280</td>
+                                        <td><span
+                                                class="badge badge-soft-teal d-inline-flex align-items-center">Savings</span>
+                                        </td>
+                                        <td>21 Mar 2026</td>
+                                        <td><span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Inactive</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>U.S. Bank</td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****6698</td>
+                                        <td>091000022</td>
+                                        <td>Dallas</td>
+                                        <td>$12,000</td>
+                                        <td>$11,640</td>
+                                        <td><span
+                                                class="badge badge-soft-warning d-inline-flex align-items-center">Current</span>
+                                        </td>
+                                        <td>18 Mar 2026</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>PNC Bank</td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****9016</td>
+                                        <td>043000096</td>
+                                        <td>San Diego</td>
+                                        <td>$10,500</td>
+                                        <td>$12,180</td>
+                                        <td><span
+                                                class="badge badge-soft-warning d-inline-flex align-items-center">Current</span>
+                                        </td>
+                                        <td>06 Mar 2026</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Capital One</td>
+                                        <td>Pharmacy LLC</td>
+                                        <td>****8843</td>
+                                        <td>051405515</td>
+                                        <td>San Antonio</td>
+                                        <td>$14,000</td>
+                                        <td>$16,390</td>
+                                        <td><span
+                                                class="badge badge-soft-warning d-inline-flex align-items-center">Current</span>
+                                        </td>
+                                        <td>12 Jan 2026</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i>Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item"> <button class="btn btn-icon" type="button"
+                                                    data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
+                                                    aria-label="Actions"> <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_bank_account">
+                                                            <i class="icon-pencil-line me-2"></i>
+                                                            Edit
+                                                        </a>
+                                                    </li>
+                                                    <li> <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal">
+                                                            <i class="icon-trash-2 me-2"></i>
+                                                            Delete
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            <!-- end table -->
+
+                        </div>
+                    </div>
+                    <!-- end card -->
+
+                </div>
+                <!-- End Content -->
+
+            </div>
+
+            <!-- ========================
+			End Page Content
+		========================= -->
+
+        </div>
+        <!-- End Wrapper -->
+
+        <!-- Start Add Bank Account Modal -->
+
+        <div class="modal fade" id="add_bank_account">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title d-flex align-items-center gap-2"><span
+                                class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                    class="icon-credit-card"></i></span>Create New Bank Account</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i
+                                class="icon-x"></i></button>
+                    </div>
+                    <div class="modal-body pt-0">
+
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Bank Name <span class="text-danger">*</span></label>
+                                <select class="select">
+                                    <option>Select</option>
+                                    <option>JPMorgan Chase Bank</option>
+                                    <option>Bank of America</option>
+                                    <option>Wells Fargo Bank</option>
+                                    <option>Citibank</option>
+                                    <option>U.S. Bank</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Account Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control">
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Account Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Routing Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Branch <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Account Type <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>Current</option>
+                                        <option>Savings</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Opening Balance </label>
+                                    <input type="text" class="form-control" disabled>
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Current Balance </label>
+                                    <input type="text" class="form-control" disabled>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="switchCheckChecked"
+                                    checked>
+                                <label class="form-check-label" for="switchCheckChecked">Mark as Default</label>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                        <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </a>
+                        <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"> <i class="icon-plus"></i> Create New </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Add Bank Account Modal -->
+
+        <!-- Start Edit Bank Account Modal -->
+
+        <div class="modal fade" id="edit_bank_account">
+            <div class="modal-dialog modal-dialog-centered modal-md">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title d-flex align-items-center gap-2"><span
+                                class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                    class="icon-credit-card"></i></span>Edit Bank Account</h4>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i
+                                class="icon-x"></i></button>
+                    </div>
+                    <div class="modal-body pt-0">
+
+                        <form>
+                            <div class="mb-3">
+                                <label class="form-label">Bank Name <span class="text-danger">*</span></label>
+                                <select class="select">
+                                    <option>Select</option>
+                                    <option selected>JPMorgan Chase Bank</option>
+                                    <option>Bank of America</option>
+                                    <option>Wells Fargo Bank</option>
+                                    <option>Citibank</option>
+                                    <option>U.S. Bank</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Account Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" value="Pharmacy LLC">
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Account Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" value="****4821">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Routing Number <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" value="021000021">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Branch <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" value="New York">
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Account Type <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>Current</option>
+                                        <option>Savings</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Opening Balance </label>
+                                    <input type="text" class="form-control" value="$25,000" disabled>
+                                </div>
+                                <div class="mb-3 col-md-6">
+                                    <label class="form-label">Current Balance </label>
+                                    <input type="text" class="form-control" value="$31,450" disabled>
+                                </div>
+                            </div>
+                            <div class="form-check form-switch">
+                                <input class="form-check-input" type="checkbox" role="switch" id="switchCheckChecked"
+                                    checked>
+                                <label class="form-check-label" for="switchCheckChecked">Mark as Default</label>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                        <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </a>
+                        <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"
+                            data-bs-dismiss="modal"> <i class="icon-save"></i> Save Changes </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Edit Bank Account Modal -->
+
+        <!-- Start Delete Modal -->
+        <div class="modal fade" id="delete_modal">
+            <div class="modal-dialog modal-dialog-centered modal-sm">
+                <div class="modal-content">
+                    <div class="modal-body text-center">
+                        <span class="avatar avatar-xl rounded-circle bg-soft-danger mb-3">
+                            <i class="icon-trash-2"></i>
+                        </span>
+                        <h4 class="mb-2">Delete Confirmation</h4>
+                        <p class="mb-4">Are you sure you want to delete?</p>
+                        <div class="d-flex justify-content-center gap-2">
+                            <a href="#" class="btn btn-light d-flex align-items-center" data-bs-dismiss="modal"><i
+                                    class="icon-x me-1"></i> Cancel</a>
+                            <a href="#" class="btn btn-danger d-flex align-items-center" data-bs-dismiss="modal"><i
+                                    class="icon-trash-2 me-1"></i>Delete</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!-- End Delete Modal -->
+
+        <!-- start offcanvas -->
+        <div class="offcanvas offcanvas-offset offcanvas-end" tabindex="-1" id="add_filter">
+            <div class="offcanvas-header d-block border-0">
+                <div class="d-flex align-items-center justify-content-between">
+                    <h4 class="title d-flex align-items-center gap-2 mb-0"> <span
+                            class="avatar avatar-sm bg-primary rounded-circle fs-16"><i class="icon-funnel"></i></span>
+                        Filter</h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"><i
+                            class="icon-x"></i></button>
+                </div>
+            </div>
+            <div class="offcanvas-body pt-0">
+                <div class="filter-sidebar">
+                    <div class="filter-body">
+
+                        <!-- Bank Name -->
+                        <div class="filter-item">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#medicine"
+                                        aria-expanded="false">
+                                        Bank Name
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="bank_name" class="card-collapse collapse show">
+                                <div>
+                                    <div class="input-icon input-icon-start position-relative mb-3">
+                                        <span class="input-icon-addon text-dark"><i class="icon-search"></i></span>
+                                        <input type="text" class="form-control" placeholder="Search">
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_01">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_01">JPMorgan Chase Bank</label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_02">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_01">Bank of America</label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_03">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_01">Citibank</label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_04">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_01">U.S. Bank</label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_05">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_01">PNC Bank</label>
+                                    </div>
+                                    <div class="more-menu1">
+                                        <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                            <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                                id="check_06">
+                                            <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                                for="check_01">Capital One</label>
+                                        </div>
+                                    </div>
+                                    <div class="more-menu1">
+                                        <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                            <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                                id="check_06">
+                                            <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                                for="check_01">Wells Fargo Bank</label>
+                                        </div>
+                                    </div>
+                                    <div class="view-all mt-3">
+                                        <a href="#" class="viewall1-button text-primary font-medium">View More</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Category -->
+                        <div class="filter-item">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse"
+                                        data-bs-target="#stock-status" aria-expanded="false">
+                                        Category
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="stock-status" class="card-collapse collapse show">
+                                <div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_34">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_34">
+                                            <span
+                                                class="badge badge-soft-warning d-inline-flex align-items-center">Current</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_35">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_35">
+                                            <span
+                                                class="badge badge-soft-teal d-inline-flex align-items-center">Savings</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Status Items -->
+                        <div class="filter-item mb-0 pb-0 border-0">
+                            <div class="d-flex align-items-center">
+                                <h3 class="filter-header">
+                                    <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#status"
+                                        aria-expanded="false">
+                                        Status
+                                        <i class="icon-chevron-down"></i>
+                                    </button>
+                                </h3>
+                            </div>
+                            <div id="status" class="card-collapse collapse show">
+                                <div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_37">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_37">
+                                            <span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span>
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_38">
+                                        <label class="form-check-label ms-2 d-flex align-items-center w-100"
+                                            for="check_38">
+                                            <span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Inactive</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+            <div class="offcanvas-footer d-flex align-items-center justify-content-between gap-2 flex-wrap ">
+                <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2" data-bs-dismiss="offcanvas"><i
+                        class="icon-x"></i>Cancel </a>
+                <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"> <i class="icon-pocket"></i>
+                    Apply Filter </a>
+            </div>
+        </div>
+        <!-- end offcanvas -->
+
+        <!-- jQuery -->
+        <script src="assets/js/jquery-4.0.0.min.js"></script>
+
+        <!-- Bootstrap Core JS -->
+        <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+        <!-- Simplebar JS -->
+        <script src="assets/plugins/simplebar/simplebar.min.js"></script>
+
+        <!-- Apexcharts JS -->
+        <script src="assets/plugins/apexchart/apexcharts.min.js"></script>
+        <script src="assets/plugins/apexchart/chart-data.js"></script>
+
+        <!-- Select2 Js -->
+        <script src="assets/plugins/select2/js/select2.min.js"></script>
+
+        <!-- Daterangepikcer JS -->
+        <script src="assets/js/moment.min.js"></script>
+        <script src="assets/plugins/daterangepicker/daterangepicker.js"></script>
+
+        <!-- Range slider JS -->
+        <script src="assets/plugins/ion-rangeslider/js/custom-rangeslider.js"></script>
+        <script src="assets/plugins/ion-rangeslider/js/ion.rangeSlider.min.js"></script>
+
+        <!-- Datatable JS -->
+        <script src="assets/js/jquery.dataTables.min.js"></script>
+        <script src="assets/js/dataTables.bootstrap5.min.js"></script>
+
+        <!-- Main JS -->
+        <script src="assets/js/script.js"></script>
+
+</body>
+
+</html>

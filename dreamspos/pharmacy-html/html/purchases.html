@@ -1,0 +1,2030 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Purchase | Pharmacy POS - Bootstrap 5 Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dreams POS is a powerful Bootstrap based Inventory Management Admin Template designed for businesses, offering seamless invoicing, project tracking, and estimates.">
+    <meta name="keywords"
+        content="inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system">
+    <meta name="author" content="Dreams Technologies">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.png">
+
+    <!-- Apple Icon -->
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/plugins/fontawesome/fontawesome.min.css">
+
+    <!-- Lucide Icon CSS -->
+    <link rel="stylesheet" href="assets/plugins/lucide/lucide.css">
+
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" href="assets/plugins/select2/css/select2.min.css">
+
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="assets/plugins/flatpickr/flatpickr.min.css">
+
+    <!-- Simplebar CSS -->
+    <link rel="stylesheet" href="assets/plugins/simplebar/simplebar.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="assets/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Rangeslider CSS -->
+    <link rel="stylesheet" href="assets/plugins/ion-rangeslider/css/ion.rangeSlider.min.css">
+
+    <!-- Datatable CSS -->
+    <link rel="stylesheet" href="assets/css/dataTables.bootstrap5.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Begin Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Topbar Start -->
+        <header class="navbar-header">
+            <div class="page-container topbar-menu">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Sidebar Mobile Button -->
+                    <a id="mobile_btn" class="mobile-btn" href="#sidebar">
+                        <i class="icon-menu fs-24"></i>
+                    </a>
+                    <!-- Logo -->
+                    <a href="index.html" class="logo">
+
+                        <!-- Logo Normal -->
+                        <span class="logo-light">
+                            <span class="logo-lg"><img src="assets/img/logo.svg" alt="logo"></span>
+                        </span>
+
+                        <!-- Logo Dark -->
+                        <span class="logo-dark">
+                            <span class="logo-lg"><img src="assets/img/logo-dark.svg" alt="dark logo"></span>
+                        </span>
+
+                        <!-- Logo Sm -->
+                        <span class="logo-small">
+                            <span class="logo-lg"><img src="assets/img/logo-small.svg" alt="small logo"></span>
+                        </span>
+                    </a>
+
+                    <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn2">
+                        <i class="ti ti-arrow-bar-to-right"></i>
+                    </button>
+
+                    <div class="d-none d-lg-flex">
+                        <h4 class="mb-0">Purchase</h4>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <div class="dropdown me-1 d-xl-flex d-none">
+                        <a href="javascript:void(0);"
+                            class="dropdown-toggle btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-toggle="dropdown">
+                            <i class="icon-map-pin-house"></i>Newyork
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Newyork</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Los Angeles</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Diego</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Dallas</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Antonio</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="d-flex align-items-center header-search d-lg-flex d-none">
+                        <!-- Search -->
+                        <div class="input-icon position-relative me-1">
+                            <span class="input-icon-addon"><i class="icon-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Search">
+                            <span class="input-icon-addon d-inline-flex p-0 header-search-icon"><i
+                                    class="icon-command"></i>K</span>
+                        </div>
+                    </div>
+                    <!-- /Search -->
+
+                    <!-- Notification Dropdown -->
+                    <div class="header-item">
+                        <div class="dropdown notification-dropdown me-1">
+
+                            <button class="topbar-link btn topbar-link dropdown-toggle drop-arrow-none"
+                                data-bs-toggle="dropdown" data-bs-offset="0,15" type="button" aria-haspopup="false"
+                                aria-expanded="false">
+                                <i class="icon-bell animate-ring"></i>
+                                <span class="notification-badge"></span>
+                            </button>
+
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg p-3"
+                                style="min-height: 300px;">
+
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h5 class="m-0">Notifications</h5>
+                                    <a href="#" class="fw-medium text-decoration-underline">Mark all as read</a>
+                                </div>
+
+                                <!-- Notification Body -->
+                                <div class="notification-body position-relative z-2 rounded-0" data-simplebar>
+
+                                    <div class="vstack gap-3">
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-1">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-orange border border-orange-200">
+                                                    <i class="icon-layers-2"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Low Stock Alert</p>
+                                                    <p class="mb-2 text-wrap">Paracetamol 500mg is running low (5 items
+                                                        left)</p>
+                                                    <p class="fs-13 mb-0">2 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-2">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-info border border-info-200">
+                                                    <i class="icon-inbox"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Stock Updated</p>
+                                                    <p class="mb-2 text-wrap">Inventory for Ibuprofen 200mg has been
+                                                        successfully updated.</p>
+                                                    <p class="fs-13 mb-0">10 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-3">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-warning border border-warning-200">
+                                                    <i class="icon-clock-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Medicine Expiry Reminder</p>
+                                                    <p class="mb-2 text-wrap">Amoxicillin Capsules will expire in 7
+                                                        days.</p>
+                                                    <p class="fs-13 mb-0">5 hours ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-4">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-danger border border-danger-200">
+                                                    <i class="icon-triangle-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Out of Stock</p>
+                                                    <p class="mb-2 text-wrap">Vitamin C Tablets are currently out of
+                                                        stock. </p>
+                                                    <p class="fs-13 mb-0">1 day ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <!-- View All-->
+                                <div class="pt-3">
+                                    <a href="#" class="btn btn-white d-flex align-items-center justify-content-center">
+                                        View All<i class="icon-arrow-right ms-2"></i>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="header-item">
+                        <div class="me-1">
+                            <a href="business-settings.html" class="btn topbar-link" aria-label="Settings"><i
+                                    class="icon-settings"></i></a>
+                        </div>
+                    </div>
+                    <!-- Settings -->
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
+                        <a href="javascript:void(0);"
+                            class="topbar-link dropdown-toggle drop-arrow-none position-relative"
+                            data-bs-toggle="dropdown" data-bs-offset="0,15" aria-haspopup="false" aria-expanded="false"
+                            data-bs-auto-close="outside">
+                            <img src="assets/img/profiles/avatar-28.jpg" width="36" class="rounded-circle d-flex"
+                                alt="user">
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-3">
+
+                            <div class="d-flex align-items-center bg-light rounded p-3 mb-2">
+                                <div class="avatar flex-shrink-0">
+                                    <img src="assets/img/profiles/avatar-28.jpg" class="rounded-circle" alt="user">
+                                </div>
+                                <div class="ms-2">
+                                    <p class="fw-medium text-dark mb-0">Robert Ordway</p>
+                                    <span class="d-block fs-13">Administrator</span>
+                                </div>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="profile-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-user-cog me-2"></i>Profile Settings
+                            </a>
+
+                            <!-- Item -->
+                            <a href="reports.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-proportions me-2"></i>Reports
+                            </a>
+
+                            <!-- Item-->
+                            <div
+                                class="form-check form-switch form-check-reverse d-flex align-items-center justify-content-between dropdown-item mb-0">
+                                <label class="form-check-label d-flex align-items-center" for="notify"><i
+                                        class="icon-bell me-2"></i>Notifications</label>
+                                <input class="form-check-input me-0" type="checkbox" role="switch" id="notify" checked>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="business-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-settings me-2"></i>Settings
+                            </a>
+
+                            <!-- Item-->
+                            <div class="pt-2 mt-2 border-top">
+                                <a href="sign-in.html" class="dropdown-item d-flex align-items-center text-danger">
+                                    <i class="icon-log-out me-2"></i>Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+        <!-- Topbar End -->
+
+        <!-- Sidenav Menu Start -->
+        <div class="sidebar" id="sidebar">
+
+            <!-- Start Logo -->
+            <div class="sidebar-logo">
+                <div>
+                    <!-- Logo Normal -->
+                    <a href="index.html" class="logo logo-normal">
+                        <img src="assets/img/logo.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Small -->
+                    <a href="index.html" class="logo-small">
+                        <img src="assets/img/logo-small.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Dark -->
+                    <a href="index.html" class="dark-logo">
+                        <img src="assets/img/logo-dark.svg" alt="Logo">
+                    </a>
+                </div>
+                <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn">
+                    <i class="icon-chevron-left"></i>
+                </button>
+
+                <!-- Sidebar Menu Close -->
+                <button class="sidebar-close">
+                    <i class="icon-x align-middle"></i>
+                </button>
+            </div>
+            <!-- End Logo -->
+
+            <!-- Sidenav Menu -->
+            <div class="sidebar-inner" data-simplebar>
+                <div id="sidebar-menu" class="sidebar-menu">
+                    <ul role="menu" aria-label="Main navigation menu">
+                        <li class="menu-title" aria-disabled="true"><span>Main</span></li>
+
+                        <li>
+                            <a href="index.html">
+                                <span class="menu-icon"><i
+                                        class="icon-layout-dashboard"></i></span><span>Dashboard</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Inventory</span></li>
+                        <li>
+                            <a href="medicines.html">
+                                <span class="menu-icon"><i class="icon-list-todo"></i></span><span>Medicine List</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="categories.html">
+                                <span class="menu-icon"><i class="icon-layout-grid"></i></span><span>Categories</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="units.html">
+                                <span class="menu-icon"><i class="icon-monitor-up"></i></span><span>Units</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="racks.html">
+                                <span class="menu-icon"><i class="icon-inbox"></i></span><span>Racks</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="batch-management.html">
+                                <span class="menu-icon"><i class="icon-boxes"></i></span><span>Batch Management</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="manufacturers.html">
+                                <span class="menu-icon"><i
+                                        class="icon-square-user"></i></span><span>Manufacturers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-adjustment.html">
+                                <span class="menu-icon"><i class="icon-layers"></i></span><span>Stock Adjustment</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-transfer.html">
+                                <span class="menu-icon"><i class="icon-truck"></i></span><span>Stock Transfer</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-tracking.html">
+                                <span class="menu-icon"><i class="icon-triangle-alert"></i></span><span>Expiry
+                                    Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="low-stock.html">
+                                <span class="menu-icon"><i class="icon-layers-2"></i></span><span>Low Stock</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-logs.html">
+                                <span class="menu-icon"><i class="icon-list-end"></i></span><span>Inventory Logs</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Sales</span></li>
+                        <li>
+                            <a href="pos.html">
+                                <span class="menu-icon"><i class="icon-tv-minimal"></i></span><span>POS Sales</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sales-return.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw"></i></span><span>Sales Return</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customers.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="invoices.html">
+                                <span class="menu-icon"><i class="icon-newspaper"></i></span><span>Invoices</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="payments.html">
+                                <span class="menu-icon"><i class="icon-dollar-sign"></i></span><span>Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Purchases</span></li>
+                        <li>
+                            <a href="purchases.html" class="active">
+                                <span class="menu-icon"><i class="icon-shopping-cart"></i></span><span>Purchases</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-orders.html">
+                                <span class="menu-icon"><i class="icon-shopping-bag"></i></span><span>Purchase
+                                    Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-returns.html">
+                                <span class="menu-icon"><i class="icon-reply-all"></i></span><span>Purchase
+                                    Returns</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendors.html">
+                                <span class="menu-icon"><i class="icon-users"></i></span><span>Vendors</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-payments.html">
+                                <span class="menu-icon"><i class="icon-badge-dollar-sign"></i></span><span>Vendor
+                                    Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Prescriptions</span></li>
+                        <li>
+                            <a href="prescriptions.html">
+                                <span class="menu-icon"><i class="icon-book-check"></i></span><span>Prescriptions</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="prescription-verification.html">
+                                <span class="menu-icon"><i
+                                        class="icon-circle-arrow-out-up-right"></i></span><span>Prescription
+                                    Verification</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="doctors.html">
+                                <span class="menu-icon"><i
+                                        class="icon-briefcase-medical"></i></span><span>Doctors</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Reports</span></li>
+                        <li>
+                            <a href="sales-reports.html">
+                                <span class="menu-icon"><i class="icon-proportions"></i></span><span>Sales
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-reports.html">
+                                <span class="menu-icon"><i class="icon-file-spreadsheet"></i></span><span>Purchase
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-reports.html">
+                                <span class="menu-icon"><i class="icon-file-terminal"></i></span><span>Inventory
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-reports.html">
+                                <span class="menu-icon"><i class="icon-file-chart-column"></i></span><span>Expiry
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="profit-loss-reports.html">
+                                <span class="menu-icon"><i class="icon-badge-percent"></i></span><span>Profit &
+                                    Loss</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tax-reports.html">
+                                <span class="menu-icon"><i class="icon-file-symlink"></i></span><span>Tax Report</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-valuation.html">
+                                <span class="menu-icon"><i class="icon-file-axis-3d"></i></span><span>Stock
+                                    Valuation</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-aging.html">
+                                <span class="menu-icon"><i class="icon-file-search"></i></span><span>Stock Aging</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customer-outstanding.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customer
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-outstanding.html">
+                                <span class="menu-icon"><i class="icon-file-user"></i></span><span>Vendor
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li class="menu-title" aria-disabled="true"><span>Settings</span></li>
+                        <li class="submenu">
+                            <a href="javascript:void(0);">
+                                <span class="menu-icon"><i class="icon-building-2"></i></span><span>Business</span>
+                                <span class="menu-arrow"></span>
+                            </a>
+                            <ul>
+                                <li><a href="business-settings.html">Business Settings</a></li>
+                                <li><a href="profile-settings.html">Profile Settings</a></li>
+                                <li><a href="localization-settings.html">Localization</a></li>
+                                <li><a href="branches-settings.html">Branches</a></li>
+                                <li><a href="notifications-settings.html">Notifications</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="invoice-settings.html">
+                                <span class="menu-icon"><i class="icon-file-text"></i></span><span>Billing</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="connected-apps.html">
+                                <span class="menu-icon"><i class="icon-component"></i></span><span>System
+                                    Integrations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="backup-settings.html">
+                                <span class="menu-icon"><i class="icon-computer"></i></span><span>Backup</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Authentication</span></li>
+                        <li>
+                            <a href="sign-in.html">
+                                <span class="menu-icon"><i class="icon-log-in"></i></span><span>Login</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sign-up.html">
+                                <span class="menu-icon"><i
+                                        class="icon-text-cursor-input"></i></span><span>Register</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="forgot-password.html">
+                                <span class="menu-icon"><i class="icon-shield-alert"></i></span><span>Forgot
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="reset-password.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw-dot"></i></span><span>Reset
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="otp.html">
+                                <span class="menu-icon"><i class="icon-mail-warning"></i></span><span>OTP
+                                    Verification</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        <!-- Sidenav Menu End -->
+
+        <!-- ========================
+			Start Page Content
+		========================= -->
+
+        <div class="page-wrapper">
+
+            <!-- Start Content -->
+            <div class="content">
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="index.html"> <span><i class="icon-house"></i></span>
+                                    Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Purchase </li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+                            data-bs-original-title="Refresh"><i class="icon-refresh-ccw"></i></a>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Maximize"
+                            data-bs-original-title="Maximize"><i class="icon-maximize"></i></a>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#add-modal"
+                            class="btn btn-primary d-flex align-items-center gap-2"> <i class="icon-plus"></i> Add
+                            New</a>
+                    </div>
+                </div>
+
+                <!-- start row -->
+                <div class="row mb-4">
+                    <div class="col-xxl-3 col-lg-6 col-md-6 d-flex">
+                        <div class="card rounded-4 flex-fill bg-primary-gradient border-0">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="avatar avatar-lg bg-white rounded-circle flex-shrink-0 text-primary">
+                                        <i class="icon-shopping-bag fs-20"></i>
+                                    </span>
+                                    <span
+                                        class="badge bg-white bg-opacity-10 text-white px-2 d-flex align-items-center gap-1 border-0 fs-12 rounded-pill"><i
+                                            class="icon-arrow-up-right fs-12"></i>+12.5%
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <span class="d-block mb-3 text-white fw-medium">Total Purchases</span>
+                                        <h2 class="text-white mb-0">1,284</h2>
+                                        <span class="text-white fs-12">Since last week</span>
+                                    </div>
+                                    <div>
+                                        <img src="assets/img/icons/purchase-icon1.svg" alt="img">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xxl-3 col-lg-6 col-md-6 d-flex">
+                        <div class="card rounded-4 flex-fill bg-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span
+                                        class="avatar avatar-lg bg-primary-gradient rounded-circle flex-shrink-0 text-white">
+                                        <i class="icon-dollar-sign fs-20"></i>
+                                    </span>
+                                    <span
+                                        class="badge bg-danger text-white px-2 d-flex align-items-center gap-1 border-0 fs-12 rounded-pill"><i
+                                            class="icon-arrow-up-right fs-12"></i>+14.5%
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <span class="d-block mb-3 text-dark fw-medium">Total Amount</span>
+                                        <h2 class="text-dark mb-0">$12,450</h2>
+                                        <span class="text-dark fs-12">From Last Year</span>
+                                    </div>
+                                    <div>
+                                        <img src="assets/img/icons/purchase-icon2.svg" alt="img">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- end col-->
+                    <div class="col-xxl-3 col-lg-6 col-md-6 d-flex">
+                        <div class="card rounded-4 flex-fill bg-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span
+                                        class="avatar avatar-lg bg-primary-gradient rounded-circle flex-shrink-0 text-white">
+                                        <i class="icon-timer-reset fs-20"></i>
+                                    </span>
+                                    <span
+                                        class="badge bg-success text-white px-2 d-flex align-items-center gap-1 border-0 fs-12 rounded-pill"><i
+                                            class="icon-arrow-up-right fs-12"></i>+19.7%
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <span class="d-block mb-3 text-dark fw-medium">Pending Payments</span>
+                                        <h2 class="text-dark mb-0">1,450</h2>
+                                        <span class="text-dark fs-12">Requires attention</span>
+                                    </div>
+                                    <div>
+                                        <img src="assets/img/icons/purchase-icon3.svg" alt="img">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- end col-->
+                    <div class="col-xxl-3 col-lg-6 col-md-6 d-flex">
+                        <div class="card rounded-4 flex-fill bg-white">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span
+                                        class="avatar avatar-lg bg-primary-gradient rounded-circle flex-shrink-0 text-white">
+                                        <i class="icon-users-round fs-20"></i>
+                                    </span>
+                                    <span
+                                        class="badge bg-danger text-white px-2 d-flex align-items-center gap-1 border-0 fs-12 rounded-pill"><i
+                                            class="icon-arrow-up-right fs-12"></i>+14.5%
+                                    </span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                    <div>
+                                        <span class="d-block mb-3 text-dark fw-medium">Vendors</span>
+                                        <h2 class="text-dark mb-0">134</h2>
+                                        <span class="text-dark fs-12">Processed this month</span>
+                                    </div>
+                                    <div>
+                                        <img src="assets/img/icons/purchase-icon4.svg" alt="img">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div><!-- end col-->
+                </div>
+                <!-- end row -->
+
+                <!-- start card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                            <div class="d-inline-flex align-items-center flex-wrap flex-sm-nowrap gap-2">
+                                <div class="table-search d-flex align-items-center mb-0">
+                                    <div class="search-input" id="tablefilter">
+                                        <a href="javascript:void(0);" class="btn-searchset"><i
+                                                class="icon-search"></i></a>
+                                    </div>
+                                </div>
+                                <div class="input-group position-relative w-fit">
+                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                        <i class="icon-calendar-fold"></i>
+                                    </span>
+                                    <input type="text" class="form-control date-range bookingrange rounded-end">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+
+                                <!-- Filter -->
+                                <a href="#" class="btn btn-white btn-icon" data-bs-toggle="offcanvas"
+                                    data-bs-target="#add_filter" aria-controls="add_filter"><i
+                                        class="icon-funnel"></i></a>
+                                <!-- column -->
+                                <div class="dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-label="column">
+                                        <i class="icon-columns-3"></i> Columns
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-start dropdown-menu-md">
+                                        <ul class="list-unstyled mb-0">
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Vendor</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Date</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Total Amount</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Paid Amount </span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Due Amount</span>
+                                                </label>
+                                            </li>
+                                            <li class="dropdown-item rounded">
+                                                <label class="d-flex align-items-center">
+                                                    <span><i class="icon-grip-vertical me-3"></i></span>
+                                                    <span class="d-flex align-items-center"><input
+                                                            class="form-check-input m-0 me-2" type="checkbox"
+                                                            checked />Status</span>
+                                                </label>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- sort by -->
+                                <div class="dropdown sortby-dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown">
+                                        <i class="icon-arrow-down-wide-narrow"></i> Sort by
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="list-unstyled mb-0">
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded text-dark d-flex align-items-center justify-content-between">Vendor
+                                                    Name
+                                                    <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded text-dark d-flex align-items-center justify-content-between">Vendor
+                                                    Name
+                                                    <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Date
+                                                    - Ascending
+                                                    <span>1-9</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Date
+                                                    - Ascending
+                                                    <span>9-1</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Total
+                                                    Amount
+                                                    <span>Low-High</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Total
+                                                    Amount
+                                                    <span>High-Low</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <!-- import -->
+                                <a href="javascript:void(0);" class="btn btn-white">
+                                    <i class="icon-import me-2"></i>Import
+                                </a>
+                                <!-- Export -->
+                                <div class="gap-3 d-flex align-items-center flex-wrap">
+                                    <div class="dropdown">
+                                        <a href="javascript:void(0);"
+                                            class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-arrow-up-to-line"></i>Export
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    PDF</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    Excel</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+
+                        <!-- start table -->
+                        <div class="table-responsive table-nowrap">
+                            <table class="table mb-0 datatable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th class="no-sort">ID</th>
+                                        <th class="no-sort">Vendor</th>
+                                        <th class="no-sort">Purchase Date</th>
+                                        <th class="no-sort">Total Amount</th>
+                                        <th class="no-sort">Paid Amount</th>
+                                        <th class="no-sort">Due Amount</th>
+                                        <th class="no-sort">Status</th>
+                                        <th class="no-sort"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-1.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">MedLife Distributors</a>
+                                            </h4>
+                                        </td>
+                                        <td>28 Jan 2026</td>
+                                        <td class="text-dark fw-medium">$120</td>
+                                        <td>$120</td>
+                                        <td>-</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-2.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">HealthCare Pharma</a>
+                                            </h4>
+                                        </td>
+                                        <td>15 Feb 2026</td>
+                                        <td class="text-dark fw-medium">$520</td>
+                                        <td>$20</td>
+                                        <td>$520</td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Pending</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span
+                                                    class="avatar avatar-sm rounded-circle bg-soft-orange border border-orange p-1 fs-12">AS</span>
+                                                <a href="#">GreenCross Medicals</a>
+                                            </h4>
+                                        </td>
+                                        <td>10 Mar 2026</td>
+                                        <td class="text-dark fw-medium">$100</td>
+                                        <td>$100</td>
+                                        <td>-</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-3.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">NovaCure Pharma</a>
+                                            </h4>
+                                        </td>
+                                        <td>14 Apr 2026</td>
+                                        <td class="text-dark fw-medium">$35</td>
+                                        <td>$25</td>
+                                        <td>$15</td>
+                                        <td><span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Partially Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-4.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">CareWell Agency</a>
+                                            </h4>
+                                        </td>
+                                        <td>30 May 2026</td>
+                                        <td class="text-dark fw-medium">$120</td>
+                                        <td>$100</td>
+                                        <td>$20</td>
+                                        <td><span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Partially Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-5.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">Zenith Distributors</a>
+                                            </h4>
+                                        </td>
+                                        <td>02 Jun 2026</td>
+                                        <td class="text-dark fw-medium">$25</td>
+                                        <td>$25</td>
+                                        <td>$25</td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Pending</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-6.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">LifeLine Pharma</a>
+                                            </h4>
+                                        </td>
+                                        <td>07 Jul 2026</td>
+                                        <td class="text-dark fw-medium">$130</td>
+                                        <td>$130</td>
+                                        <td>-</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-7.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">SafeMeds Distribution</a>
+                                            </h4>
+                                        </td>
+                                        <td>21 Aug 2026</td>
+                                        <td class="text-dark fw-medium">$180</td>
+                                        <td>$180</td>
+                                        <td>$180</td>
+                                        <td><span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Pending</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-8.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">NovaHealth Pharma</a>
+                                            </h4>
+                                        </td>
+                                        <td>17 Nov 2026</td>
+                                        <td class="text-dark fw-medium">$60</td>
+                                        <td>$30</td>
+                                        <td>$30</td>
+                                        <td><span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Partially Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="#" class="text-info">#PUR016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0 d-flex align-items-center gap-2">
+                                                <span class="avatar avatar-sm rounded-circle fs-12"><img
+                                                        src="assets/img/supplier/supplier-img-9.jpg"
+                                                        class="rounded-circle" alt="img"></span>
+                                                <a href="#">PrimeCare Pharma</a>
+                                            </h4>
+                                        </td>
+                                        <td>10 Dec 2026</td>
+                                        <td class="text-dark fw-medium">$80</td>
+                                        <td>$80</td>
+                                        <td>-</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Paid</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#pay-now-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-dollar-sign me-2"></i>Pay Now</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal" data-bs-target="#edit-modal"
+                                                            class="dropdown-item rounded d-flex align-items-center"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a></li>
+                                                    <li><a href="#" data-bs-toggle="modal"
+                                                            data-bs-target="#delete_modal"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a></li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                </tbody>
+                            </table>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 pt-0">
+                                <div id="tableinfo"></div>
+                                <div id="tablepage"></div>
+                                <div id="tablelength"></div>
+                            </div>
+                        </div>
+                        <!-- end table -->
+
+                    </div>
+                </div>
+                <!-- end card -->
+
+            </div>
+            <!-- End Content -->
+
+        </div>
+
+        <!-- ========================
+			End Page Content
+		========================= -->
+
+    </div>
+    <!-- End Wrapper -->
+
+    <!-- start offcanvas -->
+    <div class="offcanvas offcanvas-offset offcanvas-end" tabindex="-1" id="add_filter">
+        <div class="offcanvas-header d-block border-0">
+            <div class="d-flex align-items-center justify-content-between">
+                <h4 class="title d-flex align-items-center gap-2 mb-0"> <span
+                        class="avatar avatar-sm bg-primary rounded-circle fs-16"><i class="icon-funnel"></i></span>
+                    Filter</h4>
+                <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"><i
+                        class="icon-x"></i></button>
+            </div>
+        </div>
+        <div class="offcanvas-body pt-0">
+            <div class="filter-sidebar">
+                <div class="filter-body">
+
+                    <!-- Item 1 -->
+                    <div class="filter-item">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#supplier"
+                                    aria-expanded="false">
+                                    Supplier
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="supplier" class="card-collapse collapse show">
+                            <div>
+                                <div class="input-icon input-icon-start position-relative mb-3">
+                                    <span class="input-icon-addon text-dark"><i class="icon-search"></i></span>
+                                    <input type="text" class="form-control" placeholder="Search">
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_01">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_01">
+                                        <span class="avatar avatar-xs bg-light rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-1.jpg" alt="icon"
+                                                class="rounded-circle"></span>
+                                        MedLife Distributors
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_02">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_02">
+                                        <span class="avatar avatar-xs bg-light rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-2.jpg" alt="icon"
+                                                class="rounded-circle"></span>HealthCare Pharma
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_03">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_03">
+                                        <span
+                                            class="avatar avatar-xs bg-soft-teal border border-teal rounded-circle p-1">AS</span>GreenCross
+                                        Medicals
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_04">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_04">
+                                        <span class="avatar avatar-xs bg-light rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-3.jpg" alt="icon"
+                                                class="rounded-circle"></span>NovaCure Pharma
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_05">
+                                    <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                        for="check_05">
+                                        <span class="avatar avatar-xs bg-light rounded-circle"><img
+                                                src="assets/img/supplier/supplier-img-4.jpg" alt="icon"
+                                                class="rounded-circle"></span>CareWell Agency
+                                    </label>
+                                </div>
+                                <div class="more-menu1">
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_06">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_06">
+                                            <span class="avatar avatar-xs bg-light rounded-circle"><img
+                                                    src="assets/img/supplier/supplier-img-5.jpg" alt="icon"
+                                                    class="rounded-circle"></span>Zenith Distributors
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_07">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_07">
+                                            <span
+                                                class="avatar avatar-xs bg-soft-cyan border border-cyan rounded-circle p-1">MS</span>LifeLine
+                                            Pharma
+                                        </label>
+                                    </div>
+                                    <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                        <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                            id="check_08">
+                                        <label class="form-check-label w-100 d-flex align-items-center ms-2 gap-2"
+                                            for="check_08">
+                                            <span class="avatar avatar-xs bg-light rounded-circle"><img
+                                                    src="assets/img/supplier/supplier-img-6.jpg" alt="icon"
+                                                    class="rounded-circle"></span>SafeMeds Distribution
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="view-all mt-3">
+                                    <a href="#" class="viewall1-button text-primary font-medium">View More</a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Price Items -->
+                    <div class="filter-item">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#stock-value"
+                                    aria-expanded="false">
+                                    Sales
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="stock-value" class="card-collapse collapse show price-range">
+                            <div>
+                                <div id="price" class="card-collapse collapse show">
+                                    <div>
+                                        <div class="filter-range">
+                                            <input type="text" id="range_03" aria-label="Price Range">
+                                            <p class="mb-0 text-body fs-14">Price : <span
+                                                    class="text-dark fw-semibold">$200 - $5695</span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Items -->
+                    <div class="filter-item mb-0 pb-0 border-0">
+                        <div class="d-flex align-items-center">
+                            <h3 class="filter-header">
+                                <button class="filter-title" data-bs-toggle="collapse" data-bs-target="#status"
+                                    aria-expanded="false">
+                                    Stock Status
+                                    <i class="icon-chevron-down"></i>
+                                </button>
+                            </h3>
+                        </div>
+                        <div id="status" class="card-collapse collapse show">
+                            <div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_37">
+                                    <label class="form-check-label ms-2 d-flex align-items-center w-100" for="check_37">
+                                        <span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                class="fa-solid fa-circle fs-5 me-1"></i> Paid</span>
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-2">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_38">
+                                    <label class="form-check-label ms-2 d-flex align-items-center w-100" for="check_38">
+                                        <span class="badge badge-soft-warning d-inline-flex align-items-center"><i
+                                                class="fa-solid fa-circle fs-5 me-1"></i> Pending</span>
+                                    </label>
+                                </div>
+                                <div class="form-check d-flex align-items-center ps-0 mb-0">
+                                    <input class="form-check-input ms-0 mt-0" name="category" type="checkbox"
+                                        id="check_39">
+                                    <label class="form-check-label ms-2 d-flex align-items-center w-100" for="check_39">
+                                        <span class="badge badge-soft-info d-inline-flex align-items-center"><i
+                                                class="fa-solid fa-circle fs-5 me-1"></i> Partially Paid</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+        <div class="offcanvas-footer d-flex align-items-center justify-content-between gap-2 flex-wrap ">
+            <a href="#" class="btn btn-light d-inline-flex align-items-center gap-2" data-bs-dismiss="offcanvas"><i
+                    class="icon-x"></i>Cancel </a>
+            <a href="#" class="btn btn-primary d-inline-flex align-items-center gap-2"> <i class="icon-pocket"></i>
+                Apply Filter </a>
+        </div>
+    </div>
+    <!-- end offcanvas -->
+
+
+    <!-- Add modal -->
+    <div class="modal custom-modal fade" id="add-modal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title d-flex align-items-center gap-2"><span
+                            class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                class="icon-user-plus"></i></span>Create New Purchase</h4>
+                    <button class="btn-close custom-btn-close border p-1 me-0 text-dark" data-bs-dismiss="modal"
+                        aria-label="Close"><i class="icon-x"></i>
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body pt-0">
+                        <!-- Start row -->
+                        <div class="row row-gap-3">
+                            <div class="col-lg-12">
+                                <div class="d-flex align-items-center flex-wrap gap-3">
+                                    <div class="avatar avatar-xxxl border bg-light rounded-circle">
+                                        <i class="icon-image fs-20 text-dark"></i>
+                                    </div>
+                                    <div>
+                                        <label class="form-label mb-1 fw-bold fs-14">Upload Store Image</label>
+                                        <p class="fs-13 fw-medium mb-2">Image should below 2MB</p>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label
+                                                class="btn btn-light btn-sm fs-13 d-flex align-items-center gap-1 position-relative cursor-pointer mb-0">
+                                                <i class="icon-refresh-ccw"></i>
+                                                <input type="file"
+                                                    class="form-control position-absolute w-100 h-100 top-0 start-0 opacity-0 cursor-pointer">
+                                                Change Image
+                                            </label>
+                                            <a href="#" class="btn btn-icon btn-sm btn-white rounded-circle">
+                                                <i class="icon-trash-2"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- end col-->
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">Vendor <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>MedLife Distributors</option>
+                                        <option>HealthCare Pharma</option>
+                                        <option>GreenCross Medicals</option>
+                                        <option>NovaCure Pharma</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Purchase Date <span class="text-danger">*</span></label>
+                                    <div class="input-group w-auto input-group-flat">
+                                        <input type="text" class="form-control flatpickr-input active"
+                                            data-provider="flatpickr" data-date-format="d/m/Y" placeholder="dd/mm/yyyy"
+                                            readonly="readonly">
+                                        <span class="input-group-text">
+                                            <i class="icon-calendar-days"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>Cash</option>
+                                        <option>Card</option>
+                                        <option>Online</option>
+                                        <option>Bank Transfer</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Due Date <span class="text-danger">*</span></label>
+                                    <div class="input-group w-auto input-group-flat">
+                                        <input type="text" class="form-control flatpickr-input active"
+                                            data-provider="flatpickr" data-date-format="d/m/Y" placeholder="dd/mm/yyyy"
+                                            readonly="readonly">
+                                        <span class="input-group-text">
+                                            <i class="icon-calendar-days"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div>
+                                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>Paid</option>
+                                        <option>Pending</option>
+                                        <option>Partially Paid</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End row -->
+
+                    </div>
+                    <div class="modal-footer">
+                        <div class="d-flex align-items-center gap-2 felx-grow-1 w-100 justify-content-between">
+                            <button class="btn btn-light d-inline-flex align-items-center gap-2"
+                                data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </button>
+                            <button type="button" class="btn btn-primary"><i class="icon-plus me-1"></i>Create
+                                New</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Add modal -->
+
+    <!-- Edit modal -->
+    <div class="modal custom-modal fade" id="edit-modal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title d-flex align-items-center gap-2"><span
+                            class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                class="icon-user-plus"></i></span>Edit Purchase</h4>
+                    <button class="btn-close custom-btn-close border p-1 me-0 text-dark" data-bs-dismiss="modal"
+                        aria-label="Close"><i class="icon-x"></i>
+                    </button>
+                </div>
+                <form action="#">
+                    <div class="modal-body pt-0">
+                        <!-- Start row -->
+                        <div class="row row-gap-3">
+                            <div class="col-lg-12">
+                                <div class="d-flex align-items-center flex-wrap gap-3">
+                                    <div class="avatar avatar-xxxl border bg-light rounded-circle">
+                                        <i class="icon-image fs-20 text-dark"></i>
+                                    </div>
+                                    <div>
+                                        <label class="form-label mb-1 fw-bold fs-14">Upload Store Image</label>
+                                        <p class="fs-13 fw-medium mb-2">Image should below 2MB</p>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label
+                                                class="btn btn-light btn-sm fs-13 d-flex align-items-center gap-1 position-relative cursor-pointer mb-0">
+                                                <i class="icon-refresh-ccw"></i>
+                                                <input type="file"
+                                                    class="form-control position-absolute w-100 h-100 top-0 start-0 opacity-0 cursor-pointer">
+                                                Change Image
+                                            </label>
+                                            <a href="#" class="btn btn-icon btn-sm btn-white rounded-circle">
+                                                <i class="icon-trash-2"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- end col-->
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">Vendor <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>MedLife Distributors</option>
+                                        <option>HealthCare Pharma</option>
+                                        <option>GreenCross Medicals</option>
+                                        <option>NovaCure Pharma</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Purchase Date <span class="text-danger">*</span></label>
+                                    <div class="input-group w-auto input-group-flat">
+                                        <input type="text" class="form-control flatpickr-input active"
+                                            data-provider="flatpickr" data-date-format="d/m/Y" placeholder="dd/mm/yyyy"
+                                            readonly="readonly">
+                                        <span class="input-group-text">
+                                            <i class="icon-calendar-days"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>Cash</option>
+                                        <option>Card</option>
+                                        <option>Online</option>
+                                        <option>Bank Transfer</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Due Date <span class="text-danger">*</span></label>
+                                    <div class="input-group w-auto input-group-flat">
+                                        <input type="text" class="form-control flatpickr-input active"
+                                            data-provider="flatpickr" data-date-format="d/m/Y" placeholder="dd/mm/yyyy"
+                                            readonly="readonly">
+                                        <span class="input-group-text">
+                                            <i class="icon-calendar-days"></i>
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <div>
+                                    <label class="form-label">Status <span class="text-danger">*</span></label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>Paid</option>
+                                        <option>Pending</option>
+                                        <option>Partially Paid</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End row -->
+
+                    </div>
+                    <div class="modal-footer">
+                        <div class="d-flex align-items-center gap-2 felx-grow-1 w-100 justify-content-between">
+                            <button class="btn btn-light d-inline-flex align-items-center gap-2"
+                                data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </button>
+                            <button type="button" class="btn btn-primary"><i class="icon-save me-1"></i>Save
+                                Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Edit modal -->
+
+    <!-- Add Payment modal -->
+    <div class="modal custom-modal fade" id="pay-now-modal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h4 class="modal-title fw-bold">Pay Now</h4>
+                    <span class="text-warning fs-14">#PUR016</span>
+                </div>
+                <form action="#">
+                    <div class="modal-body">
+                        <!-- Payment Summary -->
+                        <div class="card mb-4 bg-light">
+                            <div class="card-header border-0">
+                                <h6 class="fw-bold mb-0">Payment Summary</h6>
+                            </div>
+                            <div class="card-body pt-0">
+                                <div class="p-3 bg-white rounded-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="text-gray-9 fs-14">Bill Total</span>
+                                        <span class="fw-semibold text-dark fs-14">$520</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <span class="text-gray-9 fs-14">Already Paid</span>
+                                        <span class="fw-semibold text-dark fs-14">$20</span>
+                                    </div>
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-gray-9 fs-14">Due Amount</span>
+                                        <span class="fw-semibold text-danger fs-14">$569</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Payment Amount -->
+                        <div class="mb-3">
+                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                <label class="form-label mb-0">Payment Amount <span class="text-danger">*</span></label>
+                                <span class="fs-13 text-gray-9">Bill total: $569</span>
+                            </div>
+                            <input type="text" class="form-control" value="$569">
+                        </div>
+                        <!-- Payment Method -->
+                        <div class="mb-0">
+                            <label class="form-label">Payment Method <span class="text-danger">*</span></label>
+                            <select class="select">
+                                <option selected>Card</option>
+                                <option>Cash</option>
+                                <option>UPI</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <div class="d-flex align-items-center gap-2 w-100 justify-content-between">
+                            <button class="btn btn-light d-inline-flex align-items-center gap-2"
+                                data-bs-dismiss="modal">Cancel</button>
+                            <button type="button" class="btn btn-teal" data-bs-toggle="modal"
+                                data-bs-target="#payment-history-modal">Complete Payment</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Add Payment modal -->
+
+    <!-- payement history modal -->
+    <div class="modal custom-modal fade" id="payment-history-modal" role="dialog">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header border-0 pb-0">
+                    <h4 class="modal-title fw-bold">Payment History</h4>
+                    <button class="btn-close custom-btn-close border p-1 me-0 text-dark" data-bs-dismiss="modal"
+                        aria-label="Close"><i class="icon-x"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Payment Summary -->
+                    <div class="card mb-4 bg-light">
+                        <div class="card-header border-0">
+                            <h6 class="fw-bold mb-0">Payment Summary</h6>
+                        </div>
+                        <div class="card-body pt-0">
+                            <div class="p-3 bg-white rounded-3">
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-gray-9 fs-14">Purchase ID</span>
+                                    <span class="fw-semibold text-danger fs-14">#PUR016</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <span class="text-gray-9 fs-14">Bill Total</span>
+                                    <span class="fw-semibold text-dark fs-14">$520</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between mb-2 border-bottom pb-2">
+                                    <span class="text-gray-9 fs-14">Total Paid</span>
+                                    <span class="fw-semibold text-dark fs-14">$20</span>
+                                </div>
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <span class="text-gray-9 fs-16 fw-bold">Due Amount</span>
+                                    <span class="text-danger fs-16 fw-bold">$569</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <h6>Payments</h6>
+                    <div class="table-responsive table-nowrap rounded-2 border">
+                        <table class="table mb-0 border">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="no-sort">Date</th>
+                                    <th class="no-sort">Order Status</th>
+                                    <th class="no-sort">Amount</th>
+                                    <th class="no-sort">Payment Method</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>28 Jan 2026 - 10:14:20 AM</td>
+                                    <td>
+                                        <span class="badge badge-soft-success d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-circle fs-6 me-1"></i> Completed
+                                        </span>
+                                    </td>
+                                    <td class="fw-medium">$12,569</td>
+                                    <td>
+                                        <span class="badge badge-soft-danger">Cash</span>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>15 Feb 2026 - 02:14:20 PM</td>
+                                    <td>
+                                        <span class="badge badge-soft-warning d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-circle fs-6 me-1"></i> Inprogress
+                                        </span>
+                                    </td>
+                                    <td class="fw-medium">$9,800</td>
+                                    <td>
+                                        <span class="badge badge-soft-warning">UPI</span>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>10 Mar 2026 - 03:14:20 PM</td>
+                                    <td>
+                                        <span class="badge badge-soft-success d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-circle fs-6 me-1"></i> Completed
+                                        </span>
+                                    </td>
+                                    <td class="fw-medium">$4,500</td>
+                                    <td>
+                                        <span class="badge badge-soft-info">Card</span>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>22 Apr 2026 - 01:14:20 PM</td>
+                                    <td>
+                                        <span class="badge badge-soft-purple d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-circle fs-6 me-1"></i> Pending
+                                        </span>
+                                    </td>
+                                    <td class="fw-medium">$7,600</td>
+                                    <td>
+                                        <span class="badge badge-soft-primary">Wallet</span>
+                                    </td>
+                                </tr>
+
+                                <tr>
+                                    <td>29 Jun 2026 - 06:15:30 PM</td>
+                                    <td>
+                                        <span class="badge badge-soft-purple d-inline-flex align-items-center">
+                                            <i class="fa-solid fa-circle fs-6 me-1"></i> Pending
+                                        </span>
+                                    </td>
+                                    <td class="fw-medium">$1,800</td>
+                                    <td>
+                                        <span class="badge badge-soft-danger">Cash</span>
+                                    </td>
+                                </tr>
+
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- payement history modal -->
+
+    <!-- Start Delete Modal -->
+    <div class="modal fade" id="delete_modal">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <span class="avatar avatar-xl rounded-circle bg-soft-danger mb-3">
+                        <i class="icon-trash-2"></i>
+                    </span>
+                    <h4 class="mb-2">Delete Confirmation</h4>
+                    <p class="mb-4">Are you sure you want to delete?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="#" class="btn btn-light d-flex align-items-center" data-bs-dismiss="modal"><i
+                                class="icon-x me-1"></i> Cancel</a>
+                        <a href="#" class="btn btn-danger d-flex align-items-center"><i
+                                class="icon-trash-2 me-1"></i>Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Delete Modal -->
+
+    <!-- jQuery -->
+    <script src="assets/js/jquery-4.0.0.min.js"></script>
+
+    <!-- Bootstrap Core JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Simplebar JS -->
+    <script src="assets/plugins/simplebar/simplebar.min.js"></script>
+
+    <!-- Flatpickr JS -->
+    <script src="assets/plugins/flatpickr/flatpickr.min.js"></script>
+
+    <!-- Apexcharts JS -->
+    <script src="assets/plugins/apexchart/apexcharts.min.js"></script>
+    <script src="assets/plugins/apexchart/chart-data.js"></script>
+
+    <!-- Select2 Js -->
+    <script src="assets/plugins/select2/js/select2.min.js"></script>
+
+    <!-- Daterangepikcer JS -->
+    <script src="assets/js/moment.min.js"></script>
+    <script src="assets/plugins/daterangepicker/daterangepicker.js"></script>
+
+    <!-- Range slider JS -->
+    <script src="assets/plugins/ion-rangeslider/js/custom-rangeslider.js"></script>
+    <script src="assets/plugins/ion-rangeslider/js/ion.rangeSlider.min.js"></script>
+
+    <!-- Datatable JS -->
+    <script src="assets/js/jquery.dataTables.min.js"></script>
+    <script src="assets/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Main JS -->
+    <script src="assets/js/script.js"></script>
+
+</body>
+
+</html>

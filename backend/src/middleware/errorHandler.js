@@ -67,6 +67,15 @@ export function errorHandler(err, req, res, next) {
     }
   }
 
+  if (err instanceof Prisma.PrismaClientValidationError) {
+    return res.status(503).json({
+      status: "error",
+      message:
+        "Server database client is out of date. Restart the backend after running prisma migrate deploy and prisma generate.",
+      details: process.env.NODE_ENV === "production" ? null : { message: err.message },
+    });
+  }
+
   const status =
     typeof err.statusCode === "number" && err.statusCode >= 400 && err.statusCode < 600
       ? err.statusCode

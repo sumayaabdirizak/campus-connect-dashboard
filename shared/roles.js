@@ -1,23 +1,30 @@
 /**
- * Canonical global user roles. Mirrors the `Role` lookup table in
- * backend/prisma/schema.prisma (seeded, not a DB enum) — keep in sync with
- * backend/prisma/seed.js if roles are added/renamed there.
- * @type {readonly ['SUPER_ADMIN', 'DEAN', 'FACULTY_ADMIN', 'TEACHER', 'STUDENT']}
+ * Platform roles + Communication helpers.
+ * Built-ins are seeded in backend/prisma/seed.js; custom Role rows may also exist.
  */
-export const ROLES = Object.freeze([
-  'SUPER_ADMIN',
-  'DEAN',
-  'FACULTY_ADMIN',
-  'TEACHER',
-  'STUDENT',
-]);
+export {
+  ROLES,
+  roleKey,
+  isBuiltinRole,
+  isRole,
+  normalizeRoleName,
+  isSuperAdminRole,
+  isDeanRole,
+  isTeacherRole,
+  isStudentRole,
+  isCrossFacultyAdmin,
+} from './roleBasics.js';
 
-/** @typedef {typeof ROLES[number]} Role */
-
-/**
- * @param {unknown} value
- * @returns {value is Role}
- */
-export function isRole(value) {
-  return typeof value === 'string' && ROLES.includes(value);
-}
+export {
+  canDirectMessage,
+  canCreateGroupDm,
+  canStudentGroupDm,
+  isOfficeMessagesOnlyRole,
+  ANNOUNCEMENT_MANAGER_ROLES,
+  CREATE_ANNOUNCEMENT_ROLES,
+  ANNOUNCEMENT_AUDIENCE_ROLES,
+  canManageAnnouncements,
+  canAuthorInboxBroadcast,
+  isAnnouncementAudienceRole,
+  isAnnouncementStaffAuthor,
+} from './communicationRoles.js';

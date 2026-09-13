@@ -1,0 +1,74 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+
+.login-or {
+	&::after {
+		width: 100%;
+		content: "";
+		border-top: 1px solid $border-color;
+		position: absolute;
+		top: 50%;
+		right: 0;
+	}
+	&::before {
+		width: 100%;
+		content: "";
+		border-top: 1px solid $border-color;
+		position: absolute;
+		top: 50%;
+		left: 0;
+	}
+}
+.auth-wrap {
+	padding-top: 100px;
+	@include respond-below(xxl) {
+		padding-top: 50px;
+	}
+}
+.auth-page {
+	.auth-bg-01 {
+
+	}
+	.auth-bg-02 {
+		position: absolute;
+		top: -35% !important;
+		bottom: unset;
+		left: 0;
+    	width: 100%;
+    	transform: rotateX(180deg);
+	}
+}
+.auth-img {
+    img {
+        max-width: 320px;
+        z-index: -1;
+        @include respond-below(xxl) {
+            max-width: 58%;
+        }
+        @include respond-below(xl) {
+            max-width: 38%;
+        }
+    }
+}
+.auth-bg-01 {
+	bottom: -35% !important;
+	width: 100%;
+}
+.auth-vh {
+	height: calc(100vh - 30px) !important;
+}
+.otp-input {
+	input {
+		width: 60px !important;
+		height: 60px;
+		border: 1px solid $border-color;
+		@include respond-below(sm) {
+			width: 42px !important;
+			height: 42px;
+		}
+		&.active {
+			border: 1px solid $primary;
+		}
+	}
+}

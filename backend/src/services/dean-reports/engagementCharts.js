@@ -1,0 +1,69 @@
+import { DAY_LABELS, toDayKey, toMonthKey } from './helpers.js';
+
+// On-time vs late submission rates — not formal class attendance.
+export function buildEngagementCharts({ recentSubmissions, months, offerings }) {
+  const dailyEngagement = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date();
+    d.setDate(d.getDate() - (6 - i));
+    const key = toDayKey(d);
+    const daySubs = recentSubmissions.filter((s) => toDayKey(s.submitted_at) === key);
+    const onTime = daySubs.filter((s) => s.lateState !== 'LATE').length;
+    const total = daySubs.length || 1;
+    return {
+      day: DAY_LABELS[d.getDay()],
+      rate: Math.round((onTime / total) * 100),
+    };
+  });
+
+  const monthlyEngagement = months.map(({ label, key }) => {
+    const subs = recentSubmissions.filter((s) => toMonthKey(s.submitted_at) === key);
+    const onTime = subs.filter((s) => s.lateState !== 'LATE').length;
+    const total = subs.length || 1;
+    return { month: label, rate: Math.round((onTime / total) * 100) };
+  });
+
+  // Same on-time/late formula as daily/monthly, grouped by department via
+  // offering -> course -> department.
+  const offeringDepartment = new Map(
+    offerings.map((o) => [o.id, o.course?.department ?? null])
+  );
+  const byDept = new Map();
+  for (const s of recentSubmissions) {
+    const dept = offeringDepartment.get(s.courseOfferingId);
+    if (!dept) continue;
+    const bucket = byDept.get(dept.id) ?? { code: dept.code, onTime: 0, total: 0 };
+    bucket.total += 1;
+    if (s.lateState !== 'LATE') bucket.onTime += 1;
+    byDept.set(dept.id, bucket);
+  }
+  const departmentEngagement = Array.from(byDept.values())
+    .slice(0, 6)
+    .map((d) => ({
+      department: d.code,
+      rate: Math.round((d.onTime / (d.total || 1)) * 100),
+    }));
+
+  return { dailyEngagement, monthlyEngagement, departmentEngagement };
+}
+
+export function buildInstructorPerformanceChart(instructorReports) {
+  return instructorReports.slice(0, 8).map((i) => {
+    const parts = String(i.instructor ?? '')
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean);
+    const name =
+      parts.length <= 1
+        ? parts[0] || '—'
+        : `${parts[0]} ${parts[parts.length - 1]}`;
+    return {
+      name,
+      feedback: i.rating,
+      completion: i.completion,
+      activity: i.activity ?? 0,
+      quizzes: i.quizzes ?? 0,
+      assignments: i.assignments ?? 0,
+      turnaround: Math.max(1, Math.round(5 - i.rating)),
+    };
+  });
+}

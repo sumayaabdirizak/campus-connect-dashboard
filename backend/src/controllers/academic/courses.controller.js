@@ -1,19 +1,31 @@
 import { prisma } from "../../db/prisma.js";
+import { respondInternalError } from "../../utils/httpError.js";
 
 export const getAllCourses = async (req, res) => {
   try {
-    const { departmentId } = req.query;
-    const where = departmentId ? { departmentId: Number(departmentId) } : {};
+    const { departmentId, facultyId } = req.query;
+    const where = departmentId
+      ? { departmentId: Number(departmentId) }
+      : facultyId
+        ? { department: { facultyId: Number(facultyId) } }
+        : {};
     const courses = await prisma.course.findMany({
       where,
       include: {
         department: { select: { id: true, name: true, code: true } },
+        teacherAssignings: {
+          include: {
+            teacher: { select: { id: true, full_name: true, email: true } },
+          },
+          orderBy: { assigned_at: "desc" },
+        },
+        _count: { select: { teacherAssignings: true } },
       },
       orderBy: { code: "asc" },
     });
     res.json({ message: "Courses retrieved successfully", courses });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch courses", detail: err.message });
+    respondInternalError(res, "Failed to fetch courses", err);
   }
 };
 
@@ -31,15 +43,27 @@ export const getCourseById = async (req, res) => {
     if (!course) return res.status(404).json({ message: "Course not found" });
     res.json({ message: "Course retrieved successfully", course });
   } catch (err) {
-    res.status(500).json({ message: "Failed to fetch course", detail: err.message });
+    respondInternalError(res, "Failed to fetch course", err);
   }
 };
 
+// Body is pre-validated + coerced by validateBody(createCourseBodySchema) /
+// validateBody(updateCourseBodySchema) — see routes and validation/coursesSchemas.js.
+
 export const createCourse = async (req, res) => {
   try {
-    const { name, code, description, credits, departmentId, thumbnail } = req.body;
-    if (!name || !code || !departmentId)
-      return res.status(400).json({ message: "name, code, and departmentId are required" });
+    const {
+      name,
+      code,
+      description,
+      credits,
+      departmentId,
+      thumbnail,
+      semesterNumber,
+      year,
+      maxMarks,
+      status,
+    } = req.body;
 
     const existing = await prisma.course.findUnique({ where: { code } });
     if (existing) return res.status(400).json({ message: "Course code already in use" });
@@ -48,36 +72,58 @@ export const createCourse = async (req, res) => {
       data: {
         name,
         code,
-        description: description ?? null,
-        credits: credits ? Number(credits) : 3,
-        departmentId: Number(departmentId),
-        thumbnail: thumbnail ?? null,
+        description: description || null,
+        credits,
+        semesterNumber: semesterNumber || null,
+        year: year || null,
+        maxMarks: maxMarks || 100,
+        status: status || "ACTIVE",
+        departmentId,
+        thumbnail: thumbnail || null,
       },
     });
     res.status(201).json({ message: "Course created successfully", course });
   } catch (err) {
-    res.status(500).json({ message: "Failed to create course", detail: err.message });
+    respondInternalError(res, "Failed to create course", err);
   }
 };
 
 export const updateCourse = async (req, res) => {
   try {
-    const { name, code, description, credits, departmentId, thumbnail } = req.body;
+    const {
+      name,
+      code,
+      description,
+      credits,
+      departmentId,
+      thumbnail,
+      semesterNumber,
+      year,
+      maxMarks,
+      status,
+    } = req.body;
+
+    const data = {
+      ...(name !== undefined && { name }),
+      ...(code !== undefined && { code }),
+      ...(description !== undefined && { description: description || null }),
+      ...(credits !== undefined && { credits }),
+      ...(departmentId !== undefined && { departmentId }),
+      ...(thumbnail !== undefined && { thumbnail: thumbnail || null }),
+      ...(semesterNumber !== undefined && { semesterNumber: semesterNumber || null }),
+      ...(year !== undefined && { year: year || null }),
+      ...(maxMarks !== undefined && { maxMarks }),
+      ...(status !== undefined && { status }),
+    };
+
     const course = await prisma.course.update({
       where: { id: Number(req.params.id) },
-      data: {
-        ...(name !== undefined && { name }),
-        ...(code !== undefined && { code }),
-        ...(description !== undefined && { description }),
-        ...(credits !== undefined && { credits: Number(credits) }),
-        ...(departmentId !== undefined && { departmentId: Number(departmentId) }),
-        ...(thumbnail !== undefined && { thumbnail }),
-      },
+      data,
     });
     res.json({ message: "Course updated successfully", course });
   } catch (err) {
     if (err.code === "P2025") return res.status(404).json({ message: "Course not found" });
-    res.status(500).json({ message: "Failed to update course", detail: err.message });
+    respondInternalError(res, "Failed to update course", err);
   }
 };
 
@@ -87,6 +133,6 @@ export const deleteCourse = async (req, res) => {
     res.json({ message: "Course deleted successfully" });
   } catch (err) {
     if (err.code === "P2025") return res.status(404).json({ message: "Course not found" });
-    res.status(500).json({ message: "Failed to delete course", detail: err.message });
+    respondInternalError(res, "Failed to delete course", err);
   }
 };

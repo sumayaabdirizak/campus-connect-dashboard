@@ -1,14 +1,14 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
-import { Slider } from '@/components/ui/slider';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Slider } from '@/features/ui/components/slider';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
   createFormField
-} from '@/components/ui/form-context';
+} from '@/features/ui/components/form-context';
 
 interface SliderFieldProps {
   label: string;

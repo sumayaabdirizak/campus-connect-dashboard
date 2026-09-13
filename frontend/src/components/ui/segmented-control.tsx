@@ -90,7 +90,7 @@ export function SegmentedControl<T extends string>({
               width === 'full' && 'flex-1',
               size === 'sm' ? 'px-3 py-1.5' : 'px-4 py-2 text-sm',
               isActive
-                ? 'bg-primary text-primary-foreground shadow-sm'
+                ? 'bg-primary text-primary-foreground'
                 : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
             )}
           >

@@ -26,7 +26,7 @@ import {
   FieldError as DefaultFieldError,
   FieldSet as DefaultFieldSet,
   fieldVariants
-} from '@/components/ui/field';
+} from '@/features/ui/components/field';
 import { cn } from '@/lib/utils';
 
 // ---------------------------------------------------------------------------

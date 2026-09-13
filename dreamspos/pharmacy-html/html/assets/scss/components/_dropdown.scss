@@ -1,0 +1,367 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+//
+// dropdown.scss
+//
+
+.dropdown-menu {
+    box-shadow: $box-shadow;
+    animation-name: DropDownSlideUp;
+    animation-duration: 0.3s;
+    animation-fill-mode: both;
+    will-change: transform;
+    position: absolute;
+    z-index: 1000;
+	border-color: $border-color;
+	color: $body-color;
+	padding: 12px;
+    font-size: 0.925rem;
+    border-radius: $border-radius-xl;
+    background-color: $white;
+	font-weight: $font-weight-normal;
+    &[data-popper-placement="top-start"],
+    &[data-popper-placement="top"] {
+        animation-name: DropDownSlideDown;
+    }
+    .dropdown-item {
+        border-radius: $border-radius;
+		font-size: 14px;
+		font-weight: $font-weight-normal;
+    	color: $gray-900;
+    	padding: 0.5rem 0.5rem;
+		background-color: transparent;
+		&:hover,
+		&:focus,
+		&:active,
+		&.active {
+			background: $light;
+			color: $gray-900;
+		}
+    }
+}
+.dropdown-divider{
+    margin-left: -0.25rem;
+    margin-right: -0.25rem;
+	border-color: var(--border-color);
+}
+// Hover Dropdown
+@include respond-above(sm) {
+    .hover-dropdown {
+        &:hover {
+            >.dropdown-menu {
+                display: block;
+            }
+        }
+    }
+}
+@keyframes DropDownSlideUp {
+    100% {
+        margin-top: -1px;
+    }
+    0% {
+        margin-top: 5px;
+    }
+}
+@keyframes DropDownSlideDown {
+    100% {
+        margin-bottom: 0;
+    }
+    0% {
+        margin-bottom: 5px;
+    }
+}
+// Dropdown Large
+$dropdown-menu-xxl-width: 740px;
+$dropdown-menu-xl-width: 600px;
+$dropdown-menu-lg-width: 470px;
+$dropdown-menu-md-width: 230px;
+@include respond-above(md) {
+    .dropdown-menu-xxl {
+        width: $dropdown-menu-xxl-width;
+    }
+    .dropdown-menu-xl {
+        width: $dropdown-menu-xl-width;
+    }
+}
+@include respond-above(sm) {
+    .dropdown-menu-lg {
+        width: $dropdown-menu-lg-width;
+    }
+    .dropdown-menu-md {
+        width: $dropdown-menu-md-width;
+    }
+    .dropdown-menu-full {
+        width: auto;
+        position: fixed !important;
+        left: 10px !important;
+        right: 10px !important;
+    }
+}
+.dropdown-menu-lg {
+	min-width: 250px;
+	@include respond-below(sm) {
+		width: 100%;
+	}
+}
+.dropdown-menu-md {
+    min-width: $dropdown-menu-md-width;
+}
+// Dropdown arrow hide
+.drop-arrow-none {
+    &:after {
+        display: none;
+		content: none !important;
+    }
+}
+.dropdown-toggle {
+	&::after {
+		display: inline-block;
+		vertical-align: 0;
+		content: "\e071";
+		font-family: "lucide" !important;
+		border: 0;
+		font-size: 15px;
+		position: relative;
+	}
+}
+.dropdown-toggle-split {
+	padding-right: 0.825rem;
+    padding-left: 0.825rem;
+    &:before {
+        content: "";
+        position: absolute;
+        background-color: rgba($white-rgb, 0.12);
+        top: calc(1px * -1);
+		bottom: calc(1px * -1);
+		right: calc(1px * -1);
+        left: 0;
+        border-radius: 0 $border-radius $border-radius 0;
+    }
+}
+.dropstart {
+	.dropdown-menu {
+		&::before {
+			border: 7px solid #ffffff;
+			border-color: transparent transparent #ffffff #ffffff;
+			content: "";
+			transform-origin: 0 0;	
+			-webkit-transform-origin: 0 0;
+			-ms-transform-origin: 0 0;
+			transform: rotate(-137deg);
+			-webkit-transform: rotate(-137deg);
+			-ms-transform: rotate(-137deg);
+			position: absolute;
+			top: 26px;
+			right: -15px;
+			box-shadow: $box-shadow;
+		}
+	}
+    .dropdown-toggle-split {
+        &::before {
+            inset: auto;
+            border-radius: 0;
+            position: relative;
+            z-index: 1;
+        }
+        &::after {
+            content: "";
+            display: inline-block;
+            position: absolute;
+            background-color: rgba(12, 28, 41, 0.1);
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 0;
+            border-radius: $border-radius 0 0 $border-radius;
+            border: none;
+            margin-left: 0;
+        }
+    }
+}
+// Dropdown with Icons
+.dropdown-icon-item {
+    border-radius: 3px;
+    text-align: center;
+    padding: 15px;
+    display: block;
+    color: $body-color;
+    margin: 7px 0;
+    img {
+        height: 24px;
+    }
+    span {
+        display: block;
+        overflow: hidden;
+        margin-top: 7px;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+    &:hover {
+        background-color: $light;
+        color: $body-color;
+    }
+}
+.dropdown-menu {
+	@mixin dropdown-menu-color($color) {
+		background-color: $color;
+		li a {
+			color: rgba(255, 255, 255, 0.9);
+		}
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				color: $white;
+			}
+		}
+	}
+	&.dropdown-menu-primary {
+		@include dropdown-menu-color($primary);
+	}
+	&.dropdown-menu-secondary {
+		@include dropdown-menu-color($secondary);
+	}
+	&.dropdown-menu-warning {
+		@include dropdown-menu-color($warning);
+	}
+	&.dropdown-menu-info {
+		@include dropdown-menu-color($info);
+	}
+	&.dropdown-menu-success {
+		@include dropdown-menu-color($success);
+	}
+	&.dropdown-menu-danger {
+		@include dropdown-menu-color($danger);
+	}
+
+	&.dropmenu-item-primary {
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				background-color: rgba($primary-rgb, 0.1) !important;
+				color: $primary;
+			}
+		}
+	}
+	&.dropmenu-item-secondary {
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				background-color: rgba($secondary-rgb, 0.1) !important;
+				color: $secondary;
+			}
+		}
+	}
+	&.dropmenu-item-warning {
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				background-color: rgba($warning-rgb, 0.1) !important;
+				color: $warning;
+			}
+		}
+	}
+	&.dropmenu-item-info {
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				background-color: rgba($info-rgb, 0.1) !important;
+				color: $info;
+			}
+		}
+	}
+	&.dropmenu-item-success {
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				background-color: rgba($success-rgb, 0.1) !important;
+				color: $success;
+			}
+		}
+	}
+	&.dropmenu-item-danger {
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				background-color: rgba($danger-rgb, 0.1) !important;
+				color: $danger;
+			}
+		}
+	}
+
+	@mixin dropmenu-light-color($color) {
+		backdrop-filter: blur(2rem);
+		.dropdown-item {
+			&:hover,
+			&:focus,
+			&:active,
+			&.active {
+				color: $white;
+				background-color: $color  !important;
+			}
+		}
+	}
+	&.dropmenu-light-primary {
+		background-color: rgba($secondary-rgb, 0.1);
+		@include dropmenu-light-color($primary);
+	}
+	&.dropmenu-light-secondary {
+		background-color: rgba($secondary-rgb, 0.1);
+		@include dropmenu-light-color($secondary);
+	}
+	&.dropmenu-light-info {
+		background-color: rgba($info-rgb, 0.1);
+		@include dropmenu-light-color($info);
+	}
+	&.dropmenu-light-warning {
+		background-color: rgba($warning-rgb, 0.1);
+		@include dropmenu-light-color($warning);
+	}
+	&.dropmenu-light-success {
+		background-color: rgba($success-rgb, 0.1);
+		@include dropmenu-light-color($success);
+	}
+	&.dropmenu-light-danger {
+		background-color: rgba($danger-rgb, 0.1);
+		@include dropmenu-light-color($danger);
+	}
+}
+.dropdown {
+	.online{
+		position: absolute;
+		font-size: 8px;
+		right: -3px;
+		bottom: -1px;
+		z-index: 1;
+	}
+	.btn {
+		font-weight: normal;
+	}
+	& > .btn {
+		padding: 7px 16px;
+		font-weight: $font-weight-medium;
+		box-shadow: $box-shadow;
+		line-height: 1.4;
+	}
+}
+.dropdown-toggle.btn-icon {
+	transition: all 0.3s ease;
+	&:hover {
+		background-color: $light;
+		border-radius: 5px;
+	}
+}

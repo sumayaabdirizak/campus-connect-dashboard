@@ -1,7 +1,5 @@
-import PageContainer from '@/components/layout/page-container';
-import DepartmentListingPage from '@/features/departments/components/department-listing';
-import { departmentsInfoContent } from '@/features/departments/info-content';
-import { DepartmentFormSheetTrigger } from '@/features/departments/components/DepartmentFormSheetTrigger';
+import { Suspense } from 'react';
+import DepartmentListingPage from '@/components/departments/department-listing';
 
 export const metadata = {
   title: 'Dashboard: Departments'
@@ -9,14 +7,14 @@ export const metadata = {
 
 export default function Page() {
   return (
-    <PageContainer
-      scrollable={false}
-      pageTitle='Departments'
-      pageDescription='Manage university departments. Departments belong to faculties and contain related programs.'
-      infoContent={departmentsInfoContent}
-      pageHeaderAction={<DepartmentFormSheetTrigger />}
+    <Suspense
+      fallback={
+        <div className='flex h-48 items-center justify-center'>
+          <div className='size-8 animate-spin rounded-full border-4 border-primary border-t-transparent' />
+        </div>
+      }
     >
       <DepartmentListingPage />
-    </PageContainer>
+    </Suspense>
   );
 }

@@ -1,4 +1,4 @@
-import { Skeleton } from '@/components/ui/skeleton';
+import { Skeleton } from '@/features/ui/components/skeleton';
 
 /**
  * Route-level loading fallback for dashboard segments that don't define their

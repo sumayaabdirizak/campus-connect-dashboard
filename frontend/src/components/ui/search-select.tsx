@@ -3,12 +3,12 @@
 import * as React from 'react';
 import { Check, ChevronsUpDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Button } from '@/features/ui/components/button';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger
-} from '@/components/ui/popover';
+} from '@/features/ui/components/popover';
 import {
   Command,
   CommandEmpty,
@@ -16,7 +16,7 @@ import {
   CommandInput,
   CommandItem,
   CommandList
-} from '@/components/ui/command';
+} from '@/features/ui/components/command';
 
 export interface SearchSelectOption {
   value: string;
@@ -51,7 +51,7 @@ export function SearchSelect({
   const selected = options.find((o) => o.value === value);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={setOpen} modal>
       <PopoverTrigger asChild>
         <Button
           variant='outline'
@@ -70,18 +70,25 @@ export function SearchSelect({
           <ChevronsUpDown className='ml-2 h-4 w-4 shrink-0 opacity-50' />
         </Button>
       </PopoverTrigger>
-      <PopoverContent className='w-[--radix-popover-trigger-width] p-0' align='start'>
+      <PopoverContent
+        className='z-[120] w-[var(--radix-popover-trigger-width)] p-0'
+        align='start'
+        side='bottom'
+        sideOffset={4}
+        collisionPadding={16}
+        avoidCollisions
+      >
         <Command>
           <CommandInput placeholder={searchPlaceholder} />
-          <CommandList>
+          <CommandList className='max-h-60'>
             <CommandEmpty>{emptyText}</CommandEmpty>
             <CommandGroup>
               {options.map((option) => (
                 <CommandItem
                   key={option.value}
-                  value={option.label}
+                  value={`${option.label} ${option.sub ?? ''} ${option.value}`}
                   onSelect={() => {
-                    onValueChange(option.value === value ? '' : option.value);
+                    onValueChange(option.value);
                     setOpen(false);
                   }}
                 >

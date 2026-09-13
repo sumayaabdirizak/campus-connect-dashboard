@@ -1,4 +1,4 @@
-import ProfileViewPage from '@/features/profile/components/profile-view-page';
+import ProfileViewPage from '@/components/profile/profile-view-page';
 
 export const metadata = {
   title: 'Dashboard : Profile'

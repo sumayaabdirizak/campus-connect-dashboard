@@ -1,0 +1,93 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+@use "sass:map";
+
+//
+// _badges.scss
+//
+
+@each $state in map.keys($theme-colors) {
+    .badge-soft-#{$state} {
+        color: var(--#{$state});
+        background-color: var(--#{$state}-50);
+        &[href] {
+            color: var(--#{$state});
+            text-decoration: none;
+            background-color: var(--#{$state}-50);
+            &:is(:hover, :focus) {
+                color: $darkmode-gray-900;
+                text-decoration: none;
+                background-color: var(--#{$state}-50);
+            }
+        }
+    }
+}
+.badge-soft-purple {
+    background-color: $purple-50;
+    color: $purple;
+}
+.badge-pink {
+    background-color: $pink !important;
+    color: $white !important;
+}
+.badge-soft-pink {
+    background-color: $pink-50;
+    color: $pink;
+}
+.badge-soft-teal {
+    background-color: $teal-50;
+    color: $teal;
+}
+.badge-soft-orange {
+    background-color: $orange-50;
+    color: $orange;
+}
+.badge-soft-light {
+    color: $gray-900 !important;
+}
+.badge-soft-cyan {
+    background-color: $cyan-50;
+    color: $cyan;
+}
+.badge-white{
+    background-color: $white;
+    color: $gray-900;
+    border: 1px solid $gray-50;
+    box-shadow: $box-shadow;
+}
+// Outline badge
+@each $state in map.keys($theme-colors) {
+    .badge-outline-#{$state} {
+        color: var(--#{$state});
+        border: 1px solid var(--#{$state});
+        background-color: transparent;
+
+        &[href] {
+            color: var(--#{$state});
+            text-decoration: none;
+            background-color: var(--#{$state}-50);
+
+            &:is(:hover, :focus) {
+                color: var(--#{$state});
+                text-decoration: none;
+                background-color: var(--#{$state}-50);
+            }
+        }
+    }
+}
+.badge {
+    vertical-align: middle;
+    font-size: 12px;
+    font-weight: $font-weight-medium;
+    padding: 3px 8px;
+    line-height: 1.5;
+    border-radius: $border-radius-rounded;
+}
+.badge-sm {
+    font-size: 10px;
+    padding: 2px 6px;
+}
+.badge-lg {
+    font-size: 13px;
+    padding: 4px 10px;
+}

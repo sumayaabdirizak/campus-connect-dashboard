@@ -1,0 +1,211 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+@use "sass:map";
+
+//
+// tables.scss
+//
+
+.table{
+    background-color: $white;
+    margin-bottom: 0 !important;
+    thead{
+        tr{
+            th {
+                border-color: $border-color;
+                font-size: 13px;
+                color: $dark;
+            }
+        }
+    }
+    tbody {
+        td {
+            vertical-align: middle;
+            border-color: $border-color;
+            font-size: 14px;
+        }
+        th {
+            border-color: $border-color;
+        }
+        .dropdown-menu {
+            .dropdown-item {
+                &:hover,
+                &:focus,
+                &:active,
+                &.active {
+                    background: transparent;
+                    color: $primary;
+                }
+            }
+        }
+    }
+}
+.table>:not(caption)>*>* {
+    padding: 0.75rem 1rem;
+    color: $body-color;
+}
+th {
+    font-weight: $font-weight-semibold;
+}
+
+.thead-sm {
+    > * > * {
+        padding: 0.5rem 0.5rem !important;
+    }
+}
+.table.table-dark > :not(caption) > * > * {
+    background-color: #0B0D0E !important;
+    border-color: rgba(255, 255, 255, 0.1);
+    color: #fff;
+}
+.table-custom {
+    tfoot > tr > th:first-child,
+    thead > tr > th:first-child,
+    tr th:first-child,
+    tr td:first-child {
+        padding-left: 1.125rem !important;
+    }
+
+    tfoot > tr > th:last-child,
+    thead > tr > th:last-child,
+    tr th:last-child,
+    tr td:last-child {
+        padding-right: 1.125rem !important;
+
+    }
+    tbody {
+        tr:last-child {
+            td {
+                border-bottom: 0;
+            }
+        }
+    }
+}
+
+// Tables fluid
+.table-nowrap {
+    th,
+    td {
+        white-space: nowrap;
+    }
+}
+.table tbody th {
+    vertical-align: middle;
+    padding: 12px 16px 12px 16px !important;
+}
+.table-light th {
+    background: $th-bg;
+    color: $dark;
+    font-weight: $font-weight-bold;
+}
+.table-light td {
+    color: $gray-900;
+}
+.action-item > a {
+    width: 22px;
+    height: 22px;
+    border: 1px solid $border-color;
+    border-radius: 7px;
+    color: $gray-500;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: $box-shadow;
+}
+.table-bordered>:not(caption)>* {
+    border-color: $border-color;
+}
+.table-search {
+    margin-bottom: 20px;
+}
+.table.dataTable th {
+    padding: 8px 16px;
+}
+.dt-search {
+    label {
+        display: none;
+    }
+}
+.search-input {    
+    position: relative;
+    input {
+        font-size: 14px;
+        height: 37px;
+        padding: 8px 20px 8px 16px;
+    }
+    .btn-searchset {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        right: 16px;
+        border: 0;
+        line-height: 0;
+    }
+}
+.table-dark th {
+    color: $white !important;
+}
+.border-primary {
+  thead {
+    tr {
+      th {
+        border-color: $primary !important;
+      }
+    }
+  }
+  tbody {
+    td, th {
+        border-color: $primary !important;
+    }
+  }
+  &.table-bordered > :not(caption) > * {
+    border-color: $primary !important;
+  }
+}
+.border-success {
+  thead {
+    tr {
+      th {
+        border-color: $success !important;
+      }
+    }
+  }
+}
+.table-bordered > :not(caption) > * > * {
+    padding: 0.75rem 1rem;
+    color: var(--body-color);
+}
+@each $state in map.keys($theme-colors) {
+    .table > :not(caption) > .table-#{$state} > * {
+        background-color: var(--#{$state});
+        border-color: rgb(var(--#{$state}-rgb), 0.1);
+        color: #fff;
+    }
+    .border-#{$state} {
+        thead {
+            tr {
+            th {
+                border-color: var(--#{$state}) !important;
+            }
+            }
+        }
+        tbody {
+            td, th {
+                border-color: var(--#{$state}) !important;
+            }
+        }
+        &.table-bordered > :not(caption) > * {
+            border-color:var(--#{$state}) !important;
+        }
+    }
+}
+.table > :not(caption) > .table-light > * {
+    color: $gray-900;
+}
+
+.thead-light {
+    th {
+        background-color: $gray-transparent;
+    }
+}

@@ -1,0 +1,57 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+.report-tabs{
+    .nav-item {
+        border:1px solid $border-color;
+        border-radius: 76px;
+        margin-right: 10px;
+    .nav-link{
+        padding: 8px 16px;
+        background: $light;
+        border-radius: 76px;
+        span{
+            font-weight: $font-weight-semibold;
+            color: $gray-900;
+        }
+        &:hover{
+            background: $dark;
+            border-bottom: none !important;
+            span{
+                color: $white;
+            }
+        }
+        &.active{
+            background: $dark;
+            border-bottom: none !important;
+            span{
+                color: $white;
+            }
+        }
+    }
+}
+}
+
+.dataTable .dt-empty{
+    font-weight: $font-weight-semibold;
+    padding:46px;
+    &::before{
+        background-image: url("../../../../public/assets/img/icons/emptydata.svg");
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: contain;
+        width: 170px;
+        height: 150px;
+        content: "";
+        z-index: 9;
+        display: flex;
+        position: relative;
+        justify-content: center;
+        margin: auto;
+    }
+}
+@media (max-width: 342.98px) {
+.text-wrap-1{
+    width: 130px;
+}
+}

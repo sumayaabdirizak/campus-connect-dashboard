@@ -44,3 +44,38 @@ export const pushSubscribeRateLimit = rateLimit({
   keyGenerator: keyByUserOrIp,
   message: { message: "Too many push-subscription updates. Try again later." },
 });
+
+/**
+ * File uploads (resources, submissions, chat/feed/discussion attachments,
+ * announcement images, course covers). Uploads write to local disk, so an
+ * unthrottled client could fill the volume. 30 upload *requests* per 10
+ * minutes per user — multi-file requests count once, so even a teacher
+ * bulk-attaching materials stays far under the limit, while a scripted
+ * loop hits the wall in seconds. Mount BEFORE multer so a limited request
+ * is rejected without ever touching disk.
+ */
+export const uploadRateLimit = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: isTest ? 10_000 : 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: keyByUserOrIp,
+  message: { message: "Too many uploads — wait a few minutes and try again." },
+});
+
+/**
+ * AI question generation forwards up to ~30k chars of source text to a paid
+ * third-party provider (Groq/Gemini) per call, with no cost control at any
+ * other layer — no caching, no quota, no concurrency guard. A teacher
+ * iterating on a quiz might realistically generate a handful of batches in
+ * a sitting; 15/hour comfortably covers that while stopping a scripted loop
+ * from running up real API cost or exhausting the provider's own limits.
+ */
+export const aiGenerateRateLimit = rateLimit({
+  windowMs: 60 * 60 * 1000, // 1 hour
+  max: isTest ? 10_000 : 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: keyByUserOrIp,
+  message: { message: "Too many AI generation requests — try again in a bit." },
+});

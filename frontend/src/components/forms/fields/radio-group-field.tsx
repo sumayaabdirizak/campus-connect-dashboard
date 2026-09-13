@@ -1,15 +1,15 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Label } from '@/components/ui/label';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { RadioGroup, RadioGroupItem } from '@/features/ui/components/radio-group';
+import { Label } from '@/features/ui/components/label';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormFieldError,
   createFormField
-} from '@/components/ui/form-context';
+} from '@/features/ui/components/form-context';
 
 type Option = { value: string; label: string };
 

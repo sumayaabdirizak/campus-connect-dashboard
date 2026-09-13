@@ -1,6 +1,8 @@
 'use client';
 
 import { useAuthStore } from '@/lib/auth-store';
+import { flattenNavItems } from '@/lib/nav-access';
+import { scheduleRouterPush } from '@/lib/safe-router-navigation';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { navGroups } from '@/config/nav-config';
@@ -48,7 +50,12 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
         lastSessionCheckAt = 0;
         lastSessionCheckResult = false;
         clearAuth();
-        router.push('/auth/sign-in');
+        // A soft `router.push` here can hang mid-transition (RSC payload
+        // fetches fine but the URL never actually updates) leaving the
+        // spinner below stuck forever — hard-navigate instead, which always
+        // lands on the sign-in page.
+        window.location.href = `/auth/sign-in?next=${encodeURIComponent(pathname)}`;
+        return;
       }
       setIsLoading(false);
     }
@@ -65,22 +72,44 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
       // `/dashboard/*` is still enforced below.
       if (pathname === '/dashboard') {
         setIsAuthorized(true);
+      } else if (/^\/dashboard\/courses\/[^/]+$/.test(pathname)) {
+        // Course detail is shared by teachers, students, and faculty staff
+        // (dean opens offerings from reports). Nav entries for `/dashboard/courses`
+        // are role-split and would otherwise deny DEAN incorrectly.
+        const allowed =
+          !!user &&
+          (user.role === 'TEACHER' ||
+            user.role === 'STUDENT' ||
+            user.role === 'DEAN' ||
+            user.role === 'SUPER_ADMIN');
+        if (!allowed) {
+          console.warn(`Access denied for role ${user?.role} at ${pathname}`);
+          setIsAuthorized(false);
+          scheduleRouterPush(router, '/dashboard');
+          return;
+        }
+        setIsAuthorized(true);
       } else {
-        // Find matches in navGroups
+        // Find matches in navGroups (including deeply nested children)
         const allNavItems = navGroups.flatMap((group) =>
-          group.items.flatMap((item) => [item, ...(item.items || [])])
+          flattenNavItems(group.items)
         );
 
         // Check if any nav item matches the current pathname exactly or as a parent
-        // Sort by length descending to get the most specific match first
-        const applicableItems = allNavItems.filter(
-          (item) => pathname === item.url || pathname.startsWith(item.url + '/')
-        );
+        // Sort by length descending to get the most specific match first.
+        // Nav urls may include ?query — compare path only.
+        const pathOf = (url: string) => url.split('?')[0];
+        const applicableItems = allNavItems.filter((item) => {
+          const base = pathOf(item.url);
+          return pathname === base || pathname.startsWith(base + '/');
+        });
 
         if (applicableItems.length > 0) {
-          // Find the most specific match (longest URL)
-          const maxLen = Math.max(...applicableItems.map((i) => i.url.length));
-          const mostSpecificItems = applicableItems.filter((i) => i.url.length === maxLen);
+          // Find the most specific match (longest path, ignoring query)
+          const maxLen = Math.max(...applicableItems.map((i) => pathOf(i.url).length));
+          const mostSpecificItems = applicableItems.filter(
+            (i) => pathOf(i.url).length === maxLen
+          );
 
           // Access is allowed if ANY of the most specific matches allow the role
           // or if they don't have role restrictions.
@@ -94,7 +123,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
           if (!isAllowed) {
             console.warn(`Access denied for role ${user?.role} at ${pathname}`);
             setIsAuthorized(false);
-            router.push('/dashboard');
+            scheduleRouterPush(router, '/dashboard');
             return;
           }
         }
@@ -103,7 +132,7 @@ export function RoleGuard({ children }: { children: React.ReactNode }) {
     }
 
     if (isMounted && !isLoading && !isAuthenticated && pathname !== '/auth/sign-in') {
-      router.push('/auth/sign-in');
+      window.location.href = `/auth/sign-in?next=${encodeURIComponent(pathname)}`;
     }
   }, [isAuthenticated, router, pathname, isMounted, isLoading, user]);
 

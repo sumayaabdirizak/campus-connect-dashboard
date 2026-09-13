@@ -1,0 +1,37 @@
+import React from 'react';
+import { Card, CardContent } from '@/features/ui/components/card';
+import { Skeleton } from '@/features/ui/components/skeleton';
+
+export function PostSkeleton() {
+  return (
+    <Card className='overflow-hidden rounded-xl border-border/60 border-s-[3px] border-s-transparent bg-background py-0'>
+      <CardContent className='space-y-3 p-4 sm:p-5'>
+        <div className='flex items-center gap-3'>
+          <Skeleton className='size-9 rounded-full' />
+          <div className='flex-1 space-y-1.5'>
+            <Skeleton className='h-3 w-40 rounded' />
+            <Skeleton className='h-2.5 w-24 rounded' />
+          </div>
+        </div>
+        <div className='ps-[44px] sm:ps-[46px]'>
+          <Skeleton className='h-4 w-2/3 rounded' />
+          <div className='mt-2 space-y-1.5'>
+            <Skeleton className='h-2.5 w-full rounded' />
+            <Skeleton className='h-2.5 w-11/12 rounded' />
+            <Skeleton className='h-2.5 w-5/6 rounded' />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+export function AnnouncementListSkeleton() {
+  return (
+    <div className='mx-auto w-full max-w-2xl space-y-3 px-1 py-2'>
+      <PostSkeleton />
+      <PostSkeleton />
+      <PostSkeleton />
+    </div>
+  );
+}

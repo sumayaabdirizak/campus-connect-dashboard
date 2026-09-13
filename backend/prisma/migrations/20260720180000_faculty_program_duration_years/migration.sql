@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "Faculty" ADD COLUMN IF NOT EXISTS "defaultDurationYears" INTEGER NOT NULL DEFAULT 4;
+
+-- AlterTable
+ALTER TABLE "Program" ADD COLUMN IF NOT EXISTS "durationYears" INTEGER NOT NULL DEFAULT 4;

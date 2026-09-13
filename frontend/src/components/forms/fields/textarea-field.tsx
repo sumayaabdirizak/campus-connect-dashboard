@@ -1,15 +1,15 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
-import { Textarea } from '@/components/ui/textarea';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Textarea } from '@/features/ui/components/textarea';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
   FormFieldError,
   createFormField
-} from '@/components/ui/form-context';
+} from '@/features/ui/components/form-context';
 
 interface TextareaFieldProps extends Omit<
   React.ComponentProps<'textarea'>,

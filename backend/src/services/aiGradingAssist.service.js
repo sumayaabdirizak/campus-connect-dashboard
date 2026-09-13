@@ -1,8 +1,6 @@
-import fs from 'fs';
 import path from 'path';
 import Anthropic from '@anthropic-ai/sdk';
-
-const ASSIGNMENT_UPLOAD_DIR = './uploads/assignments';
+import { keyFromUploadUrl, readObjectBuffer } from '../storage/objectStorage.js';
 
 let client = null;
 function getClient() {
@@ -42,34 +40,39 @@ const SUGGESTION_SCHEMA = {
 };
 
 /// Resolve the submission's `content_url` to something the model can read.
-/// - PDF file on disk → base64 document block
+/// - Uploaded file under /uploads/(assignments|submissions)/ → buffer via storage
 /// - HTTPS link → fetch text/html or text/* and pass as text block (best effort)
 /// - Anything else → null (caller falls back to URL-only context)
 async function buildSubmissionBlock(contentUrl) {
   if (!contentUrl) return null;
 
-  // Locally-stored uploaded PDF?
-  if (/\/uploads\/assignments\//.test(contentUrl)) {
-    const filename = contentUrl.split('/').pop();
-    if (!filename) return null;
-    const filepath = path.join(ASSIGNMENT_UPLOAD_DIR, filename);
-    if (!fs.existsSync(filepath)) return null;
+  const isLocalUpload =
+    /\/uploads\/(assignments|submissions)\//.test(contentUrl) ||
+    String(contentUrl).startsWith('storage://');
+
+  if (isLocalUpload) {
+    const legacy =
+      /\/uploads\/submissions\//.test(contentUrl) || String(contentUrl).includes('submissions/')
+        ? 'submissions'
+        : 'assignments';
+    const key = keyFromUploadUrl(contentUrl, legacy);
+    if (!key) return null;
+    const filename = path.basename(key);
+    const buf = await readObjectBuffer(key, legacy);
+    if (!buf) return null;
     if (filename.toLowerCase().endsWith('.pdf')) {
-      const data = fs.readFileSync(filepath).toString('base64');
       return {
         type: 'document',
-        source: { type: 'base64', media_type: 'application/pdf', data },
+        source: { type: 'base64', media_type: 'application/pdf', data: buf.toString('base64') },
       };
     }
-    // Text-y files (.md, .txt, .py, etc.) — read inline up to 200 KB.
-    try {
-      const stat = fs.statSync(filepath);
-      if (stat.size <= 200 * 1024) {
-        const text = fs.readFileSync(filepath, 'utf8');
+    if (buf.length <= 200 * 1024) {
+      try {
+        const text = buf.toString('utf8');
         return { type: 'text', text: `<student-submission filename="${filename}">\n${text}\n</student-submission>` };
+      } catch {
+        return null;
       }
-    } catch {
-      /* fall through */
     }
     return null;
   }
@@ -100,7 +103,7 @@ async function buildSubmissionBlock(contentUrl) {
  *
  * @param {{
  *   assignment: { title: string; description: string | null; lateWindowMinutes: number },
- *   submission: { content_url: string; is_late: boolean; submitted_at: Date },
+ *   submission: { content_url: string; lateState?: string; is_late?: boolean; submitted_at: Date },
  *   student: { full_name: string }
  * }} args
  */
@@ -130,7 +133,7 @@ export async function suggestGradeForSubmission({ assignment, submission, studen
       `</assignment>\n\n` +
       `<context>\n<student-name>${student.full_name}</student-name>\n` +
       `<submitted-at>${new Date(submission.submitted_at).toISOString()}</submitted-at>\n` +
-      `<was-late>${submission.is_late ? 'yes' : 'no'}</was-late>\n</context>`,
+      `<was-late>${submission.lateState === 'LATE' || submission.is_late ? 'yes' : 'no'}</was-late>\n</context>`,
   });
   if (submissionBlock) {
     userBlocks.push(submissionBlock);
@@ -166,7 +169,7 @@ export async function suggestGradeForSubmission({ assignment, submission, studen
   try {
     parsed = JSON.parse(textBlock.text);
   } catch (e) {
-    throw new Error(`AI returned unparseable JSON: ${e.message}`);
+    throw new Error(`AI returned unparseable JSON: ${e.message}`, { cause: e });
   }
 
   return {

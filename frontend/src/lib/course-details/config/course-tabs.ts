@@ -1,0 +1,51 @@
+/**
+ * Course tab configuration
+ */
+
+export type CourseTabId =
+  | 'overview'
+  | 'announcements'
+  | 'assignments'
+  | 'quizzes'
+  | 'resources'
+  | 'feed'
+  | 'roster'
+  | 'groups'
+  | 'chat'
+  | 'grades';
+
+export interface CourseTabDef {
+  id: CourseTabId;
+  label: string;
+  icon?: string;
+  badge?: number;
+  disabled?: boolean;
+  visible?: boolean;
+}
+
+/**
+ * Default course tabs for teacher view
+ */
+export const TEACHER_COURSE_TABS: CourseTabDef[] = [
+  { id: 'assignments', label: 'Assignments', visible: true },
+  { id: 'quizzes', label: 'Quizzes', visible: true },
+  { id: 'resources', label: 'Resources', visible: true },
+  { id: 'grades', label: 'Gradebook', visible: true },
+  { id: 'feed', label: 'Feed', visible: true },
+  { id: 'roster', label: 'Student logs', visible: true },
+  { id: 'groups', label: 'Groups', visible: true },
+  { id: 'chat', label: 'Chat', visible: false },
+];
+
+/**
+ * Default course tabs for student view
+ */
+export const STUDENT_COURSE_TABS: CourseTabDef[] = [
+  { id: 'assignments', label: 'Assignments', visible: true },
+  { id: 'quizzes', label: 'Quizzes', visible: true },
+  { id: 'resources', label: 'Resources', visible: true },
+  { id: 'grades', label: 'My report', visible: true },
+  { id: 'feed', label: 'Feed', visible: true },
+  { id: 'groups', label: 'Groups', visible: true },
+  { id: 'chat', label: 'Chat', visible: false },
+];

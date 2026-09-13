@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "kill-port 4000 && nodemon src/server.js",
+    "dev": "nodemon --exec \"npx kill-port 4000 && node src/server.js\"",
     "start": "node src/server.js",
     "prisma:migrate": "prisma migrate dev",
     "prisma:migrate:deploy": "prisma migrate deploy",
@@ -16,10 +16,13 @@
     "db:reset-seed": "prisma migrate reset --force",
     "db:migrate": "prisma migrate deploy",
     "db:sync-chat": "prisma migrate deploy && npm run discussions:setup",
+    "lint": "eslint src scripts tests",
+    "lint:fix": "eslint src scripts tests --fix",
+    "format": "prettier --write \"src/**/*.js\" \"scripts/**/*.js\" \"tests/**/*.js\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:unit": "vitest run unit.test",
-    "test:smoke": "vitest run smoke",
+    "test:unit": "vitest run tests/unit",
+    "test:smoke": "vitest run tests/smoke",
     "test:announcements:e2e": "node scripts/announcement-e2e.js",
     "test:announcements:security": "node scripts/announcement-security-tests.js",
     "discussions:backfill:dry-run": "node scripts/discussion-backfill.js --dry-run",
@@ -27,13 +30,20 @@
     "discussions:backfill:memberships": "node scripts/discussion-backfill.js --apply --memberships-only",
     "discussions:hybrid:dry-run": "node scripts/discussion-hybrid-backfill.js --dry-run",
     "discussions:hybrid:apply": "node scripts/discussion-hybrid-backfill.js --apply",
-    "discussions:setup": "node scripts/discussions-setup.js"
+    "discussions:setup": "node scripts/discussions-setup.js",
+    "rbac:sync": "node scripts/rbac-sync.js",
+    "tokens:clean": "node scripts/clean-revoked-tokens.js",
+    "storage:ensure-bucket": "node scripts/ensure-s3-bucket.js",
+    "students:compare-enrollment": "node scripts/compare-student-enrollments.js",
+    "students:repair-registration-terms": "node scripts/repair-student-registration-terms.js"
   },
   "prisma": {
     "seed": "node prisma/seed.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.97.1",
+    "@aws-sdk/client-s3": "^3.1086.0",
+    "@aws-sdk/s3-request-presigner": "^3.1086.0",
     "@google/genai": "^2.6.0",
     "@prisma/client": "^6.19.2",
     "@socket.io/redis-adapter": "^8.3.0",
@@ -50,6 +60,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
+    "nodemailer": "^9.0.3",
     "redis": "^5.12.1",
     "sanitize-html": "^2.17.3",
     "socket.io": "^4.8.1",
@@ -57,8 +68,13 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "eslint": "^10.8.0",
+    "eslint-config-prettier": "^10.1.8",
+    "globals": "^17.8.0",
     "kill-port": "^2.0.1",
     "nodemon": "^3.1.14",
+    "prettier": "^3.9.6",
     "prisma": "^6.19.2",
     "socket.io-client": "^4.8.1",
     "supertest": "^7.1.4",

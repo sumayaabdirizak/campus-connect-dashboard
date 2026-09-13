@@ -1,0 +1,128 @@
+/*
+Template Name: Laundry POS - Admin Dashboard
+Version: 1.0.0
+Author: Dreams Technologies
+Author URL: https://themeforest.net/user/dreamstechnologies
+*/
+
+/*============================
+[Table of CSS]
+
+1. Variables
+2. Header
+3. Sidebar
+4. Layout
+5. Footer
+6. Theme
+7. RTL
+8. Accordions
+9. Alert
+10. Avatar
+11. Badge
+12. Breadcrumb
+13. Bootstarp
+14. Buttons
+15. Background
+16. Card
+17. Dropdown
+18. Forms
+19. Modal
+20. Nav Tabs
+21. Pagination
+22. Reboot
+23. Popover
+24. Tables
+25. Tooltip
+26. Utilities
+27. Progress
+28. Chat
+29. Authentication
+30. UI Pages
+31. Email
+32. Timeline
+33. Coming Soon
+34. Settings
+35. Call
+36. Invoice
+37. Todo
+38. Dragula
+39. Dropzone
+40. Choice
+41. Select2
+42. Simplebar
+43. Sweetalert2
+44. Range Slider
+45. Flatpickr
+46. Data Table
+47. Quill Editor
+48. Apex Chart
+49. Chartjs
+50. C3 Chart
+51. Flot
+52. Morris
+53. Daterange
+54. Maps
+55. Intelinput
+56. Calendar
+
+============================*/
+
+
+// Structure
+@forward "structure/header";
+@forward "structure/sidebar";
+@forward "structure/layout";
+
+// Components
+@forward "components/accordions";
+@forward "components/alert";
+@forward "components/avatar";
+@forward "components/badge";
+@forward "components/breadcrumb";
+@forward "components/bootstrap";
+@forward "components/buttons";
+@forward "components/background";
+@forward "components/card";
+@forward "components/dropdown";
+@forward "components/forms";
+@forward "components/modal";
+@forward "components/nav";
+@forward "components/pagination";
+@forward "components/reboot";
+@forward "components/popover";
+@forward "components/tables";
+@forward "components/tooltip";
+@forward "components/utilities";
+@forward "components/progress";
+@forward "components/chat";
+
+// Pages
+@forward "pages/reports";
+@forward "pages/staffs";
+@forward "pages/settings";
+@forward "pages/dashboard";
+@forward "pages/order";
+@forward "pages/pos";
+@forward "pages/darkmode";
+@forward "pages/authentication";
+
+// Plugins
+@forward "plugins/dragula";
+@forward "plugins/dropzone";
+@forward "plugins/choice";
+@forward "plugins/select2";
+@forward "plugins/simplebar";
+@forward "plugins/sweetalert2";
+@forward "plugins/rangeslider";
+@forward "plugins/flatpickr";
+@forward "plugins/datatable";
+@forward "plugins/quill-editor";
+@forward "plugins/apexcharts";
+@forward "plugins/chartjs";
+@forward "plugins/c3";
+@forward "plugins/flot";
+@forward "plugins/morris";
+@forward "plugins/daterange";
+@forward "plugins/maps";
+@forward "plugins/intelinput";
+@forward "plugins/calendar";

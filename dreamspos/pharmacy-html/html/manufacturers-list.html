@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <!-- Meta Tags -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Manufacturers | Pharmacy POS - Bootstrap 5 Admin Dashboard</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description"
+        content="Dreams POS is a powerful Bootstrap based Inventory Management Admin Template designed for businesses, offering seamless invoicing, project tracking, and estimates.">
+    <meta name="keywords"
+        content="inventory management, admin dashboard, bootstrap template, invoicing, estimates, business management, responsive admin, POS system">
+    <meta name="author" content="Dreams Technologies">
+
+    <!-- Favicon -->
+    <link rel="shortcut icon" href="assets/img/favicon.png">
+
+    <!-- Apple Icon -->
+    <link rel="apple-touch-icon" href="assets/img/apple-touch-icon.png">
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="assets/css/bootstrap.min.css">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="assets/plugins/fontawesome/fontawesome.min.css">
+
+    <!-- Lucide Icon CSS -->
+    <link rel="stylesheet" href="assets/plugins/lucide/lucide.css">
+
+    <!-- Select2 CSS -->
+    <link rel="stylesheet" href="assets/plugins/select2/css/select2.min.css">
+
+    <!-- Simplebar CSS -->
+    <link rel="stylesheet" href="assets/plugins/simplebar/simplebar.min.css">
+
+    <!-- Daterangepikcer CSS -->
+    <link rel="stylesheet" href="assets/plugins/daterangepicker/daterangepicker.css">
+
+    <!-- Choices CSS -->
+    <link rel="stylesheet" href="assets/plugins/choices/css/choices.min.css">
+
+    <!-- Datatable CSS -->
+    <link rel="stylesheet" href="assets/css/dataTables.bootstrap5.min.css">
+
+    <!-- Main CSS -->
+    <link rel="stylesheet" href="assets/css/style.css">
+
+</head>
+
+<body>
+
+    <!-- Begin Wrapper -->
+    <div class="main-wrapper">
+
+        <!-- Topbar Start -->
+        <header class="navbar-header">
+            <div class="page-container topbar-menu">
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Sidebar Mobile Button -->
+                    <a id="mobile_btn" class="mobile-btn" href="#sidebar">
+                        <i class="icon-menu fs-24"></i>
+                    </a>
+                    <!-- Logo -->
+                    <a href="index.html" class="logo">
+
+                        <!-- Logo Normal -->
+                        <span class="logo-light">
+                            <span class="logo-lg"><img src="assets/img/logo.svg" alt="logo"></span>
+                        </span>
+
+                        <!-- Logo Dark -->
+                        <span class="logo-dark">
+                            <span class="logo-lg"><img src="assets/img/logo-dark.svg" alt="dark logo"></span>
+                        </span>
+
+                        <!-- Logo Sm -->
+                        <span class="logo-small">
+                            <span class="logo-lg"><img src="assets/img/logo-small.svg" alt="small logo"></span>
+                        </span>
+                    </a>
+
+                    <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn2">
+                        <i class="ti ti-arrow-bar-to-right"></i>
+                    </button>
+
+                    <div class="d-none d-lg-flex">
+                        <h4 class="mb-0">Manufacturers</h4>
+                    </div>
+                </div>
+
+                <div class="d-flex align-items-center gap-2">
+
+                    <div class="dropdown me-1 d-xl-flex d-none">
+                        <a href="javascript:void(0);"
+                            class="dropdown-toggle btn btn-light d-inline-flex align-items-center gap-2"
+                            data-bs-toggle="dropdown">
+                            <i class="icon-map-pin-house"></i>Newyork
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end">
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Newyork</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Los Angeles</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Diego</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">Dallas</a>
+                            </li>
+                            <li>
+                                <a href="javascript:void(0);" class="dropdown-item rounded">San Antonio</a>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Search -->
+                    <div class="d-flex align-items-center header-search d-lg-flex d-none">
+                        <!-- Search -->
+                        <div class="input-icon position-relative me-1">
+                            <span class="input-icon-addon"><i class="icon-search"></i></span>
+                            <input type="text" class="form-control" placeholder="Search">
+                            <span class="input-icon-addon d-inline-flex p-0 header-search-icon"><i
+                                    class="icon-command"></i>K</span>
+                        </div>
+                    </div>
+                    <!-- /Search -->
+
+
+                    <!-- Notification Dropdown -->
+                    <div class="header-item">
+                        <div class="dropdown notification-dropdown me-1">
+
+                            <button class="topbar-link btn topbar-link dropdown-toggle drop-arrow-none"
+                                data-bs-toggle="dropdown" data-bs-offset="0,15" type="button" aria-haspopup="false"
+                                aria-expanded="false">
+                                <i class="icon-bell animate-ring"></i>
+                                <span class="notification-badge"></span>
+                            </button>
+
+                            <div class="dropdown-menu dropdown-menu-end dropdown-menu-lg p-3"
+                                style="min-height: 300px;">
+
+                                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+                                    <h5 class="m-0">Notifications</h5>
+                                    <a href="#" class="fw-medium text-decoration-underline">Mark all as read</a>
+                                </div>
+
+                                <!-- Notification Body -->
+                                <div class="notification-body position-relative z-2 rounded-0" data-simplebar>
+
+                                    <div class="vstack gap-3">
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-1">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-orange border border-orange-200">
+                                                    <i class="icon-layers-2"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Low Stock Alert</p>
+                                                    <p class="mb-2 text-wrap">Paracetamol 500mg is running low (5 items
+                                                        left)</p>
+                                                    <p class="fs-13 mb-0">2 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-2">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-info border border-info-200">
+                                                    <i class="icon-inbox"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Stock Updated</p>
+                                                    <p class="mb-2 text-wrap">Inventory for Ibuprofen 200mg has been
+                                                        successfully updated.</p>
+                                                    <p class="fs-13 mb-0">10 mins ago</p>
+                                                </div>
+                                                <a href="javascript:void(0);"
+                                                    class="notification-read rounded-circle bg-danger border border-danger-subtle"
+                                                    data-bs-toggle="tooltip" title=""
+                                                    data-bs-original-title="Mark as Read" aria-label="Make as Read"></a>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-3">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-warning border border-warning-200">
+                                                    <i class="icon-clock-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Medicine Expiry Reminder</p>
+                                                    <p class="mb-2 text-wrap">Amoxicillin Capsules will expire in 7
+                                                        days.</p>
+                                                    <p class="fs-13 mb-0">5 hours ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Item-->
+                                        <div class="dropdown-item notification-item text-wrap border rounded-3 p-3"
+                                            id="notification-4">
+                                            <div class="d-flex">
+                                                <div
+                                                    class="avatar avatar-rounded me-2 position-relative flex-shrink-0 bg-soft-danger border border-danger-200">
+                                                    <i class="icon-triangle-alert"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <p class="mb-0 fw-medium text-dark">Out of Stock</p>
+                                                    <p class="mb-2 text-wrap">Vitamin C Tablets are currently out of
+                                                        stock. </p>
+                                                    <p class="fs-13 mb-0">1 day ago</p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <!-- View All-->
+                                <div class="pt-3">
+                                    <a href="#" class="btn btn-white d-flex align-items-center justify-content-center">
+                                        View All<i class="icon-arrow-right ms-2"></i>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Settings -->
+                    <div class="header-item">
+                        <div class="me-1">
+                            <a href="business-settings.html" class="btn topbar-link" aria-label="Settings"><i
+                                    class="icon-settings"></i></a>
+                        </div>
+                    </div>
+                    <!-- Settings -->
+
+                    <!-- User Dropdown -->
+                    <div class="dropdown profile-dropdown d-flex align-items-center justify-content-center">
+                        <a href="javascript:void(0);"
+                            class="topbar-link dropdown-toggle drop-arrow-none position-relative"
+                            data-bs-toggle="dropdown" data-bs-offset="0,15" aria-haspopup="false" aria-expanded="false"
+                            data-bs-auto-close="outside">
+                            <img src="assets/img/profiles/avatar-28.jpg" width="36" class="rounded-circle d-flex"
+                                alt="user">
+                        </a>
+                        <div class="dropdown-menu dropdown-menu-end dropdown-menu-md p-3">
+
+                            <div class="d-flex align-items-center bg-light rounded p-3 mb-2">
+                                <div class="avatar flex-shrink-0">
+                                    <img src="assets/img/profiles/avatar-28.jpg" class="rounded-circle" alt="user">
+                                </div>
+                                <div class="ms-2">
+                                    <p class="fw-medium text-dark mb-0">Robert Ordway</p>
+                                    <span class="d-block fs-13">Administrator</span>
+                                </div>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="profile-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-user-cog me-2"></i>Profile Settings
+                            </a>
+
+                            <!-- Item -->
+                            <a href="reports.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-proportions me-2"></i>Reports
+                            </a>
+
+                            <!-- Item-->
+                            <div
+                                class="form-check form-switch form-check-reverse d-flex align-items-center justify-content-between dropdown-item mb-0">
+                                <label class="form-check-label d-flex align-items-center" for="notify"><i
+                                        class="icon-bell me-2"></i>Notifications</label>
+                                <input class="form-check-input me-0" type="checkbox" role="switch" id="notify" checked>
+                            </div>
+
+                            <!-- Item-->
+                            <a href="business-settings.html" class="dropdown-item d-flex align-items-center">
+                                <i class="icon-settings me-2"></i>Settings
+                            </a>
+
+                            <!-- Item-->
+                            <div class="pt-2 mt-2 border-top">
+                                <a href="sign-in.html" class="dropdown-item d-flex align-items-center text-danger">
+                                    <i class="icon-log-out me-2"></i>Sign Out
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </header>
+        <!-- Topbar End -->
+
+        <!-- Sidenav Menu Start -->
+        <div class="sidebar" id="sidebar">
+
+            <!-- Start Logo -->
+            <div class="sidebar-logo">
+                <div>
+                    <!-- Logo Normal -->
+                    <a href="index.html" class="logo logo-normal">
+                        <img src="assets/img/logo.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Small -->
+                    <a href="index.html" class="logo-small">
+                        <img src="assets/img/logo-small.svg" alt="Logo">
+                    </a>
+
+                    <!-- Logo Dark -->
+                    <a href="index.html" class="dark-logo">
+                        <img src="assets/img/logo-dark.svg" alt="Logo">
+                    </a>
+                </div>
+                <button class="sidenav-toggle-btn btn border-0 p-0 active" id="toggle_btn">
+                    <i class="icon-chevron-left"></i>
+                </button>
+
+                <!-- Sidebar Menu Close -->
+                <button class="sidebar-close">
+                    <i class="icon-x align-middle"></i>
+                </button>
+            </div>
+            <!-- End Logo -->
+
+            <!-- Sidenav Menu -->
+            <div class="sidebar-inner" data-simplebar>
+                <div id="sidebar-menu" class="sidebar-menu">
+                    <ul role="menu" aria-label="Main navigation menu">
+                        <li class="menu-title" aria-disabled="true"><span>Main</span></li>
+
+                        <li>
+                            <a href="index.html">
+                                <span class="menu-icon"><i
+                                        class="icon-layout-dashboard"></i></span><span>Dashboard</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Inventory</span></li>
+                        <li>
+                            <a href="medicines.html">
+                                <span class="menu-icon"><i class="icon-list-todo"></i></span><span>Medicine List</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="categories.html">
+                                <span class="menu-icon"><i class="icon-layout-grid"></i></span><span>Categories</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="units.html">
+                                <span class="menu-icon"><i class="icon-monitor-up"></i></span><span>Units</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="racks.html">
+                                <span class="menu-icon"><i class="icon-inbox"></i></span><span>Racks</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="batch-management.html">
+                                <span class="menu-icon"><i class="icon-boxes"></i></span><span>Batch Management</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="manufacturers.html" class="active">
+                                <span class="menu-icon"><i
+                                        class="icon-square-user"></i></span><span>Manufacturers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-adjustment.html">
+                                <span class="menu-icon"><i class="icon-layers"></i></span><span>Stock Adjustment</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-transfer.html">
+                                <span class="menu-icon"><i class="icon-truck"></i></span><span>Stock Transfer</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-tracking.html">
+                                <span class="menu-icon"><i class="icon-triangle-alert"></i></span><span>Expiry
+                                    Tracking</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="low-stock.html">
+                                <span class="menu-icon"><i class="icon-layers-2"></i></span><span>Low Stock</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-logs.html">
+                                <span class="menu-icon"><i class="icon-list-end"></i></span><span>Inventory Logs</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Sales</span></li>
+                        <li>
+                            <a href="pos.html">
+                                <span class="menu-icon"><i class="icon-tv-minimal"></i></span><span>POS Sales</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sales-return.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw"></i></span><span>Sales Return</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customers.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customers</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="invoices.html">
+                                <span class="menu-icon"><i class="icon-newspaper"></i></span><span>Invoices</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="payments.html">
+                                <span class="menu-icon"><i class="icon-dollar-sign"></i></span><span>Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Purchases</span></li>
+                        <li>
+                            <a href="purchases.html">
+                                <span class="menu-icon"><i class="icon-shopping-cart"></i></span><span>Purchases</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-orders.html">
+                                <span class="menu-icon"><i class="icon-shopping-bag"></i></span><span>Purchase
+                                    Orders</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-returns.html">
+                                <span class="menu-icon"><i class="icon-reply-all"></i></span><span>Purchase
+                                    Returns</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendors.html">
+                                <span class="menu-icon"><i class="icon-users"></i></span><span>Vendors</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-payments.html">
+                                <span class="menu-icon"><i class="icon-badge-dollar-sign"></i></span><span>Vendor
+                                    Payments</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Prescriptions</span></li>
+                        <li>
+                            <a href="prescriptions.html">
+                                <span class="menu-icon"><i class="icon-book-check"></i></span><span>Prescriptions</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="prescription-verification.html">
+                                <span class="menu-icon"><i
+                                        class="icon-circle-arrow-out-up-right"></i></span><span>Prescription
+                                    Verification</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="doctors.html">
+                                <span class="menu-icon"><i
+                                        class="icon-briefcase-medical"></i></span><span>Doctors</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Reports</span></li>
+                        <li>
+                            <a href="sales-reports.html">
+                                <span class="menu-icon"><i class="icon-proportions"></i></span><span>Sales
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="purchase-reports.html">
+                                <span class="menu-icon"><i class="icon-file-spreadsheet"></i></span><span>Purchase
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="inventory-reports.html">
+                                <span class="menu-icon"><i class="icon-file-terminal"></i></span><span>Inventory
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="expiry-reports.html">
+                                <span class="menu-icon"><i class="icon-file-chart-column"></i></span><span>Expiry
+                                    Reports</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="profit-loss-reports.html">
+                                <span class="menu-icon"><i class="icon-badge-percent"></i></span><span>Profit &
+                                    Loss</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="tax-reports.html">
+                                <span class="menu-icon"><i class="icon-file-symlink"></i></span><span>Tax Report</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-valuation.html">
+                                <span class="menu-icon"><i class="icon-file-axis-3d"></i></span><span>Stock
+                                    Valuation</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="stock-aging.html">
+                                <span class="menu-icon"><i class="icon-file-search"></i></span><span>Stock Aging</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="customer-outstanding.html">
+                                <span class="menu-icon"><i class="icon-users-round"></i></span><span>Customer
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="vendor-outstanding.html">
+                                <span class="menu-icon"><i class="icon-file-user"></i></span><span>Vendor
+                                    Outstanding</span>
+                            </a>
+                        </li>
+                        <li class="menu-title" aria-disabled="true"><span>Settings</span></li>
+                        <li class="submenu">
+                            <a href="javascript:void(0);">
+                                <span class="menu-icon"><i class="icon-building-2"></i></span><span>Business</span>
+                                <span class="menu-arrow"></span>
+                            </a>
+                            <ul>
+                                <li><a href="business-settings.html">Business Settings</a></li>
+                                <li><a href="profile-settings.html">Profile Settings</a></li>
+                                <li><a href="localization-settings.html">Localization</a></li>
+                                <li><a href="branches-settings.html">Branches</a></li>
+                                <li><a href="notifications-settings.html">Notifications</a></li>
+                            </ul>
+                        </li>
+                        <li>
+                            <a href="invoice-settings.html">
+                                <span class="menu-icon"><i class="icon-file-text"></i></span><span>Billing</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="connected-apps.html">
+                                <span class="menu-icon"><i class="icon-component"></i></span><span>System
+                                    Integrations</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="backup-settings.html">
+                                <span class="menu-icon"><i class="icon-computer"></i></span><span>Backup</span>
+                            </a>
+                        </li>
+
+                        <li class="menu-title" aria-disabled="true"><span>Authentication</span></li>
+                        <li>
+                            <a href="sign-in.html">
+                                <span class="menu-icon"><i class="icon-log-in"></i></span><span>Login</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="sign-up.html">
+                                <span class="menu-icon"><i
+                                        class="icon-text-cursor-input"></i></span><span>Register</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="forgot-password.html">
+                                <span class="menu-icon"><i class="icon-shield-alert"></i></span><span>Forgot
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="reset-password.html">
+                                <span class="menu-icon"><i class="icon-refresh-ccw-dot"></i></span><span>Reset
+                                    Password</span>
+                            </a>
+                        </li>
+                        <li>
+                            <a href="otp.html">
+                                <span class="menu-icon"><i class="icon-mail-warning"></i></span><span>OTP
+                                    Verification</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+        </div>
+        <!-- Sidenav Menu End -->
+
+        <!-- ========================
+			Start Page Content
+		========================= -->
+
+        <div class="page-wrapper">
+
+            <!-- Start Content -->
+            <div class="content">
+
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
+                    <nav aria-label="breadcrumb">
+                        <ol class="breadcrumb mb-0 p-0">
+                            <li class="breadcrumb-item"><a href="index.html"> <span><i class="icon-house"></i></span>
+                                    Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Manufacturers </li>
+                        </ol>
+                    </nav>
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <div class="d-flex align-items-center shadow p-1 rounded-pill border bg-white view-icons">
+                            <a href="manufacturers.html" class="btn btn-sm btn-icon p-1 border-0 fs-14"><i
+                                    class="icon-grid-2x2"></i></a>
+                            <a href="manufacturers-list.html"
+                                class="flex-shrink-0 btn btn-primary active btn-sm btn-icon border-0 ms-1 fs-14"><i
+                                    class="icon-list-todo"></i></a>
+                        </div>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Refresh"
+                            data-bs-original-title="Refresh"><i class="icon-refresh-ccw"></i></a>
+                        <a href="javascript:void(0);" class="btn btn-icon btn-outline-light shadow"
+                            data-bs-toggle="tooltip" data-bs-placement="top" aria-label="Maximize"
+                            data-bs-original-title="Maximize"><i class="icon-maximize"></i></a>
+                        <a href="#" data-bs-toggle="modal" data-bs-target="#add_manifacture"
+                            class="btn btn-primary d-flex align-items-center gap-2"> <i class="icon-plus"></i> Add
+                            New</a>
+                    </div>
+                </div>
+
+                <!-- start row -->
+                <div class="row row-gap-4 mb-4">
+                    <div class="col-xxl-3 col-lg-6 col-sm-6">
+                        <div class="card bg-info-gradient-200 text-center manufacturer-card mb-0">
+                            <div class="card-body pt-0">
+                                <div
+                                    class="avatar avatar-xl bg-white flex-shrink-0 bg-info-gradient-300 mb-3 text-purple">
+                                    <i class="icon-building-2 fs-24"></i>
+                                </div>
+                                <div>
+                                    <p class="d-block mb-2 fw-bold text-dark">Total Manufacturers</p>
+                                    <h3 class="fs-24 mb-0">120</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- end col-->
+                    <div class="col-xxl-3 col-lg-6 col-sm-6">
+                        <div class="card bg-success-gradient-200 text-center manufacturer-card mb-0">
+                            <div class="card-body pt-0">
+                                <div
+                                    class="avatar avatar-2 avatar-xl bg-white flex-shrink-0 bg-success-gradient-100 mb-3 text-success">
+                                    <i class="icon-building-2 fs-24"></i>
+                                </div>
+                                <div>
+                                    <p class="d-block mb-2 fw-bold text-dark">Active Manufacturers</p>
+                                    <h3 class="fs-24 mb-0">100</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- end col-->
+                    <div class="col-xxl-3 col-lg-6 col-sm-6">
+                        <div class="card bg-danger-gradient-200 text-center manufacturer-card mb-0">
+                            <div class="card-body pt-0">
+                                <div
+                                    class="avatar avatar-3 avatar-xl bg-white flex-shrink-0 bg-danger-gradient-100 mb-3 text-danger">
+                                    <i class="icon-building-2 fs-24"></i>
+                                </div>
+                                <div>
+                                    <p class="d-block mb-2 fw-bold text-dark">Inactive Manufacturers</p>
+                                    <h3 class="fs-24 mb-0">20</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- end col-->
+                    <div class="col-xxl-3 col-lg-6 col-sm-6">
+                        <div class="card bg-warning-gradient-200 text-center manufacturer-card mb-0">
+                            <div class="card-body pt-0">
+                                <div
+                                    class="avatar avatar-4 avatar-xl bg-white flex-shrink-0 bg-warning-gradient-100 mb-3 text-warning">
+                                    <i class="icon-building-2 fs-24"></i>
+                                </div>
+                                <div>
+                                    <p class="d-block mb-2 fw-bold text-dark">Low Stock Products</p>
+                                    <h3 class="fs-24 mb-0">200</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div> <!-- end col-->
+                </div>
+                <!-- end row -->
+
+                <!-- start card -->
+                <div class="card">
+                    <div class="card-header">
+                        <div class="d-flex align-items-center justify-content-between gap-2 flex-wrap">
+                            <div class="d-inline-flex align-items-center flex-wrap flex-sm-nowrap gap-2">
+                                <div class="table-search d-flex align-items-center mb-0">
+                                    <div class="search-input" id="tablefilter">
+                                        <a href="javascript:void(0);" class="btn-searchset"><i
+                                                class="icon-search"></i></a>
+                                    </div>
+                                </div>
+                                <div class="input-group position-relative w-fit">
+                                    <span class="input-icon-addon fs-16 text-gray-9">
+                                        <i class="icon-calendar-fold"></i>
+                                    </span>
+                                    <input type="text" class="form-control date-range bookingrange rounded-end">
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center flex-wrap gap-2">
+                                <!-- sort by -->
+                                <div class="dropdown sortby-dropdown">
+                                    <a href="javascript:void(0);"
+                                        class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                        data-bs-toggle="dropdown">
+                                        <i class="icon-arrow-down-wide-narrow"></i> Sort by
+                                    </a>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <ul class="list-unstyled mb-0">
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded text-dark d-flex align-items-center justify-content-between">Manufacture
+                                                    Name <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Manufacture
+                                                    Name <span>Z-A</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Contact
+                                                    Person <span>A-Z</span></a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);"
+                                                    class="dropdown-item rounded  text-dark d-flex align-items-center justify-content-between">Contact
+                                                    Person <span>Z-A</span></a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+
+                                <!-- Export -->
+                                <div class="gap-3 d-flex align-items-center flex-wrap">
+                                    <div class="dropdown">
+                                        <a href="javascript:void(0);"
+                                            class="dropdown-toggle btn btn-white d-inline-flex align-items-center gap-2"
+                                            data-bs-toggle="dropdown">
+                                            <i class="icon-arrow-up-to-line"></i>Export
+                                        </a>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    PDF</a>
+                                            </li>
+                                            <li>
+                                                <a href="javascript:void(0);" class="dropdown-item rounded">Export as
+                                                    Excel</a>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-0">
+
+                        <!-- start table -->
+                        <div class="table-responsive table-nowrap">
+                            <table class="table mb-0 datatable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>Manufacturer Name</th>
+                                        <th>Contact Person</th>
+                                        <th>Phone</th>
+                                        <th>Email</th>
+                                        <th>Address</th>
+                                        <th>Linked Medicines</th>
+                                        <th>Status</th>
+                                        <th class="no-sort text-end">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG016</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">ABC Pharma</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-orange text-orange bg-soft-orange me-2 fs-12 fw-medium">SK</span>Steven
+                                                Kelley
+                                            </div>
+                                        </td>
+                                        <td>+1 89384 47384</td>
+                                        <td>steven@example.com</td>
+                                        <td>123 Pharma St, New York</td>
+                                        <td>Paracetamol, Amoxicillin, <span class="badge bg-light text-dark">+1
+                                                More</span></td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG015</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">HealCare Labs</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-info text-info bg-soft-info me-2 fs-12 fw-medium">HM</span>Hilda
+                                                Morris
+                                            </div>
+                                        </td>
+                                        <td>+1 65849 48035</td>
+                                        <td>hilda@example.com</td>
+                                        <td>456 Med Rd, Los Angeles</td>
+                                        <td>Cetirizine, Betnovate</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG014</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">Medix Ltd</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-primary text-primary bg-soft-primary me-2 fs-12 fw-medium">DH</span>Daniel
+                                                Hadley
+                                            </div>
+                                        </td>
+                                        <td>+1 73829 49204</td>
+                                        <td>daniel@example.com</td>
+                                        <td>789 Bio Blvd, Chicago</td>
+                                        <td>Metformin, Ondansetron</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG013</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">SkinPlus Pharma</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-primary text-primary bg-soft-primary me-2 fs-12 fw-medium">DG</span>Dorthy
+                                                Gifford
+                                            </div>
+                                        </td>
+                                        <td>+1 84205 13628</td>
+                                        <td>dorthy@example.com</td>
+                                        <td>321 Green Ave, Houston</td>
+                                        <td>Atorvastatin, Paracetamol, <span class="badge bg-light text-dark">+3
+                                                More</span></td>
+                                        <td><span class="badge badge-soft-danger d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Inactive</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG012</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">NovaLife Pharma</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-info text-info bg-soft-info me-2 fs-12 fw-medium">JM</span>Jared
+                                                Mercer
+                                            </div>
+                                        </td>
+                                        <td>+1 93638 48290</td>
+                                        <td>jared@example.com</td>
+                                        <td>654 Med St, Phoenix</td>
+                                        <td>Betnovate, Ondansetron</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG011</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">CareWell Labs</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-orange text-orange bg-soft-orange me-2 fs-12 fw-medium">SS</span>Shirley
+                                                Scott
+                                            </div>
+                                        </td>
+                                        <td>+1 84245 29403</td>
+                                        <td>shirley@example.com</td>
+                                        <td>987 Health Way, Dallas</td>
+                                        <td>Metformin, Amoxicillin</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG010</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">MedSure Pharma</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-info text-info bg-soft-info me-2 fs-12 fw-medium">JS</span>Joseph
+                                                Shepard
+                                            </div>
+                                        </td>
+                                        <td>+1 74725 10853</td>
+                                        <td>joseph@example.com</td>
+                                        <td>543 Pharma Ln, San Antonio</td>
+                                        <td>Paracetamol, Atorvastatin, <span class="badge bg-light text-dark">+1
+                                                More</span></td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG009</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">BioLife Labs</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-purple text-purple bg-soft-purple me-2 fs-12 fw-medium">KB</span>Kathleen
+                                                Bryant
+                                            </div>
+                                        </td>
+                                        <td>+1 65456 74925</td>
+                                        <td>kathleen@example.com</td>
+                                        <td>234 Care Rd, San Diego</td>
+                                        <td>Amoxicillin, Cetirizine</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG008</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">NutriPlus Labs</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-info text-info bg-soft-info me-2 fs-12 fw-medium">RE</span>Ronald
+                                                Emmons
+                                            </div>
+                                        </td>
+                                        <td>+1 89242 47294</td>
+                                        <td>ronald@example.com</td>
+                                        <td>876 Med Ave, Seattle</td>
+                                        <td>Betnovate, Paracetamol</td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><a href="javascript:void(0);" class="text-info">#MNG007</a></td>
+                                        <td>
+                                            <h4 class="fs-14 fw-medium mb-0">NutraCare Pharma</h4>
+                                        </td>
+                                        <td>
+                                            <div class="d-flex align-items-center fw-medium text-dark">
+                                                <span
+                                                    class="avatar avatar-xs rounded-circle border border-danger text-danger bg-soft-danger me-2 fs-12 fw-medium">EW</span>Erika
+                                                Williams
+                                            </div>
+                                        </td>
+                                        <td>+1 93646 50393</td>
+                                        <td>erika@example.com</td>
+                                        <td>234 Health St, Denver</td>
+                                        <td>Ondansetron, Atorvastatin, <span class="badge bg-light text-dark">+2
+                                                More</span></td>
+                                        <td><span class="badge badge-soft-success d-inline-flex align-items-center"><i
+                                                    class="fa-solid fa-circle fs-5 me-1"></i> Active</span></td>
+                                        <td class="text-end">
+                                            <div class="action-item">
+                                                <button class="btn btn-icon" type="button" data-bs-toggle="dropdown"
+                                                    aria-haspopup="true" aria-expanded="false" aria-label="Actions">
+                                                    <i class="icon-ellipsis-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu p-3">
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center"
+                                                            data-bs-toggle="modal" data-bs-target="#edit_manifacture"><i
+                                                                class="icon-pencil-line me-2"></i>Edit</a>
+                                                    </li>
+                                                    <li>
+                                                        <a href="#"
+                                                            class="dropdown-item rounded d-flex align-items-center text-danger"
+                                                            data-bs-toggle="modal" data-bs-target="#delete_modal"><i
+                                                                class="icon-trash-2 me-2"></i>Delete</a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 p-3 pt-0">
+                                <div id="tableinfo"></div>
+                                <div id="tablepage"></div>
+                                <div id="tablelength"></div>
+                            </div>
+                        </div>
+                        <!-- end table -->
+
+                    </div>
+                </div>
+                <!-- end card -->
+
+            </div>
+            <!-- End Content -->
+
+        </div>
+
+        <!-- ========================
+			End Page Content
+		========================= -->
+
+    </div>
+    <!-- End Wrapper -->
+
+    <!-- Add modal -->
+    <div class="modal custom-modal fade" id="add_manifacture" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title d-flex align-items-center gap-2"><span
+                            class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                class="icon-user-plus"></i></span>Add New Manufacturer</h4>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="icon-x"></i></button>
+                </div>
+                <form action="#">
+                    <div class="modal-body pt-0">
+                        <!-- Start row -->
+                        <div class="row row-gap-3">
+                            <div class="col-lg-12">
+                                <div class="d-flex align-items-center flex-wrap gap-3">
+                                    <div class="avatar avatar-xxxl border bg-light rounded-circle">
+                                        <i class="icon-image fs-20 text-dark"></i>
+                                    </div>
+                                    <div>
+                                        <label class="form-label mb-1 fw-bold fs-14">Upload Store Image</label>
+                                        <p class="fs-13 fw-medium mb-2">Image should below 2MB</p>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label
+                                                class="btn btn-light btn-sm fs-13 d-flex align-items-center gap-1 position-relative cursor-pointer mb-0">
+                                                <i class="icon-refresh-ccw"></i>
+                                                <input type="file"
+                                                    class="form-control position-absolute w-100 h-100 top-0 start-0 opacity-0 cursor-pointer">
+                                                Change Image
+                                            </label>
+                                            <a href="#" class="btn btn-icon btn-sm btn-white rounded-circle">
+                                                <i class="icon-trash-2"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- end col-->
+                            <div class="col-lg-12">
+                                <div>
+                                    <label class="form-label">Manufacturer Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div>
+                                    <label class="form-label">Contact Person</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Email Address</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div>
+                                    <label class="form-label">Address</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">Country</label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>USA</option>
+                                        <option>Canada</option>
+                                        <option>Germany</option>
+                                        <option>France</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">City </label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>Los Angeles</option>
+                                        <option>San Diego</option>
+                                        <option>Fresno</option>
+                                        <option>San Francisco</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">State / Province </label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option>California</option>
+                                        <option>New York</option>
+                                        <option>Texas</option>
+                                        <option>Florida</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Pincode</label>
+                                    <input type="text" class="form-control">
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Linked Medicines</label>
+                                <select class="select" id="choices-multiple-remove-button" data-choices
+                                    data-choices-removeItem name="choices-multiple-remove-button" multiple>
+                                    <option>Select</option>
+                                    <option>Paracetamol</option>
+                                    <option>Amoxicillin </option>
+                                    <option>Ibuprofen </option>
+                                    <option>Ciprofloxacin </option>
+                                </select>
+                            </div>
+                        </div>
+                        <!-- End row -->
+
+                    </div>
+                    <div class="modal-footer">
+                        <div class="d-flex align-items-center gap-2 felx-grow-1 w-100 justify-content-between">
+                            <button class="btn btn-light d-inline-flex align-items-center gap-2"
+                                data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </button>
+                            <button type="button" class="btn btn-primary"><i class="icon-plus me-1"></i>Create
+                                New</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Add modal -->
+
+    <!-- Add modal -->
+    <div class="modal custom-modal fade" id="edit_manifacture" role="dialog">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h4 class="modal-title d-flex align-items-center gap-2"><span
+                            class="avatar avatar-sm bg-primary rounded-circle fs-16"><i
+                                class="icon-edit"></i></span>Edit Manufacturer</h4>
+                    <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"><i class="icon-x"></i></button>
+                </div>
+                <form action="#">
+                    <div class="modal-body pt-0">
+                        <!-- Start row -->
+                        <div class="row row-gap-3">
+                            <div class="col-lg-12">
+                                <div class="d-flex align-items-center flex-wrap gap-3">
+                                    <div class="avatar avatar-xxxl border bg-light rounded-circle">
+                                        <img src="assets/img/profiles/avatar-09.jpg" alt="avatar"
+                                            class="img-fluid rounded-circle">
+                                    </div>
+                                    <div>
+                                        <label class="form-label mb-1 fw-bold fs-14">Upload Store Image</label>
+                                        <p class="fs-13 fw-medium mb-2">Image should below 2MB</p>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <label
+                                                class="btn btn-light btn-sm fs-13 d-flex align-items-center gap-1 position-relative cursor-pointer mb-0">
+                                                <i class="icon-refresh-ccw"></i>
+                                                <input type="file"
+                                                    class="form-control position-absolute w-100 h-100 top-0 start-0 opacity-0 cursor-pointer">
+                                                Change Image
+                                            </label>
+                                            <a href="#" class="btn btn-icon btn-sm btn-white rounded-circle">
+                                                <i class="icon-trash-2"></i>
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div> <!-- end col-->
+                            <div class="col-lg-12">
+                                <div>
+                                    <label class="form-label">Manufacturer Name <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" class="form-control" value="ABC Pharma">
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div>
+                                    <label class="form-label">Contact Person</label>
+                                    <input type="text" class="form-control" value="Steven Kelley">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Email Address</label>
+                                    <input type="text" class="form-control" value="steven@example.com">
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Phone Number</label>
+                                    <input type="text" class="form-control" value="+1 89384 47384">
+                                </div>
+                            </div>
+                            <div class="col-lg-12">
+                                <div>
+                                    <label class="form-label">Address</label>
+                                    <input type="text" class="form-control" value="123 Pharma St, New York">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">Country</label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>USA</option>
+                                        <option>Canada</option>
+                                        <option>Germany</option>
+                                        <option>France</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">City </label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>Los Angeles</option>
+                                        <option>San Diego</option>
+                                        <option>Fresno</option>
+                                        <option>San Francisco</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div>
+                                    <label class="form-label">State / Province </label>
+                                    <select class="select">
+                                        <option>Select</option>
+                                        <option selected>California</option>
+                                        <option>New York</option>
+                                        <option>Texas</option>
+                                        <option>Florida</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div>
+                                    <label class="form-label">Pincode</label>
+                                    <input type="text" class="form-control" value="10292">
+                                </div>
+                            </div>
+                            <div class="col-md-12">
+                                <label class="form-label">Linked Medicines</label>
+                                <select class="select" id="choices-multiple-remove-button1" data-choices
+                                    data-choices-removeItem name="choices-multiple-remove-button1" multiple>
+                                    <option>Select</option>
+                                    <option>Paracetamol</option>
+                                    <option selected>Amoxicillin </option>
+                                    <option>Ibuprofen </option>
+                                    <option>Ciprofloxacin </option>
+                                </select>
+                            </div>
+                            <div class="col-lg-12">
+                                <div class="form-check form-switch">
+                                    <label class="form-check-label d-flex align-items-center gap-2">
+                                        <input class="form-check-input form-check-input-sm switchCheckDefault"
+                                            type="checkbox" role="switch" checked="">
+                                        <span>Status</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- End row -->
+
+                    </div>
+                    <div class="modal-footer">
+                        <div class="d-flex align-items-center gap-2 felx-grow-1 w-100 justify-content-between">
+                            <button class="btn btn-light d-inline-flex align-items-center gap-2"
+                                data-bs-dismiss="modal"><i class="icon-x"></i>Cancel </button>
+                            <button type="button" class="btn btn-primary"><i class="icon-save me-1"></i>Save
+                                Changes</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <!-- Add modal -->
+
+    <!-- Start Delete Modal -->
+    <div class="modal fade" id="delete_modal">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content">
+                <div class="modal-body text-center">
+                    <span class="avatar avatar-xl rounded-circle bg-soft-danger mb-3">
+                        <i class="icon-trash-2"></i>
+                    </span>
+                    <h4 class="mb-2">Delete Confirmation</h4>
+                    <p class="mb-4">Are you sure you want to delete?</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <a href="#" class="btn btn-light d-flex align-items-center" data-bs-dismiss="modal"><i
+                                class="icon-x me-1"></i> Cancel</a>
+                        <a href="#" class="btn btn-danger d-flex align-items-center"><i
+                                class="icon-trash-2 me-1"></i>Delete</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- End Delete Modal -->
+
+    <!-- jQuery -->
+    <script src="assets/js/jquery-4.0.0.min.js"></script>
+
+    <!-- Bootstrap Core JS -->
+    <script src="assets/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Simplebar JS -->
+    <script src="assets/plugins/simplebar/simplebar.min.js"></script>
+
+    <!-- Select2 Js -->
+    <script src="assets/plugins/select2/js/select2.min.js"></script>
+
+    <!-- Choices Js -->
+    <script src="assets/plugins/choices/js/choices.min.js"></script>
+
+    <!-- Daterangepikcer JS -->
+    <script src="assets/js/moment.min.js"></script>
+    <script src="assets/plugins/daterangepicker/daterangepicker.js"></script>
+
+    <!-- Datatable JS -->
+    <script src="assets/js/jquery.dataTables.min.js"></script>
+    <script src="assets/js/dataTables.bootstrap5.min.js"></script>
+
+    <!-- Main JS -->
+    <script src="assets/js/script.js"></script>
+
+</body>
+
+</html>

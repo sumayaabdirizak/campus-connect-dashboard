@@ -1,61 +1,53 @@
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/utils/password.js';
-import { runFullDiscussionSetup } from '../src/features/discussions/discussionSetup.service.js';
+import { runFullDiscussionSetup } from '../src/services/discussions/discussionSetup.service.js';
 
 const prisma = new PrismaClient();
 
 const SEED_MINIMAL = ["1", "true", "yes"].includes(
   String(process.env.SEED_MINIMAL ?? "").toLowerCase()
 );
+const SEED_UNIVERSITY_ONLY = ["1", "true", "yes"].includes(
+  String(process.env.SEED_UNIVERSITY_ONLY ?? "").toLowerCase()
+);
 
-async function main() {
-  console.log('--- Starting Seeding Process ---');
-  if (SEED_MINIMAL) {
-    console.log('SEED_MINIMAL=1 — seeding roles, one faculty chain, one teacher/student, and discussion setup only.');
-  }
+async function seedPlatformBasics({ roleMap, hashedPassword }) {
+  const superAdminEmail = String(process.env.SUPER_ADMIN_EMAIL || 'super.admin@university.edu')
+    .trim()
+    .toLowerCase();
+  const superAdminName = String(process.env.SUPER_ADMIN_NAME || 'System Super Admin').trim();
+  const superAdminNumber = String(process.env.SUPER_ADMIN_NUMBER || 'ADMIN001').trim();
 
-  const hashedPassword = await hashPassword('password123');
-
-  // --- 1. Roles ---
-  console.log('Seeding Roles...');
-  const roleNames = ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT', 'FACULTY_ADMIN'];
-  const roleMap = {};
-  for (const name of roleNames) {
-    const role = await prisma.role.upsert({
-      where: { name },
-      update: {},
-      create: { name },
-    });
-    roleMap[name] = role.id;
-  }
-
-  // Bootstrap a deterministic SUPER_ADMIN account for local QA/RBAC checks.
   await prisma.user.upsert({
-    where: { email: 'super.admin@university.edu' },
+    where: { email: superAdminEmail },
     update: {
-      full_name: 'System Super Admin',
-      number: 'ADMIN001',
+      full_name: superAdminName,
+      number: superAdminNumber,
       roleId: roleMap['SUPER_ADMIN'],
     },
     create: {
-      full_name: 'System Super Admin',
-      email: 'super.admin@university.edu',
-      number: 'ADMIN001',
+      full_name: superAdminName,
+      email: superAdminEmail,
+      number: superAdminNumber,
       password_hash: hashedPassword,
       roleId: roleMap['SUPER_ADMIN'],
+      must_change_password: false,
     },
   });
+}
 
-  // --- 2. Academic Years & Semesters ---
-  console.log('Seeding Academic Years & Semesters...');
-  const academicYearData = SEED_MINIMAL
-    ? [{ name: '2024/2025', start: '2024-09-01', end: '2025-08-31' }]
+async function seedAcademicCalendar() {
+  const academicYearData = SEED_UNIVERSITY_ONLY || SEED_MINIMAL
+    ? [
+        { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
+        { name: '2025/2026', start: '2025-09-01', end: '2026-08-31' },
+      ]
     : [
-    { name: '2022/2023', start: '2022-09-01', end: '2023-08-31' },
-    { name: '2023/2024', start: '2023-09-01', end: '2024-08-31' },
-    { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
-    { name: '2025/2026', start: '2025-09-01', end: '2026-08-31' },
-  ];
+        { name: '2022/2023', start: '2022-09-01', end: '2023-08-31' },
+        { name: '2023/2024', start: '2023-09-01', end: '2024-08-31' },
+        { name: '2024/2025', start: '2024-09-01', end: '2025-08-31' },
+        { name: '2025/2026', start: '2025-09-01', end: '2026-08-31' },
+      ];
 
   const academicYearsMap = new Map();
   const semestersAll = [];
@@ -72,33 +64,97 @@ async function main() {
     });
     academicYearsMap.set(data.name, ay);
 
-    // Create 2 semesters for each AY if they don't exist
     const semesterNames = ['First Semester', 'Second Semester'];
     for (let i = 0; i < 2; i++) {
-        const semName = semesterNames[i];
-        const existingSem = await prisma.semester.findFirst({
-            where: { name: semName, academicYearId: ay.id }
-        });
+      const semName = semesterNames[i];
+      const existingSem = await prisma.semester.findFirst({
+        where: { name: semName, academicYearId: ay.id },
+      });
 
-        let sem;
-        if (!existingSem) {
-            sem = await prisma.semester.create({
-                data: {
-                  name: semName,
-                  sequence: i + 1,
-                  start_date: i === 0 ? new Date(data.start) : new Date(`${data.name.split('/')[1]}-01-01`),
-                  end_date: i === 0 ? new Date(`${data.name.split('/')[0]}-12-31`) : new Date(data.end),
-                  academicYearId: ay.id,
-                },
-            });
-        } else {
-            sem = existingSem;
-        }
-        semestersAll.push(sem);
+      let sem;
+      if (!existingSem) {
+        sem = await prisma.semester.create({
+          data: {
+            name: semName,
+            sequence: i + 1,
+            start_date:
+              i === 0 ? new Date(data.start) : new Date(`${data.name.split('/')[1]}-01-01`),
+            end_date:
+              i === 0 ? new Date(`${data.name.split('/')[0]}-12-31`) : new Date(data.end),
+            academicYearId: ay.id,
+          },
+        });
+      } else {
+        sem = existingSem;
+      }
+      semestersAll.push(sem);
     }
   }
 
-  const academicYears = Array.from(academicYearsMap.values());
+  return {
+    academicYears: Array.from(academicYearsMap.values()),
+    semestersAll,
+  };
+}
+
+async function seedAuxiliaryCatalogs() {
+  try {
+    await seedClubVocabulary();
+    console.log('Club vocabulary seeded (interest tags + quota policy).');
+  } catch (e) {
+    console.error('Club vocabulary seed failed:', e?.message || e);
+    throw e;
+  }
+
+  try {
+    const { ensureResourceTypeOptions } = await import(
+      '../src/services/resources/resourceTypeOptions.js'
+    );
+    await ensureResourceTypeOptions();
+    console.log('Resource type options seeded.');
+  } catch (e) {
+    console.error('Resource type options seed failed:', e?.message || e);
+    throw e;
+  }
+}
+
+async function main() {
+  console.log('--- Starting Seeding Process ---');
+  if (SEED_UNIVERSITY_ONLY) {
+    console.log(
+      'SEED_UNIVERSITY_ONLY=1 — roles, super admin, academic years only. Use university AIS sync for roster data.'
+    );
+  } else if (SEED_MINIMAL) {
+    console.log('SEED_MINIMAL=1 — seeding roles, one faculty chain, one teacher/student, and discussion setup only.');
+  }
+
+  const hashedPassword = await hashPassword('password123');
+
+  // --- 1. Roles ---
+  console.log('Seeding Roles...');
+  const roleNames = ['SUPER_ADMIN', 'DEAN', 'TEACHER', 'STUDENT'];
+  const roleMap = {};
+  for (const name of roleNames) {
+    const role = await prisma.role.upsert({
+      where: { name },
+      update: {},
+      create: { name },
+    });
+    roleMap[name] = role.id;
+  }
+
+  await seedPlatformBasics({ roleMap, hashedPassword });
+
+  // --- 2. Academic Years & Semesters ---
+  console.log('Seeding Academic Years & Semesters...');
+  const { academicYears, semestersAll } = await seedAcademicCalendar();
+
+  if (SEED_UNIVERSITY_ONLY) {
+    await seedAuxiliaryCatalogs();
+    console.log('--- Seeding Completed (university-only baseline) ---');
+    console.log('Next: node scripts/sync-university-faculty-students.js');
+    return;
+  }
 
   // --- 3. Faculties & Departments & deans ---
   console.log('Seeding Faculties, Departments & Deans...');
@@ -107,6 +163,7 @@ async function main() {
         {
           name: 'Faculty of Computing',
           code: 'FC',
+          defaultDurationYears: 4,
           dean: { name: 'Dr. Alan Turing', email: 'dean.computing@university.edu', number: 'DEAN001' },
           departments: [{ name: 'Department of Computer Science', code: 'CS' }],
         },
@@ -115,6 +172,7 @@ async function main() {
     {
       name: 'Faculty of Computing',
       code: 'FC',
+      defaultDurationYears: 4,
       dean: { name: 'Dr. Alan Turing', email: 'dean.computing@university.edu', number: 'DEAN001' },
       departments: [
         { name: 'Department of Computer Science', code: 'CS' },
@@ -124,10 +182,20 @@ async function main() {
     {
       name: 'Faculty of Sciences',
       code: 'FS',
+      defaultDurationYears: 4,
       dean: { name: 'Dr. Marie Curie', email: 'dean.sciences@university.edu', number: 'DEAN002' },
       departments: [
         { name: 'Department of Mathematics', code: 'MATH' },
         { name: 'Department of Physics', code: 'PHYS' },
+      ],
+    },
+    {
+      name: 'Faculty of Medicine',
+      code: 'FM',
+      defaultDurationYears: 6,
+      dean: { name: 'Dr. Amina Hassan', email: 'dean.medicine@university.edu', number: 'DEAN003' },
+      departments: [
+        { name: 'Department of Medicine', code: 'MED' },
       ],
     },
   ];
@@ -155,11 +223,15 @@ async function main() {
     // Create/Update Faculty
     const faculty = await prisma.faculty.upsert({
       where: { code: fSpec.code },
-      update: { deanId: deanUser.id },
+      update: {
+        deanId: deanUser.id,
+        defaultDurationYears: fSpec.defaultDurationYears ?? 4,
+      },
       create: {
         name: fSpec.name,
         code: fSpec.code,
         deanId: deanUser.id,
+        defaultDurationYears: fSpec.defaultDurationYears ?? 4,
       },
     });
     faculties.push(faculty);
@@ -171,30 +243,6 @@ async function main() {
         create: { userId: deanUser.id, facultyId: faculty.id }
     });
 
-    // One faculty administrator on Computing (FC) for RBAC demos
-    if (fSpec.code === 'FC') {
-      const faUser = await prisma.user.upsert({
-        where: { email: 'faculty.admin@university.edu' },
-        update: {
-          full_name: 'Faculty Administrator (Computing)',
-          number: 'FA-FC-001',
-          roleId: roleMap['FACULTY_ADMIN'],
-        },
-        create: {
-          full_name: 'Faculty Administrator (Computing)',
-          email: 'faculty.admin@university.edu',
-          number: 'FA-FC-001',
-          password_hash: hashedPassword,
-          roleId: roleMap['FACULTY_ADMIN'],
-        },
-      });
-      await prisma.facultyAdminProfile.upsert({
-        where: { user_id: faUser.id },
-        update: { faculty_id: faculty.id },
-        create: { user_id: faUser.id, faculty_id: faculty.id },
-      });
-    }
-
     for (const dSpec of fSpec.departments) {
       const dept = await prisma.department.upsert({
         where: { code: dSpec.code },
@@ -205,7 +253,7 @@ async function main() {
           facultyId: faculty.id,
         },
       });
-      departments.push(dept);
+      departments.push({ ...dept, faculty });
     }
   }
 
@@ -220,12 +268,17 @@ async function main() {
     const progCode = `BSC-${dept.code}`;
     const prog = await prisma.program.upsert({
       where: { code: progCode },
-      update: { name: `BSc ${dept.name.replace('Department of ', '')}`, departmentId: dept.id },
+      update: {
+        name: `BSc ${dept.name.replace('Department of ', '')}`,
+        departmentId: dept.id,
+        durationYears: dept.faculty?.defaultDurationYears ?? 4,
+      },
       create: {
         name: `BSc ${dept.name.replace('Department of ', '')}`,
         code: progCode,
         level: 'UNDERGRADUATE',
         departmentId: dept.id,
+        durationYears: dept.faculty?.defaultDurationYears ?? 4,
       },
     });
     programs.push(prog);
@@ -529,8 +582,13 @@ async function main() {
                           description: "Implement the core concepts discussed in class.",
                           due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
                           courseOfferingId: offering.id,
-                          is_draft: false
-                      }
+                          lifecycle: {
+                              create: {
+                                  publishStatus: 'PUBLISHED',
+                                  scheduleStatus: 'OPEN',
+                              },
+                          },
+                      },
                   });
 
                   // Add some pending submissions for testing
@@ -549,8 +607,7 @@ async function main() {
                               assignmentId: asgn.id,
                               studentId: student.id,
                               content_url: "https://university.edu/submissions/s1.pdf",
-                              is_reviewed: false
-                          }
+                          },
                       });
                   }
               }
@@ -594,13 +651,7 @@ async function main() {
     throw e;
   }
 
-  try {
-    await seedClubVocabulary();
-    console.log('Club vocabulary seeded (interest tags + quota policy).');
-  } catch (e) {
-    console.error('Club vocabulary seed failed:', e?.message || e);
-    throw e;
-  }
+  await seedAuxiliaryCatalogs();
 
   console.log('--- Seeding Completed Successfully ---');
 }

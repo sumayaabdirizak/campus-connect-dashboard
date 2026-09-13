@@ -1,17 +1,17 @@
 import { Worker, Queue } from "bullmq";
 import { prisma } from "../db/prisma.js";
-import { announcementLog } from "../features/announcements/announcementLogger.js";
+import { announcementLog } from "../services/announcements/announcementLogger.js";
 import {
   getBullConnection,
   isAnnouncementSchedulerEnabled,
   countOverdueScheduledAnnouncements,
-} from "../features/announcements/services/announcementJobs.service.js";
+} from "../services/announcements/announcementJobs.service.js";
 import {
   applyStaleDraftRetention,
   purgeExpiredAnnouncementRecords,
   scheduleRetentionPurge,
-} from "../features/announcements/services/announcementRetention.service.js";
-import { publishScheduledAnnouncementIfDue } from "../features/announcements/services/announcementPublishFallback.service.js";
+} from "../services/announcements/announcementRetention.service.js";
+import { publishScheduledAnnouncementIfDue } from "../services/announcements/announcementPublishFallback.service.js";
 
 /** @type {Worker[]} */
 const workers = [];
@@ -41,7 +41,7 @@ export function startAnnouncementBullWorkers() {
       const announcementId = Number(job.data?.announcementId);
       if (!Number.isFinite(announcementId)) return;
       const { expireAnnouncementIfDue } = await import(
-        "../features/announcements/services/announcementExpiry.service.js"
+        "../services/announcements/announcementExpiry.service.js"
       );
       const did = await expireAnnouncementIfDue(prisma, announcementId);
       if (did) announcementLog("info", "announcement.worker_expired", { announcementId });
@@ -58,7 +58,7 @@ export function startAnnouncementBullWorkers() {
     "announcement-email-digest",
     async () => {
       const { runAnnouncementDigestEmailJob } = await import(
-        "../features/announcements/services/announcementDigestEmail.service.js"
+        "../services/announcements/announcementDigestEmail.service.js"
       );
       const out = await runAnnouncementDigestEmailJob(prisma);
       announcementLog("info", "announcement.digest_worker_done", out);
@@ -75,7 +75,7 @@ export function startAnnouncementBullWorkers() {
     "announcement-analytics-snapshot",
     async () => {
       const { runAnnouncementAnalyticsSnapshotJob } = await import(
-        "../features/announcements/services/announcementAnalyticsSnapshot.service.js"
+        "../services/announcements/announcementAnalyticsSnapshot.service.js"
       );
       const out = await runAnnouncementAnalyticsSnapshotJob(prisma);
       announcementLog("info", "announcement.analytics_snapshot_tick", out);
@@ -101,7 +101,7 @@ export function startAnnouncementBullWorkers() {
     "announcement-deadline-reminders",
     async () => {
       const { runDeadlineReminderScan } = await import(
-        "../features/announcements/services/calendarDeadlineReminder.service.js"
+        "../services/announcements/calendarDeadlineReminder.service.js"
       );
       const out = await runDeadlineReminderScan(prisma);
       announcementLog("info", "announcement.deadline_reminder_tick", out);
@@ -119,7 +119,7 @@ export function startAnnouncementBullWorkers() {
     "announcement-sms-audit-replay",
     async (job) => {
       const { replaySmsAuditRow } = await import(
-        "../features/announcements/services/announcementSms.service.js"
+        "../services/announcements/announcementSms.service.js"
       );
       await replaySmsAuditRow(prisma, job.data ?? {});
     },

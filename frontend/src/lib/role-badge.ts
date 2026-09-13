@@ -19,7 +19,7 @@
  */
 
 import type { VariantProps } from 'class-variance-authority';
-import type { badgeVariants } from '@/components/ui/badge';
+import type { badgeVariants } from '@/features/ui/components/badge';
 
 /// Possible role strings handled by the helper. Lowercase fallback matches
 /// the data sometimes returned by `/users/me` in older fixtures.

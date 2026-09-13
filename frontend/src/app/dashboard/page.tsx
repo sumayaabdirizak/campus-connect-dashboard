@@ -1,10 +1,10 @@
 'use client';
 
 import { useAuthStore } from '@/lib/auth-store';
-import { AdminDashboard } from '@/features/overview/components/admin-dashboard';
-import { SuperAdminDashboard } from '@/features/overview/components/super-admin-dashboard';
-import { TeacherDashboard } from '@/features/overview/components/teacher-dashboard';
-import { StudentDashboard } from '@/features/overview/components/student-dashboard';
+import { AdminDashboard } from '@/components/overview/admin-dashboard';
+import { SuperAdminDashboard } from '@/components/overview/super-admin-dashboard';
+import { TeacherDashboard } from '@/components/overview/teacher-dashboard';
+import { StudentDashboard } from '@/components/overview/student-dashboard';
 
 export default function DashboardPage() {
   const user = useAuthStore((state) => state.user);

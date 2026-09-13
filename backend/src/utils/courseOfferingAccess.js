@@ -136,8 +136,26 @@ export async function studentInSection(studentUserId, sectionId) {
   return !!reg;
 }
 
+export async function teacherAssignedToCourse(teacherUserId, courseId) {
+  const teacherId = Number(teacherUserId);
+  const cid = Number(courseId);
+  if (!Number.isFinite(teacherId) || !Number.isFinite(cid)) return false;
+  const row = await prisma.teacherAssigning.findUnique({
+    where: { teacherId_courseId: { teacherId, courseId: cid } },
+    select: { id: true },
+  });
+  return !!row;
+}
+
+async function teacherCanAccessOffering(user, offering) {
+  const uid = Number(user?.sub ?? user?.id);
+  if (!Number.isFinite(uid)) return false;
+  if (offering.teacherId === uid) return true;
+  return teacherAssignedToCourse(uid, offering.courseId);
+}
+
 /**
- * Read assignments / offering metadata: super admin, dean/faculty admin of faculty,
+ * Read assignments / offering metadata: super admin, dean of faculty,
  * assigned teacher, or enrolled student.
  */
 export async function canAccessOfferingRead(user, offering) {
@@ -147,9 +165,9 @@ export async function canAccessOfferingRead(user, offering) {
   const authFid = getAuthFacultyId(user);
 
   if (role === "SUPER_ADMIN") return true;
-  if ((role === "DEAN" || role === "FACULTY_ADMIN") && authFid != null && fid === authFid) return true;
-  if (role === "TEACHER" && offering.teacherId === user.sub) return true;
-  if (role === "STUDENT") return studentInSection(user.sub, offering.sectionId);
+  if (role === "DEAN" && authFid != null && fid === authFid) return true;
+  if (role === "TEACHER" && (await teacherCanAccessOffering(user, offering))) return true;
+  if (role === "STUDENT") return studentInSection(user.sub ?? user.id, offering.sectionId);
   return false;
 }
 
@@ -161,8 +179,8 @@ export async function canManageOfferingContent(user, offering) {
   const authFid = getAuthFacultyId(user);
 
   if (role === "SUPER_ADMIN") return true;
-  if ((role === "DEAN" || role === "FACULTY_ADMIN") && authFid != null && fid === authFid) return true;
-  if (role === "TEACHER" && offering.teacherId === user.sub) return true;
+  if (role === "DEAN" && authFid != null && fid === authFid) return true;
+  if (role === "TEACHER" && (await teacherCanAccessOffering(user, offering))) return true;
   return false;
 }
 
@@ -183,7 +201,7 @@ export function canSocketUserReadOffering(socketUser, offering) {
   const fid = offeringFacultyId(offering);
 
   if (role === "SUPER_ADMIN") return true;
-  if (role === "DEAN" || role === "FACULTY_ADMIN") {
+  if (role === "DEAN") {
     return fid != null && (socketUser.facultyIds ?? []).map(Number).includes(Number(fid));
   }
   if (role === "TEACHER") return offering.teacherId === uid;
@@ -195,12 +213,12 @@ export function canSocketUserReadOffering(socketUser, offering) {
 
 export async function canStudentSubmitToAssignment(user, offering) {
   if (user.role !== "STUDENT") return false;
-  return studentInSection(user.sub, offering.sectionId);
+  return studentInSection(user.sub ?? user.id, offering.sectionId);
 }
 
 /// Same shape as canStudentSubmitToAssignment but for quizzes — student must
 /// be enrolled in the offering's section to start / submit an attempt.
 export async function canStudentTakeQuiz(user, offering) {
   if (user?.role !== "STUDENT") return false;
-  return studentInSection(user.sub, offering.sectionId);
+  return studentInSection(user.sub ?? user.id, offering.sectionId);
 }

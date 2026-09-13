@@ -104,10 +104,9 @@ export const generateQuestionsBodySchema = Joi.object({
   // Free-form teacher instruction. Required because without it the model
   // has nothing to anchor on; we cap length to keep the prompt cost bounded.
   prompt: Joi.string().trim().min(3).max(5000).required(),
-  // Optional pasted material — a chapter, lecture transcript, etc. Capped at
-  // ~30k chars (~7-8k tokens) so the input cost stays predictable. If the
-  // teacher needs more context, they should chunk by topic.
-  sourceMaterial: Joi.string().allow("").max(30000).optional(),
+  // Required grounding text (from an uploaded file or course resource).
+  // Capped at ~30k chars (~7-8k tokens). Chunk by topic if you need more.
+  sourceMaterial: Joi.string().trim().min(40).max(30000).required(),
   count: Joi.number().integer().min(1).max(25).default(10),
   questionTypes: Joi.array()
     .items(Joi.string().valid("MCQ", "TRUE_FALSE", "SHORT_ANSWER"))

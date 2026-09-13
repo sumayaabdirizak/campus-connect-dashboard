@@ -1,0 +1,64 @@
+import { metricCount, metricTimerStart } from "../../../services/discussions/reliability/metrics.js";
+import { sendChannelMessage } from "./send-channel-message.js";
+import { sendGroupDmMessage } from "./send-group-dm-message.js";
+import { sendGroupMessage } from "./send-group-message.js";
+import { resolveGroupDmRow } from "../../../controllers/discussions/groupDms/helpers.js";
+import { resolveChannelRow } from "../../../controllers/discussions/serverShared.js";
+import { resolveAttachmentIds } from "../../../controllers/discussions/messageShared.js";
+
+/**
+ * @param {import("socket.io").Socket} socket
+ * @param {object} ctx
+ */
+export function registerMessageSendHandler(socket, ctx) {
+  const {
+    socketUser, fanout, ackOrEmitError, ackSuccess,
+    discussionChannelRoom, discussionRoom, discussionGroupDmRoom,
+    emitUnreadUpdateToUsers, isUserViewingChannel, isUserViewingGroup, isUserViewingGroupDm,
+    getActiveDiscussionUserIdSet, getDiscussionMembership, touchDiscussionSession,
+  } = ctx;
+
+  socket.on("message:send", async (payload = {}, ack) => {
+    try {
+      const started = metricTimerStart();
+      const channelRow = payload?.channelId != null ? await resolveChannelRow(payload.channelId) : null;
+      const channelId = channelRow?.id ?? null;
+      const attachmentIdentifiers = Array.isArray(payload?.attachmentIds) ? payload.attachmentIds : [];
+      const attachmentIds = await resolveAttachmentIds(attachmentIdentifiers);
+      if (attachmentIds.length !== attachmentIdentifiers.length) {
+        return ackOrEmitError(socket, ack, "INVALID_ATTACHMENT", "Some attachments are invalid or unavailable");
+      }
+      const e2e = payload?.e2e ?? null;
+      const messageTypeUpper =
+        typeof payload?.messageType === "string" ? payload.messageType.toUpperCase() : "TEXT";
+
+      const shared = {
+        socket, payload, ack, socketUser, fanout, ackOrEmitError, ackSuccess,
+        discussionChannelRoom, discussionRoom, discussionGroupDmRoom,
+        emitUnreadUpdateToUsers, isUserViewingChannel, isUserViewingGroup, isUserViewingGroupDm,
+        getActiveDiscussionUserIdSet, getDiscussionMembership, touchDiscussionSession,
+        started, attachmentIds, e2e, messageTypeUpper,
+      };
+
+      if (channelId != null) {
+        return await sendChannelMessage({ ...shared, channelId, channelPublicId: channelRow.publicId });
+      }
+      if (payload?.groupDmId != null) {
+        const groupDmRow = await resolveGroupDmRow(payload.groupDmId);
+        if (!groupDmRow) {
+          return ackOrEmitError(socket, ack, "INVALID_GROUP_DM", "groupDmId is invalid");
+        }
+        return await sendGroupDmMessage({
+          ...shared,
+          groupDmId: groupDmRow.id,
+          groupDmPublicId: groupDmRow.publicId,
+        });
+      }
+      return await sendGroupMessage(shared);
+    } catch (error) {
+      metricCount("messages.send_failed", 1);
+      console.error("message:send failed:", error);
+      return ackOrEmitError(socket, ack, "INTERNAL", "Failed to send message");
+    }
+  });
+}

@@ -1,5 +1,6 @@
 import { useAuthStore } from '@/lib/auth-store';
 import { getApiBaseUrl } from '@/lib/api-config';
+import { syncServerTimeFromResponse } from '@/lib/server-clock';
 
 export class ApiError extends Error {
   status: number;
@@ -14,7 +15,7 @@ export class ApiError extends Error {
 }
 
 const API_BASE_URL = getApiBaseUrl();
-let refreshPromise: Promise<boolean> | null = null;
+let refreshPromise: Promise<RefreshOutcome> | null = null;
 let csrfTokenInMemory: string | null = null;
 let hasHandledAuthFailure = false;
 
@@ -28,21 +29,88 @@ function handleAuthFailure(): void {
   }
 }
 
-async function tryRefreshAccessToken(): Promise<boolean> {
+/**
+ * What a refresh attempt actually established.
+ *
+ * The distinction matters: only the server explicitly rejecting the refresh
+ * token proves the session is over. A rate-limit, a 5xx or a dropped
+ * connection prove nothing — treating those as "signed out" logged people out
+ * mid-work over a momentary blip, discarding a refresh token that was still
+ * valid for days.
+ */
+export type RefreshOutcome =
+  /** New access cookie is in place; retry the original request. */
+  | 'refreshed'
+  /** Server rejected the refresh token. Session is over; redirect already done. */
+  | 'signed-out'
+  /** Couldn't complete (offline, rate-limited, server error). Session may well
+   *  still be good — fail this request, keep the user where they are. */
+  | 'unavailable';
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Requests hang instead of failing fast if the backend (or something it calls
+ *  out to, like the university API) never responds. Cap every fetch so a
+ *  stuck request surfaces as an error instead of an endless spinner. */
+const DEFAULT_TIMEOUT_MS = 20_000;
+
+/** Combines the timeout with a caller-supplied signal, if any. */
+function withTimeout(signal?: AbortSignal | null, timeoutMs = DEFAULT_TIMEOUT_MS): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(timeoutMs);
+  return signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
+}
+
+async function requestRefresh(): Promise<{
+  outcome: RefreshOutcome;
+  /** Worth an immediate second attempt? */
+  retryable: boolean;
+}> {
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}/auth/refresh`, {
+      method: 'POST',
+      credentials: 'include',
+      signal: withTimeout()
+    });
+  } catch {
+    // Offline, DNS failure, server not listening, or timed out — nothing said about the session.
+    return { outcome: 'unavailable', retryable: true };
+  }
+
+  syncServerTimeFromResponse(response);
+
+  if (response.ok) {
+    const data = (await response.json().catch(() => ({}))) as { csrfToken?: string };
+    if (data?.csrfToken) csrfTokenInMemory = data.csrfToken;
+    hasHandledAuthFailure = false;
+    return { outcome: 'refreshed', retryable: false };
+  }
+
+  // 401/403 are the only answers that mean "this token is no good".
+  if (response.status === 401 || response.status === 403) {
+    handleAuthFailure();
+    return { outcome: 'signed-out', retryable: false };
+  }
+
+  // 429 is the limiter asking us to back off — retrying now would only dig in.
+  // Anything else (5xx, proxy hiccup) is worth one more try.
+  return { outcome: 'unavailable', retryable: response.status !== 429 };
+}
+
+/**
+ * Refreshes the access cookie. Exported so the Socket.IO layers can recover
+ * from an expired-token handshake rejection — they share this promise so three
+ * sockets failing at once still only fire one `/auth/refresh`.
+ */
+export async function tryRefreshAccessToken(): Promise<RefreshOutcome> {
   if (!refreshPromise) {
     refreshPromise = (async () => {
-      const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-        method: 'POST',
-        credentials: 'include'
-      });
-      if (refreshResponse.ok) {
-        const data = (await refreshResponse.json().catch(() => ({}))) as { csrfToken?: string };
-        if (data?.csrfToken) csrfTokenInMemory = data.csrfToken;
-        hasHandledAuthFailure = false;
-      } else {
-        handleAuthFailure();
-      }
-      return refreshResponse.ok;
+      const first = await requestRefresh();
+      // One retry for a transient failure — a single dropped request
+      // shouldn't cost the session.
+      if (!first.retryable) return first.outcome;
+      await sleep(700);
+      return (await requestRefresh()).outcome;
     })().finally(() => {
       refreshPromise = null;
     });
@@ -53,11 +121,18 @@ async function tryRefreshAccessToken(): Promise<boolean> {
 /** Exported for multipart uploads (XHR) that cannot use `apiClient`. */
 export async function ensureCsrfToken(): Promise<string | null> {
   if (csrfTokenInMemory) return csrfTokenInMemory;
-  const csrfResponse = await fetch(`${API_BASE_URL}/auth/csrf`, {
-    method: 'GET',
-    credentials: 'include'
-  });
+  let csrfResponse: Response;
+  try {
+    csrfResponse = await fetch(`${API_BASE_URL}/auth/csrf`, {
+      method: 'GET',
+      credentials: 'include',
+      signal: withTimeout()
+    });
+  } catch {
+    return null;
+  }
   if (!csrfResponse.ok) return null;
+  syncServerTimeFromResponse(csrfResponse);
   const data = (await csrfResponse.json().catch(() => ({}))) as { csrfToken?: string };
   csrfTokenInMemory = data?.csrfToken ?? null;
   return csrfTokenInMemory;
@@ -72,7 +147,9 @@ export async function apiClient<T>(
   const method = (options.method || 'GET').toUpperCase();
   const needsCsrf =
     method === 'POST' || method === 'PUT' || method === 'DELETE' || method === 'PATCH';
-  if (!isFormData) {
+  // Do not set Content-Type on GET/HEAD — it forces a CORS preflight and is
+  // useless without a body.
+  if (!isFormData && method !== 'GET' && method !== 'HEAD') {
     headers.set('Content-Type', 'application/json');
   }
   if (
@@ -86,23 +163,54 @@ export async function apiClient<T>(
   }
 
   const url = `${API_BASE_URL}${endpoint}`;
-  const response = await fetch(url, {
-    ...options,
-    headers,
-    credentials: 'include'
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      ...options,
+      headers,
+      credentials: 'include',
+      signal: withTimeout(options.signal)
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      throw new ApiError('The request timed out. Please try again.', 0);
+    }
+    throw new ApiError(
+      'Could not reach the API server. Is the backend running on port 4000?',
+      0
+    );
+  }
+  syncServerTimeFromResponse(response);
 
-  if (response.status === 401 && endpoint !== '/auth/login' && endpoint !== '/auth/refresh') {
-    const refreshed = await tryRefreshAccessToken();
-    if (refreshed) {
+  if (
+    response.status === 401 &&
+    endpoint !== '/auth/login' &&
+    endpoint !== '/auth/refresh' &&
+    endpoint !== '/auth/logout'
+  ) {
+    const outcome = await tryRefreshAccessToken();
+    if (outcome === 'refreshed') {
       if (needsCsrf && csrfTokenInMemory) {
         headers.set('X-CSRF-Token', csrfTokenInMemory);
       }
-      const retryResponse = await fetch(url, {
-        ...options,
-        headers,
-        credentials: 'include'
-      });
+      let retryResponse: Response;
+      try {
+        retryResponse = await fetch(url, {
+          ...options,
+          headers,
+          credentials: 'include',
+          signal: withTimeout(options.signal)
+        });
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'TimeoutError') {
+          throw new ApiError('The request timed out. Please try again.', 0);
+        }
+        throw new ApiError(
+          'Could not reach the API server. Is the backend running on port 4000?',
+          0
+        );
+      }
+      syncServerTimeFromResponse(retryResponse);
       if (retryResponse.ok) {
         return retryResponse.json();
       }
@@ -113,7 +221,18 @@ export async function apiClient<T>(
         retryError
       );
     }
-    handleAuthFailure();
+
+    // Couldn't reach the refresh endpoint. The session is probably still fine,
+    // so fail just this request and leave the user where they are — 503 rather
+    // than 401 so callers don't mistake it for an auth failure and sign out.
+    if (outcome === 'unavailable') {
+      throw new ApiError(
+        'Could not reach the server to renew your session. Check your connection and try again.',
+        503
+      );
+    }
+
+    // 'signed-out' — handleAuthFailure already cleared state and redirected.
     throw new ApiError('Session expired. Please sign in again.', 401);
   }
 

@@ -1,0 +1,270 @@
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+@use "sass:map";
+@use "sass:color";
+
+//
+// background.scss
+//
+
+@each $color,
+$value in $theme-colors {
+    .fill-#{$color} {
+        fill: rgba(var(--#{$color}-rgb), 0.1);
+    }
+}
+// Background opacity utilities
+.bg-opacity-100 { --bg-opacity: 1 !important; }
+.bg-opacity-75  { --bg-opacity: 0.75 !important; }
+.bg-opacity-50  { --bg-opacity: 0.5 !important; }
+.bg-opacity-25  { --bg-opacity: 0.25 !important; }
+.bg-opacity-10  { --bg-opacity: 0.10 !important; }
+
+// Use the variable for bg color with opacity
+@each $state in map.keys($theme-colors) {
+    .bg-#{$state}:not([class*="bg-opacity-"]) {
+        --bg-opacity: 1;
+    }
+    .bg-#{$state} {
+        background-color: rgba(var(--#{$state}-rgb), var(--bg-opacity, 1)) !important;
+    }
+    .bg-soft-#{$state} {
+        background-color: var(--#{$state}-50) !important;
+        color: var(--#{$state}) !important;
+    }
+}
+
+.bg-white {
+    background-color:  rgba(var(--#{$white}-rgb), var(--bg-opacity, 1)) !important;
+}
+.bg-body {
+    background-color: $light-200 !important;
+}
+.bg-pink {
+    background-color: $pink !important;
+}
+.bg-cyan {
+    background-color: $cyan !important;
+}
+.bg-orange {
+    background-color: $orange !important;
+}
+.bg-body-secondary {
+    background-color: $white !important;
+}
+.bg-primary-subtle {
+    background-color: $primary-50 !important;
+}
+.bg-secondary-subtle {
+    background-color: $secondary-50 !important;
+}
+.bg-success-subtle {
+    background-color: $success-50 !important;
+}
+.bg-danger-subtle {
+    background-color: $danger-50 !important;
+}
+.bg-warning-subtle {
+    background-color: $warning-50 !important;
+}
+.bg-info-subtle {
+    background-color: $info-50 !important;
+}
+.bg-dark-subtle {
+    background-color: $gray-50 !important;
+}
+.bg-soft-primary {
+    background-color: var(--primary-50) !important;
+}
+.bg-soft-secondary {
+    background-color: var(--secondary-50) !important;
+}
+.bg-soft-success {
+    background-color: var(--success-50) !important;
+}
+.bg-soft-info {
+    background-color: var(--info-50) !important;
+}
+.bg-soft-warning {
+    background-color: var(--warning-50) !important;
+}
+.bg-soft-danger {
+    background-color: var(--danger-50) !important;
+}
+.bg-soft-dark {
+    background-color: var(--gray-100) !important;
+}
+.bg-soft-pink {
+    background-color: var(--pink-50);
+}
+.bg-soft-indigo {
+    background-color: var(--indigo-50);
+}
+.bg-soft-orange {
+    background-color: var(--orange-50);
+}
+.bg-danger-gradient {
+    background: $danger-gradient;
+}
+.bg-primary-gradient {
+    background-image: $primary-gradient;
+}
+.bg-orange-gradient {
+    background-image: $orange-gradient;
+}
+.bg-cyan-gradient {
+    background-image: $cyan-gradient;
+}
+.bg-pink-gradient {
+    background-image: $pink-gradient;
+}
+.bg-primary-gradient-100 {
+    background-image: $primary-gradient-100 !important;
+}
+.bg-secondary-gradient-100 {
+    background-image: $secondary-gradient-100 !important;
+}
+.bg-info-gradient-100 {
+    background-image: $info-gradient-100 !important;
+}
+.bg-pink-gradient-100 {
+    background-image: $pink-gradient-100 !important;
+}
+.bg-purple-gradient-100 {
+    background-image: $purple-gradient-100 !important;
+}
+.bg-teal-gradient-100 {
+    background-image: $teal-gradient-100 !important;
+}
+.bg-danger-gradient-200 {
+    background-image: $danger-gradient-200;
+}
+.bg-primary-gradient-200 {
+    background-image: $primary-gradient-200;
+}
+.bg-secondary-gradient-200 {
+    background-image: $secondary-gradient-200;
+}
+.bg-danger-gradient-500 {
+    background-image: $danger-gradient-500;
+}
+.bg-info-gradient-300 {
+    background-image: $info-gradient-300;
+}
+.bg-secondary-400 {
+    background: $secondary-400 !important;
+}
+
+.bg-light-50 {
+    background: $light-50 !important;
+}
+.bg-info-gradient-100 {
+    background: $info-gradient-100;
+}
+.bg-info-gradient-400 {
+    background: $info-gradient-400;
+}
+.bg-pink-gradient-400 {
+    background: $pink-gradient-400;
+}
+.bg-purple-gradient-400 {
+    background: $purple-gradient-400;
+}
+.bg-orange-gradient-400 {
+    background: $orange-gradient-400;
+}
+.bg-success-gradient-100 {
+    background: $success-gradient-100;
+}
+.bg-danger-gradient-100 {
+    background: $danger-gradient-100;
+}
+.bg-warning-gradient-100 {
+    background: $warning-gradient-100;
+}
+.bg-info-gradient-200 {
+    background: $info-gradient-200;
+}
+.bg-success-gradient-200 {
+    background: $success-gradient-200;
+}
+.bg-danger-gradient-200 {
+    background: $danger-gradient-200;
+}
+.bg-warning-gradient-200 {
+    background: $warning-gradient-200;
+}
+
+
+@each $color,
+$value in $theme-colors {
+    .text-bg-#{$color} {
+        background-color: var(--#{$color}) !important;
+    }
+}
+.text-bg-info {
+    background-color: var(--info) !important;
+    color: var(--white) !important;
+}
+@each $color,
+$value in $theme-colors {
+    .text-#{$color}-emphasis {
+        color: var(--#{$color}-hover) !important;
+    }
+}
+@each $color,
+$value in $theme-colors {
+    .text-#{$color} {
+        color: var(--#{$color}) !important;
+        &.text-opacity-75 {
+            opacity: 0.75 !important;
+        }
+        &.text-opacity-50 {
+            opacity: 0.50 !important;
+        }
+        &.text-opacity-25 {
+            opacity: 0.25 !important;
+        }
+    }
+    .link-#{$color} {
+        color: var(--#{$color}) !important;
+        &:hover {
+            color: var(--#{$color}-hover) !important;
+        }
+    }
+    .link-underline-#{$color} {
+        text-decoration-color: var(--#{$color}) !important;
+    }
+}
+.text-white {
+    color: $white !important;
+}
+.text-body {
+    color: $body-color !important;
+}
+.text-body-emphasis {
+    color: $gray-hover !important;
+}
+.text-body-secondary {
+    color: $gray-900 !important;
+}
+.text-body-tertiary {
+    color: $gray-300 !important;
+}
+.text-black {
+    color: $black !important;
+}
+.text-muted {
+    color: $body-color !important;
+}
+.text-dark {
+    color: $gray-900 !important;
+}
+
+// Theme Setting Color
+@each $name, $color in $theme-colors {
+    [data-color="#{$name}"] {
+        --primary: #{$color};
+        --primary-rgb: #{color.channel($color, "red")}, #{color.channel($color, "green")}, #{color.channel($color, "blue")};
+    }
+}

@@ -4,15 +4,15 @@ import { useCallback, useState } from 'react';
 import Link from 'next/link';
 import { CalendarPlus, Check, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCreatePersonalEvent } from '@/features/calendar/api';
+import { useCreatePersonalEvent } from '@/lib/calendar/queries/api';
 import {
   buildDeadlineCalendarNotes,
   deadlineTitleForCalendar,
   markDeadlineAddedLocally,
   wasDeadlineAddedLocally,
   type DeadlineCalendarInput,
-} from '@/features/calendar/deadline-calendar';
-import { courseColor } from '@/features/student-courses/lib/course-color';
+} from '@/components/deadline-calendar-input';
+import { courseColor } from '@/lib/student-courses/services/course-color';
 import { cn } from '@/lib/utils';
 
 type AddToCalendarButtonProps = {

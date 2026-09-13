@@ -4,7 +4,7 @@ import {
   parseOverwriteTargetId,
   safePermissionBigInt,
   overwriteRowToDto,
-} from "../../src/features/discussions/permissionOverwriteUtils.js";
+} from "../../src/services/discussions/permissionOverwriteUtils.js";
 
 describe("features/discussions/permissionOverwriteUtils", () => {
   it("parses overwrite target type and id", () => {

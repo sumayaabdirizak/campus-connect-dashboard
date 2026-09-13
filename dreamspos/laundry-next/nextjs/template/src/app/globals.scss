@@ -1,0 +1,393 @@
+@use '../style/scss/main.scss';
+@use '../style/scss/variables';
+
+@use "../style/scss/main.scss" as *;
+@use "../style/scss/variables" as *;
+@use "../style/scss/utils/mixins" as *;
+
+.loader-dots {
+    position: relative;
+    width: 56px;
+    aspect-ratio: 1;
+    margin: auto;
+  }
+  
+  .loader-dots span {
+    position: absolute;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #4be3ff, #13b5c9);
+    box-shadow: 0 0 10px rgba(19,181,201,.6);
+    transform-origin: 22px 22px;
+    animation: dot-rotate 1s linear infinite;
+  }
+  
+  .loader-dots span:nth-child(1) { transform: rotate(0deg); }
+  .loader-dots span:nth-child(2) { transform: rotate(60deg); }
+  .loader-dots span:nth-child(3) { transform: rotate(120deg); }
+  .loader-dots span:nth-child(4) { transform: rotate(180deg); }
+  .loader-dots span:nth-child(5) { transform: rotate(240deg); }
+  .loader-dots span:nth-child(6) { transform: rotate(300deg); }
+  
+  @keyframes dot-rotate {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+
+
+.mobile-btn {
+    &:hover {
+        color: $primary;
+    }
+}
+
+.notification-body {
+    overflow-y: scroll;
+}
+
+.search-input {
+    .datatable-search {
+        position: relative;
+
+        .icon-search {
+            position: absolute;
+            right: 13px;
+            top: 8px;
+        }
+    }
+}
+
+.ant-table-wrapper {
+    border: 1px solid $border-color;
+    font-family: $font-family-base;
+}
+
+.ant-table-wrapper .ant-table-thead>tr>th {
+    padding: 8px 16px;
+    border-color: $border-color;
+    font-weight: $font-weight-bold;
+    font-size: 13px;
+}
+
+.ant-table-wrapper .ant-table-tbody>tr>td {
+    color: $gray-600;
+    border-color: $border-color;
+    padding: 12px 16px;
+    background: $white;
+}
+
+.ant-table-wrapper .ant-table-tbody>tr:last-child>td {
+    border-bottom: 0 !important;
+}
+
+.ant-table-wrapper .ant-table-thead th.ant-table-column-has-sorters:hover {
+    background: $light;
+}
+
+.ant-table-wrapper .ant-table-thead>tr>th:not(:last-child):not(.ant-table-selection-column):not(.ant-table-row-expand-icon-cell):not([colspan])::before {
+    display: none;
+}
+
+.ant-table-wrapper td.ant-table-column-sort {
+    background: $white;
+}
+
+.ant-table-wrapper .ant-table-thead th.ant-table-column-sort {
+    background: $light;
+}
+
+.ant-table-wrapper .ant-table-container table>thead>tr:first-child>*:first-child {
+    border-start-start-radius: 0;
+}
+
+.ant-table-wrapper .ant-table-container table>thead>tr:first-child>*:last-child {
+    border-start-end-radius: 0;
+}
+
+.ant-select-single.ant-select-sm {
+    height: 32px;
+}
+
+.page-item:first-child .page-link,
+.page-item:last-child .page-link {
+    border-radius: 42px;
+
+}
+
+.page-item .page-link {
+    height: 24px;
+    width: 24px;
+    border-radius: 42px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: $white !important;
+}
+
+.page-item.active .page-link {
+    background: $primary !important;
+}
+
+.common-select .react-select__control {
+
+    font-size: $font-size-base;
+    font-weight: $font-weight-normal;
+    color: $gray-900;
+    background-color: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-rounded;
+    box-shadow: $box-shadow;
+
+    &:focus {
+        border-color: $border-color;
+        background-color: $white;
+        outline: 0;
+        box-shadow: none;
+    }
+}
+
+.css-13cymwt-control:hover {
+    border-color: $border-color !important;
+}
+
+.react-select__multi-value.css-1p3m7a8-multiValue {
+    background: $primary;
+    color: $white;
+
+    .react-select__multi-value__label {
+        color: $white;
+    }
+}
+
+.pos-design .select-input .common-select {
+    width: 100%;
+}
+
+.modal .common-datePicker {
+    width: 100%;
+}
+
+#dark-mode-toggle {
+    display: none;
+}
+
+.ant-table-wrapper .ant-table-thead>tr>th:not(:last-child):not(.ant-table-selection-column):not(.ant-table-row-expand-icon-cell):not([colspan])::before,
+.ant-table-wrapper .ant-table-thead>tr>td:not(:last-child):not(.ant-table-selection-column):not(.ant-table-row-expand-icon-cell):not([colspan])::before {
+    content: none;
+}
+
+.ant-table-wrapper .ant-table-thead>tr>th {
+    border-bottom: 1px solid $border-color;
+    color: $gray-900;
+}
+
+.ant-select-single.ant-select-sm:not(.ant-select-customize-input) .ant-select-selector {
+    background-color: $white;
+    color: $gray-900;
+    border-color: $border-color;
+}
+
+.ant-select-dropdown .ant-select-item-option-selected:not(.ant-select-item-option-disabled) {
+    background: $primary;
+    color: $white;
+}
+
+.ant-select .ant-select-arrow {
+    color: $gray-900;
+}
+
+.ant-select-dropdown {
+    background-color: $white;
+
+    .ant-select-item-option-content {
+        color: $gray-900;
+    }
+}
+
+.ant-picker-dropdown .ant-picker-panel-container .ant-picker-panel-layout {
+    background-color: $white;
+
+    .ant-picker-header {
+        color: $gray-900;
+    }
+
+    .ant-picker-header>button {
+        color: $gray-900;
+    }
+
+    .ant-picker-cell-inner {
+        color: $gray-900;
+    }
+
+    .ant-picker-content th {
+        color: $gray-900;
+    }
+}
+
+.ant-picker-outlined:focus-within,
+.ant-picker-outlined:hover {
+    background-color: $white;
+    border-color: $border-color;
+    box-shadow: none;
+}
+
+.react-select__control.css-t3ipsp-control {
+    background-color: $white;
+    border-color: $border-color;
+    box-shadow: none;
+}
+
+.reportrange-picker {    
+    font-size: $font-size-base;
+    font-weight: $font-weight-normal;
+    color: $gray-900;
+    background-color: $white;
+    border: 1px solid $border-color;
+    border-radius: $border-radius-rounded;
+    box-shadow: $box-shadow;
+    padding: 8px 16px;
+  
+    &:focus {
+      border-color: $border-color;
+      background-color: $white;
+      outline: 0;
+      box-shadow: none;
+    }
+  }
+
+.daterangepicker {
+    border: 1px solid $border-color !important;
+    background-color: $white !important;
+
+    .ranges {
+        background-color: $white;
+        border-color: $border-color;
+    }
+}
+
+.daterangepicker:before {
+    background-color: $white !important;
+}
+
+.daterangepicker .ranges li:hover,
+.daterangepicker .ranges li.active {
+    background-color: $primary !important;
+    color: #fff;
+}
+
+.daterangepicker td.active,
+.daterangepicker td.active:hover {
+    background-color: $primary !important;
+}
+
+.daterangepicker .drp-calendar.left .calendar-table,
+.daterangepicker .drp-calendar.right .calendar-table {
+    background-color: $white;
+    border-color: $border-color;
+}
+
+.daterangepicker .drp-buttons {
+    border-top: 1px solid $border-color !important;
+}
+
+.ant-table-wrapper .ant-table {
+    font-family: $font-family-base !important;
+}
+
+.ant-picker-dropdown {
+    font-family: $font-family-base !important;
+    z-index: 99999 !important;
+}
+
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-selected:not(.ant-picker-cell-disabled) .ant-picker-cell-inner {
+    background: $primary;
+}
+
+.ant-picker-dropdown .ant-picker-cell-in-view.ant-picker-cell-today .ant-picker-cell-inner::before {
+    border-color: $primary;
+}
+
+.ant-picker-dropdown .ant-picker-time-panel-column >li.ant-picker-time-panel-cell .ant-picker-time-panel-cell-inner {
+    color: $gray-900;
+}
+.ant-picker-dropdown .ant-picker-time-panel-column >li.ant-picker-time-panel-cell-selected .ant-picker-time-panel-cell-inner {
+    background: $primary;
+}
+.ant-btn-variant-solid {
+    background: $primary;
+}
+.ant-btn-variant-solid:disabled {
+    background: $light;
+    color: $gray-600;
+}
+
+.daterangepicker td.off {
+    background-color: transparent !important;
+  }
+  .daterangepicker td.in-range {
+    background-color: $gray-100 !important;
+    color: $gray-900 !important;
+  }
+  .ant-picker .ant-picker-input > input::placeholder {
+    color: $gray-600;
+}
+
+// Dark mode Style
+[data-bs-theme="dark"] {
+    #light-mode-toggle {
+        display: none;
+    }
+
+    #dark-mode-toggle {
+        display: flex;
+    }
+
+    .react-select__control--is-focused {
+        border-color: #11112f;
+        background-color: #0b0d0e;
+    }
+
+    .react-select__control:hover {
+        border-color: #11112f;
+    }
+
+
+    .react-select__control {
+        border-color: #232841;
+    }
+
+    .react-select__menu {
+        background-color: #0b0d0e;
+        color: #dee2e6;
+    }
+
+    .react-select__option {
+        background-color: #0b0d0e;
+        color: #dee2e6;
+
+        :is(&.react-select__option--is-focused) {
+            background-color: $primary;
+            color: #dee2e6;
+        }
+
+        :is(&.react-select__option--is-selected) {
+            background-color: $primary;
+            color: #dee2e6;
+        }
+    }
+
+    .react-select__placeholder {
+        color: #232841;
+    }
+
+    .react-select__single-value {
+        color: #dee2e6;
+    }
+    
+    .ant-table-wrapper .ant-table-thead >tr>th {
+        background: #0b0d0e;
+    }
+}

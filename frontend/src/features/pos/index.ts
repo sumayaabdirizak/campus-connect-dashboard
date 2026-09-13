@@ -1,0 +1,10 @@
+// Re-export POS components from src/components/pos/
+export * from '@/components/pos/pos-table'
+export * from '@/components/pos/pos-table-card'
+export * from '@/components/pos/pos-table-pagination'
+export * from '@/components/pos/pos-form-modal'
+export * from '@/components/pos/pos-page-header'
+export * from '@/components/pos/pos-page-actions'
+export * from '@/components/pos/pos-table-toolbar'
+export * from '@/components/pos/pos-table-status'
+export * from '@/components/pos/pos-colors'

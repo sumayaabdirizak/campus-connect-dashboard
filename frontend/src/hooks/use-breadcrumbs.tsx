@@ -3,8 +3,8 @@
 import { usePathname } from 'next/navigation';
 import { useMemo } from 'react';
 import { useAuthStore } from '@/lib/auth-store';
-import { useCourseDetail } from '@/features/teacher-courses/api/queries';
-import { useStudentCourseDetail } from '@/features/student-courses/api/queries';
+import { useCourseDetail } from '@/lib/teacher-courses/queries';
+import { useStudentCourseDetail } from '@/lib/student-courses/queries';
 
 type BreadcrumbItem = {
   title: string;

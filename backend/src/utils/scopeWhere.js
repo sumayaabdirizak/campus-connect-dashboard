@@ -1,7 +1,7 @@
 /**
  * Prisma `where` fragment: users tied to a faculty (students, lecturers by affiliation or
- * home department, deans, faculty admins, and the user set as Faculty.dean).
- * Used by Dean / Faculty Admin scoped list endpoints.
+ * home department, deans, and the user set as Faculty.dean).
+ * Used by Dean scoped list endpoints.
  * @param {number} facultyId
  * @param {Record<string, unknown>} [extra] merged with AND on top-level user filter
  */
@@ -22,7 +22,6 @@ export function whereUsersInFaculty(facultyId, extra = {}) {
         },
       },
       { deanProfile: { facultyId: fid } },
-      { facultyAdminProfile: { faculty_id: fid } },
       { facultiesAsDean: { some: { id: fid } } },
     ],
   };

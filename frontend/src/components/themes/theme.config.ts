@@ -6,7 +6,11 @@ export const DEFAULT_THEME = 'campus-connect';
 
 export const THEMES = [
   {
-    name: 'Campus Connect',
+    name: 'Pastel Campus',
+    value: 'pastel-campus'
+  },
+  {
+    name: 'Jazeera University',
     value: 'campus-connect'
   },
   {

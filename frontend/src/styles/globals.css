@@ -6,6 +6,7 @@
 
 @import './theme.css';
 @import './sweetalert-theme.css';
+@import './communication.css';
 
 /* ─── Semantic status colours exposed as Tailwind utilities ────────────
  * `bg-warning`, `text-warning-foreground`, `border-warning`, `bg-warning-muted`
@@ -23,14 +24,63 @@
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
   --color-info-muted: var(--info-muted);
+  --color-content-area: var(--content-area, var(--muted));
+  --color-sidebar-icon: var(--sidebar-icon, var(--primary));
+  --color-sidebar-muted: var(--sidebar-muted, var(--muted-foreground));
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground select-none;
+    /* Award-craft rendering: crisper glyphs, better kerning. */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Headings + titles use the theme's display face with tightened tracking —
+     the single biggest "designed" upgrade, applied app-wide. Falls back to
+     --font-sans on themes that don't define --font-display. Components that
+     render headings as plain divs can opt in with the `.font-display` class. */
+  h1,
+  h2,
+  h3,
+  .font-display,
+  [data-slot='card-title'],
+  [data-slot='dialog-title'],
+  [data-slot='sheet-title'],
+  [data-slot='alert-dialog-title'] {
+    font-family: var(--font-display, var(--font-sans));
+  }
+  h1 {
+    letter-spacing: -0.03em;
+  }
+  h2,
+  [data-slot='card-title'],
+  [data-slot='dialog-title'],
+  [data-slot='sheet-title'],
+  [data-slot='alert-dialog-title'] {
+    letter-spacing: -0.02em;
+  }
+  h3 {
+    letter-spacing: -0.01em;
+  }
+
+  /* Pastel-tinted text selection — a small detail award sites always nail. */
+  ::selection {
+    background-color: color-mix(in oklch, var(--primary) 22%, transparent);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
   }
 
   /* Copyable / editable regions opt back in to text selection. */
@@ -102,6 +152,36 @@
   z-index: 1;
 }
 
+@keyframes notification-bell-ring {
+  0%,
+  12%,
+  100% {
+    transform: rotate(0deg);
+  }
+  2%,
+  6% {
+    transform: rotate(14deg);
+  }
+  4%,
+  8% {
+    transform: rotate(-14deg);
+  }
+  10% {
+    transform: rotate(7deg);
+  }
+}
+
+.notification-bell-unread {
+  transform-origin: 50% 15%;
+  animation: notification-bell-ring 3.5s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notification-bell-unread {
+    animation: none;
+  }
+}
+
 @keyframes reveal {
   from {
     /* Use CSS variables for the origin, defaulting to center if not set */
@@ -151,7 +231,6 @@
   }
 }
 
-
 /* ─── View Transitions for quiz question swap ────────────────────────────
  * Defines a custom slide animation when the .startViewTransition() callback
  * in StudentAttempt.navigateTo() swaps questions. Without these rules the
@@ -169,10 +248,16 @@
   animation: quiz-card-in 260ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
 @keyframes quiz-card-out {
-  to { opacity: 0; transform: translateX(-24px); }
+  to {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
 }
 @keyframes quiz-card-in {
-  from { opacity: 0; transform: translateX(24px); }
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
 }
 
 /* Honour reduced-motion: students who have the OS setting on get a clean
@@ -184,3 +269,102 @@
     animation-name: none;
   }
 }
+
+/* ─── Award-craft motion utilities (opt-in, reduced-motion safe) ──────────
+ * Shared micro-interaction helpers so cards/sections across the app move
+ * with one consistent, tasteful cadence (150–200ms ease) — the "Hover
+ * States / Godly" polish, applied deliberately rather than everywhere. */
+@layer utilities {
+  .hover-lift {
+    transition:
+      transform 180ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: transform;
+  }
+  .hover-lift:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .press-scale {
+    transition: transform 120ms ease;
+  }
+  .press-scale:active {
+    transform: scale(0.97);
+  }
+
+  @keyframes cc-fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animate-fade-up {
+    animation: cc-fade-up 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes cc-carousel-progress {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hover-lift,
+    .hover-lift:hover,
+    .press-scale,
+    .press-scale:active {
+      transition: none;
+      transform: none;
+    }
+    .animate-fade-up {
+      animation: none;
+    }
+  }
+}
+
+/* DreamsPOS style 3D rotatebox card-loading animation */
+@keyframes cc-rotatebox {
+  0% {
+    transform: perspective(120px) rotateX(0deg) rotateY(0deg);
+  }
+  50% {
+    transform: perspective(120px) rotateX(-180.1deg) rotateY(0deg);
+  }
+  100% {
+    transform: perspective(120px) rotateX(-180deg) rotateY(-179.9deg);
+  }
+}
+
+.card-disabled-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(1px);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: progress;
+}
+
+.dark .card-disabled-overlay {
+  background-color: rgba(15, 23, 42, 0.7);
+}
+
+.card-portlets-loader {
+  background-color: var(--primary);
+  animation: cc-rotatebox 1.2s infinite ease-in-out;
+  height: 30px;
+  width: 30px;
+  border-radius: 4px;
+}
+

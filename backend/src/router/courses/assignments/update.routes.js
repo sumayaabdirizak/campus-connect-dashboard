@@ -1,0 +1,165 @@
+import { Router } from 'express';
+import { prisma } from '../../../db/prisma.js';
+import { asyncHandler } from '../../../utils/asyncHandler.js';
+import { requireAssignmentManage } from '../../../middleware/courseOfferingRbac.js';
+import {
+  attachmentInclude,
+  normaliseModes,
+  normaliseMaxMarks,
+  normaliseLateWindow,
+  resolveAssignmentMaxMarks,
+  DEFAULT_ASSIGNMENT_MARK_WEIGHT,
+} from '../../../controllers/courses/assignments/shared.js';
+import {
+  notifyAssignmentPublished,
+  notifyAssignmentUpdated,
+} from '../../../controllers/courses/assignments/notifyStudents.js';
+import {
+  ensureLifecycle,
+  enrichAssignmentDto,
+  publishStatusFromDraft,
+  transitionPublish,
+} from '../../../services/assignments/lifecycleService.js';
+import { assertUniqueAssignmentTitle } from '../../../utils/assertUniqueCourseTitle.js';
+
+const router = Router();
+
+router.patch('/:assignmentId', requireAssignmentManage(), asyncHandler(async (req, res) => {
+  const { assignmentId } = req.params;
+  const { title, description, open_at, due_date, is_draft, workMode, gradingScope, lateWindowMinutes, maxMarks } = req.body;
+  const modes = normaliseModes({ workMode, gradingScope });
+  if (modes.error) return res.status(400).json({ message: modes.error });
+  const marks = normaliseMaxMarks(maxMarks);
+  if (marks.error) return res.status(400).json({ message: marks.error });
+  const late = normaliseLateWindow(lateWindowMinutes);
+  if (late.error) return res.status(400).json({ message: late.error });
+
+  const id = parseInt(assignmentId, 10);
+  const before = await prisma.assignment.findUnique({
+    where: { id },
+    select: {
+      open_at: true,
+      due_date: true,
+      title: true,
+      lateWindowMinutes: true,
+      maxMarks: true,
+      courseOfferingId: true,
+      courseOffering: { select: { publicId: true } },
+      lifecycle: { select: { publishStatus: true } },
+    },
+  });
+  if (!before) return res.status(404).json({ message: 'Assignment not found' });
+
+  let nextTitle = undefined;
+  if (title !== undefined) {
+    const titleCheck = await assertUniqueAssignmentTitle(prisma, {
+      courseOfferingId: before.courseOfferingId,
+      title,
+      excludeId: id,
+    });
+    if (!titleCheck.ok) return res.status(409).json({ message: titleCheck.message });
+    nextTitle = titleCheck.title;
+  }
+
+  const nextOpen =
+    open_at !== undefined ? (open_at ? new Date(open_at) : null) : before.open_at;
+  const nextDue = due_date ? new Date(due_date) : before.due_date;
+
+  if (due_date && Number.isNaN(nextDue.getTime())) {
+    return res.status(400).json({ message: 'due_date is invalid' });
+  }
+  if (open_at && Number.isNaN(nextOpen?.getTime?.() ?? NaN)) {
+    return res.status(400).json({ message: 'open_at is invalid' });
+  }
+  if (nextOpen && nextDue && nextOpen.getTime() >= nextDue.getTime()) {
+    return res.status(400).json({ message: 'open_at must be before due_date' });
+  }
+
+  const actorUserId = Number(req.user?.id ?? req.user?.sub) || null;
+  const wasDraft = before.lifecycle?.publishStatus === 'DRAFT';
+  const willPublish = is_draft === false && wasDraft;
+  const isPublished = before.lifecycle?.publishStatus === 'PUBLISHED';
+  const nextMaxMarks = marks.data.maxMarks ?? before.maxMarks ?? DEFAULT_ASSIGNMENT_MARK_WEIGHT;
+  const shouldResolveMarks = marks.data.maxMarks !== undefined || willPublish;
+  let markBudgetNotice = null;
+  let resolvedMaxMarks = nextMaxMarks;
+
+  if (shouldResolveMarks) {
+    const markResolve = await resolveAssignmentMaxMarks(
+      before.courseOfferingId,
+      nextMaxMarks,
+      id
+    );
+    if (markResolve.error) return res.status(400).json({ message: markResolve.error });
+    resolvedMaxMarks = markResolve.data.marks;
+    if (markResolve.data.clamped) markBudgetNotice = markResolve.data.clampMessage;
+  }
+
+  const assignment = await prisma.$transaction(async (tx) => {
+    const updated = await tx.assignment.update({
+      where: { id },
+      data: {
+        ...(nextTitle !== undefined && { title: nextTitle }),
+        ...(description !== undefined && { description }),
+        ...(open_at !== undefined && { open_at: open_at ? new Date(open_at) : null }),
+        ...(due_date && { due_date: new Date(due_date) }),
+        ...modes.data,
+        ...late.data,
+        ...(shouldResolveMarks ? { maxMarks: resolvedMaxMarks } : {}),
+      },
+      include: {
+        submissions: true,
+        lifecycle: true,
+        ...attachmentInclude,
+        _count: { select: { submissions: true } },
+      },
+    });
+
+    if (is_draft !== undefined) {
+      await transitionPublish(
+        id,
+        publishStatusFromDraft(Boolean(is_draft)),
+        actorUserId,
+        tx,
+      );
+      updated.lifecycle = {
+        ...(updated.lifecycle ?? {}),
+        publishStatus: publishStatusFromDraft(Boolean(is_draft)),
+      };
+    } else {
+      await ensureLifecycle(
+        id,
+        {
+          isDraft: updated.lifecycle?.publishStatus === 'DRAFT',
+          openAt: updated.open_at,
+          dueDate: updated.due_date,
+          lateWindowMinutes: updated.lateWindowMinutes,
+          actorUserId,
+          eventType: 'SCHEDULE_CHANGED',
+        },
+        tx,
+      );
+    }
+    return updated;
+  });
+
+  const dto = enrichAssignmentDto(assignment);
+  const publicId = before.courseOffering?.publicId;
+  if (publicId && wasDraft && !dto.is_draft) {
+    notifyAssignmentPublished(assignment, publicId);
+  } else if (
+    publicId &&
+    !dto.is_draft &&
+    ((nextTitle !== undefined && nextTitle !== before.title) ||
+      (due_date && new Date(due_date).getTime() !== before.due_date.getTime()))
+  ) {
+    notifyAssignmentUpdated(assignment, publicId);
+  }
+
+  res.json({
+    ...dto,
+    ...(markBudgetNotice ? { markBudgetNotice } : {}),
+  });
+}));
+
+export default router;

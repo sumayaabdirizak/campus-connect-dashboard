@@ -1,0 +1,75 @@
+/* Communication module tokens — scoped under [data-comm] wrappers.
+ * Brand: Pharmacy teal + secondary orange (campus-connect theme). */
+
+[data-comm] {
+  --comm-rail-w: 4.25rem;
+  --comm-list-w: 20rem;
+  --comm-bubble-radius: 1.125rem;
+  --comm-composer-radius: 1.5rem;
+  --comm-online: oklch(0.62 0.17 145);
+  --comm-offline: oklch(0.7 0 0);
+  --comm-busy: oklch(0.65 0.18 25);
+  --comm-unread: var(--primary);
+  --comm-surface: color-mix(in oklch, var(--muted) 55%, var(--background));
+  --comm-chat-bg: #f8fafc;
+  --comm-pattern: none;
+}
+
+.dark [data-comm],
+[data-comm].dark {
+  --comm-chat-bg: #0f172a;
+  --comm-pattern: none;
+}
+
+[data-comm] .comm-chat-canvas {
+  background-color: #fff;
+  background-image: none;
+}
+
+[data-comm] .comm-rail-btn {
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+[data-comm] .comm-rail-btn:hover {
+  transform: translateY(-1px);
+}
+
+[data-comm] .comm-row {
+  transition:
+    background-color 140ms ease,
+    box-shadow 140ms ease;
+}
+
+[data-comm] .comm-bubble-in {
+  animation: comm-bubble-in 220ms ease-out;
+}
+
+@keyframes comm-bubble-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-comm] .comm-rail-btn,
+  [data-comm] .comm-row,
+  [data-comm] .comm-bubble-in {
+    transition: none !important;
+    animation: none !important;
+  }
+  [data-comm] .comm-rail-btn:hover {
+    transform: none;
+  }
+  [data-comm] .animate-pulse,
+  [data-comm] .animate-spin {
+    animation: none !important;
+  }
+}

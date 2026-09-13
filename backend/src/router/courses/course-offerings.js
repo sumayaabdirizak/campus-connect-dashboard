@@ -1,0 +1,48 @@
+import { Router } from 'express';
+import listRoutes from './assignments/list.routes.js';
+import createRoutes from './assignments/create.routes.js';
+import updateRoutes from './assignments/update.routes.js';
+import deleteRoutes from './assignments/delete.routes.js';
+import duplicateRoutes from './assignments/duplicate.routes.js';
+import attachmentsUploadRoutes from './assignments/attachmentsUpload.routes.js';
+import attachmentsManageRoutes from './assignments/attachmentsManage.routes.js';
+import listSubmissionsRoutes from './assignments/listSubmissions.routes.js';
+import submitRoutes from './assignments/submit.routes.js';
+import submitUploadRoutes from './assignments/submitUpload.routes.js';
+import submissionFileRoutes from './assignments/submissionFile.routes.js';
+import mySubmissionRoutes from './assignments/mySubmission.routes.js';
+import mySummaryRoutes from './assignments/mySummary.routes.js';
+import gradeRoutes from './assignments/grade.routes.js';
+import aiSuggestRoutes from './assignments/aiSuggest.routes.js';
+import extensionsListRoutes from './assignments/extensionsList.routes.js';
+import extensionsCreateRoutes from './assignments/extensionsCreate.routes.js';
+import extensionsBatchRoutes from './assignments/extensionsBatch.routes.js';
+import extensionsDeleteRoutes from './assignments/extensionsDelete.routes.js';
+import studentWorkRoutes from './assignments/studentWork.routes.js';
+import markBudgetRoutes from './assignments/markBudget.routes.js';
+
+const router = Router();
+
+router.use(listRoutes);
+router.use(createRoutes);
+router.use(updateRoutes);
+router.use(deleteRoutes);
+router.use(duplicateRoutes);
+router.use(attachmentsUploadRoutes);
+router.use(attachmentsManageRoutes);
+router.use(listSubmissionsRoutes);
+router.use(submissionFileRoutes);
+router.use(submitRoutes);
+router.use(submitUploadRoutes);
+router.use(mySubmissionRoutes);
+router.use(mySummaryRoutes);
+router.use(gradeRoutes);
+router.use(aiSuggestRoutes);
+router.use(extensionsListRoutes);
+router.use(extensionsCreateRoutes);
+router.use(extensionsBatchRoutes);
+router.use(extensionsDeleteRoutes);
+router.use(studentWorkRoutes);
+router.use(markBudgetRoutes);
+
+export default router;

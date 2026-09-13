@@ -1,14 +1,14 @@
 'use client';
 
 import { useStore } from '@tanstack/react-form';
-import { Switch } from '@/components/ui/switch';
-import { FieldDescription, FieldLabel } from '@/components/ui/field';
+import { Switch } from '@/features/ui/components/switch';
+import { FieldDescription, FieldLabel } from '@/features/ui/components/field';
 import {
   useFieldContext,
   FormFieldSet,
   FormField,
   createFormField
-} from '@/components/ui/form-context';
+} from '@/features/ui/components/form-context';
 
 interface SwitchFieldProps {
   label: string;

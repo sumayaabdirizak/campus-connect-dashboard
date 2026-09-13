@@ -1,0 +1,28 @@
+//
+// layout.scss
+//
+
+@use "../variables" as *;
+@use "../utils/mixins" as *;
+
+.page-wrapper {
+    @include transition(all 0.5s ease);
+    margin: 12px 12px 12px $sidenav-width;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    left: 0;
+    min-height: calc(100vh - ($topbar-height + 1px));
+    @include transition(all 0.2s ease);
+    @include respond-below(lg) {
+        margin: 0;
+    }
+    .content {
+        padding:  1.5rem;
+        background: linear-gradient(180deg, #FFFFFF 0%, #F5FEFF 100%);
+        border-radius: $border-radius-lg;
+        @include respond-below(lg) {
+            border-radius: 0;
+        }
+    }
+}
