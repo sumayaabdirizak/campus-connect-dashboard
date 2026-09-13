@@ -100,7 +100,6 @@ export function AdminReportFilters({
       className={className}
       description='Default is the active university semester. Custom dates stay within that semester through today.'
       storageKey={STORAGE_KEY}
-      getTemplate={() => draft}
       onLoadTemplate={(raw) => {
         if (isAdminFilters(raw)) {
           setDraft({

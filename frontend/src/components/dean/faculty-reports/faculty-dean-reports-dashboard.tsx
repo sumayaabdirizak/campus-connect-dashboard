@@ -23,6 +23,18 @@ const FacultyDeanReportsPerformance = dynamic(
     import('./faculty-dean-reports-performance').then((m) => m.FacultyDeanReportsPerformance),
   { ssr: false, loading: chartLoading }
 );
+const FacultyDeanReportsTopStudents = dynamic(
+  () =>
+    import('./faculty-dean-reports-top-students').then((m) => m.FacultyDeanReportsTopStudents),
+  { ssr: false, loading: chartLoading }
+);
+const FacultyDeanReportsTopDepartments = dynamic(
+  () =>
+    import('./faculty-dean-reports-top-departments').then(
+      (m) => m.FacultyDeanReportsTopDepartments
+    ),
+  { ssr: false, loading: chartLoading }
+);
 import type { FacultyDeanReportsDashboardProps } from './faculty-dean-reports-types';
 
 export type { FacultyDeanReportsDashboardProps } from './faculty-dean-reports-types';
@@ -54,7 +66,12 @@ export function FacultyDeanReportsDashboard({
       />
 
       <FacultyDeanReportsAnalyticsCharts data={data} />
-      <FacultyDeanReportsPerformance data={data} />
+
+      <div className='grid grid-cols-1 gap-4 xl:grid-cols-3'>
+        <FacultyDeanReportsPerformance data={data} />
+        <FacultyDeanReportsTopStudents data={data} />
+        <FacultyDeanReportsTopDepartments data={data} />
+      </div>
 
       <div className='grid grid-cols-1 gap-4 xl:grid-cols-3'>
         <FacultyDeanReportsRiskPanel data={data} />

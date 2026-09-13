@@ -65,8 +65,7 @@ export function AcademicScopeBreadcrumb({
   if (!hasScope) {
     return (
       <p className='mb-3 text-sm text-muted-foreground'>
-        Workflow: Faculty → Department → Program → Batch → offerings. Click a row name to
-        continue.
+        
       </p>
     );
   }

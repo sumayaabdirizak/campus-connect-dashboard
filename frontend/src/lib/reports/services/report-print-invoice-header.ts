@@ -36,8 +36,8 @@ export type ReportInvoiceMeta = {
 };
 
 function logoSrc(): string {
-  if (typeof window === 'undefined') return '/assets/img/brand/sidebarlogo.png';
-  return `${window.location.origin}/assets/img/brand/sidebarlogo.png`;
+  if (typeof window === 'undefined') return '/assets/img/brand/jazeera-university.jpg';
+  return `${window.location.origin}/assets/img/brand/jazeera-university.jpg`;
 }
 
 function makeReportId(prefix: string): string {
@@ -76,7 +76,7 @@ export function buildReportInvoiceHeader(meta: ReportInvoiceMeta): string {
 
   return `
 <header class="rpt-head">
-  <img class="rpt-logo" src="${escapeHtml(logoSrc())}" alt="${escapeHtml(AUTH_BRAND.productName)}" width="180" height="46" />
+  <img class="rpt-logo" src="${escapeHtml(logoSrc())}" alt="${escapeHtml(AUTH_BRAND.productName)}" width="180" height="52" />
   <div class="rpt-org">${escapeHtml(AUTH_BRAND.organization)}</div>
   <div class="rpt-doc-title">${escapeHtml(meta.documentTitle)}</div>
   ${meta.documentSubtitle ? `<div class="rpt-doc-sub">${escapeHtml(meta.documentSubtitle)}</div>` : ''}

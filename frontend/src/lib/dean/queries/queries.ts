@@ -15,6 +15,9 @@ export const deanKeys = {
   offerings: (params?: any) => ['dean', 'offerings', params] as const,
   analytics: () => ['dean', 'analytics'] as const,
   reports: (params?: Record<string, string>) => ['dean', 'reports', params] as const,
+  facultyDashboard: (params?: Record<string, string>) =>
+    ['reports', 'faculty-dashboard', params] as const,
+  clubsReport: (params?: Record<string, string>) => ['reports', 'clubs', params] as const,
 };
 
 // ── Users ──────────────────────────────────────────────────────────────────
@@ -103,5 +106,26 @@ export const useDeanReports = (params?: Record<string, string>) =>
   useQuery({
     queryKey: deanKeys.reports(params),
     queryFn: () => deanApi.getReports(params),
+    staleTime: 60_000,
+  });
+
+/** Faculty dashboard reachable by Dean or Super Admin (Super Admin: pass
+ *  `facultyId` in params to choose which faculty to view). */
+export const useFacultyDashboardReport = (
+  params?: Record<string, string>,
+  enabled: boolean = true
+) =>
+  useQuery({
+    queryKey: deanKeys.facultyDashboard(params),
+    queryFn: () => deanApi.getFacultyDashboard(params),
+    staleTime: 60_000,
+    enabled,
+  });
+
+/** Clubs oversight report reachable by Dean or Super Admin. */
+export const useClubsReport = (params?: Record<string, string>) =>
+  useQuery({
+    queryKey: deanKeys.clubsReport(params),
+    queryFn: () => deanApi.getClubsReport(params),
     staleTime: 60_000,
   });

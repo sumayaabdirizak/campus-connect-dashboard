@@ -74,6 +74,8 @@ export function printOfflineQuiz(quiz: Quiz, questions: QuizQuestion[]) {
       <title>${escapeHtml(quiz.title)}</title>
       <style>
         body { font-family: system-ui, sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #111; }
+        .letterhead { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+        .letterhead img { height: 52px; width: auto; }
         h1 { font-size: 22px; margin-bottom: 4px; }
         .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
         .question { margin-bottom: 22px; page-break-inside: avoid; }
@@ -91,6 +93,9 @@ export function printOfflineQuiz(quiz: Quiz, questions: QuizQuestion[]) {
       </style>
     </head>
     <body>
+      <div class="letterhead">
+        <img src="${escapeHtml(`${window.location.origin}/assets/img/brand/jazeera-university.jpg`)}" alt="Jazeera University" />
+      </div>
       <h1>${escapeHtml(quiz.title)}</h1>
       <div class="meta">${quiz.duration_minutes} min · ${sorted.length} question${sorted.length === 1 ? '' : 's'} · ${sorted.reduce((s, q) => s + q.points, 0)} pts total</div>
       ${questionsHtml}

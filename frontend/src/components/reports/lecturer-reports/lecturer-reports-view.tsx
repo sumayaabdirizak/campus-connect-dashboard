@@ -211,7 +211,6 @@ function LecturerReportsTable({ onOpen }: { onOpen: (id: number) => void }) {
       <GlobalReportFilters
         description='Filter by department, lecturer, and date — then apply.'
         storageKey={STORAGE_KEY}
-        getTemplate={() => draftFilters}
         onLoadTemplate={(raw) => {
           if (!raw || typeof raw !== 'object') return;
           const o = raw as Partial<Filters>;

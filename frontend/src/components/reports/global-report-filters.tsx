@@ -1,7 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { Bookmark, RotateCcw, SlidersHorizontal } from 'lucide-react';
+import { RotateCcw, SlidersHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/notifications';
@@ -17,10 +17,8 @@ type GlobalReportFiltersProps = {
   children: ReactNode;
   onApply: () => void;
   onReset: () => void;
-  /** localStorage key — enables Save template */
+  /** localStorage key — enables Load template */
   storageKey?: string;
-  /** Snapshot to persist when Save template is clicked */
-  getTemplate?: () => unknown;
   /** Called after a saved template is loaded successfully */
   onLoadTemplate?: (raw: unknown) => void;
   sticky?: boolean;
@@ -35,7 +33,6 @@ export function GlobalReportFilters({
   onApply,
   onReset,
   storageKey,
-  getTemplate,
   onLoadTemplate,
   sticky,
   className,
@@ -43,16 +40,6 @@ export function GlobalReportFilters({
   applyDisabled,
   description
 }: GlobalReportFiltersProps) {
-  const handleSaveTemplate = () => {
-    if (!storageKey || !getTemplate) return;
-    try {
-      localStorage.setItem(storageKey, JSON.stringify(getTemplate()));
-      showToast('success', 'Filter template saved');
-    } catch {
-      showToast('error', 'Could not save filter template');
-    }
-  };
-
   const handleLoadTemplate = () => {
     if (!storageKey || !onLoadTemplate) return;
     try {
@@ -125,18 +112,6 @@ export function GlobalReportFilters({
           <RotateCcw className='mr-1.5 size-3.5' aria-hidden />
           Reset
         </Button>
-        {storageKey && getTemplate ? (
-          <Button
-            type='button'
-            size='sm'
-            variant='ghost'
-            className='h-9 font-medium'
-            onClick={handleSaveTemplate}
-          >
-            <Bookmark className='mr-1.5 size-3.5' aria-hidden />
-            Save template
-          </Button>
-        ) : null}
       </div>
     </section>
   );

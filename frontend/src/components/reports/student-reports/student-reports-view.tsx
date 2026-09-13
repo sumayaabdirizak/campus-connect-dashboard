@@ -70,6 +70,7 @@ import {
   useStudentReportsList
 } from '@/lib/teacher-courses/queries';
 import { getStudentReportsList } from '@/lib/teacher-courses/services';
+import { courseOfferingPath } from '@/lib/course-offering-href';
 import { cn } from '@/lib/utils';
 import { showToast } from '@/lib/notifications';
 
@@ -315,7 +316,6 @@ function StudentReportsTable({
       <GlobalReportFilters
         description='Filter by department, course, student, and date — then apply.'
         storageKey={STORAGE_KEY}
-        getTemplate={() => draftFilters}
         onLoadTemplate={(raw) => {
           if (!raw || typeof raw !== 'object') return;
           const o = raw as Partial<StudentReportFilters>;

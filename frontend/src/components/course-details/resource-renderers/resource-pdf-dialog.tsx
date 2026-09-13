@@ -97,6 +97,11 @@ export function ResourcePdfDialog({
       aria-label={resource.title}
       // Hide immediately on close while the viewer finishes teardown.
       style={viewerActive ? undefined : { pointerEvents: 'none', opacity: 0 }}
+      // React bubbles synthetic events through the component tree, not the
+      // DOM tree — even though this is portaled to document.body, clicks
+      // here would otherwise reach the ResourceCard's own onClick (which
+      // reopens the preview), undoing the close button in the same tick.
+      onClick={(e) => e.stopPropagation()}
     >
       <header className='flex shrink-0 items-center justify-between gap-3 border-b px-4 py-3'>
         <div className='min-w-0'>

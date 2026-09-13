@@ -10,7 +10,7 @@ import { PendingTab } from './pending-tab'
 const STATUS_FILTERS = ['APPROVED', 'SUSPENDED', 'REJECTED'] as const
 
 export function DeanClubsPage() {
-  const [tab, setTab] = useState('pending')
+  const [tab, setTab] = useState('all')
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
   const { data: pendingData } = usePendingClubs()
   const pendingCount = pendingData?.clubs?.length ?? 0

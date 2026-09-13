@@ -93,6 +93,8 @@ export function buildQuizPreviewHtml(data: QuizPreviewData): string {
         }
         .brand { font-weight: 700; font-size: 15px; color: #3b82f6; }
         .doc-type { font-weight: 700; font-size: 15px; }
+        .letterhead { display: flex; justify-content: center; margin-bottom: 12px; }
+        .letterhead img { height: 52px; width: auto; }
         .paper-title {
           text-align: center;
           font-size: 20px;
@@ -146,6 +148,9 @@ export function buildQuizPreviewHtml(data: QuizPreviewData): string {
         <span class="doc-type">Quiz</span>
       </div>
 
+      <div class="letterhead">
+        <img src="${escapeHtml(`${window.location.origin}/assets/img/brand/jazeera-university.jpg`)}" alt="Jazeera University" />
+      </div>
       <h1 class="paper-title">${escapeHtml(paperQuizTitle(data.title))}</h1>
       <div class="student-row">
         <span>Name: <span class="line"></span></span>

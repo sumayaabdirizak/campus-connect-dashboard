@@ -386,7 +386,6 @@ function CourseReportsTable({
       <GlobalReportFilters
         description='Filter by department, course, and date — then apply.'
         storageKey={COURSE_FILTER_STORAGE}
-        getTemplate={() => draftFilters}
         onLoadTemplate={(raw) => {
           if (!raw || typeof raw !== 'object') return;
           const o = raw as Partial<CourseReportFilters>;

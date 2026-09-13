@@ -71,9 +71,14 @@ export function assembleDeanReport({
         passFail: performanceDistribution,
       },
       students: studentReports,
+      topStudents: [...studentReports]
+        .sort((a, b) => (b.gpa ?? 0) - (a.gpa ?? 0))
+        .slice(0, 10)
+        .map((s, i) => ({ ...s, rank: i + 1 })),
       instructors: instructorReports,
       courses: courseReports,
       departments: rankedDepartments.map((d, i) => ({ ...d, rank: i + 1 })),
+      topDepartments: rankedDepartments.slice(0, 10).map((d, i) => ({ ...d, rank: i + 1 })),
     },
     assessment: assessmentReports,
     risks: {

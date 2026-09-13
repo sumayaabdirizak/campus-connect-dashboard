@@ -155,7 +155,6 @@ export function FacultyReportsFilters({
       className={className}
       description='Uses the active university semester by default. Custom dates stay within that semester through today.'
       storageKey={STORAGE_KEY}
-      getTemplate={() => draft}
       onLoadTemplate={(raw) => {
         if (isFacultyFilters(raw)) {
           setDraft({

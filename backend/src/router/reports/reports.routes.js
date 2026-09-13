@@ -1,14 +1,84 @@
 import { Router } from 'express';
 import { requireRole } from '../../middleware/requireRole.js';
+import { requireDeanOrSuperAdmin } from '../../middleware/requireDeanOrSuperAdmin.js';
 import { apiErrorBody } from '../../utils/apiEnvelope.js';
 import { buildReport, REPORT_SCOPES } from '../../services/reports/buildReport.js';
 import { parseReportWindow } from '../../services/reports/dateWindow.js';
 import { listSubjects } from '../../services/reports/listSubjects.js';
 import { listReport, filterReportListRows } from '../../services/reports/listReport.js';
+import { buildDeanReports } from '../../services/deanReports.service.js';
+import { buildClubsReport } from '../../services/dean-reports/clubsAnalytics.js';
+import {
+  isAllTimePeriod,
+  isSemesterPeriod,
+} from '../../services/academic/resolveActiveSemesterWindow.js';
 
 const router = Router();
 
 const reportStaff = requireRole('SUPER_ADMIN', 'DEAN');
+
+/**
+ * GET /api/reports/faculty-dashboard?facultyId=&period=
+ * The full Dean Reports dashboard (KPIs, top/bottom courses, top departments,
+ * top students, risk sections, insights) — open to Deans (their own faculty)
+ * and Super Admins (any faculty via ?facultyId=).
+ */
+router.get('/faculty-dashboard', requireDeanOrSuperAdmin, async (req, res, next) => {
+  try {
+    const facultyId = Number(req.facultyId);
+    if (!Number.isInteger(facultyId) || facultyId <= 0) {
+      return res
+        .status(400)
+        .json(apiErrorBody('facultyId is required (Super Admin: pass ?facultyId=).', null));
+    }
+
+    const rawPeriod = String(req.query.period ?? 'semester').trim();
+    const period = isSemesterPeriod(rawPeriod)
+      ? 'semester'
+      : isAllTimePeriod(rawPeriod)
+        ? 'all'
+        : String(rawPeriod).toLowerCase() === 'custom'
+          ? 'custom'
+          : rawPeriod;
+    const periodMonths =
+      period === 'semester' || period === 'all' || period === 'custom'
+        ? period
+        : Number(rawPeriod.replace(/\D/g, '') || 6) || 6;
+
+    const from = req.query.from ? String(req.query.from).slice(0, 10) : null;
+    const to = req.query.to ? String(req.query.to).slice(0, 10) : null;
+
+    const filters = {
+      departmentId: req.query.departmentId || null,
+      batchId: req.query.batchId || null,
+      sectionId: req.query.sectionId || null,
+      academicYearId: req.query.academicYearId || null,
+      semesterId: req.query.semesterId || null,
+      studentLevel: req.query.studentLevel || null,
+      status: req.query.status || null,
+    };
+
+    const data = await buildDeanReports({ facultyId, period, periodMonths, from, to, filters });
+    res.json(data);
+  } catch (e) {
+    next(e);
+  }
+});
+
+/**
+ * GET /api/reports/clubs?facultyId=
+ * Clubs oversight report — Deans see their own faculty's clubs; Super Admins
+ * see any faculty's clubs via ?facultyId=, or every club when omitted.
+ */
+router.get('/clubs', requireDeanOrSuperAdmin, async (req, res, next) => {
+  try {
+    const facultyId = req.facultyId != null ? Number(req.facultyId) : null;
+    const data = await buildClubsReport({ facultyId });
+    res.json(data);
+  } catch (e) {
+    next(e);
+  }
+});
 
 /**
  * GET /api/reports/:scope/list?period=

@@ -86,9 +86,21 @@ export const studentPortalNavGroup: NavGroup = {
 export const communicationNavGroup: NavGroup = {
   label: 'Communication',
   items: [
-    { title: 'Messages', url: '/dashboard/messages', icon: 'chat', isActive: false, access: {} },
+    {
+      title: 'Messages',
+      url: '/dashboard/messages',
+      icon: 'chat',
+      isActive: false,
+      access: { roles: ['DEAN', 'TEACHER', 'STUDENT'] },
+    },
     { title: 'Announcements', url: '/dashboard/announcements', icon: 'speakerphone', isActive: false, access: {} },
-    { title: 'Calendar', url: '/dashboard/calendar', icon: 'calendar', isActive: false, access: {} },
+    {
+      title: 'Calendar',
+      url: '/dashboard/calendar',
+      icon: 'calendar',
+      isActive: false,
+      access: { roles: ['DEAN', 'TEACHER', 'STUDENT'] },
+    },
     {
       title: 'Clubs',
       url: '/dashboard/dean/clubs',
@@ -138,6 +150,18 @@ export const reportsNavGroup: NavGroup = {
           title: 'Batch reports',
           url: '/dashboard/reports/batch-reports',
           icon: 'kanban',
+          access: aggregateReportRoles,
+        },
+        {
+          title: 'Faculty dashboard',
+          url: '/dashboard/reports/faculty-dashboard',
+          icon: 'barChart',
+          access: aggregateReportRoles,
+        },
+        {
+          title: 'Clubs report',
+          url: '/dashboard/reports/clubs-report',
+          icon: 'teams',
           access: aggregateReportRoles,
         },
       ],

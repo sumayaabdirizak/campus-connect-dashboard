@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
 import type { Department } from '@/lib/departments/types';
-import { programLevels } from '@/lib/departments/services/departments-table-utils';
 import { academicScopeHref } from '@/lib/academic-scope/scope-href';
 import { DepartmentRowActions } from './department-row-actions';
 
@@ -14,7 +13,6 @@ export function DepartmentTableRow({
   department: Department;
   col: (id: string) => boolean;
 }) {
-  const levels = programLevels(department);
   const programsHref = academicScopeHref('/dashboard/programs', {
     facultyId: department.facultyId,
     departmentId: department.id
@@ -43,13 +41,6 @@ export function DepartmentTableRow({
       {col('faculty') ? (
         <PosTableCell>
           <span className='text-muted-foreground text-sm'>{department.faculty?.name ?? '—'}</span>
-        </PosTableCell>
-      ) : null}
-      {col('levels') ? (
-        <PosTableCell>
-          {levels.length > 0
-            ? levels.map((l) => l.replace('_', ' ')).join(', ')
-            : '—'}
         </PosTableCell>
       ) : null}
       {col('created') ? (

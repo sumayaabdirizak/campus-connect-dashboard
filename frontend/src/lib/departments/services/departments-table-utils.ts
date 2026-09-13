@@ -7,7 +7,6 @@ export const DEPT_COLUMN_OPTS = [
   { id: 'name', label: 'Department' },
   { id: 'code', label: 'Code' },
   { id: 'faculty', label: 'Faculty' },
-  { id: 'levels', label: 'Program levels' },
   { id: 'created', label: 'Created' }
 ] as const;
 
@@ -18,11 +17,6 @@ export const DEPT_SORT_OPTS = [
 ];
 
 export const DEPT_ALL_COLS = DEPT_COLUMN_OPTS.map((c) => c.id);
-
-export function programLevels(dept: Department): string[] {
-  const levels = dept.programs?.map((program) => program.level) ?? [];
-  return [...new Set(levels)];
-}
 
 export function sortDepartments(rows: Department[], sortId: string) {
   const copy = [...rows];
@@ -36,7 +30,7 @@ export function sortDepartments(rows: Department[], sortId: string) {
   return copy;
 }
 
-const DEPT_EXPORT_HEADER = ['ID', 'Department', 'Code', 'Faculty', 'Program levels', 'Created'];
+const DEPT_EXPORT_HEADER = ['ID', 'Department', 'Code', 'Faculty', 'Created'];
 
 function departmentExportRows(rows: Department[]) {
   return rows.map((d) => [
@@ -44,7 +38,6 @@ function departmentExportRows(rows: Department[]) {
     d.name,
     d.code,
     d.faculty?.name ?? '',
-    programLevels(d).join(' | '),
     d.created_at ? new Date(d.created_at).toLocaleDateString() : ''
   ]);
 }

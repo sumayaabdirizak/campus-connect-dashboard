@@ -214,7 +214,6 @@ function BatchReportsTable({ onOpen }: { onOpen: (id: number) => void }) {
       <GlobalReportFilters
         description='Filter by department, batch, status, and date — then apply.'
         storageKey={STORAGE_KEY}
-        getTemplate={() => draftFilters}
         onLoadTemplate={(raw) => {
           if (!raw || typeof raw !== 'object') return;
           const o = raw as Partial<Filters>;

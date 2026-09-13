@@ -161,9 +161,11 @@ export interface DeanReports {
       passFail: { band: string; count: number }[];
     };
     students: DeanStudentReportRow[];
+    topStudents: DeanStudentReportRow[];
     instructors: DeanInstructorReportRow[];
     courses: DeanCourseReportRow[];
     departments: DeanDepartmentReportRow[];
+    topDepartments: DeanDepartmentReportRow[];
   };
   assessment: {
     assignments: DeanAssessmentMetrics;
@@ -190,6 +192,7 @@ export interface DeanStudentReportRow {
   gpa: number;
   onTimeRate: number;
   status: string;
+  rank?: number;
 }
 
 export interface DeanInstructorReportRow {
@@ -264,4 +267,35 @@ export interface DeanActivityItem {
   title: string;
   description: string;
   timestamp: string;
+}
+
+export interface ClubReportRow {
+  id: number;
+  name: string;
+  slug: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'SUSPENDED' | 'ARCHIVED';
+  scopeKind: string;
+  isOfficial: boolean;
+  memberCount: number;
+  lastActivityAt: string | null;
+  createdAt: string;
+  facultyId: number | null;
+  facultyName: string | null;
+  joinRequests: { pending: number; approved: number; rejected: number; cancelled: number };
+  rank?: number;
+}
+
+export interface ClubsReport {
+  scope: { facultyId: number | null; generatedAt: string };
+  summary: {
+    totalClubs: number;
+    activeClubs: number;
+    pendingApprovalClubs: number;
+    totalMembers: number;
+    totalJoinRequests: number;
+  };
+  topClubsByMembers: ClubReportRow[];
+  mostActiveClubs: ClubReportRow[];
+  byFaculty?: { facultyId: number | null; facultyName: string; clubCount: number; memberCount: number }[];
+  clubs: ClubReportRow[];
 }

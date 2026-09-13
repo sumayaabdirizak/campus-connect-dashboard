@@ -18,6 +18,7 @@ import type {
   DeanRiskCourse,
   DeanRiskDepartment,
   DeanActivityItem,
+  ClubsReport,
 } from '../types';
 
 export type {
@@ -123,4 +124,12 @@ export const deanApi = {
     apiClient<DeanAnalytics>('/dean/analytics', { method: 'GET' }),
   getReports: (params?: Record<string, string>) =>
     apiClient<DeanReports>(withQuery('/dean/reports', params), { method: 'GET' }),
+  /** Same dashboard as getReports, but reachable by both Dean and Super Admin
+   *  — Super Admin must pass `facultyId` to pick which faculty to view. */
+  getFacultyDashboard: (params?: Record<string, string>) =>
+    apiClient<DeanReports>(withQuery('/reports/faculty-dashboard', params), { method: 'GET' }),
+  /** Clubs oversight report — Dean sees their own faculty; Super Admin can
+   *  pass `facultyId` for one faculty or omit it for an all-faculties view. */
+  getClubsReport: (params?: Record<string, string>) =>
+    apiClient<ClubsReport>(withQuery('/reports/clubs', params), { method: 'GET' }),
 };

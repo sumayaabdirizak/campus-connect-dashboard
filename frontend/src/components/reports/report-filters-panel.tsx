@@ -90,7 +90,6 @@ export function ReportFiltersPanel({
     <GlobalReportFilters
       description='Default is the active university semester. Custom dates stay within that semester through today.'
       storageKey={STORAGE_KEY}
-      getTemplate={() => values}
       onLoadTemplate={(raw) => {
         if (!raw || typeof raw !== 'object') return;
         const o = raw as Partial<ReportFilterValues>;

@@ -114,7 +114,6 @@ export function DepartmentTable({ facultyId }: { facultyId?: string } = {}) {
               {col('name') ? <PosTableHeaderCell>Department</PosTableHeaderCell> : null}
               {col('code') ? <PosTableHeaderCell>Code</PosTableHeaderCell> : null}
               {col('faculty') ? <PosTableHeaderCell>Faculty</PosTableHeaderCell> : null}
-              {col('levels') ? <PosTableHeaderCell>Program levels</PosTableHeaderCell> : null}
               {col('created') ? <PosTableHeaderCell>Created</PosTableHeaderCell> : null}
               <PosTableHeaderCell align='right'>Action</PosTableHeaderCell>
             </tr>
