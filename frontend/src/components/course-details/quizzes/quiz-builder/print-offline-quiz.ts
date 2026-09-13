@@ -1,5 +1,27 @@
 import type { Quiz, QuizQuestion } from '@/lib/course-details/services/quizzes-types';
 
+/// Resolves once every `<img>` in `doc` has loaded (or failed), or `timeoutMs`
+/// elapses — whichever comes first, so a slow/broken image never blocks
+/// printing forever.
+function waitForImages(doc: Document, timeoutMs: number): Promise<void> {
+  const images = Array.from(doc.images);
+  const pending = images.filter((img) => !img.complete);
+  if (pending.length === 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let remaining = pending.length;
+    const done = () => {
+      remaining -= 1;
+      if (remaining <= 0) resolve();
+    };
+    pending.forEach((img) => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(resolve, timeoutMs);
+  });
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -77,6 +99,7 @@ export function printOfflineQuiz(quiz: Quiz, questions: QuizQuestion[]) {
         .letterhead { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
         .letterhead img { height: 52px; width: auto; }
         h1 { font-size: 22px; margin-bottom: 4px; }
+        .intro { font-size: 14px; color: #333; margin-bottom: 12px; white-space: pre-wrap; }
         .meta { color: #666; font-size: 13px; margin-bottom: 24px; }
         .question { margin-bottom: 22px; page-break-inside: avoid; }
         .q-head { display: flex; gap: 8px; align-items: baseline; font-weight: 600; margin-bottom: 8px; }
@@ -97,6 +120,7 @@ export function printOfflineQuiz(quiz: Quiz, questions: QuizQuestion[]) {
         <img src="${escapeHtml(`${window.location.origin}/assets/img/brand/jazeera-university.jpg`)}" alt="Jazeera University" />
       </div>
       <h1>${escapeHtml(quiz.title)}</h1>
+      ${quiz.description?.trim() ? `<p class="intro">${escapeHtml(quiz.description.trim())}</p>` : ''}
       <div class="meta">${quiz.duration_minutes} min · ${sorted.length} question${sorted.length === 1 ? '' : 's'} · ${sorted.reduce((s, q) => s + q.points, 0)} pts total</div>
       ${questionsHtml}
       <div class="answer-key">
@@ -108,12 +132,15 @@ export function printOfflineQuiz(quiz: Quiz, questions: QuizQuestion[]) {
   `);
   win.document.close();
 
-  // Give the iframe a tick to lay out before printing, then clean up once
-  // the print dialog is dismissed (afterprint fires in the iframe's window).
+  // Clean up once the print dialog is dismissed (afterprint fires in the
+  // iframe's window).
   win.onafterprint = () => {
     if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
   };
-  setTimeout(() => {
+
+  // The letterhead logo loads over the network — printing before it lands
+  // ships a page with a missing/partial image. Wait for it (or a timeout).
+  waitForImages(win.document, 2000).then(() => {
     win.focus();
     win.print();
     // Long-delay safety net only — must not fire while the (often async,
@@ -123,5 +150,5 @@ export function printOfflineQuiz(quiz: Quiz, questions: QuizQuestion[]) {
     setTimeout(() => {
       if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
     }, 60_000);
-  }, 100);
+  });
 }

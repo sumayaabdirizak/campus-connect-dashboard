@@ -11,6 +11,10 @@ import {
   Percent,
   CheckCircle2,
   ClipboardList,
+  GraduationCap,
+  Users,
+  BookOpen,
+  ListTodo,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAdminAnalytics } from '@/lib/admin/queries'
@@ -18,7 +22,6 @@ import { useDeanClubStats } from '@/lib/dean/queries'
 import { useRecentAnnouncements } from '@/lib/announcements/queries'
 import { useQueryClient } from '@/lib/async-query'
 import { QueryErrorState } from '@/components/query-error-state'
-import { MonthCalendar } from '@/components/overview/month-calendar'
 import { AnnouncementsSidebarCard } from '@/components/overview/announcements-sidebar-card'
 import { SystemUsageChart } from '@/components/overview/main-dashboard/system-usage-chart'
 import { showToast } from '@/lib/notifications'
@@ -63,6 +66,10 @@ export function MainDashboard() {
   )
   const totalUsersCard = kpiCards.find((c) => c.key === 'users')
   const activeUsersCard = kpiCards.find((c) => c.key === 'active')
+  const studentsCard = kpiCards.find((c) => c.key === 'students')
+  const teachersCard = kpiCards.find((c) => c.key === 'teachers')
+  const coursesCard = kpiCards.find((c) => c.key === 'courses')
+  const pendingCard = kpiCards.find((c) => c.key === 'pending')
 
   const handleRefresh = () => {
     void refetch()
@@ -165,17 +172,45 @@ export function MainDashboard() {
         />
       </div>
 
-      {/* Calendar & announcements — aligned with student/dean home dashboards */}
-      <div className='grid grid-cols-1 gap-3 xl:grid-cols-12'>
-        <div className='space-y-3 xl:col-span-7'>
-          <MonthCalendar variant='featured' />
-        </div>
-        <div className='xl:col-span-5'>
-          <AnnouncementsSidebarCard
-            announcements={announcements}
-            loading={announcementsLoading}
-          />
-        </div>
+      {/* Platform breakdown — students, teachers, courses, and pending work queue */}
+      <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
+        <RetailStatCard
+          icon={GraduationCap}
+          label='Students'
+          value={studentsCard?.value ?? '0'}
+          tone='violet'
+          loading={analyticsLoading}
+        />
+        <RetailStatCard
+          icon={Users}
+          label='Teachers'
+          value={teachersCard?.value ?? '0'}
+          tone='sky'
+          loading={analyticsLoading}
+        />
+        <RetailStatCard
+          icon={BookOpen}
+          label='Courses'
+          value={coursesCard?.value ?? '0'}
+          tone='amber'
+          loading={analyticsLoading}
+        />
+        <RetailStatCard
+          icon={ListTodo}
+          label='Pending work'
+          value={pendingCard?.value ?? '0'}
+          tone='emerald'
+          loading={analyticsLoading}
+        />
+      </div>
+
+      {/* Announcements — Super Admin has no Calendar nav entry, so this row
+          doesn't pair with a calendar widget like the student/dean home does. */}
+      <div className='grid grid-cols-1 gap-3'>
+        <AnnouncementsSidebarCard
+          announcements={announcements}
+          loading={announcementsLoading}
+        />
       </div>
 
       {/* Best Seller → Most Active Courses, Recent Transactions → Recent Login Activity */}

@@ -153,12 +153,6 @@ export const reportsNavGroup: NavGroup = {
           access: aggregateReportRoles,
         },
         {
-          title: 'Faculty dashboard',
-          url: '/dashboard/reports/faculty-dashboard',
-          icon: 'barChart',
-          access: aggregateReportRoles,
-        },
-        {
           title: 'Clubs report',
           url: '/dashboard/reports/clubs-report',
           icon: 'teams',
