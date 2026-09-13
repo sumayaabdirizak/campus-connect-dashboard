@@ -7,6 +7,28 @@ import {
   type PaperSection
 } from './quiz-paper-format';
 
+/// Resolves once every `<img>` in `doc` has loaded (or failed), or `timeoutMs`
+/// elapses — whichever comes first, so a slow/broken image never blocks
+/// printing forever.
+function waitForImages(doc: Document, timeoutMs: number): Promise<void> {
+  const images = Array.from(doc.images);
+  const pending = images.filter((img) => !img.complete);
+  if (pending.length === 0) return Promise.resolve();
+
+  return new Promise((resolve) => {
+    let remaining = pending.length;
+    const done = () => {
+      remaining -= 1;
+      if (remaining <= 0) resolve();
+    };
+    pending.forEach((img) => {
+      img.addEventListener('load', done, { once: true });
+      img.addEventListener('error', done, { once: true });
+    });
+    setTimeout(resolve, timeoutMs);
+  });
+}
+
 function escapeHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -120,11 +142,13 @@ export function buildQuizPreviewHtml(data: QuizPreviewData): string {
           border-top: 1px solid #111;
           margin: 0 0 20px;
         }
-        .section { margin-bottom: 28px; page-break-inside: avoid; }
+        .intro { margin-bottom: 18px; font-size: 14px; color: #333; white-space: pre-wrap; }
+        .section { margin-bottom: 28px; }
         .section h2 {
           font-size: 15px;
           font-weight: 700;
           margin: 0 0 14px;
+          page-break-after: avoid;
         }
         .question { margin-bottom: 16px; page-break-inside: avoid; }
         .q-text { margin: 0 0 6px; }
@@ -152,6 +176,7 @@ export function buildQuizPreviewHtml(data: QuizPreviewData): string {
         <img src="${escapeHtml(`${window.location.origin}/assets/img/brand/jazeera-university.jpg`)}" alt="Jazeera University" />
       </div>
       <h1 class="paper-title">${escapeHtml(paperQuizTitle(data.title))}</h1>
+      ${data.description.trim() ? `<p class="intro">${escapeHtml(data.description.trim())}</p>` : ''}
       <div class="student-row">
         <span>Name: <span class="line"></span></span>
         <span>ID: <span class="line id"></span></span>
@@ -188,13 +213,16 @@ export function printQuizPreview(data: QuizPreviewData) {
   win.onafterprint = () => {
     if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
   };
-  setTimeout(() => {
+
+  // The letterhead logo loads over the network — printing before it lands
+  // ships a page with a missing/partial image. Wait for it (or a timeout).
+  waitForImages(win.document, 2000).then(() => {
     win.focus();
     win.print();
     setTimeout(() => {
       if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
     }, 60_000);
-  }, 100);
+  });
 }
 
 /// Downloads the same preview as a standalone .html file.

@@ -18,7 +18,6 @@ import { useDeanClubStats } from '@/lib/dean/queries'
 import { useRecentAnnouncements } from '@/lib/announcements/queries'
 import { useQueryClient } from '@/lib/async-query'
 import { QueryErrorState } from '@/components/query-error-state'
-import { MonthCalendar } from '@/components/overview/month-calendar'
 import { AnnouncementsSidebarCard } from '@/components/overview/announcements-sidebar-card'
 import { SystemUsageChart } from '@/components/overview/main-dashboard/system-usage-chart'
 import { showToast } from '@/lib/notifications'
@@ -165,17 +164,13 @@ export function MainDashboard() {
         />
       </div>
 
-      {/* Calendar & announcements — aligned with student/dean home dashboards */}
-      <div className='grid grid-cols-1 gap-3 xl:grid-cols-12'>
-        <div className='space-y-3 xl:col-span-7'>
-          <MonthCalendar variant='featured' />
-        </div>
-        <div className='xl:col-span-5'>
-          <AnnouncementsSidebarCard
-            announcements={announcements}
-            loading={announcementsLoading}
-          />
-        </div>
+      {/* Announcements — Super Admin has no Calendar nav entry, so this row
+          doesn't pair with a calendar widget like the student/dean home does. */}
+      <div className='grid grid-cols-1 gap-3'>
+        <AnnouncementsSidebarCard
+          announcements={announcements}
+          loading={announcementsLoading}
+        />
       </div>
 
       {/* Best Seller → Most Active Courses, Recent Transactions → Recent Login Activity */}
