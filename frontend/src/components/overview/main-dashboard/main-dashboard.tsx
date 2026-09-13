@@ -11,6 +11,10 @@ import {
   Percent,
   CheckCircle2,
   ClipboardList,
+  GraduationCap,
+  Users,
+  BookOpen,
+  ListTodo,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/auth-store'
 import { useAdminAnalytics } from '@/lib/admin/queries'
@@ -62,6 +66,10 @@ export function MainDashboard() {
   )
   const totalUsersCard = kpiCards.find((c) => c.key === 'users')
   const activeUsersCard = kpiCards.find((c) => c.key === 'active')
+  const studentsCard = kpiCards.find((c) => c.key === 'students')
+  const teachersCard = kpiCards.find((c) => c.key === 'teachers')
+  const coursesCard = kpiCards.find((c) => c.key === 'courses')
+  const pendingCard = kpiCards.find((c) => c.key === 'pending')
 
   const handleRefresh = () => {
     void refetch()
@@ -160,6 +168,38 @@ export function MainDashboard() {
           label='Assignments submitted'
           value={(analytics?.kpis.assignmentsSubmitted ?? 0).toLocaleString()}
           tone='violet'
+          loading={analyticsLoading}
+        />
+      </div>
+
+      {/* Platform breakdown — students, teachers, courses, and pending work queue */}
+      <div className='grid grid-cols-2 gap-3 lg:grid-cols-4'>
+        <RetailStatCard
+          icon={GraduationCap}
+          label='Students'
+          value={studentsCard?.value ?? '0'}
+          tone='violet'
+          loading={analyticsLoading}
+        />
+        <RetailStatCard
+          icon={Users}
+          label='Teachers'
+          value={teachersCard?.value ?? '0'}
+          tone='sky'
+          loading={analyticsLoading}
+        />
+        <RetailStatCard
+          icon={BookOpen}
+          label='Courses'
+          value={coursesCard?.value ?? '0'}
+          tone='amber'
+          loading={analyticsLoading}
+        />
+        <RetailStatCard
+          icon={ListTodo}
+          label='Pending work'
+          value={pendingCard?.value ?? '0'}
+          tone='emerald'
           loading={analyticsLoading}
         />
       </div>
