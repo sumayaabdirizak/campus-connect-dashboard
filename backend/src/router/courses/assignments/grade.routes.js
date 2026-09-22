@@ -90,6 +90,7 @@ router.post(
         gradingScope: true,
         workMode: true,
         courseOfferingId: true,
+        due_date: true,
         courseOffering: { select: { sectionId: true } },
       },
     });
@@ -132,6 +133,10 @@ router.post(
           assignmentId,
           studentId,
           content_url: '(Teacher-entered grade)',
+          // Recorded here on the student's behalf (hand-in / offline) — stamp
+          // it at the deadline so it reads as on-time, not "late", the same
+          // way a normal in-app submission would if it had been made then.
+          submitted_at: assignment.due_date,
           ...(groupId != null ? { groupId } : {}),
         },
         include: { assignment: { select: { id: true, gradingScope: true, maxMarks: true } } },

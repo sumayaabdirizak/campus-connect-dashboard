@@ -12,6 +12,16 @@ export function htmlToPlain(html: string) {
   return (d.textContent || '').replace(/\s+/g, ' ').trim();
 }
 
+/** Title is optional to type — when left blank, derive one from the message
+ *  so the backend (which still requires a non-empty title) always gets one. */
+export function deriveTitle(title: string, plainContent: string): string {
+  const trimmed = title.trim();
+  if (trimmed) return trimmed;
+  const fallback = plainContent.trim().slice(0, 60);
+  if (!fallback) return 'Announcement';
+  return fallback.length < plainContent.trim().length ? `${fallback}…` : fallback;
+}
+
 function normalizeAudienceRole(role: string): string {
   const u = String(role).toUpperCase();
   return u === 'LECTURER' ? 'TEACHER' : u;

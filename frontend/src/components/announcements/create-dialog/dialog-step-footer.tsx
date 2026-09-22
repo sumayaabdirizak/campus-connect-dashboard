@@ -7,7 +7,6 @@ import { htmlToPlain } from './utils';
 
 type Props = {
   step: 1 | 2 | 3;
-  title: string;
   content: string;
   isSubmitting: boolean;
   isEditMode: boolean;
@@ -18,7 +17,6 @@ type Props = {
 
 export function DialogStepFooter({
   step,
-  title,
   content,
   isSubmitting,
   isEditMode,
@@ -43,7 +41,7 @@ export function DialogStepFooter({
       ) : (
         <Button
           onClick={onSubmit}
-          disabled={isSubmitting || !title.trim() || !htmlToPlain(content)}
+          disabled={isSubmitting || !htmlToPlain(content)}
           className='h-11 min-h-[44px] flex-1 rounded-xl font-semibold'
         >
           {isSubmitting ? (

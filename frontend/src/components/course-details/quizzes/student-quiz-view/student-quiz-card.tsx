@@ -5,9 +5,9 @@ import { useCourseLiveNow } from '@/components/course-details/course-live-clock'
 import { cn } from '@/lib/utils';
 import { QuizCardDetailsPanel } from './quiz-card-details-panel';
 import {
-  QuizCardBody,
   QuizCardFooter,
-  QuizCardHeader
+  QuizCardMetaRow,
+  QuizCardTitleRow
 } from './quiz-card-summary-row';
 import { resolveStudentQuizCardState } from './student-quiz-card-state';
 
@@ -46,17 +46,15 @@ export function StudentQuizCard({
         }
       }}
       className={cn(
-        'flex min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border bg-card text-foreground outline-none transition-colors',
-        'hover:border-border hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring',
+        'flex min-w-0 cursor-pointer flex-col gap-3 overflow-hidden rounded-xl border bg-card p-5 text-foreground outline-none transition-colors',
+        'hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring',
         expanded ? 'max-h-[min(32rem,75vh)]' : null
       )}
     >
-      <div className='shrink-0 border-b border-border/60 bg-card px-5 pt-5 pb-3'>
-        <QuizCardHeader quiz={quiz} state={state} />
-      </div>
+      <QuizCardTitleRow quiz={quiz} state={state} expanded={expanded} />
 
-      <div className='min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-5 py-3'>
-        <QuizCardBody quiz={quiz} expanded={expanded} />
+      <div className='min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain'>
+        <QuizCardMetaRow quiz={quiz} state={state} />
         {expanded ? (
           <div
             id={`quiz-details-${quiz.id}`}
@@ -76,7 +74,7 @@ export function StudentQuizCard({
         ) : null}
       </div>
 
-      <div className='shrink-0 border-t border-border/60 bg-card px-5 pt-3 pb-5'>
+      <div className='shrink-0 border-t border-border/60 pt-3'>
         <QuizCardFooter state={state} expanded={expanded} onToggle={toggle} />
       </div>
     </article>

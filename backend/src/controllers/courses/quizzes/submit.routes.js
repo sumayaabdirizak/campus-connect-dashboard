@@ -6,6 +6,7 @@ import { emitSubmitted as emitMonitorSubmitted } from '../../../socket/quizLiveM
 import { requireStudentQuizAccess } from '../../../middleware/courseOfferingRbac.js';
 import { submitAttemptBodySchema } from '../../../validation/quizSchemas.js';
 import { shapeStudentAttemptReview } from '../quiz-taking/shared.js';
+import { notifyQuizSubmitted } from './notifyStudents.js';
 
 /** @param {import('express').Router} router */
 export function register(router) {
@@ -46,6 +47,30 @@ export function register(router) {
         });
       } catch (e) {
         console.warn('[quiz-monitor] emit on submit failed:', e.message);
+      }
+
+      // Manual (non-expired) submissions only — an auto-submit from the cron
+      // sweeping expired attempts isn't a "just now" event worth alerting on.
+      if (!isExpired) {
+        const quizForNotify = await prisma.quiz.findUnique({
+          where: { id: qid },
+          select: {
+            title: true,
+            courseOfferingId: true,
+            courseOffering: { select: { publicId: true } },
+          },
+        });
+        if (quizForNotify?.courseOffering) {
+          const student = await prisma.user.findUnique({
+            where: { id: Number(studentId) },
+            select: { full_name: true },
+          });
+          notifyQuizSubmitted(
+            { id: qid, title: quizForNotify.title, courseOfferingId: quizForNotify.courseOfferingId },
+            quizForNotify.courseOffering.publicId,
+            { studentName: student?.full_name },
+          );
+        }
       }
 
       // Idempotent re-submit may omit quiz tree — reload for review shaping.

@@ -54,6 +54,7 @@ export interface StudentReportListParams {
   department?: string;
   courseId?: string;
   studentId?: string;
+  status?: string;
   sort?: string;
 }
 

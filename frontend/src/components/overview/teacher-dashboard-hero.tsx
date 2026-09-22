@@ -73,31 +73,3 @@ export function TeacherDashboardHero({
     </div>
   );
 }
-
-/** Compact course and grading summary for the dashboard's right rail. */
-export function TeacherDashboardRailStats({
-  coursesCount,
-  pendingGrading,
-}: {
-  coursesCount: number;
-  pendingGrading: number;
-}) {
-  return (
-    <div className='grid grid-cols-2 gap-3'>
-      <StatCard
-        icon={BookOpen}
-        tone='primary'
-        value={coursesCount}
-        label='Courses'
-        href='/dashboard/courses'
-      />
-      <StatCard
-        icon={ClipboardCheck}
-        tone='warning'
-        value={pendingGrading}
-        label='To grade'
-        href='/dashboard/courses'
-      />
-    </div>
-  );
-}

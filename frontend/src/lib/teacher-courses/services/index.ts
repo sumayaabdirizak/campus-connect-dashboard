@@ -21,6 +21,11 @@ import type {
   BatchReportListParams,
   BatchReportListResponse
 } from '../batch-report-types';
+import type {
+  FacultyReportDetail,
+  FacultyReportListParams,
+  FacultyReportListResponse
+} from '../faculty-report-types';
 
 export const getTeacherCourses = async () => {
   return apiClient<Course[]>('/lecturer-portal/courses');
@@ -34,7 +39,8 @@ type ListParams =
   | CourseReportListParams
   | StudentReportListParams
   | LecturerReportListParams
-  | BatchReportListParams;
+  | BatchReportListParams
+  | FacultyReportListParams;
 
 function appendListParams(q: URLSearchParams, params?: ListParams) {
   if (!params) return;
@@ -43,7 +49,9 @@ function appendListParams(q: URLSearchParams, params?: ListParams) {
   if (params.page != null) q.set('page', String(params.page));
   if (params.pageSize != null) q.set('pageSize', String(params.pageSize));
   if (params.q) q.set('q', params.q);
-  if (params.department && params.department !== 'all') q.set('department', params.department);
+  if ('department' in params && params.department && params.department !== 'all') {
+    q.set('department', params.department);
+  }
   if ('courseId' in params && params.courseId && params.courseId !== 'all') {
     q.set('courseId', params.courseId);
   }
@@ -59,6 +67,9 @@ function appendListParams(q: URLSearchParams, params?: ListParams) {
   }
   if ('status' in params && params.status) {
     q.set('status', params.status);
+  }
+  if ('facultyId' in params && params.facultyId && params.facultyId !== 'all') {
+    q.set('facultyId', params.facultyId);
   }
 }
 
@@ -134,6 +145,28 @@ export const getBatchReportDetail = async (
   const qs = q.toString();
   return apiClient<BatchReportDetail>(
     `/lecturer-portal/batch-reports/${batchId}${qs ? `?${qs}` : ''}`
+  );
+};
+
+export const getFacultyReportsList = async (params?: FacultyReportListParams) => {
+  const q = new URLSearchParams();
+  appendListParams(q, params);
+  const qs = q.toString();
+  return apiClient<FacultyReportListResponse>(
+    `/lecturer-portal/faculty-reports${qs ? `?${qs}` : ''}`
+  );
+};
+
+export const getFacultyReportDetail = async (
+  facultyId: number,
+  params?: { from?: string | null; to?: string | null }
+) => {
+  const q = new URLSearchParams();
+  if (params?.from) q.set('from', params.from);
+  if (params?.to) q.set('to', params.to);
+  const qs = q.toString();
+  return apiClient<FacultyReportDetail>(
+    `/lecturer-portal/faculty-reports/${facultyId}${qs ? `?${qs}` : ''}`
   );
 };
 

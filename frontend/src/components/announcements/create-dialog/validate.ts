@@ -2,10 +2,9 @@ import { toast } from 'sonner';
 import type { AnnouncementTargetType } from '@/lib/announcements/types';
 import { htmlToPlain } from './utils';
 
-export function validateComposeStep(title: string, content: string) {
+export function validateComposeStep(content: string) {
   const nextErrors: { title?: string; content?: string } = {};
   const plainContent = htmlToPlain(content);
-  if (!title.trim()) nextErrors.title = 'Title is required';
   if (!plainContent) nextErrors.content = 'Content is required';
   if (plainContent.length > 3000) nextErrors.content = 'Message exceeds the 3000 character limit';
   return nextErrors;

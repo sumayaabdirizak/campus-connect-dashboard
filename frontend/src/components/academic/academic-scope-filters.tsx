@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { SearchSelect } from '@/features/ui/components/search-select';
 import { useQuery } from '@/lib/async-query';
+import { useAuthStore } from '@/lib/auth-store';
 import { useAcademicScope } from '@/lib/academic-scope/use-academic-scope';
 import { facultiesQueryOptions } from '@/lib/faculties/queries';
 import { normalizeFacultiesList } from '@/lib/faculties/services';
@@ -18,11 +19,16 @@ type Props = {
 const filterClass = 'h-9 w-auto min-w-[10rem] text-xs';
 
 export function AcademicScopeFilters({
-  showFaculty = true,
+  showFaculty: showFacultyProp = true,
   showDepartment = true,
   showProgram = true
 }: Props) {
   const { scope, setScope } = useAcademicScope();
+  const { user } = useAuthStore();
+  // A Dean only ever has one faculty — this scope picker is built for Super
+  // Admin browsing across all of them, so start Deans at Department instead
+  // of showing a Faculty selector that's meaningless for their own scope.
+  const showFaculty = showFacultyProp && user?.role !== 'DEAN';
 
   const { data: facultiesData } = useQuery(facultiesQueryOptions({ limit: 200 }));
   const faculties = normalizeFacultiesList(facultiesData);

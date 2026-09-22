@@ -22,6 +22,7 @@ export function StudentSubmissionRow({
   selected,
   onToggle,
   onGrade,
+  onEnterMarks,
   onExtendMissing
 }: {
   row: SubmissionRow;
@@ -31,6 +32,7 @@ export function StudentSubmissionRow({
   selected: boolean;
   onToggle: (studentId: number, checked: boolean) => void;
   onGrade: (sub: Submission) => void;
+  onEnterMarks: (student: { id: number; full_name: string; number: string; email?: string }) => void;
   onExtendMissing: (studentId: number) => void;
 }) {
   const { studentId, student, submission: sub } = row;
@@ -96,14 +98,31 @@ export function StudentSubmissionRow({
             {sub.is_reviewed && sub.grade != null ? 'Review' : 'Grade'}
           </Button>
         ) : (
-          <Button
-            variant='outline'
-            size='sm'
-            className='h-8 gap-1'
-            onClick={() => onExtendMissing(studentId)}
-          >
-            Extend
-          </Button>
+          <div className='flex items-center justify-end gap-1.5'>
+            <Button
+              variant='outline'
+              size='sm'
+              className='h-8'
+              onClick={() =>
+                onEnterMarks({
+                  id: studentId,
+                  full_name: student.full_name,
+                  number: student.number,
+                  email: student.email
+                })
+              }
+            >
+              Enter marks
+            </Button>
+            <Button
+              variant='outline'
+              size='sm'
+              className='h-8 gap-1'
+              onClick={() => onExtendMissing(studentId)}
+            >
+              Extend
+            </Button>
+          </div>
         )}
       </PosTableCell>
     </PosTableRow>

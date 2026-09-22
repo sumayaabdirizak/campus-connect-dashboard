@@ -264,6 +264,10 @@ export async function listStudentReports(req, res) {
         ? req.query.studentId.trim()
         : '';
     const studentIdFilter = studentIdRaw ? Number(studentIdRaw) : null;
+    const status =
+      typeof req.query.status === 'string' && req.query.status !== 'all'
+        ? req.query.status.trim()
+        : '';
     const sort = parseSort(req.query.sort);
     const { page, pageSize, skip } = parsePaginationQuery(req.query, {
       defaultPageSize: 25,
@@ -321,9 +325,10 @@ export async function listStudentReports(req, res) {
     });
 
     const needsGradeSort = GRADE_SORT_KEYS.has(sort.key);
+    const needsFullCompute = needsGradeSort || !!status;
     const offeringById = new Map(offerings.map((o) => [o.id, o]));
 
-    if (needsGradeSort) {
+    if (needsFullCompute) {
       const neededOfferingIds = [...new Set(rows.map((r) => r._dbOfferingId))];
       const neededOfferings = neededOfferingIds
         .map((id) => offeringById.get(id))
@@ -343,6 +348,7 @@ export async function listStudentReports(req, res) {
         const flagsLookup = flagsForOffering(offering, gradeBundle, flagsCache);
         return applyMarks(r, marksByStudent, gradeBundle.courseMaxMarks, flagsLookup);
       });
+      if (status) rows = rows.filter((r) => r.status === status);
       rows = sortRows(rows, sort);
       const total = rows.length;
       return res.json({

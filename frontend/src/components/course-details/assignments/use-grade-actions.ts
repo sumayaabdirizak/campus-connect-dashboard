@@ -3,6 +3,7 @@
 import { toast } from 'sonner';
 import type { Assignment, Submission } from '@/lib/course-details/services/assignments-types';
 import type { GroupRow, Outcome } from './shared';
+import { MANUAL_GRADE_CONTENT_URL, VIRTUAL_MANUAL_GRADE_ID } from './shared';
 import {
   grantAnotherChance,
   saveIndividualMemberGrades,
@@ -30,10 +31,40 @@ export function useGradeActions(a: {
   extensionDate: string;
   extensionReason: string;
   gradeMutation: GradeMutateLike;
+  manualGradeMutation: GradeMutateLike;
   extensionMutation: GradeMutateLike;
   extensionBatchMutation: GradeMutateLike;
 }) {
   const selectedAssignment = a.assignment;
+  const openManualGrade = (student: { id: number; full_name: string; number: string; email?: string }) => {
+    const virtual: Submission = {
+      id: VIRTUAL_MANUAL_GRADE_ID,
+      assignmentId: selectedAssignment.id,
+      studentId: student.id,
+      groupId: null,
+      content_url: MANUAL_GRADE_CONTENT_URL,
+      submitted_at: new Date().toISOString(),
+      grade: null,
+      feedback: null,
+      is_reviewed: false,
+      is_late: false,
+      student: {
+        id: student.id,
+        full_name: student.full_name,
+        email: student.email ?? '',
+        number: student.number
+      }
+    };
+    a.setSelectedSubmission(virtual);
+    a.setOutcome('grade');
+    a.setGrade('');
+    a.setFeedback('');
+    a.setExtensionDate('');
+    a.setExtensionReason('');
+    a.setMemberGrades(new Map());
+    a.setMemberFeedbacks(new Map());
+    a.setDrawerOpen(true);
+  };
   const openGrading = (sub: Submission) => {
     a.setSelectedSubmission(sub);
     a.setOutcome('grade');
@@ -71,6 +102,33 @@ export function useGradeActions(a: {
         return;
       }
     }
+
+    if (a.selectedSubmission.id === VIRTUAL_MANUAL_GRADE_ID) {
+      if (a.grade === '') {
+        toast.error('Enter a mark first');
+        return;
+      }
+      a.manualGradeMutation.mutate(
+        {
+          assignmentId: selectedAssignment.id,
+          input: {
+            studentId: a.selectedSubmission.studentId,
+            grade: Number(a.grade),
+            feedback: a.feedback || undefined
+          }
+        },
+        {
+          onSuccess: () => {
+            toast.success('Mark recorded');
+            if (next) openGrading(next);
+            else a.setDrawerOpen(false);
+          },
+          onError: (e: Error) => toast.error(e.message)
+        }
+      );
+      return;
+    }
+
     a.gradeMutation.mutate(
       {
         assignmentId: selectedAssignment.id,
@@ -122,6 +180,7 @@ export function useGradeActions(a: {
   };
   return {
     openGrading,
+    openManualGrade,
     handleSaveGrade,
     handleSaveIndividualGrades,
     handleGiveAnotherChance

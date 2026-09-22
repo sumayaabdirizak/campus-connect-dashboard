@@ -44,8 +44,10 @@ export function AnnouncementImages({
             key={`${item.url}-${idx}`}
             type='button'
             aria-label={item.alt || `Open image ${idx + 1} of ${items.length}`}
-            className={`relative block min-w-0 overflow-hidden bg-muted/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
-              single ? 'h-40 w-full max-w-[20rem] rounded-lg' : 'aspect-square w-full rounded-lg'
+            className={`block min-w-0 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ${
+              single
+                ? 'w-full rounded-lg text-center'
+                : 'relative aspect-square w-full rounded-lg bg-muted/80'
             }`}
             onClick={(e) => {
               e.stopPropagation();
@@ -58,7 +60,11 @@ export function AnnouncementImages({
             <img
               src={item.url}
               alt={item.alt || ''}
-              className={`absolute inset-0 h-full w-full ${single ? 'object-contain' : 'object-cover'}`}
+              className={
+                single
+                  ? 'inline-block h-auto max-h-[32rem] w-auto max-w-full rounded-lg'
+                  : 'absolute inset-0 h-full w-full object-cover'
+              }
             />
           </button>
         ))}

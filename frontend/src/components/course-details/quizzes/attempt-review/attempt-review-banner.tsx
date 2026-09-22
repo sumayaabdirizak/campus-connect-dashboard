@@ -17,6 +17,7 @@ import {
   formatElapsedLabel,
   getClosureCallout
 } from './helpers';
+import { roundToHalfMark } from '../quiz-marks-display';
 
 interface AttemptReviewBannerProps {
   attempt: QuizAttempt;
@@ -117,11 +118,50 @@ export function AttemptReviewBanner({ attempt }: AttemptReviewBannerProps) {
     );
   }
 
+  // Short-answer questions are manually graded — until every one of them has
+  // a grade, points_earned defaults to 0 for the ungraded ones, which would
+  // otherwise show a falsely low "final" score while grading is in progress.
+  if (!isOffline && attempt.is_graded === false) {
+    return (
+      <article className='min-w-0 rounded-xl border bg-card p-5 text-foreground'>
+        <div className='flex items-start justify-between gap-3'>
+          <div className='flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-foreground'>
+            {submittedAt ? (
+              <span className='inline-flex items-center gap-1'>
+                <CalendarDays className='size-3.5 text-primary' aria-hidden />
+                {submittedAt}
+              </span>
+            ) : null}
+            {questionCount > 0 ? (
+              <span className='inline-flex items-center gap-1'>
+                <FileQuestion className='size-3.5 text-info' aria-hidden />
+                {questionCount}
+              </span>
+            ) : null}
+          </div>
+          <ResultStatusPill label='Pending review' tone='amber' />
+        </div>
+        <h2 className='mt-3 line-clamp-2 text-lg tracking-tight text-foreground font-display'>
+          {quiz?.title ?? 'Quiz'}
+        </h2>
+        <p className='mt-4 text-2xl font-semibold tracking-tight text-foreground'>
+          Awaiting grading
+        </p>
+        <p className='mt-2 text-sm text-muted-foreground'>
+          Your written answers need to be graded by your teacher before a final score is shown.
+        </p>
+        {elapsed ? (
+          <p className='mt-2 text-xs text-muted-foreground'>Time taken · {elapsed}</p>
+        ) : null}
+      </article>
+    );
+  }
+
   const { totalPoints, earnedPoints, score, passed } = computeAttemptStats(attempt);
   const closureCallout = getClosureCallout(closureReason);
   const rounded = Math.round(score);
-  const earned = Math.round(earnedPoints);
-  const total = Math.round(totalPoints);
+  const earned = roundToHalfMark(earnedPoints);
+  const total = roundToHalfMark(totalPoints);
   const ring = Math.min(100, Math.max(0, rounded));
 
   return (

@@ -53,16 +53,6 @@ export function ClubDetailHeader({
               >
                 <Icons.chevronLeft className='h-4 w-4 text-muted-foreground' />
               </Link>
-              <div className='hidden sm:flex items-center gap-1 px-3 py-1 rounded-full border border-border bg-card text-xs font-semibold shrink-0'>
-                <Link
-                  href={messagesDiscoverHref()}
-                  className='text-muted-foreground hover:text-muted-foreground transition-colors'
-                >
-                  Clubs
-                </Link>
-                <span className='text-gray-300'>/</span>
-                <span className='text-foreground truncate max-w-[120px]'>{club.name}</span>
-              </div>
               <div className='flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-border bg-card p-0.5'>
                 {club.iconUrl ? (
                   <img src={club.iconUrl} alt='' className='h-full w-full rounded-full object-cover' />

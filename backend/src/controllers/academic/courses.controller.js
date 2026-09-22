@@ -1,14 +1,24 @@
 import { prisma } from "../../db/prisma.js";
 import { respondInternalError } from "../../utils/httpError.js";
+import { facultyScopeForRestrictedAcademicRoles } from "./facultyScope.js";
 
 export const getAllCourses = async (req, res) => {
   try {
+    const scope = await facultyScopeForRestrictedAcademicRoles(req);
     const { departmentId, facultyId } = req.query;
-    const where = departmentId
-      ? { departmentId: Number(departmentId) }
-      : facultyId
-        ? { department: { facultyId: Number(facultyId) } }
-        : {};
+    const where =
+      scope.mode === "faculty"
+        ? {
+            department: { facultyId: scope.facultyId },
+            ...(departmentId ? { departmentId: Number(departmentId) } : {}),
+          }
+        : scope.mode === "none"
+          ? { department: { facultyId: -1 } }
+          : departmentId
+            ? { departmentId: Number(departmentId) }
+            : facultyId
+              ? { department: { facultyId: Number(facultyId) } }
+              : {};
     const courses = await prisma.course.findMany({
       where,
       include: {

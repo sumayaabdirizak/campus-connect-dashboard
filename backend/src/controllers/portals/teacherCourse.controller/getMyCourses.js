@@ -2,7 +2,6 @@ import { prisma } from "../../../db/prisma.js";
 import { resolveCourseThumbnail } from "../../../utils/publicAssetUrl.js";
 import { respondInternalError } from "../../../utils/httpError.js";
 import { ensureTeacherOfferings } from "../../../services/academic/ensureTeacherOfferings.js";
-import { resolveActiveAcademicTerm } from "../../../services/academic/resolveActiveAcademicTerm.js";
 
 const OFFERING_INCLUDE = {
   course: {
@@ -55,25 +54,14 @@ export const getMyCourses = async (req, res) => {
       accessOr.push({ courseId: { in: assignedCourseIds } });
     }
 
-    const activeTerm = await resolveActiveAcademicTerm({ includeDb: true });
-    let offerings = [];
-
-    if (activeTerm.academicYearId) {
-      offerings = await prisma.courseOffering.findMany({
-        where: {
-          OR: accessOr,
-          academicYearId: activeTerm.academicYearId,
-        },
-        include: OFFERING_INCLUDE,
-      });
-    }
-
-    if (offerings.length === 0) {
-      offerings = await prisma.courseOffering.findMany({
-        where: { OR: accessOr },
-        include: OFFERING_INCLUDE,
-      });
-    }
+    // Always list every offering the teacher has access to. The active-term
+    // (year/semester) reported by the University AIS doesn't always line up
+    // with how local academic-year records are tagged, and filtering to an
+    // exact match can hide a teacher's real, currently-used course entirely.
+    const offerings = await prisma.courseOffering.findMany({
+      where: { OR: accessOr },
+      include: OFFERING_INCLUDE,
+    });
 
     const result = offerings.map((o) => {
       const totalLessons = o.resources.length + o.assignments.length + o.quizzes.length;

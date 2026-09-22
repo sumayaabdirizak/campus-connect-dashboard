@@ -62,7 +62,11 @@ router.post('/', async (req, res, next) => {
       });
     }
 
-    // Path A — student / teacher application
+    // Path A — student / teacher application (club creation is dean-only now)
+    if (!['DEAN', 'SUPER_ADMIN'].includes(req.user.role)) {
+      return res.status(403).json(apiErrorBody('Only deans and academic leadership can create clubs'));
+    }
+
     // Auto-resolve faculty if not provided
     let facultyId = parsed.facultyId;
     if (parsed.scopeKind === 'FACULTY' && !facultyId) {

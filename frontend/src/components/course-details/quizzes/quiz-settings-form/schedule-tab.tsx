@@ -3,6 +3,7 @@
 import { CalendarOff } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SegmentedControl } from '@/components/ui/segmented-control';
 import {
   handleExtensionDateChange,
   toDatetimeLocalMin
@@ -43,6 +44,8 @@ export function ScheduleTab({ form, setForm, withDuration }: ScheduleTabProps) {
     );
   }
 
+  const isFixed = form.timing_mode !== 'flexible';
+
   const openField = (
     <div className='space-y-1.5'>
       <Label htmlFor='quiz-open' className={quizFormLabelClass}>
@@ -55,7 +58,13 @@ export function ScheduleTab({ form, setForm, withDuration }: ScheduleTabProps) {
         value={form.open_at_local}
         onChange={(e) => {
           handleExtensionDateChange(e.target.value, (v) =>
-            setForm({ ...form, timing_mode: 'fixed', open_at_local: v, close_at_local: '' })
+            setForm({
+              ...form,
+              open_at_local: v,
+              // Fixed mode's close is derived from open + duration; flexible
+              // mode's close_at is the teacher-set window end, left as-is.
+              close_at_local: isFixed ? '' : form.close_at_local
+            })
           );
         }}
         className={quizFormFieldClass}
@@ -63,20 +72,63 @@ export function ScheduleTab({ form, setForm, withDuration }: ScheduleTabProps) {
     </div>
   );
 
+  const closeField = !isFixed ? (
+    <div className='space-y-1.5'>
+      <Label htmlFor='quiz-close' className={quizFormLabelClass}>
+        Closes at
+      </Label>
+      <Input
+        id='quiz-close'
+        type='datetime-local'
+        min={form.open_at_local || minOpen}
+        value={form.close_at_local}
+        onChange={(e) => setForm({ ...form, close_at_local: e.target.value })}
+        className={quizFormFieldClass}
+      />
+    </div>
+  ) : null;
+
   return (
     <div className={`space-y-3 ${withDuration ? '' : 'mt-4'}`}>
+      <div className='space-y-1.5'>
+        <Label className={quizFormLabelClass}>Timing</Label>
+        <SegmentedControl
+          ariaLabel='Timing mode'
+          value={form.timing_mode}
+          onChange={(mode) =>
+            setForm({
+              ...form,
+              timing_mode: mode,
+              close_at_local: mode === 'fixed' ? '' : form.close_at_local
+            })
+          }
+          options={[
+            { value: 'fixed', label: 'Fixed' },
+            { value: 'flexible', label: 'Flexible' }
+          ]}
+        />
+      </div>
+
       {withDuration ? (
         <div className='grid gap-3 sm:grid-cols-2'>
           <DurationField form={form} setForm={setForm} fullWidth hideHint />
           {openField}
+          {closeField}
         </div>
       ) : (
-        openField
+        <>
+          {openField}
+          {closeField}
+        </>
       )}
       <p className={quizFormHintClass}>
-        {form.open_at_local
-          ? `Everyone starts together; the quiz closes ${form.duration_minutes} min after Available from.`
-          : 'Set "Available from" — the quiz closes after the time limit.'}
+        {isFixed
+          ? form.open_at_local
+            ? `Everyone starts together; the quiz closes ${form.duration_minutes} min after Available from.`
+            : 'Set "Available from" — the quiz closes after the time limit.'
+          : form.open_at_local && form.close_at_local
+            ? `Students can start any time between Available from and Closes at; each gets ${form.duration_minutes} min from when they start.`
+            : 'Set "Available from" and "Closes at" — students get the full time limit from whenever they start within that window.'}
       </p>
     </div>
   );

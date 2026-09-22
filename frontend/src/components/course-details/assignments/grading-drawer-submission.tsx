@@ -8,6 +8,7 @@ import { parseSubmissionContent, formatLateBy } from './student-assignment-card/
 import type { Submission } from '@/lib/course-details/services/assignments-types';
 import { GradingDrawerSection } from './grading-drawer-section';
 import { gradingBlue } from './grading-drawer-blue';
+import { MANUAL_GRADE_CONTENT_URL } from './shared';
 import { cn } from '@/lib/utils';
 
 export function GradingDrawerSubmission({
@@ -17,9 +18,11 @@ export function GradingDrawerSubmission({
   submission: Submission;
   dueAt?: Date | string | null;
 }) {
-  const content = submission.content_url
-    ? parseSubmissionContent(submission.content_url)
-    : null;
+  const isManualGrade = submission.content_url === MANUAL_GRADE_CONTENT_URL;
+  const content =
+    submission.content_url && !isManualGrade
+      ? parseSubmissionContent(submission.content_url)
+      : null;
   const lateBy =
     submission.is_late && dueAt
       ? formatLateBy(submission.submitted_at, dueAt)
@@ -27,7 +30,13 @@ export function GradingDrawerSubmission({
 
   return (
     <GradingDrawerSection title='Submitted work' hint='Open or download what the student sent.'>
-      {!content && !submission.content_url ? (
+      {isManualGrade ? (
+        <p className='rounded-lg border border-dashed border-border bg-muted/40 px-3 py-4 text-center text-sm text-muted-foreground'>
+          {submission.grade != null
+            ? 'Recorded offline by the teacher — the student did not submit a file in the app.'
+            : 'Hand-in / offline submission — no file required, enter their mark below.'}
+        </p>
+      ) : !content && !submission.content_url ? (
         <p className='rounded-lg border border-dashed border-border bg-muted/40 px-3 py-4 text-center text-sm text-muted-foreground'>
           This student has not uploaded anything yet.
         </p>

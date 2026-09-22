@@ -20,7 +20,6 @@ import {
   quizFormTextareaClass
 } from '../new-quiz-page/field-styles';
 import type { FormState } from './form-state';
-import { formWithoutOnlineDisallowedTypes } from '../quiz-question-types';
 import { OfflineDeliveryField } from './offline-delivery-field';
 
 interface BasicsTabProps {
@@ -67,10 +66,7 @@ export function BasicsTab({ form, setForm }: BasicsTabProps) {
           <Select
             value={form.mode}
             onValueChange={(v) => {
-              const next = { ...form, mode: v as FormState['mode'] };
-              setForm(
-                v === 'online' ? formWithoutOnlineDisallowedTypes(next) : next
-              );
+              setForm({ ...form, mode: v as FormState['mode'] });
             }}
           >
             <SelectTrigger id='quiz-mode' className={quizFormSelectClass}>

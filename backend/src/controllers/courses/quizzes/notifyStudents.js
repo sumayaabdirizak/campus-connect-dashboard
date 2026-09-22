@@ -1,5 +1,8 @@
 import { prisma } from '../../../db/prisma.js';
-import { notifyCourseOfferingStudents } from '../../../services/courseActivityNotifier.service.js';
+import {
+  notifyCourseOfferingStudents,
+  notifyCourseOfferingTeacher,
+} from '../../../services/courseActivityNotifier.service.js';
 import { courseOfferingDashboardPath } from '../../../utils/courseOfferingAccess.js';
 
 function quizHref(offeringPublicId, quizId) {
@@ -55,6 +58,21 @@ export function notifyQuizClosingSoon(quiz, offeringPublicId, { userIds } = {}) 
     tag: `quiz-closing-${quiz.id}`,
     ctaLabel: 'Open quiz',
     userIds,
+  }).catch(() => {});
+}
+
+/** Fire-and-forget teacher alert when a student submits a quiz attempt. */
+export function notifyQuizSubmitted(quiz, offeringPublicId, { studentName } = {}) {
+  void notifyCourseOfferingTeacher({
+    courseOfferingId: quiz.courseOfferingId,
+    kind: 'QUIZ_SUBMITTED',
+    title: 'New quiz submission',
+    body: studentName
+      ? `${studentName} submitted "${quiz.title}"`
+      : `A student submitted "${quiz.title}"`,
+    href: quizHref(offeringPublicId, quiz.id),
+    tag: `quiz-submitted-${quiz.id}`,
+    ctaLabel: 'View attempt',
   }).catch(() => {});
 }
 

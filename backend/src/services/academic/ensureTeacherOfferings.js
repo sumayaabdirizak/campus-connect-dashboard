@@ -88,6 +88,20 @@ export async function ensureTeacherOfferings(teacherId) {
 
   if (regs.length === 0) return { created: 0 };
 
+  // A teacher only ever needs one offering per course+section — a later run
+  // resolving a different (or stale/bogus) academic year/semester must not
+  // spawn a second, empty offering for teaching they're already assigned.
+  const existingAssignments = await prisma.courseOffering.findMany({
+    where: {
+      teacherId: tid,
+      courseId: { in: assignings.map((a) => a.courseId) },
+    },
+    select: { courseId: true, sectionId: true },
+  });
+  const existingKeys = new Set(
+    existingAssignments.map((o) => `${o.courseId}:${o.sectionId}`)
+  );
+
   const slots = new Map();
   for (const r of regs) {
     if (!r.currentAcademicYearId || !r.currentSemesterId) continue;
@@ -116,6 +130,8 @@ export async function ensureTeacherOfferings(teacherId) {
         continue;
       }
 
+      if (existingKeys.has(`${course.id}:${slot.sectionId}`)) continue;
+
       try {
         await prisma.courseOffering.create({
           data: {
@@ -127,6 +143,7 @@ export async function ensureTeacherOfferings(teacherId) {
           },
         });
         created += 1;
+        existingKeys.add(`${course.id}:${slot.sectionId}`);
       } catch (e) {
         if (e.code !== "P2002") throw e;
         await prisma.courseOffering.updateMany({

@@ -25,6 +25,17 @@ export function isSubmissionGraded(sub: Submission | null | undefined): boolean 
   return sub != null && sub.is_reviewed && sub.grade != null;
 }
 
+/** Sentinel content_url the backend writes for a teacher-entered (offline/hand-in) grade — no real file exists. */
+export const MANUAL_GRADE_CONTENT_URL = '(Teacher-entered grade)';
+
+/**
+ * Placeholder id for a student with no submission row yet, so "Enter marks"
+ * can open the same GradingDrawer used for real submissions. Never sent to
+ * the server — handleSaveGrade routes anything with this id to the
+ * manual-grade mutation instead of the normal grade-submission one.
+ */
+export const VIRTUAL_MANUAL_GRADE_ID = -1;
+
 export function SubmissionFileCell({
   submission,
   label
@@ -32,7 +43,7 @@ export function SubmissionFileCell({
   submission: Submission | null | undefined;
   label: string;
 }) {
-  if (!submission?.content_url) {
+  if (!submission?.content_url || submission.content_url === MANUAL_GRADE_CONTENT_URL) {
     return <span className='text-xs text-muted-foreground'>—</span>;
   }
 

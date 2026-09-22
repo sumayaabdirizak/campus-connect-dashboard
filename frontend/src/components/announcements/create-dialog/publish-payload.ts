@@ -1,5 +1,6 @@
 import type { AnnouncementTargetRow, CreateAnnouncementDTO } from '@/lib/announcements/types';
 import type { ImageFile } from './types';
+import { deriveTitle } from './utils';
 
 type Primary = {
   facultyId?: number;
@@ -24,7 +25,7 @@ export function buildPublishFormData(args: {
   images: ImageFile[];
 }): FormData {
   const payload = new FormData();
-  payload.append('title', args.title.trim());
+  payload.append('title', deriveTitle(args.title, args.plain));
   payload.append('content', args.plain);
   payload.append('bodyHtml', args.content);
   payload.append('bodyMarkdown', args.plain);
@@ -64,7 +65,7 @@ export function buildPublishDto(args: {
   publishNowIso: string;
 }): CreateAnnouncementDTO {
   return {
-    title: args.title.trim(),
+    title: deriveTitle(args.title, args.plain),
     content: args.plain,
     bodyHtml: args.content,
     bodyMarkdown: args.plain,

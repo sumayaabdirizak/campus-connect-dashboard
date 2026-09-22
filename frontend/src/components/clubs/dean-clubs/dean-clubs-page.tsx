@@ -4,6 +4,9 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { usePendingClubs } from '@/lib/clubs/queries'
+import { isDeanRole, isSuperAdminRole } from '@shared/roles'
+import { useAuthStore } from '@/lib/auth-store'
+import { ClubCreateDialog } from '@/components/clubs/club-create-dialog'
 import { AllClubsTab } from './all-clubs-tab'
 import { PendingTab } from './pending-tab'
 
@@ -14,6 +17,9 @@ export function DeanClubsPage() {
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined)
   const { data: pendingData } = usePendingClubs()
   const pendingCount = pendingData?.clubs?.length ?? 0
+  const user = useAuthStore((s) => s.user)
+  const isSuperAdmin = isSuperAdminRole(user?.role)
+  const isDean = isDeanRole(user?.role) || isSuperAdmin
 
   return (
     <div className='flex min-h-0 flex-1 flex-col overflow-hidden bg-muted p-2 sm:p-3'>
@@ -25,6 +31,7 @@ export function DeanClubsPage() {
         >
           <header className='shrink-0 border-b border-border/60 bg-background/95 px-3 backdrop-blur-sm'>
             <div className='flex items-center gap-1.5 py-1.5'>
+              <ClubCreateDialog isDean={isDean} isSuperAdmin={isSuperAdmin} label='Create Club' />
               <TabsList
                 className='h-auto shrink-0 gap-0.5 rounded-full border border-border bg-muted/50 p-0.5 shadow-xs'
               >

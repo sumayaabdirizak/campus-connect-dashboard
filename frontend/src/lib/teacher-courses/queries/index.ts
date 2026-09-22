@@ -9,12 +9,15 @@ import {
   getLecturerReportsList,
   getLecturerReportDetail,
   getBatchReportsList,
-  getBatchReportDetail
+  getBatchReportDetail,
+  getFacultyReportsList,
+  getFacultyReportDetail
 } from '../services';
 import type { CourseReportListParams } from '../course-report-types';
 import type { StudentReportListParams } from '../student-report-types';
 import type { LecturerReportListParams } from '../lecturer-report-types';
 import type { BatchReportListParams } from '../batch-report-types';
+import type { FacultyReportListParams } from '../faculty-report-types';
 
 /** Heavy report lists — long cache, slow poll, never flash a full reload. */
 const REPORT_LIST_STALE_MS = 120_000;
@@ -87,6 +90,7 @@ export const useStudentReportsList = (
       params?.department ?? 'all',
       params?.courseId ?? 'all',
       params?.studentId ?? 'all',
+      params?.status ?? 'all',
       params?.sort ?? 'studentName-asc'
     ],
     queryFn: () => getStudentReportsList(params),
@@ -198,6 +202,50 @@ export const useBatchReportDetail = (
     ],
     queryFn: () => getBatchReportDetail(batchId!, params),
     enabled: !!batchId && enabled,
+    staleTime: REPORT_LIST_STALE_MS,
+    refetchInterval: REPORT_LIST_REFETCH_MS,
+    refetchOnWindowFocus: false
+  });
+};
+
+export const useFacultyReportsList = (
+  enabled: boolean = true,
+  params?: FacultyReportListParams
+) => {
+  return useQuery({
+    queryKey: [
+      'super-admin-faculty-reports',
+      params?.from ?? null,
+      params?.to ?? null,
+      params?.page ?? 1,
+      params?.pageSize ?? 25,
+      params?.q ?? '',
+      params?.facultyId ?? 'all',
+      params?.sort ?? 'name-asc'
+    ],
+    queryFn: () => getFacultyReportsList(params),
+    enabled,
+    staleTime: REPORT_LIST_STALE_MS,
+    refetchInterval: REPORT_LIST_REFETCH_MS,
+    refetchOnWindowFocus: false,
+    keepPreviousData: true
+  });
+};
+
+export const useFacultyReportDetail = (
+  facultyId: number | null,
+  enabled: boolean = true,
+  params?: { from?: string | null; to?: string | null }
+) => {
+  return useQuery({
+    queryKey: [
+      'super-admin-faculty-report',
+      facultyId,
+      params?.from ?? null,
+      params?.to ?? null
+    ],
+    queryFn: () => getFacultyReportDetail(facultyId!, params),
+    enabled: !!facultyId && enabled,
     staleTime: REPORT_LIST_STALE_MS,
     refetchInterval: REPORT_LIST_REFETCH_MS,
     refetchOnWindowFocus: false

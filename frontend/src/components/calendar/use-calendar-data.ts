@@ -21,15 +21,18 @@ import type { CourseLegend } from './filters-popover';
 
 export function useCalendarRange(view: CalendarView, cursor: Date) {
   const range = useMemo(() => {
+    // Header row is Sun-first (WEEKDAYS in calendar-constants.ts) — the grid
+    // must align to the same start-of-week, or every date lands one column
+    // off from its actual weekday.
     if (view === 'month')
       return {
-        start: startOfWeek(startOfMonth(cursor), { weekStartsOn: 1 }),
-        end: endOfWeek(endOfMonth(cursor), { weekStartsOn: 1 })
+        start: startOfWeek(startOfMonth(cursor), { weekStartsOn: 0 }),
+        end: endOfWeek(endOfMonth(cursor), { weekStartsOn: 0 })
       };
     if (view === 'week')
       return {
-        start: startOfWeek(cursor, { weekStartsOn: 1 }),
-        end: endOfWeek(cursor, { weekStartsOn: 1 })
+        start: startOfWeek(cursor, { weekStartsOn: 0 }),
+        end: endOfWeek(cursor, { weekStartsOn: 0 })
       };
     if (view === 'day') return { start: startOfDay(cursor), end: endOfDay(cursor) };
     return { start: startOfDay(new Date()), end: endOfDay(addDays(new Date(), 45)) };

@@ -5,6 +5,7 @@ import { Check, Eye, Loader2, ShieldAlert, Square, UserX } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { PosTableCell, PosTableRow } from '@/features/pos/components/pos-table';
+import { InitialsAvatar } from '@/components/course-details/_shared/initials-avatar';
 import { cn } from '@/lib/utils';
 import type { QuizAttempt } from '@/lib/course-details/services/quizzes-types';
 import {
@@ -69,7 +70,10 @@ export function AttemptTableRow({
     >
       {col('student') ? (
         <PosTableCell className='min-w-[200px] max-w-[360px] whitespace-normal'>
-          <p className='truncate text-sm font-medium'>{student.full_name}</p>
+          <div className='flex items-center gap-2.5'>
+            <InitialsAvatar name={student.full_name} />
+            <p className='truncate text-sm font-medium'>{student.full_name}</p>
+          </div>
         </PosTableCell>
       ) : null}
 
@@ -104,18 +108,18 @@ export function AttemptTableRow({
               variant='outline'
               size='xs'
               className={cn(
-                'gap-1 capitalize rounded-full',
+                'gap-1 capitalize rounded-full font-medium',
                 isCheat
-                  ? 'text-destructive border-destructive/40'
+                  ? 'border-destructive/30 bg-destructive/10 text-destructive'
                   : isAbsent
-                    ? 'text-muted-foreground'
+                    ? 'border-border bg-muted text-muted-foreground'
                     : status === 'submitted'
-                      ? 'text-success border-success'
+                      ? 'border-success/30 bg-success/10 text-success'
                       : status === 'in_progress'
-                        ? 'text-warning border-warning'
+                        ? 'border-warning/30 bg-warning/10 text-warning'
                         : status === 'missed'
-                          ? 'text-destructive border-destructive/40'
-                          : 'text-muted-foreground'
+                          ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                          : 'border-border bg-muted text-muted-foreground'
               )}
             >
               {isAbsent ? <UserX className='size-3' /> : null}

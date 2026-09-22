@@ -98,18 +98,20 @@ function isSameSavedTime(iso: string | null | undefined, local: string): boolean
 }
 
 export function fromQuiz(q: Quiz): FormState {
+  const timingMode: FormState['timing_mode'] = q.timing_mode === 'flexible' ? 'flexible' : 'fixed';
   return {
     title: q.title,
     description: q.description ?? '',
     duration_minutes: q.duration_minutes,
     is_draft: q.is_draft,
     open_at_local: isoToLocalInput(q.open_at),
-    // Fixed mode only — close_at is derived from open + duration server-side.
-    close_at_local: '',
+    // Fixed mode derives close_at from open + duration server-side; flexible
+    // mode's close_at is the real window end the teacher set, so keep it.
+    close_at_local: timingMode === 'flexible' ? isoToLocalInput(q.close_at) : '',
     shuffle_questions: q.shuffle_questions,
     shuffle_answers: q.shuffle_answers,
     passing_score: q.passing_score,
-    timing_mode: 'fixed',
+    timing_mode: timingMode,
     confidence_scoring: !!q.confidence_scoring,
     moduleSelect: q.moduleId == null ? NO_MODULE : String(q.moduleId),
     mode: q.mode ?? 'online',
@@ -126,8 +128,10 @@ export function isUploadedOfflineForm(s: FormState): boolean {
 export function toPayload(s: FormState): CreateQuizInput {
   const uploaded = isUploadedOfflineForm(s);
   const openAt = localInputToIso(s.open_at_local);
-  const closeAtLocal = fixedWindowEndLocal(s.open_at_local, s.duration_minutes);
-  const closeAt = localInputToIso(closeAtLocal);
+  const closeAt =
+    s.timing_mode === 'flexible'
+      ? localInputToIso(s.close_at_local)
+      : localInputToIso(fixedWindowEndLocal(s.open_at_local, s.duration_minutes));
   return {
     title: s.title.trim(),
     description: s.description.trim() || undefined,
@@ -138,7 +142,7 @@ export function toPayload(s: FormState): CreateQuizInput {
     shuffle_questions: s.shuffle_questions,
     shuffle_answers: s.shuffle_answers,
     passing_score: s.passing_score,
-    timing_mode: 'fixed',
+    timing_mode: s.timing_mode,
     confidence_scoring: s.confidence_scoring,
     moduleId: s.moduleSelect === NO_MODULE ? null : Number(s.moduleSelect),
     mode: s.mode,
@@ -169,7 +173,18 @@ export function validateForm(s: FormState, editing: Quiz | null): string | null 
     return 'Pick a future “Available from” date';
   }
   if (s.mode === 'online' && !s.open_at_local) {
-    return 'Set "Available from" — everyone needs a shared start time';
+    return s.timing_mode === 'flexible'
+      ? 'Set "Available from" — the window students can start within'
+      : 'Set "Available from" — everyone needs a shared start time';
+  }
+  if (s.mode === 'online' && s.timing_mode === 'flexible') {
+    if (!s.close_at_local) return 'Set "Closes at" for a flexible-timing quiz';
+    if (
+      s.open_at_local &&
+      new Date(s.close_at_local).getTime() <= new Date(s.open_at_local).getTime()
+    ) {
+      return '"Closes at" must be after "Available from"';
+    }
   }
   if (!s.is_draft && editing && isUploadedOfflineQuiz(editing)) {
     if (!editing.paperFile || (editing.maxMarks ?? 0) <= 0) {
@@ -189,6 +204,9 @@ export function quizConfigReadyMessage(s: FormState): string | null {
   if (s.duration_minutes < 1) return 'Set a duration of at least 1 minute';
   if (s.mode === 'online' && !s.open_at_local) {
     return 'Set “Available from” on the Timing tab';
+  }
+  if (s.mode === 'online' && s.timing_mode === 'flexible' && !s.close_at_local) {
+    return 'Set "Closes at" on the Timing tab';
   }
   if (isUploadedOfflineForm(s)) {
     if (s.marksPlanTotal < 1) return 'Set total marks on the Marking tab';
