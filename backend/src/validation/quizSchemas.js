@@ -116,7 +116,9 @@ export const createQuizBodySchema = Joi.object({
     if (value.open_at && value.close_at && new Date(value.open_at) >= new Date(value.close_at)) {
       return helpers.error("any.custom", { message: "open_at must be before close_at" });
     }
-    if (value.timing_mode === "fixed" && !value.open_at) {
+    // timing_mode only applies to in-app (online) quizzes — offline/paper
+    // quizzes never collect an open_at, so don't reject them for lacking one.
+    if (value.mode === "online" && value.timing_mode === "fixed" && !value.open_at) {
       return helpers.error("any.custom", { message: "Fixed mode requires open_at" });
     }
     if (value.auto_publish_at_open) {
@@ -164,7 +166,7 @@ export const patchQuizBodySchema = Joi.object({
 })
   .min(1) // require at least one field
   .custom((value, helpers) => {
-    if (value.timing_mode === "fixed" && value.open_at === null) {
+    if (value.mode !== "offline" && value.timing_mode === "fixed" && value.open_at === null) {
       return helpers.error("any.custom", {
         message: "Fixed mode requires open_at (cannot clear open time while in fixed mode)",
       });
