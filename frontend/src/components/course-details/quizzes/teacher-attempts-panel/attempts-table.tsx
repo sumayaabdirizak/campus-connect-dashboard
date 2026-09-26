@@ -9,6 +9,7 @@ import {
   PosTableHead,
   PosTableHeaderCell
 } from '@/features/pos/components/pos-table';
+import { Info } from 'lucide-react';
 import { SegmentedControl } from '@/components/ui/segmented-control';
 import { showToast } from '@/lib/notifications';
 import type { QuizAttempt } from '@/lib/course-details/services/quizzes-types';
@@ -192,7 +193,8 @@ export function AttemptsTable({
       ) : (
         <>
           {isOffline ? (
-            <p className='border-b border-border bg-muted px-4 py-2.5 text-sm text-muted-foreground'>
+            <p className='flex items-center gap-2 border-b border-border bg-primary/5 px-4 py-2.5 text-sm text-muted-foreground'>
+              <Info className='size-4 shrink-0 text-primary' aria-hidden />
               Pick a result from the dropdown, or enter marks and click{' '}
               <span className='font-medium text-foreground'>Save</span>.
             </p>

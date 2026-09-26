@@ -12,6 +12,8 @@ function kindTitle(kind: DeadlineRow['kind']): string {
       return 'Quiz';
     case 'assignment':
       return 'Assignment';
+    case 'personal':
+      return 'Event';
     default:
       return 'Announcement';
   }
@@ -29,13 +31,15 @@ function chipStyle(d: DeadlineRow): { bg: string; text: string } {
       return { bg: 'bg-[#DBEAFE]', text: 'text-[#1D4ED8]' };
     case 'assignment':
       return { bg: 'bg-[#FCE7F3]', text: 'text-[#BE185D]' };
+    case 'personal':
+      return { bg: 'bg-[#EDE9FE]', text: 'text-[#6D28D9]' };
     default:
       return { bg: 'bg-[#FEE2E2]', text: 'text-[#B91C1C]' };
   }
 }
 
 function openDeadline(d: DeadlineRow) {
-  if (d.kind === 'announcement') {
+  if (d.kind === 'announcement' || d.kind === 'personal') {
     window.location.assign('/dashboard/calendar');
     return;
   }

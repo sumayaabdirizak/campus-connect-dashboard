@@ -7,6 +7,7 @@ import { ensureAcademicYearForDate } from "../../services/academic/ensureAcademi
 import { parseAcademicYearStartYear } from "../../services/academic/academicCalendarDefaults.js";
 import { graduateCompletedCohorts } from "../../services/academic/graduateCompletedCohorts.js";
 import { respondInternalError } from "../../utils/httpError.js";
+import { facultyScopeForRestrictedAcademicRoles } from "./facultyScope.js";
 
 const batchIncludeSafe = {
   program: {
@@ -36,15 +37,21 @@ export const getAllBatches = async (req, res) => {
       console.error("graduateCompletedCohorts skipped on batches list", gradErr?.message);
     }
 
+    const scope = await facultyScopeForRestrictedAcademicRoles(req);
     const { academicYearId, programId, departmentId, facultyId, status } = req.query;
-    const where = {};
-    if (academicYearId) where.academicYearId = Number(academicYearId);
-    if (programId) where.programId = Number(programId);
-    else if (departmentId) {
-      where.program = { departmentId: Number(departmentId) };
-    } else if (facultyId) {
-      where.program = { department: { facultyId: Number(facultyId) } };
+    const conditions = [];
+    if (academicYearId) conditions.push({ academicYearId: Number(academicYearId) });
+    if (programId) conditions.push({ programId: Number(programId) });
+    else if (departmentId) conditions.push({ program: { departmentId: Number(departmentId) } });
+    else if (facultyId) conditions.push({ program: { department: { facultyId: Number(facultyId) } } });
+
+    if (scope.mode === "faculty") {
+      conditions.push({ program: { department: { facultyId: scope.facultyId } } });
+    } else if (scope.mode === "none") {
+      conditions.push({ program: { department: { facultyId: -1 } } });
     }
+
+    const where = conditions.length ? { AND: conditions } : {};
 
     let batches;
     try {

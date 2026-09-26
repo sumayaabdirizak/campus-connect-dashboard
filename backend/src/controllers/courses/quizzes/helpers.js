@@ -25,35 +25,14 @@ export function assertQuizIsDraft(quiz) {
   }
 }
 
-/** Online quizzes only support auto-gradable question types. */
-export function assertQuestionTypeAllowedForQuiz(quiz, questionType) {
-  const mode = quiz?.mode ?? 'online';
-  const type = questionType || 'MCQ';
-  if (mode === 'online' && type === 'SHORT_ANSWER') {
-    const err = new Error('Short answer questions are not supported for online quizzes');
-    err.status = 400;
-    throw err;
-  }
-}
+/** Short-answer questions are manually graded (see attempt-grader) — allowed
+ * in both online and offline quizzes. Kept as a no-op call site so future
+ * per-mode restrictions have one place to land. */
+export function assertQuestionTypeAllowedForQuiz(_quiz, _questionType) {}
 
-export function assertMarksPlanAllowedForMode(mode, marksPlan) {
-  if (!marksPlan || mode !== 'online') return;
-  if (
-    marksPlan.allocations &&
-    Object.prototype.hasOwnProperty.call(marksPlan.allocations, 'SHORT_ANSWER')
-  ) {
-    const err = new Error('Short answer sections are not supported for online quizzes');
-    err.status = 400;
-    throw err;
-  }
-}
+export function assertMarksPlanAllowedForMode(_mode, _marksPlan) {}
 
-export function assertQuestionsAllowedForMode(mode, questions) {
-  if (!Array.isArray(questions) || mode !== 'online') return;
-  for (const q of questions) {
-    assertQuestionTypeAllowedForQuiz({ mode }, q.question_type);
-  }
-}
+export function assertQuestionsAllowedForMode(_mode, _questions) {}
 
 /** Uploaded paper quiz — teacher file + course marks, no in-app questions. */
 export function isUploadedOfflineQuiz(quiz) {

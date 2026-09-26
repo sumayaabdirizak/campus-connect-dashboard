@@ -4,6 +4,7 @@ import { asyncHandler } from '../../../utils/asyncHandler.js';
 import { requireStudentSubmission } from '../../../middleware/courseOfferingRbac.js';
 import { resolveSubmitGroup, resolveEffectiveDue } from '../../../controllers/courses/assignments/submitWindow.js';
 import { upsertOwnSubmission, fanOutGroupSubmissions } from '../../../controllers/courses/assignments/submitPersist.js';
+import { notifyAssignmentSubmitted } from '../../../controllers/courses/assignments/notifyStudents.js';
 import { getCloseAtMs } from '../../../services/assignments/lifecycleCore.js';
 
 const router = Router();
@@ -26,12 +27,14 @@ router.post('/:assignmentId/submissions', requireStudentSubmission(), asyncHandl
     where: { id: assignmentId },
     select: {
       id: true,
+      title: true,
       open_at: true,
       due_date: true,
       lateWindowMinutes: true,
       workMode: true,
       courseOfferingId: true,
       lifecycle: { select: { publishStatus: true } },
+      courseOffering: { select: { publicId: true } },
     },
   });
   if (!assignment) return res.status(404).json({ message: 'Assignment not found' });
@@ -73,6 +76,12 @@ router.post('/:assignmentId/submissions', requireStudentSubmission(), asyncHandl
       now,
     });
   }
+
+  notifyAssignmentSubmitted(
+    { title: assignment.title, courseOfferingId: assignment.courseOfferingId },
+    assignment.courseOffering.publicId,
+    { studentName: submission.student?.full_name },
+  );
 
   res.json(submission);
 }));

@@ -6,6 +6,7 @@ import {
   useGradeSubmission,
   useGrantExtension,
   useGrantExtensionBatch,
+  useManualGradeAssignment,
   useSubmissions
 } from '@/lib/course-details/queries/assignments-queries';
 import { useRoster } from '@/lib/course-details/queries/roster-queries';
@@ -32,6 +33,7 @@ export function useSubmissionsData(
   const deleteAttachmentMutation = useDeleteAttachment(courseId);
   const multiTabGradingConflict = useMultiTabGradingGuard(assignment.id);
   const gradeMutation = useGradeSubmission();
+  const manualGradeMutation = useManualGradeAssignment();
   const extensionMutation = useGrantExtension();
   const extensionBatchMutation = useGrantExtensionBatch();
   const { data: submissions = [], isLoading: subsLoading } = useSubmissions(
@@ -91,6 +93,7 @@ export function useSubmissionsData(
     multiTabGradingConflict,
     deleteAttachmentMutation,
     gradeMutation,
+    manualGradeMutation,
     extensionMutation,
     extensionBatchMutation
   };

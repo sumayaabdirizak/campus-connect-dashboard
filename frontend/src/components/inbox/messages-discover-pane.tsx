@@ -101,11 +101,13 @@ export function MessagesDiscoverPane() {
               Discover
             </h2>
           </div>
-          <ClubCreateDialog
-            isDean={isDean}
-            isSuperAdmin={isSuperAdmin}
-            label='Apply'
-          />
+          {isDean ? (
+            <ClubCreateDialog
+              isDean={isDean}
+              isSuperAdmin={isSuperAdmin}
+              label='Apply'
+            />
+          ) : null}
         </div>
 
         <div className='flex items-center gap-2 px-4 pb-3'>

@@ -1,6 +1,6 @@
 import type { AnnouncementTargetRow, AnnouncementTargetType } from '@/lib/announcements/types';
 import type { ActiveDaysPreset, CreateAnnouncementDTO, ImageFile } from './types';
-import { computeExpiresIsoFromPreset, htmlToPlain, targetRolesFromFlags } from './utils';
+import { computeExpiresIsoFromPreset, deriveTitle, htmlToPlain, targetRolesFromFlags } from './utils';
 
 export function buildTargetingPayload(args: {
   targetType: AnnouncementTargetType;
@@ -76,7 +76,7 @@ export function buildDraftJsonPayload(args: DraftCore): CreateAnnouncementDTO {
   const targetRoles = targetRolesFromFlags(args.includeStudents, args.includeTeachers);
   const { expiresAtIso, deadlineAtIso } = resolveScheduleIso(args);
   return {
-    title: args.title.trim(),
+    title: deriveTitle(args.title, plain),
     content: plain,
     bodyHtml: args.content,
     bodyMarkdown: plain,

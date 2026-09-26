@@ -9,9 +9,9 @@ import {
   resolveAssignmentCardTiming
 } from './assignment-card-state';
 import {
-  AssignmentCardBody,
   AssignmentCardFooter,
-  AssignmentCardHeader
+  AssignmentCardMetaRow,
+  AssignmentCardTitleRow
 } from './card-summary-row';
 
 export function StudentAssignmentCard({
@@ -49,24 +49,21 @@ export function StudentAssignmentCard({
         }
       }}
       className={cn(
-        'flex h-full min-h-[15.5rem] min-w-0 cursor-pointer flex-col overflow-hidden rounded-xl border bg-card text-foreground outline-none transition-colors',
-        'hover:border-border hover:bg-muted/20 focus-visible:ring-2 focus-visible:ring-ring'
+        'flex h-full min-h-[15.5rem] min-w-0 cursor-pointer flex-col gap-3 overflow-hidden rounded-xl border bg-card p-5 text-foreground outline-none transition-colors',
+        'hover:border-primary/30 hover:shadow-md focus-visible:ring-2 focus-visible:ring-ring'
       )}
     >
-      <div className='shrink-0 border-b border-border/60 bg-card px-5 pt-5 pb-3'>
-        <AssignmentCardHeader
+      <AssignmentCardTitleRow title={a.title} description={a.description} status={status} />
+
+      <div className='min-h-0 flex-1'>
+        <AssignmentCardMetaRow
           dueShort={dueShort}
           maxMarks={a.maxMarks ?? 100}
           attachmentCount={a.attachments?.length ?? 0}
-          status={status}
         />
       </div>
 
-      <div className='min-h-0 flex-1 px-5 py-3'>
-        <AssignmentCardBody title={a.title} description={a.description} />
-      </div>
-
-      <div className='shrink-0 border-t border-border/60 bg-card px-5 pt-3 pb-5'>
+      <div className='shrink-0 border-t border-border/60 pt-3'>
         <AssignmentCardFooter dueLine={dueLine} onOpen={onOpen} />
       </div>
     </article>

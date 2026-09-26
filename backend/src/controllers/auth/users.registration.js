@@ -129,11 +129,17 @@ export function buildUserCreateData({
 export async function registerUserByAdmin(req, res) {
   const {
     full_name, email, password, role: rawRole, departmentCode, facultyId: bodyFacultyId, number,
-    programId: bodyProgramId, specialty, batchSectionId, academicYearId, semesterId, courseIds,
-    secondaryFacultyId,
+    programId: bodyProgramId, specialty, batchSectionId, academicYearId, semesterId,
   } = req.body;
+  const isDean = req.user?.role === 'DEAN';
+  // Deans may only add lecturers to their own faculty (no extra affiliations/courses).
+  const courseIds = isDean ? [] : req.body.courseIds;
+  const secondaryFacultyId = isDean ? undefined : req.body.secondaryFacultyId;
 
   const role = normalizeRoleName(rawRole);
+  if (isDean && role !== 'TEACHER') {
+    throw new HttpError(403, 'Deans can only create lecturer accounts.', null);
+  }
   const roleObj = await prisma.role.findUnique({ where: { name: role } });
   if (!roleObj) throw new HttpError(400, `Role '${role || rawRole}' does not exist`, null);
 
@@ -211,6 +217,10 @@ export async function registerUserByAdmin(req, res) {
       'Could not resolve student faculty, department, and program. Pick a department and section.',
       null
     );
+  }
+
+  if (isDean && facultyId !== req.facultyId) {
+    throw new HttpError(403, 'You can only create lecturers in your own faculty.', null);
   }
 
   if (role === 'TEACHER' && (!facultyId || !departmentId)) {

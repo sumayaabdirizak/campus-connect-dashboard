@@ -2,7 +2,7 @@
 
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { Check, CheckCircle2, Circle, Lightbulb, X, XCircle } from 'lucide-react';
+import { Check, CheckCircle2, Circle, Lightbulb, MinusCircle, X, XCircle } from 'lucide-react';
 import type { QuizAttempt, QuizQuestion } from '@/lib/course-details/services/quizzes-types';
 
 type AttemptReviewAnswer = NonNullable<QuizAttempt['answers']>[number];
@@ -27,14 +27,20 @@ export function AttemptReviewQuestion({
   answer: ans,
   answersRevealed = true
 }: AttemptReviewQuestionProps) {
+  const isShort = q.question_type === 'SHORT_ANSWER';
+  const isGraded = ans?.is_correct != null;
   const earned = ans?.points_earned ?? 0;
   const selectedId = ans?.selected_option_id ?? null;
   const wasAnswered =
     selectedId != null ||
     (ans?.text_answer != null && ans.text_answer.trim() !== '');
-  const isCorrect = ans?.is_correct === true;
-  const isWrong = wasAnswered && ans?.is_correct === false;
-  const isShort = q.question_type === 'SHORT_ANSWER';
+  // A custom (partial-credit) grade on a short-answer question isn't fully
+  // right or fully wrong — comparing earned marks against the max, rather
+  // than trusting the binary is_correct flag alone, avoids labeling e.g.
+  // 0.5/2 as flatly "Incorrect".
+  const isPartial = isShort && isGraded && earned > 0 && earned < q.points;
+  const isCorrect = isGraded && !isPartial && ans?.is_correct === true;
+  const isWrong = wasAnswered && isGraded && !isPartial && ans?.is_correct === false;
   const options = q.options ?? [];
   const showKey = answersRevealed;
 
@@ -44,15 +50,19 @@ export function AttemptReviewQuestion({
         'space-y-3 rounded-xl border bg-card p-4',
         isCorrect
           ? 'border-success/40'
-          : isWrong
-            ? 'border-destructive/30'
-            : 'border-border'
+          : isPartial
+            ? 'border-warning/40'
+            : isWrong
+              ? 'border-destructive/30'
+              : 'border-border'
       )}
     >
       <div className='flex items-start justify-between gap-3'>
         <div className='flex min-w-0 flex-1 items-start gap-2'>
           {isCorrect ? (
             <CheckCircle2 className='mt-0.5 size-4 shrink-0 text-success' />
+          ) : isPartial ? (
+            <MinusCircle className='mt-0.5 size-4 shrink-0 text-warning' />
           ) : isWrong ? (
             <XCircle className='mt-0.5 size-4 shrink-0 text-destructive' />
           ) : (
@@ -71,25 +81,28 @@ export function AttemptReviewQuestion({
                   'text-xs font-medium',
                   isCorrect
                     ? 'text-success'
-                    : isWrong
-                      ? 'text-destructive'
-                      : 'text-muted-foreground'
+                    : isPartial
+                      ? 'text-warning'
+                      : isWrong
+                        ? 'text-destructive'
+                        : 'text-muted-foreground'
                 )}
               >
                 {isCorrect
                   ? 'Correct'
-                  : isWrong
-                    ? 'Incorrect'
-                    : wasAnswered
-                      ? 'Waiting for a grade'
-                      : 'Skipped'}
+                  : isPartial
+                    ? 'Partial credit'
+                    : isWrong
+                      ? 'Incorrect'
+                      : wasAnswered
+                        ? 'Waiting for a grade'
+                        : 'Skipped'}
               </span>
             </div>
           </div>
         </div>
         <Badge variant='outline' size='sm' className='shrink-0 rounded-full tabular-nums'>
-          {ans?.is_correct == null && !isShort ? '—' : earned.toFixed(1)} / {q.points}{' '}
-          pt
+          {isGraded ? earned.toFixed(1) : '—'} / {q.points} pt
         </Badge>
       </div>
 
@@ -103,11 +116,15 @@ export function AttemptReviewQuestion({
               <span className='italic text-muted-foreground'>— no answer —</span>
             )}
           </div>
-          {ans?.is_correct == null ? (
+          {!isGraded ? (
             <p className='text-[11px] text-muted-foreground'>Pending teacher review.</p>
           ) : (
             <p className='text-[11px] text-muted-foreground'>
-              {isCorrect ? 'Marked as correct.' : 'Marked as incorrect.'}
+              {isCorrect
+                ? 'Marked as correct.'
+                : isPartial
+                  ? `Awarded partial credit — ${earned.toFixed(1)}/${q.points} pt.`
+                  : 'Marked as incorrect.'}
             </p>
           )}
         </div>
@@ -180,11 +197,13 @@ export function AttemptReviewQuestion({
         <p className='pl-6 text-sm text-muted-foreground'>
           {isCorrect
             ? 'Correct'
-            : isWrong
-              ? 'Incorrect'
-              : wasAnswered
-                ? 'Waiting for a grade'
-                : 'Skipped'}
+            : isPartial
+              ? 'Partial credit'
+              : isWrong
+                ? 'Incorrect'
+                : wasAnswered
+                  ? 'Waiting for a grade'
+                  : 'Skipped'}
         </p>
       )}
 

@@ -109,12 +109,12 @@ type CourseReportFilters = {
 const defaultCourseFilters: CourseReportFilters = {
   department: 'all',
   courseId: 'all',
-  period: 'semester',
+  period: 'all',
   from: null,
   to: null
 };
 
-const COURSE_FILTER_STORAGE = 'course-reports-filters:v3';
+const COURSE_FILTER_STORAGE = 'course-reports-filters:v4';
 
 function CourseReportsTable({
   onOpen

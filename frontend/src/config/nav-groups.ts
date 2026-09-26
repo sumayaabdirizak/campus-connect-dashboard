@@ -33,7 +33,7 @@ export const universityStructureNavGroup: NavGroup = {
     { title: 'Departments', url: '/dashboard/departments', icon: 'userTie', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Programs', url: '/dashboard/programs', icon: 'forms', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     { title: 'Courses', url: '/dashboard/courses', icon: 'fileCheck', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
-    { title: 'Batches', url: '/dashboard/batches', icon: 'kanban', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+    { title: 'Batch', url: '/dashboard/batches', icon: 'kanban', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
   ],
 };
 
@@ -42,21 +42,21 @@ export const adminNavGroups: NavGroup[] = [
     label: 'User Management',
     items: [
       {
-        title: 'Students',
+        title: 'Student',
         url: '/dashboard/users?role=STUDENT',
         icon: 'student',
         isActive: false,
         access: { roles: ['SUPER_ADMIN'] },
       },
       {
-        title: 'Lecturers',
+        title: 'Lecturer',
         url: '/dashboard/users?role=TEACHER',
         icon: 'teacher',
         isActive: false,
         access: { roles: ['SUPER_ADMIN'] },
       },
       {
-        title: 'Deans',
+        title: 'Dean',
         url: '/dashboard/users?role=DEAN',
         icon: 'userTie',
         isActive: false,
@@ -67,8 +67,8 @@ export const adminNavGroups: NavGroup[] = [
   {
     label: 'Admin',
     items: [
-      { title: 'Roles', url: '/dashboard/admin/roles', icon: 'userCog', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
-      { title: 'Audit Logs', url: '/dashboard/audit-logs', icon: 'activity', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+      { title: 'Role', url: '/dashboard/admin/roles', icon: 'userCog', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
+      { title: 'Audit Log', url: '/dashboard/audit-logs', icon: 'activity', isActive: false, access: { roles: ['SUPER_ADMIN'] } },
     ],
   },
 ];
@@ -93,7 +93,7 @@ export const communicationNavGroup: NavGroup = {
       isActive: false,
       access: { roles: ['DEAN', 'TEACHER', 'STUDENT'] },
     },
-    { title: 'Announcements', url: '/dashboard/announcements', icon: 'speakerphone', isActive: false, access: {} },
+    { title: 'Announcement', url: '/dashboard/announcements', icon: 'speakerphone', isActive: false, access: {} },
     {
       title: 'Calendar',
       url: '/dashboard/calendar',
@@ -102,7 +102,7 @@ export const communicationNavGroup: NavGroup = {
       access: { roles: ['DEAN', 'TEACHER', 'STUDENT'] },
     },
     {
-      title: 'Clubs',
+      title: 'Club',
       url: '/dashboard/dean/clubs',
       icon: 'teams',
       isActive: false,
@@ -123,37 +123,43 @@ export const reportsNavGroup: NavGroup = {
   label: '',
   items: [
     {
-      title: 'Reports',
+      title: 'Report',
       url: '/dashboard/reports/course-reports',
       icon: 'barChart',
       access: academicReportRoles,
       items: [
         {
-          title: 'Course reports',
+          title: 'Course Report',
           url: '/dashboard/reports/course-reports',
           icon: 'billing',
           access: academicReportRoles,
         },
         {
-          title: 'Student reports',
+          title: 'Student Report',
           url: '/dashboard/reports/student-reports',
           icon: 'profile',
           access: academicReportRoles,
         },
         {
-          title: 'Lecturer reports',
+          title: 'Lecturer Report',
           url: '/dashboard/reports/lecturer-reports',
           icon: 'userCog',
           access: aggregateReportRoles,
         },
         {
-          title: 'Batch reports',
+          title: 'Batch Report',
           url: '/dashboard/reports/batch-reports',
           icon: 'kanban',
           access: aggregateReportRoles,
         },
         {
-          title: 'Clubs report',
+          title: 'Faculty Report',
+          url: '/dashboard/reports/faculty-reports',
+          icon: 'barChart',
+          access: { roles: ['SUPER_ADMIN'] },
+        },
+        {
+          title: 'Club Report',
           url: '/dashboard/reports/clubs-report',
           icon: 'teams',
           access: aggregateReportRoles,

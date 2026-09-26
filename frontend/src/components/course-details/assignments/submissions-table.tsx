@@ -48,6 +48,8 @@ type Props = {
   selectedRows: Set<number>;
   onToggleRow: (id: number, checked: boolean) => void;
   onGrade: (sub: Submission) => void;
+  /** Open the grading drawer to record a mark for a student with no submission (hand-in / offline). */
+  onEnterMarks: (student: { id: number; full_name: string; number: string; email?: string }) => void;
   /** Open extend flow for a roster row with no submission yet. */
   onExtendMissing: (targetId: number) => void;
   filteredGroupSubs: GroupRow[];
@@ -222,6 +224,7 @@ export function SubmissionsTable(p: Props) {
                     selected={p.selectedRows.has(row.studentId)}
                     onToggle={p.onToggleRow}
                     onGrade={p.onGrade}
+                    onEnterMarks={p.onEnterMarks}
                     onExtendMissing={p.onExtendMissing}
                   />
                 ))}

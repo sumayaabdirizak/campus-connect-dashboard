@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireDeanOrSuperAdmin } from "../../middleware/requireDeanOrSuperAdmin.js";
 import {
   registerUserByAdmin,
   registerStudentsBulk,
@@ -45,7 +46,7 @@ router.post(
 router.delete("/me/avatar", asyncHandler(removeMyAvatar));
 
 router.post(
-  "/register", requireRole("SUPER_ADMIN"),
+  "/register", requireDeanOrSuperAdmin,
   validateBody(registerUserBodySchema),
   asyncHandler(registerUserByAdmin)
 );

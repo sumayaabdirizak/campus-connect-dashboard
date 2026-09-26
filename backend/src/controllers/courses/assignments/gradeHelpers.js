@@ -3,6 +3,7 @@ import { pushToUser, pushToUsers } from '../../../services/pushNotifier.service.
 import { courseOfferingDashboardPath } from '../../../utils/courseOfferingAccess.js';
 import { upsertSubmissionGrade } from '../../../services/assignments/submissionGrade.js';
 import { toSubmissionClient } from '../../../services/assignments/submissionDto.js';
+import { notifyAssignmentGraded } from './notifyStudents.js';
 
 const studentInclude = {
   student: { select: { id: true, full_name: true, email: true, number: true } },
@@ -64,7 +65,12 @@ export async function applyGroupGrade({
   if (grade !== undefined) {
     const a = await prisma.assignment.findUnique({
       where: { id: assignmentId },
-      select: { title: true, courseOffering: { select: { publicId: true } } },
+      select: {
+        title: true,
+        maxMarks: true,
+        courseOfferingId: true,
+        courseOffering: { select: { publicId: true } },
+      },
     });
     if (a) {
       pushToUsers(memberIds, {
@@ -73,6 +79,13 @@ export async function applyGroupGrade({
         url: courseOfferingDashboardPath(a.courseOffering.publicId, 'assignments'),
         tag: `grade-${assignmentId}`,
       }).catch(() => {});
+      for (const memberId of memberIds) {
+        notifyAssignmentGraded(
+          { title: a.title, courseOfferingId: a.courseOfferingId },
+          a.courseOffering.publicId,
+          { studentId: memberId, grade, maxMarks: a.maxMarks ?? 100 },
+        );
+      }
     }
   }
   return toSubmissionClient(updated);
@@ -104,7 +117,12 @@ export async function applyIndividualGrade({
   if (grade !== undefined && submission) {
     const a = await prisma.assignment.findUnique({
       where: { id: assignmentId },
-      select: { title: true, courseOffering: { select: { publicId: true } } },
+      select: {
+        title: true,
+        maxMarks: true,
+        courseOfferingId: true,
+        courseOffering: { select: { publicId: true } },
+      },
     });
     if (a) {
       pushToUser(submission.studentId, {
@@ -113,6 +131,11 @@ export async function applyIndividualGrade({
         url: courseOfferingDashboardPath(a.courseOffering.publicId, 'assignments'),
         tag: `grade-${assignmentId}`,
       }).catch(() => {});
+      notifyAssignmentGraded(
+        { title: a.title, courseOfferingId: a.courseOfferingId },
+        a.courseOffering.publicId,
+        { studentId: submission.studentId, grade, maxMarks: a.maxMarks ?? 100 },
+      );
     }
   }
   return toSubmissionClient(submission);

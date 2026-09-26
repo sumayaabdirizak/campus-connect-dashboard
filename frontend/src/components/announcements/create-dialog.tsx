@@ -56,6 +56,24 @@ export function CreateDialog({
     fields.setStepLive(`Step ${fields.step} of 3: ${labels[fields.step]}`);
   }, [fields.step, fields.setStepLive]);
 
+  // Dean composing a new (non-edit) announcement: default to every department
+  // in their faculty selected, rather than an empty picker they must fill in
+  // by hand every time. Only runs once the list has loaded, and never
+  // overrides an explicit edit-mode selection or a later manual deselection.
+  const departmentsAutoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (!open || isEditMode || !isDean) return;
+    if (fields.targetType !== 'DEPARTMENT') return;
+    if (departmentsAutoSelectedRef.current) return;
+    if (audience.departmentOptions.length === 0) return;
+    departmentsAutoSelectedRef.current = true;
+    fields.setSelectedDepartments(audience.departmentOptions.map((d) => d.id));
+  }, [open, isEditMode, isDean, fields.targetType, audience.departmentOptions, fields.setSelectedDepartments]);
+
+  useEffect(() => {
+    if (!open) departmentsAutoSelectedRef.current = false;
+  }, [open]);
+
   const { targeting, flushAutosave } = useCreateDialogDraft({
     open,
     canPublish,
@@ -79,7 +97,7 @@ export function CreateDialog({
 
   const validateStep = (): boolean => {
     if (fields.step === 1) {
-      const nextErrors = validateComposeStep(fields.title, fields.content);
+      const nextErrors = validateComposeStep(fields.content);
       fields.setErrors(nextErrors);
       if (Object.keys(nextErrors).length > 0) {
         const focusId = nextErrors.title ? 'title' : nextErrors.content ? 'content' : null;
@@ -191,7 +209,6 @@ export function CreateDialog({
         />
         <DialogStepFooter
           step={fields.step}
-          title={fields.title}
           content={fields.content}
           isSubmitting={fields.isSubmitting}
           isEditMode={isEditMode}

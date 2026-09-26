@@ -4,6 +4,7 @@ import { Download, ExternalLink, FileText, MessageSquareText } from 'lucide-reac
 import { format } from 'date-fns';
 import type { Submission } from '@/lib/course-details/services/assignments-types';
 import { formatLateBy, parseSubmissionContent } from './helpers';
+import { MANUAL_GRADE_CONTENT_URL } from '../shared';
 
 export function SubmissionSummary({
   submission,
@@ -18,9 +19,11 @@ export function SubmissionSummary({
   maxMarks: number;
   dueAt?: Date | string | null;
 }) {
-  const content = submission.content_url
-    ? parseSubmissionContent(submission.content_url)
-    : null;
+  const isManualGrade = submission.content_url === MANUAL_GRADE_CONTENT_URL;
+  const content =
+    submission.content_url && !isManualGrade
+      ? parseSubmissionContent(submission.content_url)
+      : null;
   const teacherFeedback = submission.feedback?.trim() ?? '';
   const showFeedback = submission.is_reviewed && teacherFeedback.length > 0;
   const lateBy =
@@ -31,7 +34,11 @@ export function SubmissionSummary({
   return (
     <div className='space-y-2'>
       <p className='text-sm text-success'>
-        {isGroupAssignment ? 'Group work sent' : 'You sent this'}
+        {isManualGrade
+          ? 'Recorded by your teacher'
+          : isGroupAssignment
+            ? 'Group work sent'
+            : 'You sent this'}
         <span className='ml-2 text-foreground'>
           {format(new Date(submission.submitted_at), 'MMM d, h:mm a')}
         </span>
@@ -41,6 +48,12 @@ export function SubmissionSummary({
           </span>
         ) : null}
       </p>
+
+      {isManualGrade ? (
+        <p className='rounded-xl border border-dashed bg-muted/40 px-3 py-2.5 text-xs text-muted-foreground'>
+          This grade was entered directly by your teacher — no file was submitted in the app.
+        </p>
+      ) : null}
 
       {content ? (
         <div className='flex items-center gap-3 rounded-xl border bg-muted/40 px-3 py-2.5'>

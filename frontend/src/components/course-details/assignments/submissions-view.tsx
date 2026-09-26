@@ -48,6 +48,7 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
     extensionDate: s.extensionDate,
     extensionReason: s.extensionReason,
     gradeMutation: d.gradeMutation,
+    manualGradeMutation: d.manualGradeMutation,
     extensionMutation: d.extensionMutation,
     extensionBatchMutation: d.extensionBatchMutation
   });
@@ -122,6 +123,7 @@ export function SubmissionsView({ courseId, assignment, onBack }: SubmissionsVie
           })
         }
         onGrade={gradeActions.openGrading}
+        onEnterMarks={gradeActions.openManualGrade}
         onExtendMissing={(targetId) => {
           s.setSelectedRows(new Set([targetId]));
           s.setBulkDate('');

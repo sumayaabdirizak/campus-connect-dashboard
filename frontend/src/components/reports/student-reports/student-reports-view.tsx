@@ -92,6 +92,7 @@ type StudentReportFilters = {
   department: string;
   courseId: string;
   studentId: string;
+  status: string;
   period: string;
   from: string | null;
   to: string | null;
@@ -101,10 +102,20 @@ const defaultFilters: StudentReportFilters = {
   department: 'all',
   courseId: 'all',
   studentId: 'all',
+  status: 'all',
   period: 'semester',
   from: null,
   to: null
 };
+
+const STATUS_OPTIONS = [
+  { value: 'all', label: 'All statuses' },
+  { value: 'Passed', label: 'Passed' },
+  { value: 'Failed', label: 'Failed' },
+  { value: 'No grade', label: 'No grade' },
+  { value: 'Missing', label: 'Missing' },
+  { value: 'Not submitted', label: 'Not submitted' }
+];
 
 const STORAGE_KEY = 'student-reports-filters:v2';
 
@@ -149,6 +160,7 @@ function StudentReportsTable({
       department: appliedFilters.department,
       courseId: appliedFilters.courseId,
       studentId: appliedFilters.studentId,
+      status: appliedFilters.status,
       sort: sortId
     }),
     [dateParams, page, pageSize, debouncedSearch, appliedFilters, sortId]
@@ -323,6 +335,7 @@ function StudentReportsTable({
             department: typeof o.department === 'string' ? o.department : 'all',
             courseId: typeof o.courseId === 'string' ? o.courseId : 'all',
             studentId: typeof o.studentId === 'string' ? o.studentId : 'all',
+            status: typeof o.status === 'string' ? o.status : 'all',
             period: typeof o.period === 'string' ? o.period : 'semester',
             from: typeof o.from === 'string' ? o.from : null,
             to: typeof o.to === 'string' ? o.to : null
@@ -389,6 +402,24 @@ function StudentReportsTable({
             loading={showInitialLoading}
             className={cn('w-full', GLOBAL_FILTER_CONTROL)}
           />
+        </GlobalFilterField>
+
+        <GlobalFilterField label='Status'>
+          <Select
+            value={draftFilters.status}
+            onValueChange={(v) => setDraftFilters((p) => ({ ...p, status: v }))}
+          >
+            <SelectTrigger className={cn('w-full', GLOBAL_FILTER_CONTROL)}>
+              <SelectValue placeholder='Status' />
+            </SelectTrigger>
+            <SelectContent>
+              {STATUS_OPTIONS.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </GlobalFilterField>
 
         <GlobalFilterField label='Period'>

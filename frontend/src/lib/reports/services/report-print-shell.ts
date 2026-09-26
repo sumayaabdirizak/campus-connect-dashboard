@@ -133,7 +133,7 @@ export function buildReportSignatureFooter(preparedByRole: string, dateLabel: st
     </div>
     <div class="rpt-sig right">
       <div class="rpt-sig-line"></div>
-      <strong>Authorized Signature &amp; Stamp</strong>
+      <strong>Office of Registration</strong>
       <span>&nbsp;</span>
     </div>
   </div>
@@ -203,7 +203,7 @@ export function printHtmlDocument(title: string, bodyHtml: string) {
 
 function reportSignatory(): { preparedByRole: string; dateLabel: string } {
   return {
-    preparedByRole: currentUserRoleLabel(),
+    preparedByRole: currentUserName(),
     dateLabel: new Date().toLocaleDateString(undefined, {
       year: 'numeric',
       month: 'long',

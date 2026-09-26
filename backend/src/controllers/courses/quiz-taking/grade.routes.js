@@ -61,15 +61,26 @@ export function register(router) {
 
         const allAnswers = await tx.quizAnswer.findMany({
           where: { attemptId },
-          select: { points_earned: true },
+          select: {
+            points_earned: true,
+            is_correct: true,
+            question: { select: { question_type: true } },
+          },
         });
         const earned = allAnswers.reduce((sum, a) => sum + (a.points_earned || 0), 0);
         const totalPoints = attempt.quiz.questions.reduce((sum, q) => sum + q.points, 0);
         const score = totalPoints > 0 ? (earned / totalPoints) * 100 : 0;
+        // Don't reveal a final score while any short-answer question is still
+        // ungraded — its missing points_earned defaults to 0 in the sum above,
+        // which would otherwise show the student a falsely low "final" score
+        // mid-grading instead of "pending review".
+        const isGraded = allAnswers.every(
+          (a) => a.question?.question_type !== 'SHORT_ANSWER' || a.is_correct != null,
+        );
 
         const updated = await tx.quizAttempt.update({
           where: { id: attemptId },
-          data: { score, grade: score, is_graded: true },
+          data: { score, grade: score, is_graded: isGraded },
           include: {
             student: { select: { id: true, full_name: true } },
             answers: true,

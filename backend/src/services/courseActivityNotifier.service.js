@@ -79,3 +79,64 @@ export async function notifyCourseOfferingStudents(opts) {
 
   return { notified: students.length };
 }
+
+/**
+ * Notify the offering's teacher: in-app + email + push (best-effort).
+ * Mirrors {@link notifyCourseOfferingStudents} but targets the single teacher
+ * assigned to the offering — used for "a student submitted work" alerts,
+ * which previously reached the teacher only via the live-monitor socket feed.
+ * @param {{
+ *   courseOfferingId: number;
+ *   kind: import('@prisma/client').CourseActivityKind;
+ *   title: string;
+ *   body: string;
+ *   href: string;
+ *   tag?: string;
+ *   ctaLabel?: string;
+ * }} opts
+ */
+export async function notifyCourseOfferingTeacher(opts) {
+  const offering = await prisma.courseOffering.findUnique({
+    where: { id: opts.courseOfferingId },
+    select: {
+      id: true,
+      course: { select: { code: true, name: true } },
+      teacher: { select: { id: true, email: true, full_name: true } },
+    },
+  });
+  if (!offering?.teacher) return { notified: 0 };
+
+  const teacher = offering.teacher;
+  const courseLabel = offering.course?.code || offering.course?.name || 'Your course';
+  const courseName =
+    offering.course?.code && offering.course?.name ? offering.course.name : undefined;
+  const href = opts.href.startsWith('/') ? opts.href : `/${opts.href}`;
+
+  await prisma.courseActivityNotification.create({
+    data: {
+      userId: teacher.id,
+      courseOfferingId: offering.id,
+      kind: opts.kind,
+      title: opts.title,
+      body: opts.body,
+      href,
+    },
+  });
+
+  await deliverCourseActivity({
+    students: [teacher],
+    courseLabel,
+    courseName,
+    title: opts.title,
+    body: opts.body,
+    href,
+    ctaLabel: opts.ctaLabel || 'Open',
+    tag: opts.tag,
+  });
+
+  pushToUsers([teacher.id], { title: opts.title, body: opts.body, url: href, tag: opts.tag }).catch(
+    () => {}
+  );
+
+  return { notified: 1 };
+}

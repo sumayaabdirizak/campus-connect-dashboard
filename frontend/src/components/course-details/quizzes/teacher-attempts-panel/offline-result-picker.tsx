@@ -128,7 +128,7 @@ export function OfflineResultPicker({
         </SelectContent>
       </Select>
 
-      <div className='flex items-center gap-1.5'>
+      <div className='flex items-center overflow-hidden rounded-lg border border-border bg-card shadow-sm'>
         <Input
           type='number'
           min={0}
@@ -138,16 +138,16 @@ export function OfflineResultPicker({
           onChange={(e) =>
             setMarks(String(Math.min(Math.max(Number(e.target.value) || 0, 0), marksCap)))
           }
-          className='h-8 w-14 bg-card text-center text-sm tabular-nums'
+          className='h-8 w-14 rounded-none border-0 bg-transparent text-center text-sm font-medium tabular-nums shadow-none focus-visible:ring-0'
           disabled={busy}
           aria-label={`Score for ${studentName}`}
         />
-        <span className='shrink-0 text-xs text-muted-foreground tabular-nums'>
+        <span className='shrink-0 border-l border-border bg-muted/50 px-2 text-xs font-medium text-muted-foreground tabular-nums'>
           / {totalPoints > 0 ? totalPoints : '—'}
         </span>
         <Button
           size='sm'
-          className='h-8'
+          className='h-8 rounded-none border-l border-primary/20'
           disabled={busy || !canSaveMarks || totalPoints <= 0}
           onClick={recordMarks}
           aria-label={`Save score for ${studentName}`}

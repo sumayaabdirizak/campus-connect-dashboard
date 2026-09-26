@@ -9,6 +9,7 @@ import {
   useAdminAcademicYears,
   useAdminPrograms
 } from '@/lib/batches-admin/queries';
+import { useActiveSemesterWindow } from '@/lib/academic/use-active-semester-window';
 import { createAdminBatch } from '@/lib/batches-admin/services';
 import { buildBatchName, parseAcademicYearStart } from '@/lib/batches-admin/services/build-batch-name';
 import {
@@ -35,11 +36,23 @@ export function BatchFormModal({ open, onOpenChange }: Props) {
   const [form, setForm] = useState<BatchFormState>(emptyForm());
   const { data: programs = [] } = useAdminPrograms();
   const { data: academicYears = [] } = useAdminAcademicYears();
+  const { data: activeWindow } = useActiveSemesterWindow();
   const queryClient = useQueryClient();
 
   useEffect(() => {
     if (open) setForm(emptyForm());
   }, [open]);
+
+  // Default the intake year to the currently active academic year so admins
+  // don't have to search for it on every new batch — they can still change it.
+  useEffect(() => {
+    if (!open || !activeWindow?.academicYearId) return;
+    setForm((current) =>
+      current.academicYearId
+        ? current
+        : { ...current, academicYearId: String(activeWindow.academicYearId) }
+    );
+  }, [open, activeWindow]);
 
   const selectedProgram = useMemo(
     () => programs.find((program) => String(program.id) === form.programId),

@@ -1,9 +1,8 @@
 'use client';
 
 import { Input } from '@/features/ui/components/input';
-import { Icons } from '@/components/icons';
 import { cn } from '@/lib/utils';
-import { AnnouncementRichEditor, computeReadability } from '../announcement-rich-editor';
+import { AnnouncementRichEditor } from '../announcement-rich-editor';
 import { ImagePicker } from '../image-picker';
 import type { ImageFile } from './types';
 import {
@@ -38,20 +37,16 @@ export function StepCompose({
   onImagesChange,
 }: Props) {
   const plainLen = htmlToPlain(content).length;
-  const readability = computeReadability(htmlToPlain(content));
-  const tone = !readability
-    ? ''
-    : readability.score >= 60
-      ? 'text-emerald-700 dark:text-emerald-400'
-      : readability.score >= 40
-        ? 'text-amber-700 dark:text-amber-400'
-        : 'text-destructive';
 
   return (
     <div className='space-y-4'>
       <fieldset className={dialogFieldsetClass}>
-        <legend className={dialogLabelClass}>Title</legend>
-        <p className={dialogHintClass}>A short headline students and staff will see first.</p>
+        <legend className={dialogLabelClass}>
+          Title <span className='font-normal text-muted-foreground'>· optional</span>
+        </legend>
+        <p className={dialogHintClass}>
+         
+        </p>
         <Input
           id='title'
           value={title}
@@ -90,18 +85,8 @@ export function StepCompose({
           }}
           placeholder='What do people need to know?'
           aria-invalid={!!errors.content}
-          aria-describedby='content-counter content-readability'
+          aria-describedby='content-counter'
         />
-        {readability ? (
-          <p
-            id='content-readability'
-            aria-live='polite'
-            className={cn('flex items-center gap-1.5 text-xs', tone)}
-          >
-            <Icons.info className='size-3.5 shrink-0' aria-hidden />
-            Reading ease {readability.score} · {readability.grade}
-          </p>
-        ) : null}
         {errors.content ? (
           <p className='text-xs font-medium text-destructive'>{errors.content}</p>
         ) : null}

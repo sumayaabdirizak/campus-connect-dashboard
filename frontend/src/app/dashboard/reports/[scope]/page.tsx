@@ -6,7 +6,7 @@ const SCOPE_TO_REPORT: Record<string, string> = {
   teacher: '/dashboard/reports/lecturer-reports',
   batch: '/dashboard/reports/batch-reports',
   section: '/dashboard/reports/course-reports',
-  faculty: '/dashboard/reports/faculty-dashboard'
+  faculty: '/dashboard/reports/faculty-reports'
 };
 
 /** Legacy LMS scope URLs → Dean-style academic reports. */

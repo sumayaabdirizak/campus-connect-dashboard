@@ -7,10 +7,7 @@ import { useRecentAnnouncements } from '@/lib/announcements/queries'
 import { useCalendarDeadlines } from '@/lib/calendar/queries'
 import { filterUpcomingDeadlines } from '@/components/calendar/deadline-calendar'
 import { MonthCalendar } from './month-calendar'
-import {
-  TeacherDashboardHero,
-  TeacherDashboardRailStats,
-} from './teacher-dashboard-hero'
+import { TeacherDashboardHero } from './teacher-dashboard-hero'
 import { TeacherCoursesPanel } from './teacher-courses-panel'
 import { AnnouncementsSidebarCard } from './announcements-sidebar-card'
 import { StudentDashboardDeadlines } from './student-dashboard-deadlines'
@@ -92,10 +89,6 @@ export function TeacherDashboard({ user }: { user: { full_name?: string } }) {
           <MonthCalendar variant='featured' />
         </div>
         <aside className='space-y-4 xl:col-span-4'>
-          <TeacherDashboardRailStats
-            coursesCount={courses.length}
-            pendingGrading={pendingGrading}
-          />
           <StudentDashboardDeadlines items={timelineItems} loading={deadlinesLoading} />
           <AnnouncementsSidebarCard
             announcements={announcements}
