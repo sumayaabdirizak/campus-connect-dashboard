@@ -14,6 +14,7 @@ import {
 } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useCalendarDeadlines } from '@/lib/calendar/queries';
+import { usePersonalEvents } from '@/lib/calendar/queries/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/features/ui/components/card';
 import { Button } from '@/features/ui/components/button';
 import { cn } from '@/lib/utils';
@@ -45,16 +46,29 @@ export function MonthCalendar({ variant = 'compact', className }: Props) {
   );
 
   const { data } = useCalendarDeadlines(gridStart.toISOString(), gridEnd.toISOString());
+  // Same personal events the full Calendar page shows, so both views agree.
+  const { data: eventsData } = usePersonalEvents(gridStart.toISOString(), gridEnd.toISOString());
 
   const byDay = useMemo(() => {
     const m = new Map<string, DeadlineRow[]>();
-    for (const d of data?.results ?? []) {
+    const rows: DeadlineRow[] = [
+      ...(data?.results ?? []),
+      ...(eventsData?.results ?? []).map(
+        (e): DeadlineRow => ({
+          kind: 'personal',
+          id: e.id,
+          title: e.title,
+          deadlineAt: e.startsAt
+        })
+      )
+    ];
+    for (const d of rows) {
       if (!d.deadlineAt) continue;
       const k = format(new Date(d.deadlineAt), 'yyyy-MM-dd');
       (m.get(k) ?? m.set(k, []).get(k)!).push(d);
     }
     return m;
-  }, [data]);
+  }, [data, eventsData]);
 
   const selectedItems = byDay.get(format(selected, 'yyyy-MM-dd')) ?? [];
 

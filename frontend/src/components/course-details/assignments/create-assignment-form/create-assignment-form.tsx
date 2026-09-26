@@ -20,6 +20,7 @@ import {
   MARK_BUDGET_FULL_MESSAGE
 } from '@/lib/course-details/services/mark-budget-utils';
 import { toast } from 'sonner';
+import { useStore } from '@tanstack/react-form';
 
 function fieldError(errors: unknown[]): string | undefined {
   const first = errors[0];
@@ -87,6 +88,18 @@ export function CreateAssignmentForm({
   const { FormTextField, FormTextareaField, FormSelectField, FormSwitchField } =
     useFormFields<AssignmentFormValues>();
 
+  const openAtValue = useStore(form.store, (state) => state.values.open_at);
+
+  // Due date must be after the open date. If the picked/remaining due date is
+  // not, clear it (auto-cancel) so the teacher re-picks a valid one.
+  const cancelDueIfBeforeOpen = (openAt?: string, dueDate?: string) => {
+    if (!openAt || !dueDate) return;
+    if (new Date(dueDate) <= new Date(openAt)) {
+      form.setFieldValue('due_date', '');
+      toast.error('Due date must be after the open date, so it was cleared.');
+    }
+  };
+
   return (
     <form.AppForm>
       <form.Form className='flex min-h-0 flex-1 flex-col'>
@@ -116,7 +129,10 @@ export function CreateAssignmentForm({
                   value={field.state.value as string}
                   onBlur={field.handleBlur}
                   onChange={(value) =>
-                    handleExtensionDateChange(value, field.handleChange)
+                    handleExtensionDateChange(value, (next) => {
+                      field.handleChange(next);
+                      cancelDueIfBeforeOpen(next, form.getFieldValue('due_date'));
+                    })
                   }
                   min={toDatetimeLocalMin()}
                   hint='Leave empty to open immediately.'
@@ -136,9 +152,12 @@ export function CreateAssignmentForm({
                   value={field.state.value as string}
                   onBlur={field.handleBlur}
                   onChange={(value) =>
-                    handleExtensionDateChange(value, field.handleChange)
+                    handleExtensionDateChange(value, (next) => {
+                      field.handleChange(next);
+                      cancelDueIfBeforeOpen(form.getFieldValue('open_at'), next);
+                    })
                   }
-                  min={toDatetimeLocalMin()}
+                  min={openAtValue || toDatetimeLocalMin()}
                   required
                   error={fieldError(field.state.meta.errors)}
                 />

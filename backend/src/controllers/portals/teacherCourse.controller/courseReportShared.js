@@ -63,10 +63,14 @@ export async function resolveReportOfferingAccess(userOrId) {
   return { where: { OR: accessOr }, academicYearId };
 }
 
-export async function findTeacherOfferings(userOrId, include) {
+/**
+ * @param {{ allYears?: boolean }} [opts] allYears skips the active-academic-year
+ *   scoping so older-year offerings (e.g. an "All time" report) are included.
+ */
+export async function findTeacherOfferings(userOrId, include, { allYears = false } = {}) {
   const { where, academicYearId } = await resolveReportOfferingAccess(userOrId);
 
-  if (academicYearId) {
+  if (academicYearId && !allYears) {
     const scoped = await prisma.courseOffering.findMany({
       where: { ...where, academicYearId },
       include,

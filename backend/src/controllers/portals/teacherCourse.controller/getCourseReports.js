@@ -292,7 +292,9 @@ export async function listCourseReports(req, res) {
       maxPageSize: 1000,
     });
 
-    const metaOfferings = await findTeacherOfferings(req.user, META_INCLUDE);
+    // No date window (period "All time") = every academic year, not just the active one.
+    const allYears = !from && !to;
+    const metaOfferings = await findTeacherOfferings(req.user, META_INCLUDE, { allYears });
     let rows = metaOfferings.map(metaRow);
 
     const filterOptions = {
@@ -320,7 +322,7 @@ export async function listCourseReports(req, res) {
     const needsGradeSort = GRADE_SORT_KEYS.has(sort.key);
 
     if (needsGradeSort) {
-      const full = await findTeacherOfferings(req.user, PAGE_INCLUDE);
+      const full = await findTeacherOfferings(req.user, PAGE_INCLUDE, { allYears });
       const byPublic = new Map(full.map((o) => [o.publicId, o]));
       const filteredOfferings = rows
         .map((r) => byPublic.get(r.id))

@@ -1,4 +1,4 @@
-export type DeadlineKind = 'announcement' | 'assignment' | 'quiz';
+export type DeadlineKind = 'announcement' | 'assignment' | 'quiz' | 'personal';
 
 export interface DeadlineRow {
   kind: DeadlineKind;

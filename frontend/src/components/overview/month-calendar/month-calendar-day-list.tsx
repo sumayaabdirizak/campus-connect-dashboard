@@ -20,6 +20,12 @@ function kindMeta(kind: DeadlineKind) {
         chipClass:
           'border-amber-500/35 bg-amber-500/12 text-amber-900 dark:text-amber-300',
       };
+    case 'personal':
+      return {
+        label: 'Event',
+        chipClass:
+          'border-purple-500/35 bg-purple-500/12 text-purple-800 dark:text-purple-300',
+      };
     default:
       return {
         label: 'Announcement',
@@ -46,7 +52,7 @@ export function MonthCalendarDayList({
   featured?: boolean;
 }) {
   const openDeadline = (d: DeadlineRow) => {
-    if (d.kind === 'announcement') {
+    if (d.kind === 'announcement' || d.kind === 'personal') {
       window.location.assign('/dashboard/calendar');
       return;
     }
